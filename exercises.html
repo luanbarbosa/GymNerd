@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymFlow | Exercises</title>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .input-group { display: flex; flex-direction: column; gap: 10px; }
+        label { font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: -5px; }
+        input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; }
+        button.primary { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button.update { background: var(--success); color: white; border: none; font-weight: bold; cursor: pointer; display: none; }
+        details { background: transparent; margin-bottom: 15px; }
+        summary { font-weight: 800; font-size: 1.1rem; cursor: pointer; padding: 10px 0; text-transform: capitalize; display: flex; justify-content: space-between; align-items: center; list-style: none; border-bottom: 2px solid #e2e8f0; margin-bottom: 10px; }
+        summary::after { content: '▾'; color: #64748b; }
+        details[open] summary::after { content: '▴'; }
+        .ex-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; margin-bottom: 8px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .ex-info { display: flex; align-items: center; gap: 12px; }
+        .ex-thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; background: #f1f5f9; }
+        .actions { display: flex; gap: 10px; }
+        .edit-btn { color: var(--primary); background: none; border: none; cursor: pointer; }
+        .del-btn { color: #ef4444; background: none; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Exercises</h2></div>
+    <div class="card">
+        <div class="input-group">
+            <label>Name</label><input type="text" id="exName">
+            <label>Muscle Group</label>
+            <select id="exType">
+                <option value="chest">Chest</option><option value="back">Back</option>
+                <option value="legs">Legs</option><option value="shoulders">Shoulders</option><option value="arms">Arms</option>
+            </select>
+            <label>Photo</label><input type="file" id="exImage" accept="image/*">
+            <input type="hidden" id="editId">
+            <button id="addBtn" class="primary" onclick="addExercise()">Add Exercise</button>
+            <button id="updateBtn" class="update" onclick="updateExercise()">Update Exercise</button>
+        </div>
+    </div>
+    <div id="exercise-list"></div>
+
+    <script>
+        const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
+        const db = new Dexie("GymAppDB");
+        db.version(6).stores({ 
+            exercises: '++id, name, type, imageId',
+            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId',
+            workouts: '++id, name, exerciseIds',
+            images: '++id' 
+        });
+
+        async function getImg(id) {
+            if(!id) return FALLBACK_IMG;
+            const res = await db.images.get(id);
+            return res ? res.data : FALLBACK_IMG;
+        }
+
+        async function renderExercises() {
+            const all = await db.exercises.toArray();
+            const groups = all.reduce((acc, ex) => { (acc[ex.type] = acc[ex.type] || []).push(ex); return acc; }, {});
+            const container = document.getElementById('exercise-list');
+            container.innerHTML = "";
+            
+            for (const type of Object.keys(groups).sort()) {
+                const det = document.createElement('details'); det.open = true;
+                const sum = document.createElement('summary'); sum.innerHTML = `<span>${type}</span>`;
+                det.appendChild(sum);
+                
+                for (const ex of groups[type]) {
+                    const src = await getImg(ex.imageId);
+                    det.innerHTML += `<div class="ex-item"><div class="ex-info"><img class="ex-thumb" src="${src}"><strong>${ex.name}</strong></div>
+                        <div class="actions"><button class="edit-btn" onclick="prepareEdit(${ex.id})">Edit</button><button class="del-btn" onclick="deleteExercise(${ex.id})">Del</button></div></div>`;
+                }
+                container.appendChild(det);
+            }
+        }
+
+        async function addExercise() {
+            const name = document.getElementById('exName').value;
+            const type = document.getElementById('exType').value;
+            const file = document.getElementById('exImage').files[0];
+            let imageId = null;
+
+            if(file) {
+                const data = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); });
+                imageId = await db.images.add({ data });
+            }
+            await db.exercises.add({ name, type, imageId });
+            location.reload();
+        }
+
+        async function prepareEdit(id) {
+            const ex = await db.exercises.get(id);
+            document.getElementById('exName').value = ex.name;
+            document.getElementById('exType').value = ex.type;
+            document.getElementById('editId').value = id;
+            document.getElementById('addBtn').style.display='none';
+            document.getElementById('updateBtn').style.display='block';
+        }
+
+        async function updateExercise() {
+            const id = parseInt(document.getElementById('editId').value);
+            const file = document.getElementById('exImage').files[0];
+            const updateObj = { name: document.getElementById('exName').value, type: document.getElementById('exType').value };
+            
+            if(file) {
+                const data = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); });
+                updateObj.imageId = await db.images.add({ data });
+            }
+            await db.exercises.update(id, updateObj);
+            location.reload();
+        }
+
+        async function deleteExercise(id) { if(confirm("Delete?")) { await db.exercises.delete(id); renderExercises(); } }
+        renderExercises();
+    </script>
+</body>
+</html>

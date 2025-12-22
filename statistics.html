@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymFlow | Stats</title>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #2563eb; --success: #22c55e; --bg: #f1f5f9; --text: #1e293b; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .back-btn { text-decoration: none; color: var(--text); font-weight: bold; }
+        
+        .calendar-card { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin: 0 auto 20px auto; max-width: 320px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .calendar-header h3 { font-size: 0.9rem; margin: 0; text-transform: capitalize; }
+        .nav-btn { background: #f1f5f9; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .day-name { font-size: 0.6rem; text-align: center; color: #64748b; font-weight: bold; padding-bottom: 4px; }
+        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.7rem; }
+        
+        .past-no-workout { background: #fee2e2; color: #991b1b; }
+        .has-workout { background: var(--success); color: white; font-weight: bold; }
+        .future-day { background: #f8fafc; color: #94a3b8; border: 1px solid #edf2f7; }
+        .today { border: 1.5px solid var(--primary); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .chart-box { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .chart-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #f1f5f9; }
+        .chart-thumb { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; background: #f1f5f9; }
+        .canvas-wrapper { height: 160px; }
+    </style>
+</head>
+<body>
+    <div class="header"><a href="index.html" class="back-btn">← Home</a><h2>Dashboard</h2></div>
+
+    <div class="calendar-card">
+        <div class="calendar-header">
+            <button class="nav-btn" onclick="changeMonth(-1)">❮</button>
+            <h3 id="monthDisplay">Month Year</h3>
+            <button class="nav-btn" onclick="changeMonth(1)">❯</button>
+        </div>
+        <div class="calendar-grid">
+            <div class="day-name">S</div><div class="day-name">M</div><div class="day-name">T</div>
+            <div class="day-name">W</div><div class="day-name">T</div><div class="day-name">F</div>
+            <div class="day-name">S</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <div class="stats-grid" id="chartsWrapper"></div>
+
+    <script>
+        const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
+        
+        const db = new Dexie("GymAppDB");
+        db.version(6).stores({ 
+            exercises: '++id, name, type, imageId', 
+            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
+            workouts: '++id, name, exerciseIds', 
+            images: '++id' 
+        });
+
+        let currentViewDate = new Date();
+
+        async function init() {
+            const logs = await db.logs.toArray();
+            renderCalendar(logs);
+            renderCharts(logs);
+        }
+
+        function changeMonth(offset) {
+            currentViewDate.setMonth(currentViewDate.getMonth() + offset);
+            init();
+        }
+
+        async function getImg(id) {
+            if (!id) return FALLBACK_IMG;
+            const imgRecord = await db.images.get(id);
+            return imgRecord ? imgRecord.data : FALLBACK_IMG;
+        }
+
+        function renderCalendar(logs) {
+            const grid = document.getElementById('calendarGrid');
+            const display = document.getElementById('monthDisplay');
+            grid.innerHTML = "";
+            const year = currentViewDate.getFullYear(), month = currentViewDate.getMonth();
+            const today = new Date(); today.setHours(0,0,0,0);
+            display.innerText = currentViewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const workoutDates = new Set(logs.map(l => l.date));
+
+            for (let i = 0; i < firstDayIndex; i++) grid.innerHTML += `<div></div>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dateObj = new Date(year, month, d);
+                let status = workoutDates.has(dateStr) ? "has-workout" : (dateObj < today ? "past-no-workout" : "future-day");
+                if (dateObj.getTime() === today.getTime()) status += " today";
+                grid.innerHTML += `<div class="calendar-day ${status}">${d}</div>`;
+            }
+        }
+
+        async function renderCharts(logs) {
+            const wrapper = document.getElementById('chartsWrapper');
+            const grouped = {};
+            logs.forEach(l => { if(!grouped[l.exerciseName]) grouped[l.exerciseName] = []; grouped[l.exerciseName].push(l); });
+            wrapper.innerHTML = "";
+
+            for (const name of Object.keys(grouped)) {
+                const entries = grouped[name].sort((a,b) => new Date(a.date) - new Date(b.date));
+                const lastEntry = entries[entries.length - 1];
+                
+                // CRITICAL FIX: Lookup image data from the images table
+                const imgSrc = await getImg(lastEntry.imageId);
+                
+                const box = document.createElement('div'); 
+                box.className = 'chart-box';
+                const safeName = name.replace(/[^a-z0-9]/gi, '');
+                
+                box.innerHTML = `
+                    <div class="chart-header">
+                        <img src="${imgSrc}" class="chart-thumb">
+                        <strong>${name}</strong>
+                    </div>
+                    <div class="canvas-wrapper"><canvas id="c-${safeName}"></canvas></div>`;
+                wrapper.appendChild(box);
+
+                new Chart(document.getElementById(`c-${safeName}`), {
+                    type: 'line', 
+                    data: { 
+                        labels: entries.map(e => e.date.slice(5)), 
+                        datasets: [{ 
+                            data: entries.map(e => e.weight), 
+                            borderColor: '#22c55e', 
+                            borderWidth: 2,
+                            tension: 0.2, 
+                            fill: false 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

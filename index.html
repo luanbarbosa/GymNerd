@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymFlow | Home</title>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        :root { --primary: #2563eb; --success: #059669; --danger: #ef4444; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; }
+        
+        /* Developer Bar Styling */
+        .dev-bar { 
+            background: #1e293b; 
+            color: #94a3b8; 
+            padding: 8px 15px; 
+            font-size: 0.7rem; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em;
+        }
+        .dev-actions { display: flex; gap: 10px; }
+        .dev-btn { 
+            background: #334155; 
+            color: white; 
+            border: none; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 0.65rem; 
+            font-weight: bold; 
+        }
+        .dev-btn:hover { background: var(--danger); }
+
+        .main-content { padding: 20px; }
+        h1 { text-align: center; font-weight: 800; margin-bottom: 40px; margin-top: 20px; }
+        
+        .menu-grid { display: grid; gap: 15px; }
+        .nav-card { background: white; padding: 20px; border-radius: 12px; text-decoration: none; color: inherit; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; font-weight: 600; transition: 0.2s; border: 2px solid transparent; }
+        .nav-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+        
+        details { background: #fff; border-radius: 12px; margin-top: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; }
+        summary::after { content: '▼'; font-size: 0.8rem; color: #64748b; }
+        .content-box { padding: 0 20px 20px 20px; border-top: 1px solid #f1f5f9; }
+        
+        .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .export-btn { background: var(--success); color: white; }
+        .import-btn { background: #6366f1; color: white; }
+        label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="dev-bar">
+        <span>Dev Tools</span>
+        <div class="dev-actions">
+            <button class="dev-btn" onclick="clearAllData()">⚠️ Clear All Data</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1>GymFlow</h1>
+        
+        <div class="menu-grid">
+            <a href="exercises.html" class="nav-card"><span>🏗️ Exercises</span><span>→</span></a>
+            <a href="workouts.html" class="nav-card"><span>⚡ Routines</span><span>→</span></a>
+            <a href="logging.html" class="nav-card"><span>📝 Log Session</span><span>→</span></a>
+            <a href="statistics.html" class="nav-card"><span>📊 Statistics</span><span>→</span></a>
+        </div>
+
+        <details>
+            <summary>⚙️ Data Management</summary>
+            <div class="content-box">
+                <h4>Backup</h4>
+                <button class="sync-btn export-btn" onclick="exportData()">📤 Export 4 JSON Files</button>
+                
+                <h4>Restore</h4>
+                <label>1. Images Database (.json)</label><input type="file" id="importImg" accept=".json">
+                <label>2. Exercises (.json)</label><input type="file" id="importEx" accept=".json">
+                <label>3. Routines (.json)</label><input type="file" id="importWk" accept=".json">
+                <label>4. History (.json)</label><input type="file" id="importLogs" accept=".json">
+                <button class="sync-btn import-btn" onclick="importData()">📥 Process Import</button>
+            </div>
+        </details>
+    </div>
+
+    <script>
+        const db = new Dexie("GymAppDB");
+        db.version(6).stores({ 
+            exercises: '++id, name, type, imageId', 
+            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
+            workouts: '++id, name, exerciseIds', 
+            images: '++id' 
+        });
+
+        // Developer Actions
+        async function clearAllData() {
+            if (confirm("DANGER: This will permanently delete all exercises, routines, history, and images. Continue?")) {
+                try {
+                    await db.delete(); // Deletes the entire database
+                    alert("Database wiped successfully.");
+                    location.reload();
+                } catch (err) {
+                    console.error("Wipe failed:", err);
+                    alert("Failed to wipe database.");
+                }
+            }
+        }
+
+        async function exportData() {
+            const date = new Date().toISOString().slice(0,10);
+            const data = {
+                images: await db.images.toArray(),
+                exercises: await db.exercises.toArray(),
+                workouts: await db.workouts.toArray(),
+                logs: await db.logs.toArray()
+            };
+            
+            Object.keys(data).forEach((key, i) => {
+                setTimeout(() => {
+                    const blob = new Blob([JSON.stringify(data[key], null, 2)], {type: "application/json"});
+                    const a = document.createElement('a'); 
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `GymFlow_${key}_${date}.json`; 
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                }, i * 500);
+            });
+        }
+
+        async function importData() {
+            const files = {
+                images: document.getElementById('importImg').files[0],
+                exercises: document.getElementById('importEx').files[0],
+                workouts: document.getElementById('importWk').files[0],
+                logs: document.getElementById('importLogs').files[0]
+            };
+
+            try {
+                for (const key in files) {
+                    if (files[key]) {
+                        const text = await files[key].text();
+                        const parsedData = JSON.parse(text);
+                        const table = db[key];
+                        await table.clear();
+                        await table.bulkAdd(parsedData);
+                    }
+                }
+                alert("Import successful!"); 
+                location.reload();
+            } catch (err) {
+                console.error("Import error:", err);
+                alert("Error importing data. Check console for details.");
+            }
+        }
+    </script>
+</body>
+</html>

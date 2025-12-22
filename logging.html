@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymFlow | Log</title>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        select, input, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        .exercise-row { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 50px 1fr 30px; gap: 15px; align-items: center; }
+        .ex-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #f1f5f9; }
+        .input-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; grid-column: span 3; }
+        .save-session { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .save-session.success { background: var(--success); }
+        details.history-group { background: white; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; overflow: hidden; }
+        summary.date-header { padding: 12px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; list-style: none; display: flex; justify-content: space-between; }
+        .log-entry { padding: 10px 15px; border-bottom: 1px solid #f8fafc; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Log Session</h2></div>
+    <div class="card">
+        <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Workout --</option></select>
+        <input type="date" id="logDate" style="margin-top:10px">
+    </div>
+    <div id="workoutSheet"></div>
+    <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()">💾 Save Session</button>
+    <div id="history"></div>
+
+    <script>
+        const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
+        const db = new Dexie("GymAppDB");
+        db.version(6).stores({ exercises: '++id, name, type, imageId', logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', workouts: '++id, name, exerciseIds', images: '++id' });
+        
+        document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+        let allEx = [];
+
+        async function init() {
+            allEx = await db.exercises.toArray();
+            const wks = await db.workouts.toArray();
+            const p = document.getElementById('routinePicker');
+            wks.forEach(w => p.innerHTML += `<option value="${w.id}">${w.name}</option>`);
+            renderHistory();
+        }
+
+        async function generateSheet() {
+            const id = parseInt(document.getElementById('routinePicker').value);
+            const sheet = document.getElementById('workoutSheet');
+            if(!id) { sheet.innerHTML=""; return; }
+            const wk = await db.workouts.get(id);
+            sheet.innerHTML = "";
+            for (const eid of wk.exerciseIds) {
+                const ex = allEx.find(e => e.id === eid);
+                const img = await db.images.get(ex.imageId);
+                sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-imgid="${ex.imageId || ''}">
+                    <img src="${img ? img.data : FALLBACK_IMG}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()">✕</button>
+                    <div class="input-pair"><input type="number" step="0.5" placeholder="Kg" class="w"><input type="number" placeholder="Reps" class="r"></div></div>`;
+            }
+            document.getElementById('saveBtn').style.display = "block";
+        }
+
+        async function saveSession() {
+            const date = document.getElementById('logDate').value;
+            const logs = [];
+            document.querySelectorAll('.exercise-row').forEach(r => {
+                const weight = r.querySelector('.w').value;
+                const reps = r.querySelector('.r').value;
+                if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, weight: parseFloat(weight), reps: parseInt(reps), date });
+            });
+            await db.logs.bulkAdd(logs);
+            location.reload();
+        }
+
+        async function renderHistory() {
+            const logs = await db.logs.orderBy('date').reverse().toArray();
+            const groups = logs.reduce((acc, l) => { (acc[l.date] = acc[l.date] || []).push(l); return acc; }, {});
+            const container = document.getElementById('history');
+            for (const date of Object.keys(groups)) {
+                const det = document.createElement('details'); det.className="history-group";
+                det.innerHTML = `<summary class="date-header">${date}</summary>`;
+                for (const l of groups[date]) {
+                    const img = await db.images.get(l.imageId);
+                    det.innerHTML += `<div class="log-entry"><img src="${img ? img.data : FALLBACK_IMG}" style="width:25px;height:25px;border-radius:4px"> ${l.exerciseName}: ${l.weight}kg x ${l.reps}</div>`;
+                }
+                container.appendChild(det);
+            }
+        }
+        init();
+    </script>
+</body>
+</html>
