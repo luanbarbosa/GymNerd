@@ -59,10 +59,11 @@
 
     <script>
         const db = new Dexie("GymAppDB");
-        db.version(5).stores({ 
-            exercises: '++id, name, type, imageData',
-            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageData',
-            workouts: '++id, name, exerciseIds' 
+        db.version(6).stores({ 
+            exercises: '++id, name, type, imageId',
+            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId',
+            workouts: '++id, name, exerciseIds',
+            images: '++id' 
         });
 
         let allExercises = [];

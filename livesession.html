@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymFlow | Start Workout</title>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        select, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        
+        .exercise-list { margin-top: 20px; }
+        .exercise-item { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-bottom: 10px; 
+            border: 1px solid #e2e8f0; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+        }
+        .ex-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #f1f5f9; }
+        .checkbox-wrapper { margin-left: auto; }
+        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+
+        .start-btn { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 20px; 
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Start Workout</h2></div>
+    
+    <div class="card">
+        <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Workout</label>
+        <select id="workoutSelect" onchange="loadExercises()">
+            <option value="">-- Choose Workout --</option>
+        </select>
+    </div>
+
+    <div id="exerciseContainer" class="exercise-list"></div>
+    
+    <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session (WIP)</button>
+
+    <script>
+        const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
+        const db = new Dexie("GymAppDB");
+        db.version(6).stores({ 
+            exercises: '++id, name, type, imageId', 
+            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
+            workouts: '++id, name, exerciseIds', 
+            images: '++id' 
+        });
+
+        async function init() {
+            const workouts = await db.workouts.toArray();
+            const select = document.getElementById('workoutSelect');
+            workouts.forEach(w => {
+                const opt = document.createElement('option');
+                opt.value = w.id;
+                opt.textContent = w.name;
+                select.appendChild(opt);
+            });
+        }
+
+        async function loadExercises() {
+            const workoutId = parseInt(document.getElementById('workoutSelect').value);
+            const container = document.getElementById('exerciseContainer');
+            const startBtn = document.getElementById('startBtn');
+            
+            if (!workoutId) {
+                container.innerHTML = "";
+                startBtn.style.display = "none";
+                return;
+            }
+
+            const workout = await db.workouts.get(workoutId);
+            const allExercises = await db.exercises.toArray();
+            
+            container.innerHTML = "";
+            for (const eid of workout.exerciseIds) {
+                const ex = allExercises.find(e => e.id === eid);
+                if (!ex) continue;
+
+                const imgRecord = await db.images.get(ex.imageId);
+                const imgSrc = imgRecord ? imgRecord.data : FALLBACK_IMG;
+
+                const div = document.createElement('div');
+                div.className = 'exercise-item';
+                div.innerHTML = `
+                    <img src="${imgSrc}" class="ex-thumb">
+                    <strong>${ex.name}</strong>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" class="ex-check" value="${ex.id}" checked>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+            startBtn.style.display = "block";
+        }
+
+        function startSession() {
+            const selectedIds = Array.from(document.querySelectorAll('.ex-check:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) {
+                alert("Please select at least one exercise.");
+                return;
+            }
+            alert("WIP: Session starting with " + selectedIds.length + " exercises.");
+        }
+
+        init();
+    </script>
+</body>
+</html>
