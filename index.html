@@ -46,17 +46,6 @@
         summary::after { content: '▼'; font-size: 0.8rem; color: #64748b; }
         .content-box { padding: 0 20px 20px 20px; border-top: 1px solid #f1f5f9; }
         
-        .streak-badge { 
-            background: white; 
-            padding: 15px; 
-            border-radius: 12px; 
-            text-align: center; 
-            font-weight: 800; 
-            margin-bottom: 20px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            border: 1px solid #e2e8f0;
-        }
-
         .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .export-btn { background: var(--success); color: white; }
         .import-btn { background: #6366f1; color: white; }
@@ -75,11 +64,9 @@
     <div class="main-content">
         <h1>GymFlow</h1>
         
-        <div id="streak-badge" class="streak-badge" style="display:none"></div>
-
         <div class="menu-grid">
-            <a href="exercises.html" class="nav-card"><span>🏗️ Exercises</span><span>→</span></a>
-            <a href="workouts.html" class="nav-card"><span>⚡ Routines</span><span>→</span></a>
+            <a href="exercises.html" class="nav-card"><span>🏋 Exercises</span><span>→</span></a>
+            <a href="workouts.html" class="nav-card"><span>💪 My Workouts</span><span>→</span></a>
             <a href="logging.html" class="nav-card"><span>📝 Log Session</span><span>→</span></a>
             <a href="statistics.html" class="nav-card"><span>📊 Statistics</span><span>→</span></a>
         </div>
@@ -170,35 +157,6 @@
             }
         }
 
-        async function updateStreakBadge() {
-            const workoutDates = await db.logs.orderBy('date').uniqueKeys();
-            if (workoutDates.length === 0) return;
-
-            const workoutDatesSet = new Set(workoutDates);
-            const todayStr = new Date().toISOString().split('T')[0];
-            const today = new Date(todayStr);
-
-            const badge = document.getElementById('streak-badge');
-            badge.style.display = 'block';
-
-            if (workoutDatesSet.has(todayStr)) {
-                let streak = 0;
-                let curr = new Date(todayStr);
-                while (workoutDatesSet.has(curr.toISOString().split('T')[0])) {
-                    streak++;
-                    curr.setDate(curr.getDate() - 1);
-                }
-                badge.innerText = `${streak} days streak`;
-                badge.style.color = 'var(--success)';
-            } else {
-                const lastDate = new Date(workoutDates[workoutDates.length - 1]);
-                const diff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-                badge.innerText = `${diff} days since last workout`;
-                badge.style.color = '#64748b';
-            }
-        }
-
-        updateStreakBadge();
     </script>
 </body>
 </html>

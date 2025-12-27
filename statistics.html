@@ -12,6 +12,18 @@
         .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
         .back-btn { text-decoration: none; color: var(--text); font-weight: bold; }
         
+        .streak-badge { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            text-align: center; 
+            font-weight: 800; 
+            margin: 0 auto 20px auto; 
+            max-width: 320px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            border: 1px solid #e2e8f0;
+        }
+
         .calendar-card { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin: 0 auto 20px auto; max-width: 320px; }
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .calendar-header h3 { font-size: 0.9rem; margin: 0; text-transform: capitalize; }
@@ -35,6 +47,8 @@
 </head>
 <body>
     <div class="header"><a href="index.html" class="back-btn">← Home</a><h2>Dashboard</h2></div>
+
+    <div id="streak-badge" class="streak-badge" style="display:none"></div>
 
     <div class="calendar-card">
         <div class="calendar-header">
@@ -69,6 +83,7 @@
             const logs = await db.logs.toArray();
             renderCalendar(logs);
             renderCharts(logs);
+            updateStreakBadge();
         }
 
         function changeMonth(offset) {
@@ -146,6 +161,34 @@
                         plugins: { legend: { display: false } }
                     }
                 });
+            }
+        }
+
+        async function updateStreakBadge() {
+            const workoutDates = await db.logs.orderBy('date').uniqueKeys();
+            if (workoutDates.length === 0) return;
+
+            const workoutDatesSet = new Set(workoutDates);
+            const todayStr = new Date().toISOString().split('T')[0];
+            const today = new Date(todayStr);
+
+            const badge = document.getElementById('streak-badge');
+            badge.style.display = 'block';
+
+            if (workoutDatesSet.has(todayStr)) {
+                let streak = 0;
+                let curr = new Date(todayStr);
+                while (workoutDatesSet.has(curr.toISOString().split('T')[0])) {
+                    streak++;
+                    curr.setDate(curr.getDate() - 1);
+                }
+                badge.innerText = `${streak} days streak`;
+                badge.style.color = 'var(--success)';
+            } else {
+                const lastDate = new Date(workoutDates[workoutDates.length - 1]);
+                const diff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+                badge.innerText = `${diff} days since last workout`;
+                badge.style.color = '#64748b';
             }
         }
 

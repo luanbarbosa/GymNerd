@@ -17,6 +17,17 @@
         .input-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; grid-column: span 3; }
         .save-session { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .save-session.success { background: var(--success); }
+
+        details.history-section { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-top: 20px; }
+        summary.section-header { font-weight: 800; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        summary.section-header::after { content: '▾'; color: #64748b; }
+        details[open] summary.section-header::after { content: '▴'; }
+
+        details.month-group { margin-bottom: 15px; }
+        summary.month-header { font-weight: 700; font-size: 0.85rem; color: #64748b; cursor: pointer; padding: 8px 0; list-style: none; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; }
+        summary.month-header::after { content: '▾'; }
+        details[open] summary.month-header::after { content: '▴'; }
+
         details.history-group { background: white; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; overflow: hidden; }
         summary.date-header { padding: 12px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; list-style: none; display: flex; justify-content: space-between; }
         .log-entry { padding: 10px 15px; border-bottom: 1px solid #f8fafc; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
@@ -30,7 +41,10 @@
     </div>
     <div id="workoutSheet"></div>
     <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()">💾 Save Session</button>
-    <div id="history"></div>
+    <details class="history-section">
+        <summary class="section-header">Workout History</summary>
+        <div id="history" style="padding: 0 15px 10px 15px;"></div>
+    </details>
 
     <script>
         const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
@@ -78,16 +92,35 @@
 
         async function renderHistory() {
             const logs = await db.logs.orderBy('date').reverse().toArray();
-            const groups = logs.reduce((acc, l) => { (acc[l.date] = acc[l.date] || []).push(l); return acc; }, {});
+            const groups = logs.reduce((acc, l) => {
+                const month = l.date.substring(0, 7); // YYYY-MM
+                if (!acc[month]) acc[month] = {};
+                if (!acc[month][l.date]) acc[month][l.date] = [];
+                acc[month][l.date].push(l);
+                return acc;
+            }, {});
+
             const container = document.getElementById('history');
-            for (const date of Object.keys(groups)) {
-                const det = document.createElement('details'); det.className="history-group";
-                det.innerHTML = `<summary class="date-header">${date}</summary>`;
-                for (const l of groups[date]) {
-                    const img = await db.images.get(l.imageId);
-                    det.innerHTML += `<div class="log-entry"><img src="${img ? img.data : FALLBACK_IMG}" style="width:25px;height:25px;border-radius:4px"> ${l.exerciseName}: ${l.weight}kg x ${l.reps}</div>`;
+            container.innerHTML = "";
+
+            for (const month of Object.keys(groups).sort().reverse()) {
+                const monthDet = document.createElement('details');
+                monthDet.className = "month-group";
+                const [y, m] = month.split('-');
+                const monthName = new Date(y, m - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+                monthDet.innerHTML = `<summary class="month-header">${monthName}</summary>`;
+                
+                for (const date of Object.keys(groups[month]).sort().reverse()) {
+                    const dateDet = document.createElement('details');
+                    dateDet.className = "history-group";
+                    dateDet.innerHTML = `<summary class="date-header">${date}</summary>`;
+                    for (const l of groups[month][date]) {
+                        const img = await db.images.get(l.imageId);
+                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${img ? img.data : FALLBACK_IMG}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <span>${l.weight}kg x ${l.reps}</span></div>`;
+                    }
+                    monthDet.appendChild(dateDet);
                 }
-                container.appendChild(det);
+                container.appendChild(monthDet);
             }
         }
         init();
