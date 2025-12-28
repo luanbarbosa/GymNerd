@@ -21,6 +21,10 @@
         .ex-picker { max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin: 10px 0; background: #fff; }
         details.picker-group { margin-bottom: 5px; border-bottom: 1px solid #f1f5f9; }
         summary.picker-header { font-size: 0.85rem; font-weight: bold; padding: 8px; cursor: pointer; text-transform: capitalize; list-style: none; display: flex; justify-content: space-between; }
+        .picker-item { display: flex; align-items: center; gap: 10px; padding: 6px 15px; flex-wrap: wrap; }
+        .ex-inputs { display: none; gap: 5px; align-items: center; margin-left: 30px; width: 100%; margin-top: 5px; }
+        .ex-inputs input { width: 60px; padding: 5px; font-size: 0.8rem; border-radius: 4px; border: 1px solid #cbd5e1; }
+        .ex-checkbox:checked ~ .ex-inputs { display: flex; }
         summary.picker-header::after { content: '▾'; color: #94a3b8; }
         details[open] summary.picker-header::after { content: '▴'; }
 
@@ -30,7 +34,7 @@
         .workout-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; }
         .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .workout-name { font-weight: 800; font-size: 1.1rem; color: var(--primary); }
-        .exercise-tag { display: inline-block; background: #e2e8f0; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; margin-right: 5px; margin-bottom: 5px; }
+        .exercise-tag { display: block; background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 5px; border: 1px solid #e2e8f0; }
         
         .actions { display: flex; gap: 15px; }
         .edit-link { color: var(--primary); background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
@@ -69,6 +73,10 @@
         let allExercises = [];
 
         async function init() {
+            const fallback = await db.images.get(0);
+            if (!fallback) {
+                await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
+            }
             allExercises = await db.exercises.toArray();
             renderPicker();
             renderWorkouts();
@@ -90,6 +98,11 @@
                             <div class="picker-item">
                                 <input type="checkbox" value="${ex.id}" class="ex-checkbox" id="chk-${ex.id}">
                                 <label for="chk-${ex.id}" style="font-size:0.85rem; cursor:pointer">${ex.name}</label>
+                                <div class="ex-inputs">
+                                    <input type="number" placeholder="Sets" class="ex-sets" title="Sets" value="3">
+                                    <input type="number" placeholder="Reps" class="ex-reps" title="Reps">
+                                    <input type="number" step="0.5" placeholder="Kg" class="ex-weight" title="Weight">
+                                </div>
                             </div>
                         `).join('')}
                     </div>
@@ -99,7 +112,17 @@
 
         async function saveWorkout() {
             const name = document.getElementById('workoutName').value;
-            const exerciseIds = Array.from(document.querySelectorAll('.ex-checkbox:checked')).map(cb => parseInt(cb.value));
+            const exerciseIds = Array.from(document.querySelectorAll('.picker-item'))
+                .filter(item => item.querySelector('.ex-checkbox').checked)
+                .map(item => {
+                    const cb = item.querySelector('.ex-checkbox');
+                    return {
+                        id: parseInt(cb.value),
+                        sets: parseInt(item.querySelector('.ex-sets').value) || 0,
+                        reps: parseInt(item.querySelector('.ex-reps').value) || 0,
+                        weight: parseFloat(item.querySelector('.ex-weight').value) || 0
+                    };
+                });
             if (!name || exerciseIds.length === 0) return alert("Missing name or exercises");
             await db.workouts.add({ name, exerciseIds });
             resetForm();
@@ -115,7 +138,18 @@
             
             // Clear current selections
             document.querySelectorAll('.ex-checkbox').forEach(cb => {
-                cb.checked = workout.exerciseIds.includes(parseInt(cb.value));
+                const item = workout.exerciseIds.find(i => (typeof i === 'object' ? i.id : i) === parseInt(cb.value));
+                cb.checked = !!item;
+                const parent = cb.closest('.picker-item');
+                if (item && typeof item === 'object') {
+                    parent.querySelector('.ex-sets').value = item.sets || "3";
+                    parent.querySelector('.ex-reps').value = item.reps || "";
+                    parent.querySelector('.ex-weight').value = item.weight || "";
+                } else {
+                    parent.querySelector('.ex-sets').value = "3";
+                    parent.querySelector('.ex-reps').value = "";
+                    parent.querySelector('.ex-weight').value = "";
+                }
             });
 
             // UI Changes
@@ -128,7 +162,17 @@
         async function updateWorkout() {
             const id = parseInt(document.getElementById('editId').value);
             const name = document.getElementById('workoutName').value;
-            const exerciseIds = Array.from(document.querySelectorAll('.ex-checkbox:checked')).map(cb => parseInt(cb.value));
+            const exerciseIds = Array.from(document.querySelectorAll('.picker-item'))
+                .filter(item => item.querySelector('.ex-checkbox').checked)
+                .map(item => {
+                    const cb = item.querySelector('.ex-checkbox');
+                    return {
+                        id: parseInt(cb.value),
+                        sets: parseInt(item.querySelector('.ex-sets').value) || 0,
+                        reps: parseInt(item.querySelector('.ex-reps').value) || 0,
+                        weight: parseFloat(item.querySelector('.ex-weight').value) || 0
+                    };
+                });
 
             if (!name || exerciseIds.length === 0) return alert("Missing name or exercises");
 
@@ -140,7 +184,13 @@
         function resetForm() {
             document.getElementById('workoutName').value = "";
             document.getElementById('editId').value = "";
-            document.querySelectorAll('.ex-checkbox').forEach(cb => cb.checked = false);
+            document.querySelectorAll('.ex-checkbox').forEach(cb => {
+                cb.checked = false;
+                const parent = cb.closest('.picker-item');
+                parent.querySelector('.ex-sets').value = "3";
+                parent.querySelector('.ex-reps').value = "";
+                parent.querySelector('.ex-weight').value = "";
+            });
             document.getElementById('addBtn').style.display = 'block';
             document.getElementById('updateBtn').style.display = 'none';
             document.getElementById('cancelEdit').style.display = 'none';
@@ -150,9 +200,14 @@
             const workouts = await db.workouts.toArray();
             const container = document.getElementById('workout-list');
             container.innerHTML = workouts.map(w => {
-                const tags = w.exerciseIds.map(id => {
+                const tags = w.exerciseIds.map(item => {
+                    const id = typeof item === 'object' ? item.id : item;
                     const ex = allExercises.find(e => e.id === id);
-                    return ex ? `<span class="exercise-tag">${ex.name}</span>` : "";
+                    if (!ex) return "";
+                    if (typeof item === 'object') {
+                        return `<div class="exercise-tag"><strong>${ex.name}</strong>: ${item.sets} sets x ${item.reps} reps @ ${item.weight}kg</div>`;
+                    }
+                    return `<span class="exercise-tag">${ex.name}</span>`;
                 }).join('');
 
                 return `

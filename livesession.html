@@ -54,7 +54,6 @@
     <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session (WIP)</button>
 
     <script>
-        const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
         const db = new Dexie("GymAppDB");
         db.version(6).stores({ 
             exercises: '++id, name, type, imageId', 
@@ -64,6 +63,10 @@
         });
 
         async function init() {
+            const fallback = await db.images.get(0);
+            if (!fallback) {
+                await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
+            }
             const workouts = await db.workouts.toArray();
             const select = document.getElementById('workoutSelect');
             workouts.forEach(w => {
@@ -89,20 +92,23 @@
             const allExercises = await db.exercises.toArray();
             
             container.innerHTML = "";
-            for (const eid of workout.exerciseIds) {
-                const ex = allExercises.find(e => e.id === eid);
+            for (const item of workout.exerciseIds) {
+                const id = typeof item === 'object' ? item.id : item;
+                const ex = allExercises.find(e => e.id === id);
                 if (!ex) continue;
 
-                const imgRecord = await db.images.get(ex.imageId);
-                const imgSrc = imgRecord ? imgRecord.data : FALLBACK_IMG;
+                const imgRecord = await db.images.get(ex.imageId || 0);
+                const imgSrc = imgRecord ? imgRecord.data : "";
+
+                const details = typeof item === 'object' ? `<br><small>${item.sets}x${item.reps} @ ${item.weight}kg</small>` : '';
 
                 const div = document.createElement('div');
                 div.className = 'exercise-item';
                 div.innerHTML = `
-                    <img src="${imgSrc}" class="ex-thumb">
-                    <strong>${ex.name}</strong>
+                    <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
+                    <div><strong>${ex.name}</strong>${details}</div>
                     <div class="checkbox-wrapper">
-                        <input type="checkbox" class="ex-check" value="${ex.id}" checked>
+                        <input type="checkbox" class="ex-check" value="${id}" checked>
                     </div>
                 `;
                 container.appendChild(div);
