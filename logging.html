@@ -14,7 +14,7 @@
         select, input, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; width: 100%; box-sizing: border-box; }
         .exercise-row { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 50px 1fr 30px; gap: 15px; align-items: center; }
         .ex-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #f1f5f9; }
-        .input-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; grid-column: span 3; }
+        .input-pair { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; grid-column: span 3; }
         .save-session { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .save-session.success { background: var(--success); }
 
@@ -47,7 +47,6 @@
     </details>
 
     <script>
-        const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
         const db = new Dexie("GymAppDB");
         db.version(6).stores({ exercises: '++id, name, type, imageId', logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', workouts: '++id, name, exerciseIds', images: '++id' });
         
@@ -55,6 +54,10 @@
         let allEx = [];
 
         async function init() {
+            const fallback = await db.images.get(0);
+            if (!fallback) {
+                await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
+            }
             allEx = await db.exercises.toArray();
             const wks = await db.workouts.toArray();
             const p = document.getElementById('routinePicker');
@@ -68,12 +71,30 @@
             if(!id) { sheet.innerHTML=""; return; }
             const wk = await db.workouts.get(id);
             sheet.innerHTML = "";
-            for (const eid of wk.exerciseIds) {
-                const ex = allEx.find(e => e.id === eid);
-                const img = await db.images.get(ex.imageId);
+            for (const item of wk.exerciseIds) {
+                const id = typeof item === 'object' ? item.id : item;
+                const ex = allEx.find(e => e.id === id);
+                if (!ex) continue;
+                const img = await db.images.get(ex.imageId || 0);
+                
+                let sets, weight, reps;
+                if (typeof item === 'object') {
+                    if (Array.isArray(item.sets)) {
+                        sets = item.sets.length;
+                        weight = item.sets[0]?.weight || '';
+                        reps = item.sets[0]?.reps || '';
+                    } else {
+                        sets = item.sets || 3;
+                        weight = item.weight || '';
+                        reps = item.reps || '';
+                    }
+                } else {
+                    sets = 3; weight = ''; reps = '';
+                }
+
                 sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-imgid="${ex.imageId || ''}">
-                    <img src="${img ? img.data : FALLBACK_IMG}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()">✕</button>
-                    <div class="input-pair"><input type="number" step="0.5" placeholder="Kg" class="w"><input type="number" placeholder="Reps" class="r"></div></div>`;
+                    <img src="${img ? img.data : ''}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()">✕</button>
+                    <div class="input-pair"><input type="number" placeholder="Sets" class="s" value="${sets}"><input type="number" step="0.5" placeholder="Kg" class="w" value="${weight}"><input type="number" placeholder="Reps" class="r" value="${reps}"></div></div>`;
             }
             document.getElementById('saveBtn').style.display = "block";
         }
@@ -82,9 +103,10 @@
             const date = document.getElementById('logDate').value;
             const logs = [];
             document.querySelectorAll('.exercise-row').forEach(r => {
+                const sets = r.querySelector('.s').value;
                 const weight = r.querySelector('.w').value;
                 const reps = r.querySelector('.r').value;
-                if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, weight: parseFloat(weight), reps: parseInt(reps), date });
+                if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, sets: parseInt(sets) || 3, weight: parseFloat(weight), reps: parseInt(reps), date });
             });
             await db.logs.bulkAdd(logs);
             location.reload();
@@ -115,8 +137,8 @@
                     dateDet.className = "history-group";
                     dateDet.innerHTML = `<summary class="date-header">${date}</summary>`;
                     for (const l of groups[month][date]) {
-                        const img = await db.images.get(l.imageId);
-                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${img ? img.data : FALLBACK_IMG}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <span>${l.weight}kg x ${l.reps}</span></div>`;
+                        const img = await db.images.get(l.imageId || 0);
+                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${img ? img.data : ''}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <span>${l.sets || 3} sets x ${l.weight}kg x ${l.reps}</span></div>`;
                     }
                     monthDet.appendChild(dateDet);
                 }
