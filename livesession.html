@@ -6,7 +6,7 @@
     <title>GymNerd | Start Workout</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
-        :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; justify-content: flex-start; gap: 15px; padding: 10px 15px; margin: 0; }
@@ -44,7 +44,7 @@
 
         .player-card { text-align: center; }
         .player-img { width: 100%; max-height: 250px; object-fit: contain; border-radius: 16px; margin-bottom: 15px; background: #000; }
-        .current-ex-title { text-align: center; margin: 10px 0 20px 0; font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .current-ex-title { text-align: center; margin: 10px 0 20px 0; font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .timer-wrapper { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .stat-box { background: rgba(59, 130, 246, 0.1); padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3); text-align: center; width: fit-content; }
         .stat-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); font-weight: bold; }

@@ -10,7 +10,7 @@
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .header { display: flex; align-items: center; justify-content: flex-start; gap: 15px; margin-bottom: 15px; }
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; color: var(--text); font-weight: bold; }
         
@@ -47,7 +47,7 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">← Home</a><h2>Dashboard</h2></div>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Statistics</h2></div>
 
     <div id="streak-badge" class="streak-badge" style="display:none"></div>
 
