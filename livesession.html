@@ -45,8 +45,12 @@
         .stat-label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: bold; }
         .stat-value { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
 
+        .resume-card { background: #eff6ff; border: 2px solid var(--primary); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .resume-title { color: var(--primary); font-weight: bold; margin-bottom: 10px; display: block; font-size: 0.9rem; }
+
         .set-row { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 10px; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; background: #f8fafc; border: 1px solid transparent; }
         .set-row.completed { background: #dcfce7; border-color: var(--success); }
+        .set-row.skipped { background: #f1f5f9; border-color: #cbd5e1; opacity: 0.8; }
         .set-row.active { background: #dbeafe; border-color: var(--primary); }
         .set-row input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-size: 0.9rem; box-sizing: border-box; }
         .set-label { font-weight: bold; color: #64748b; font-size: 0.8rem; }
@@ -63,6 +67,14 @@
     <div id="setupView">
         <div class="header"><a href="index.html" class="back-btn">←</a><h2>Start Workout</h2></div>
         
+        <div id="resumeCard" class="resume-card hidden">
+            <span class="resume-title">🏃 Unfinished session found</span>
+            <div style="display:flex; gap:10px">
+                <button onclick="resumeSession()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2">Continue</button>
+                <button onclick="discardSession()" style="background:white; color:#ef4444; border:1px solid #fee2e2; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:1">Discard</button>
+            </div>
+        </div>
+
         <div class="card">
             <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Workout</label>
             <select id="workoutSelect" onchange="loadExercises()">
@@ -115,6 +127,42 @@
                 opt.textContent = w.name;
                 select.appendChild(opt);
             });
+            checkActiveSession();
+        }
+
+        function checkActiveSession() {
+            const saved = localStorage.getItem('gymFlow_activeSession');
+            if (saved) {
+                document.getElementById('resumeCard').classList.remove('hidden');
+            }
+        }
+
+        function saveSessionState() {
+            const state = { sessionSets, currentIdx, currentWorkoutId };
+            localStorage.setItem('gymFlow_activeSession', JSON.stringify(state));
+        }
+
+        function clearSessionState() {
+            localStorage.removeItem('gymFlow_activeSession');
+        }
+
+        function resumeSession() {
+            const saved = localStorage.getItem('gymFlow_activeSession');
+            if (!saved) return;
+            const state = JSON.parse(saved);
+            sessionSets = state.sessionSets;
+            currentIdx = state.currentIdx;
+            currentWorkoutId = state.currentWorkoutId;
+            document.getElementById('setupView').classList.add('hidden');
+            document.getElementById('playerView').classList.remove('hidden');
+            renderSet();
+        }
+
+        function discardSession() {
+            if (confirm("Discard unfinished workout?")) {
+                clearSessionState();
+                document.getElementById('resumeCard').classList.add('hidden');
+            }
         }
 
         async function loadExercises() {
@@ -183,7 +231,8 @@
                             totalSets: workoutEx.sets.length,
                             reps: s.reps,
                             weight: s.weight,
-                            completed: false
+                            completed: false,
+                            skipped: false
                         });
                     });
                 } else {
@@ -200,7 +249,8 @@
                             totalSets: setsCount,
                             reps,
                             weight,
-                            completed: false
+                            completed: false,
+                            skipped: false
                         });
                     }
                 }
@@ -212,6 +262,7 @@
         }
 
         async function renderSet() {
+            saveSessionState();
             const currentSet = sessionSets[currentIdx];
             document.getElementById('currentExName').innerText = currentSet.name;
             
@@ -231,10 +282,11 @@
                 const s = sessionSets[i];
                 const isActive = i === currentIdx;
                 const isCompleted = s.completed;
+                const isSkipped = s.skipped;
                 const row = document.createElement('div');
-                row.className = `set-row ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}`;
+                row.className = `set-row ${isSkipped ? 'skipped' : (isCompleted ? 'completed' : '')} ${isActive ? 'active' : ''}`;
                 row.innerHTML = `
-                    <div class="set-label">${isCompleted ? '✅' : 'S' + s.setNum}</div>
+                    <div class="set-label">${isSkipped ? '✔️' : (isCompleted ? '✅' : 'S' + s.setNum)}</div>
                     <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="Reps">
                     <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="Kg">
                 `;
@@ -253,6 +305,7 @@
 
         function updateSetData(idx, field, value) {
             sessionSets[idx][field] = field === 'weight' ? parseFloat(value) || 0 : parseInt(value) || 0;
+            saveSessionState();
         }
 
         function nextSet() {
@@ -266,11 +319,19 @@
         function abandonExercise() {
             if (!confirm("Skip the rest of this exercise?")) return;
             const currentExId = sessionSets[currentIdx].exId;
+            
+            // Mark all remaining sets of this exercise as skipped
+            sessionSets.forEach(s => {
+                if (s.exId === currentExId && !s.completed) {
+                    s.skipped = true;
+                }
+            });
+
             const nextExIdx = sessionSets.findIndex((s, i) => i > currentIdx && s.exId !== currentExId);
             if (nextExIdx !== -1) {
                 currentIdx = nextExIdx;
-                renderSet();
             }
+            renderSet();
         }
 
         function prevSet() {
@@ -319,6 +380,7 @@
             }
 
             await db.logs.bulkAdd(logs);
+            clearSessionState();
             alert("Workout saved!");
             location.href = "statistics.html";
         }
