@@ -40,6 +40,9 @@
         .workout-name { font-weight: 800; font-size: 1.1rem; color: var(--primary); }
         .exercise-tag { display: block; background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 5px; border: 1px solid #e2e8f0; }
         
+        .set-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .set-pill { background: white; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: #64748b; font-weight: 600; }
+        
         .actions { display: flex; gap: 15px; }
         .edit-link { color: var(--primary); background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
         .del-link { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
@@ -177,6 +180,9 @@
             document.getElementById('workoutName').value = workout.name;
             document.getElementById('editId').value = id;
             
+            // Ensure all exercise groups are expanded when editing
+            document.querySelectorAll('.picker-group').forEach(det => det.open = true);
+
             document.querySelectorAll('.ex-checkbox').forEach(cb => {
                 const item = workout.exerciseIds.find(i => (typeof i === 'object' ? i.id : i) === parseInt(cb.value));
                 cb.checked = !!item;
@@ -232,6 +238,8 @@
                 const container = document.getElementById(`sets-container-${cb.value}`);
                 if (container) container.innerHTML = "";
             });
+            // Collapse all exercise groups for the "new workout" state
+            document.querySelectorAll('.picker-group').forEach(det => det.open = false);
             document.getElementById('addBtn').style.display = 'block';
             document.getElementById('updateBtn').style.display = 'none';
             document.getElementById('cancelEdit').style.display = 'none';
@@ -245,13 +253,18 @@
                     const id = typeof item === 'object' ? item.id : item;
                     const ex = allExercises.find(e => e.id === id);
                     if (!ex) return "";
-                    if (typeof item === 'object') {
-                        const setsInfo = Array.isArray(item.sets) 
-                            ? `${item.sets.length} sets` 
-                            : `${item.sets} sets x ${item.reps} reps @ ${item.weight}kg`;
-                        return `<div class="exercise-tag"><strong>${ex.name}</strong>: ${setsInfo}</div>`;
+
+                    let setsHtml = '';
+                    if (typeof item === 'object' && Array.isArray(item.sets)) {
+                        setsHtml = `<div class="set-pills">` + 
+                            item.sets.map(s => `<span class="set-pill">${s.reps} × ${s.weight}kg</span>`).join('') + 
+                            `</div>`;
+                    } else if (typeof item === 'object') {
+                        // Fallback for old structure
+                        setsHtml = `<div class="set-pills"><span class="set-pill">${item.sets} sets × ${item.reps} × ${item.weight}kg</span></div>`;
                     }
-                    return `<span class="exercise-tag">${ex.name}</span>`;
+
+                    return `<div class="exercise-tag"><strong>${ex.name}</strong>${setsHtml}</div>`;
                 }).join('');
 
                 return `
