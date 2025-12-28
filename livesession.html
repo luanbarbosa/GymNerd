@@ -6,16 +6,17 @@
     <title>GymNerd | Start Workout</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
+        :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .header { display: flex; align-items: center; justify-content: flex-start; gap: 15px; padding: 10px 15px; margin: 0; }
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
-        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); width: auto !important; padding: 0 !important; background: none !important; border: none !important; cursor: pointer; display: flex; align-items: center; }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        .view-content { padding: 0 15px 20px 15px; }
         select, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         
-        .exercise-list { margin-top: 20px; }
+        .exercise-list { margin-top: 10px; }
         .exercise-item { 
             background: var(--card); 
             padding: 15px; 
@@ -43,10 +44,13 @@
 
         .player-card { text-align: center; }
         .player-img { width: 100%; max-height: 250px; object-fit: contain; border-radius: 16px; margin-bottom: 15px; background: #000; }
-        .set-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
-        .stat-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; }
+        .current-ex-title { text-align: center; margin: 10px 0 20px 0; font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .timer-wrapper { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: rgba(59, 130, 246, 0.1); padding: 10px 20px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3); text-align: center; width: fit-content; }
         .stat-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); font-weight: bold; }
-        .stat-value { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+        .stat-value { font-size: 1.2rem; font-weight: 800; color: var(--secondary); }
+        .reset-timer-btn { background: rgba(59, 130, 246, 0.1) !important; border: 1px solid rgba(59, 130, 246, 0.3) !important; padding: 12px !important; width: auto !important; color: var(--secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 12px; transition: all 0.2s; }
+        .reset-timer-btn:active { background: rgba(255,255,255,0.1) !important; }
 
         .resume-card { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 16px; margin-bottom: 20px; }
         .resume-title { color: var(--primary); font-weight: bold; margin-bottom: 10px; display: block; font-size: 0.9rem; }
@@ -71,37 +75,51 @@
     <div id="setupView">
         <div class="header"><a href="index.html" class="back-btn">←</a><h2>Start Workout</h2></div>
         
-        <div id="resumeCard" class="resume-card hidden">
-            <span class="resume-title">🏃 Unfinished session found</span>
-            <div style="display:flex; gap:10px">
-                <button onclick="resumeSession()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2">Continue</button>
-                <button onclick="discardSession()" style="background:white; color:#ef4444; border:1px solid #fee2e2; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:1">Discard</button>
+        <div class="view-content">
+            <div id="resumeCard" class="resume-card" style="display: none;">
+                <span class="resume-title">🏃 Unfinished session found</span>
+                <div style="display:flex; gap:10px">
+                    <button onclick="resumeSession()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2">Continue</button>
+                    <button onclick="discardSession()" style="background:white; color:#ef4444; border:1px solid #fee2e2; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:1">Discard</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Workout</label>
+                <select id="workoutSelect" onchange="loadExercises()">
+                    <option value="">-- Choose Workout --</option>
+                </select>
+                <div id="exerciseContainer" class="exercise-list"></div>
+                <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session</button>
             </div>
         </div>
-
-        <div class="card">
-            <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Workout</label>
-            <select id="workoutSelect" onchange="loadExercises()">
-                <option value="">-- Choose Workout --</option>
-            </select>
-        </div>
-
-        <div id="exerciseContainer" class="exercise-list"></div>
-        
-        <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session</button>
     </div>
 
-    <div id="playerView" class="hidden">
-        <div class="header"><button class="back-btn" style="background:none; border:none; padding:0; cursor:pointer" onclick="location.reload()">←</button><h2 id="currentExName">Exercise</h2></div>
-        <div class="card player-card">
-            <img id="playerImg" src="" class="player-img">
-            <div id="setsContainer"></div>
-            <div class="player-controls">
-                <button class="nav-btn" onclick="prevSet()">Prev</button>
-                <button id="nextBtn" class="start-btn" style="display:block; margin:0" onclick="nextSet()">Next Set</button>
+    <div id="playerView" style="display: none;">
+        <div class="header">
+            <button class="back-btn" onclick="location.reload()">←</button>
+            <h2>Exercise</h2>
+        </div>
+        <div class="view-content">
+            <div class="timer-wrapper">
+                <div class="stat-box">
+                    <div id="setTimer" class="stat-value">00:00</div>
+                </div>
+                <button class="reset-timer-btn" onclick="startTimer()" title="Reset Timer">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                </button>
             </div>
-            <button id="skipBtn" class="skip-btn" onclick="abandonExercise()">⏭ Skip Exercise</button>
-            <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Workout</button>
+            <h1 id="currentExName" class="current-ex-title">Exercise</h1>
+            <div class="card player-card">
+                <img id="playerImg" src="" class="player-img">
+                <div id="setsContainer"></div>
+                <div class="player-controls">
+                    <button class="nav-btn" onclick="prevSet()">Prev</button>
+                    <button id="nextBtn" class="start-btn" style="display:block; margin:0" onclick="nextSet()">Next Set</button>
+                </div>
+                <button id="skipBtn" class="skip-btn" onclick="abandonExercise()">⏭ Skip Exercise</button>
+                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Workout</button>
+            </div>
         </div>
     </div>
 
@@ -117,6 +135,32 @@
         let sessionSets = [];
         let currentIdx = 0;
         let currentWorkoutId = null;
+        let timerInterval = null;
+        let seconds = 0;
+
+        function formatTime(s) {
+            const minutes = Math.floor(s / 60).toString().padStart(2, '0');
+            const seconds = (s % 60).toString().padStart(2, '0');
+            return `${minutes}:${seconds}`;
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function startTimer() {
+            stopTimer();
+            seconds = 0;
+            const timerEl = document.getElementById('setTimer');
+            if (timerEl) timerEl.innerText = formatTime(seconds);
+            timerInterval = setInterval(() => {
+                seconds++;
+                if (timerEl) timerEl.innerText = formatTime(seconds);
+            }, 1000);
+        }
 
         async function init() {
             const fallback = await db.images.get(0);
@@ -137,7 +181,7 @@
         function checkActiveSession() {
             const saved = localStorage.getItem('gymNerd_activeSession');
             if (saved) {
-                document.getElementById('resumeCard').classList.remove('hidden');
+                document.getElementById('resumeCard').style.display = 'block';
             }
         }
 
@@ -157,15 +201,15 @@
             sessionSets = state.sessionSets;
             currentIdx = state.currentIdx;
             currentWorkoutId = state.currentWorkoutId;
-            document.getElementById('setupView').classList.add('hidden');
-            document.getElementById('playerView').classList.remove('hidden');
+            document.getElementById('setupView').style.display = 'none';
+            document.getElementById('playerView').style.display = 'block';
             renderSet();
         }
 
         function discardSession() {
             if (confirm("Discard unfinished workout?")) {
                 clearSessionState();
-                document.getElementById('resumeCard').classList.add('hidden');
+                document.getElementById('resumeCard').style.display = 'none';
             }
         }
 
@@ -260,13 +304,14 @@
                 }
             }
 
-            document.getElementById('setupView').classList.add('hidden');
-            document.getElementById('playerView').classList.remove('hidden');
+            document.getElementById('setupView').style.display = 'none';
+            document.getElementById('playerView').style.display = 'block';
             renderSet();
         }
 
         async function renderSet() {
             saveSessionState();
+            startTimer();
             const currentSet = sessionSets[currentIdx];
             document.getElementById('currentExName').innerText = currentSet.name;
             
