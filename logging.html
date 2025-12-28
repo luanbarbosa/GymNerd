@@ -76,9 +76,22 @@
                 const ex = allEx.find(e => e.id === id);
                 if (!ex) continue;
                 const img = await db.images.get(ex.imageId || 0);
-                const sets = typeof item === 'object' ? (item.sets || 3) : 3;
-                const weight = typeof item === 'object' ? item.weight : '';
-                const reps = typeof item === 'object' ? item.reps : '';
+                
+                let sets, weight, reps;
+                if (typeof item === 'object') {
+                    if (Array.isArray(item.sets)) {
+                        sets = item.sets.length;
+                        weight = item.sets[0]?.weight || '';
+                        reps = item.sets[0]?.reps || '';
+                    } else {
+                        sets = item.sets || 3;
+                        weight = item.weight || '';
+                        reps = item.reps || '';
+                    }
+                } else {
+                    sets = 3; weight = ''; reps = '';
+                }
+
                 sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-imgid="${ex.imageId || ''}">
                     <img src="${img ? img.data : ''}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()">✕</button>
                     <div class="input-pair"><input type="number" placeholder="Sets" class="s" value="${sets}"><input type="number" step="0.5" placeholder="Kg" class="w" value="${weight}"><input type="number" placeholder="Reps" class="r" value="${reps}"></div></div>`;

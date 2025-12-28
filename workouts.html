@@ -23,10 +23,14 @@
         summary.picker-header { font-size: 0.85rem; font-weight: bold; padding: 8px; cursor: pointer; text-transform: capitalize; list-style: none; display: flex; justify-content: space-between; }
         .picker-item { display: flex; align-items: center; gap: 10px; padding: 6px 15px; flex-wrap: wrap; }
         .ex-inputs { display: none; gap: 5px; align-items: center; margin-left: 30px; width: 100%; margin-top: 5px; }
-        .ex-inputs input { width: 60px; padding: 5px; font-size: 0.8rem; border-radius: 4px; border: 1px solid #cbd5e1; }
-        .ex-checkbox:checked ~ .ex-inputs { display: flex; }
+        .ex-checkbox:checked ~ .ex-inputs { display: flex; flex-direction: column; align-items: flex-start; }
         summary.picker-header::after { content: '▾'; color: #94a3b8; }
         details[open] summary.picker-header::after { content: '▴'; }
+
+        .set-row-input { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+        .set-row-input input { width: 60px; padding: 5px; font-size: 0.8rem; border-radius: 4px; border: 1px solid #cbd5e1; }
+        .add-set-btn { background: #f1f5f9; border: 1px dashed #cbd5e1; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; color: #64748b; margin-bottom: 10px; }
+        .remove-set-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1rem; padding: 0 5px; }
 
         .picker-item { display: flex; align-items: center; gap: 10px; padding: 6px 15px; }
         .picker-item input[type="checkbox"] { width: auto; cursor: pointer; }
@@ -96,12 +100,11 @@
                     <div style="padding-bottom:10px">
                         ${groups[type].map(ex => `
                             <div class="picker-item">
-                                <input type="checkbox" value="${ex.id}" class="ex-checkbox" id="chk-${ex.id}">
+                                <input type="checkbox" value="${ex.id}" class="ex-checkbox" id="chk-${ex.id}" onchange="handleCheckboxChange(${ex.id}, this.checked)">
                                 <label for="chk-${ex.id}" style="font-size:0.85rem; cursor:pointer">${ex.name}</label>
                                 <div class="ex-inputs">
-                                    <input type="number" placeholder="Sets" class="ex-sets" title="Sets" value="3">
-                                    <input type="number" placeholder="Reps" class="ex-reps" title="Reps">
-                                    <input type="number" step="0.5" placeholder="Kg" class="ex-weight" title="Weight">
+                                    <div class="sets-container" id="sets-container-${ex.id}"></div>
+                                    <button type="button" class="add-set-btn" onclick="addSetRow(${ex.id})">+ Add Set</button>
                                 </div>
                             </div>
                         `).join('')}
@@ -110,17 +113,55 @@
             `).join('');
         }
 
+        function handleCheckboxChange(exId, isChecked) {
+            if (isChecked) {
+                const container = document.getElementById(`sets-container-${exId}`);
+                if (container && container.children.length === 0) {
+                    addSetRow(exId);
+                }
+            }
+        }
+
+        function addSetRow(exId, reps = "", weight = "") {
+            const container = document.getElementById(`sets-container-${exId}`);
+            
+            // Use previously set value if available and not provided
+            if (reps === "" && weight === "" && container.lastElementChild) {
+                reps = container.lastElementChild.querySelector('.set-reps').value;
+                weight = container.lastElementChild.querySelector('.set-weight').value;
+            }
+
+            const div = document.createElement('div');
+            div.className = 'set-row-input';
+            div.innerHTML = `
+                <span style="font-size:0.7rem; color:#64748b; width:20px">S${container.children.length + 1}</span>
+                <input type="number" placeholder="Reps" class="set-reps" value="${reps}">
+                <input type="number" step="0.5" placeholder="Kg" class="set-weight" value="${weight}">
+                <button type="button" class="remove-set-btn" onclick="this.parentElement.remove(); updateSetLabels(${exId})">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function updateSetLabels(exId) {
+            const container = document.getElementById(`sets-container-${exId}`);
+            Array.from(container.children).forEach((row, i) => {
+                row.querySelector('span').innerText = `S${i + 1}`;
+            });
+        }
+
         async function saveWorkout() {
             const name = document.getElementById('workoutName').value;
             const exerciseIds = Array.from(document.querySelectorAll('.picker-item'))
                 .filter(item => item.querySelector('.ex-checkbox').checked)
                 .map(item => {
                     const cb = item.querySelector('.ex-checkbox');
+                    const sets = Array.from(item.querySelectorAll('.set-row-input')).map(row => ({
+                        reps: parseInt(row.querySelector('.set-reps').value) || 0,
+                        weight: parseFloat(row.querySelector('.set-weight').value) || 0
+                    }));
                     return {
                         id: parseInt(cb.value),
-                        sets: parseInt(item.querySelector('.ex-sets').value) || 0,
-                        reps: parseInt(item.querySelector('.ex-reps').value) || 0,
-                        weight: parseFloat(item.querySelector('.ex-weight').value) || 0
+                        sets: sets
                     };
                 });
             if (!name || exerciseIds.length === 0) return alert("Missing name or exercises");
@@ -136,19 +177,19 @@
             document.getElementById('workoutName').value = workout.name;
             document.getElementById('editId').value = id;
             
-            // Clear current selections
             document.querySelectorAll('.ex-checkbox').forEach(cb => {
                 const item = workout.exerciseIds.find(i => (typeof i === 'object' ? i.id : i) === parseInt(cb.value));
                 cb.checked = !!item;
-                const parent = cb.closest('.picker-item');
+                const container = document.getElementById(`sets-container-${cb.value}`);
+                if (container) container.innerHTML = "";
+                
                 if (item && typeof item === 'object') {
-                    parent.querySelector('.ex-sets').value = item.sets || "3";
-                    parent.querySelector('.ex-reps').value = item.reps || "";
-                    parent.querySelector('.ex-weight').value = item.weight || "";
-                } else {
-                    parent.querySelector('.ex-sets').value = "3";
-                    parent.querySelector('.ex-reps').value = "";
-                    parent.querySelector('.ex-weight').value = "";
+                    if (Array.isArray(item.sets)) {
+                        item.sets.forEach(s => addSetRow(item.id, s.reps, s.weight));
+                    } else {
+                        // Migration/Fallback for old structure
+                        for(let i=0; i<(item.sets||3); i++) addSetRow(item.id, item.reps, item.weight);
+                    }
                 }
             });
 
@@ -166,11 +207,13 @@
                 .filter(item => item.querySelector('.ex-checkbox').checked)
                 .map(item => {
                     const cb = item.querySelector('.ex-checkbox');
+                    const sets = Array.from(item.querySelectorAll('.set-row-input')).map(row => ({
+                        reps: parseInt(row.querySelector('.set-reps').value) || 0,
+                        weight: parseFloat(row.querySelector('.set-weight').value) || 0
+                    }));
                     return {
                         id: parseInt(cb.value),
-                        sets: parseInt(item.querySelector('.ex-sets').value) || 0,
-                        reps: parseInt(item.querySelector('.ex-reps').value) || 0,
-                        weight: parseFloat(item.querySelector('.ex-weight').value) || 0
+                        sets: sets
                     };
                 });
 
@@ -186,10 +229,8 @@
             document.getElementById('editId').value = "";
             document.querySelectorAll('.ex-checkbox').forEach(cb => {
                 cb.checked = false;
-                const parent = cb.closest('.picker-item');
-                parent.querySelector('.ex-sets').value = "3";
-                parent.querySelector('.ex-reps').value = "";
-                parent.querySelector('.ex-weight').value = "";
+                const container = document.getElementById(`sets-container-${cb.value}`);
+                if (container) container.innerHTML = "";
             });
             document.getElementById('addBtn').style.display = 'block';
             document.getElementById('updateBtn').style.display = 'none';
@@ -205,7 +246,10 @@
                     const ex = allExercises.find(e => e.id === id);
                     if (!ex) return "";
                     if (typeof item === 'object') {
-                        return `<div class="exercise-tag"><strong>${ex.name}</strong>: ${item.sets} sets x ${item.reps} reps @ ${item.weight}kg</div>`;
+                        const setsInfo = Array.isArray(item.sets) 
+                            ? `${item.sets.length} sets` 
+                            : `${item.sets} sets x ${item.reps} reps @ ${item.weight}kg`;
+                        return `<div class="exercise-tag"><strong>${ex.name}</strong>: ${setsInfo}</div>`;
                     }
                     return `<span class="exercise-tag">${ex.name}</span>`;
                 }).join('');

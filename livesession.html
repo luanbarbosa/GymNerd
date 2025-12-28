@@ -169,21 +169,36 @@
                 const ex = allExercises.find(e => e.id === exId);
                 const workoutEx = workout.exerciseIds.find(we => (typeof we === 'object' ? we.id : we) === exId);
                 
-                const sets = typeof workoutEx === 'object' ? (workoutEx.sets || 3) : 3;
-                const reps = typeof workoutEx === 'object' ? (workoutEx.reps || 0) : 0;
-                const weight = typeof workoutEx === 'object' ? (workoutEx.weight || 0) : 0;
-
-                for (let i = 1; i <= sets; i++) {
-                    sessionSets.push({
-                        exId,
-                        name: ex.name,
-                        imageId: ex.imageId,
-                        setNum: i,
-                        totalSets: sets,
-                        reps,
-                        weight,
-                        completed: false
+                if (workoutEx && Array.isArray(workoutEx.sets)) {
+                    workoutEx.sets.forEach((s, i) => {
+                        sessionSets.push({
+                            exId,
+                            name: ex.name,
+                            imageId: ex.imageId,
+                            setNum: i + 1,
+                            totalSets: workoutEx.sets.length,
+                            reps: s.reps,
+                            weight: s.weight,
+                            completed: false
+                        });
                     });
+                } else {
+                    // Fallback for old structure
+                    const setsCount = typeof workoutEx === 'object' ? (workoutEx.sets || 3) : 3;
+                    const reps = typeof workoutEx === 'object' ? (workoutEx.reps || 0) : 0;
+                    const weight = typeof workoutEx === 'object' ? (workoutEx.weight || 0) : 0;
+                    for (let i = 1; i <= setsCount; i++) {
+                        sessionSets.push({
+                            exId,
+                            name: ex.name,
+                            imageId: ex.imageId,
+                            setNum: i,
+                            totalSets: setsCount,
+                            reps,
+                            weight,
+                            completed: false
+                        });
+                    }
                 }
             }
 
