@@ -6,7 +6,7 @@
     <title>GymNerd | Exercises</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
@@ -20,8 +20,8 @@
         button.update { background: var(--success); color: white; border: none; font-weight: bold; cursor: pointer; display: none; }
         details { background: transparent; margin-bottom: 15px; }
         summary { font-weight: 800; font-size: 1.1rem; cursor: pointer; padding: 10px 0; text-transform: capitalize; display: flex; justify-content: space-between; align-items: center; list-style: none; border-bottom: 2px solid rgba(255,255,255,0.05); margin-bottom: 10px; color: var(--text-dim); }
-        summary::after { content: '▾'; }
-        details[open] summary::after { content: '▴'; }
+        summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
+        details[open] summary .chevron { transform: rotate(180deg); }
         .ex-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--card); margin-bottom: 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
         .ex-info { display: flex; align-items: center; gap: 12px; }
         .ex-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #000; }
@@ -75,7 +75,7 @@
             
             for (const type of Object.keys(groups).sort()) {
                 const det = document.createElement('details'); det.open = true;
-                const sum = document.createElement('summary'); sum.innerHTML = `<span>${type}</span>`;
+                const sum = document.createElement('summary'); sum.innerHTML = `<span>${type}</span><svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
                 det.appendChild(sum);
                 
                 for (const ex of groups[type]) {

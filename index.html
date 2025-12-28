@@ -43,8 +43,9 @@
         .nav-card:active { transform: scale(0.97); }
         
         details { background: var(--card); border-radius: 16px; margin-top: 40px; border: 1px solid rgba(255,255,255,0.05); }
-        summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; color: var(--text-dim); }
-        summary::after { content: '▼'; font-size: 0.8rem; }
+        summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
+        summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
+        details[open] summary .chevron { transform: rotate(180deg); }
         .content-box { padding: 0 20px 20px 20px; border-top: 1px solid rgba(255,255,255,0.05); }
         
         .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
@@ -74,7 +75,7 @@
         </div>
 
         <details>
-            <summary>⚙️ Data Management</summary>
+            <summary><span>⚙️ Data Management</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
             <div class="content-box">
                 <h4>Backup</h4>
                 <button class="sync-btn export-btn" onclick="exportData()">📤 Export 4 JSON Files</button>
@@ -91,8 +92,8 @@
 
     <script>
         const db = new Dexie("GymAppDB");
-        db.version(6).stores({ 
-            exercises: '++id, name, type, imageId', 
+        db.version(7).stores({ 
+            exercises: '++id, name, namePT, type, imageId', 
             logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
             workouts: '++id, name, exerciseIds', 
             images: '++id' 

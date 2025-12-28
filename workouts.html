@@ -22,12 +22,12 @@
 
         .ex-picker { max-height: 300px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; margin: 10px 0; background: rgba(0,0,0,0.2); }
         details.picker-group { margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        summary.picker-header { font-size: 0.85rem; font-weight: bold; padding: 12px; cursor: pointer; text-transform: capitalize; list-style: none; display: flex; justify-content: space-between; color: var(--text-dim); }
+        summary.picker-header { font-size: 0.85rem; font-weight: bold; padding: 12px; cursor: pointer; text-transform: capitalize; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
         .picker-item { display: flex; align-items: center; gap: 10px; padding: 6px 15px; flex-wrap: wrap; }
         .ex-inputs { display: none; gap: 5px; align-items: center; margin-left: 30px; width: 100%; margin-top: 5px; }
         .ex-checkbox:checked ~ .ex-inputs { display: flex; flex-direction: column; align-items: flex-start; }
-        summary.picker-header::after { content: '▾'; }
-        details[open] summary.picker-header::after { content: '▴'; }
+        summary.picker-header .chevron { transition: transform 0.2s; color: var(--text-dim); }
+        details[open] summary.picker-header .chevron { transform: rotate(180deg); }
 
         .set-row-input { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
         .set-row-input input { width: 70px; padding: 8px; font-size: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #000; }
@@ -44,10 +44,10 @@
         .set-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
         .set-pill { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; color: var(--text-dim); font-weight: 600; }
         
-        .actions { display: flex; gap: 15px; }
-        .edit-link { color: var(--primary); background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
-        .del-link { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
-    
+        .actions { display: flex; gap: 12px; }
+        .edit-btn { color: var(--primary); background: rgba(255,255,255,0.05); border: none; cursor: pointer; display: flex; align-items: center; padding: 10px; border-radius: 10px; transition: background 0.2s; }
+        .del-btn { color: var(--danger); background: rgba(255,255,255,0.05); border: none; cursor: pointer; display: flex; align-items: center; padding: 10px; border-radius: 10px; transition: background 0.2s; }
+
         .section-title { margin-top: 40px; margin-bottom: 20px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; padding-left: 5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; }
     </style>
 </head>
@@ -74,8 +74,8 @@
 
     <script>
         const db = new Dexie("GymAppDB");
-        db.version(6).stores({ 
-            exercises: '++id, name, type, imageId',
+        db.version(7).stores({ 
+            exercises: '++id, name, namePT, type, imageId',
             logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId',
             workouts: '++id, name, exerciseIds',
             images: '++id' 
@@ -103,7 +103,7 @@
 
             container.innerHTML = Object.keys(groups).sort().map(type => `
                 <details class="picker-group">
-                    <summary class="picker-header">${type}</summary>
+                    <summary class="picker-header"><span>${type}</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
                     <div style="padding-bottom:10px">
                         ${groups[type].map(ex => `
                             <div class="picker-item">
@@ -276,8 +276,12 @@
                         <div class="workout-header">
                             <span class="workout-name">${w.name}</span>
                             <div class="actions">
-                                <button class="edit-link" onclick="prepareEdit(${w.id})">Edit</button>
-                                <button class="del-link" onclick="deleteWorkout(${w.id})">Delete</button>
+                                <button class="edit-btn" onclick="prepareEdit(${w.id})" title="Edit">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                </button>
+                                <button class="del-btn" onclick="deleteWorkout(${w.id})" title="Delete">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
                             </div>
                         </div>
                         <div>${tags}</div>
