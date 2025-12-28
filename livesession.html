@@ -100,6 +100,7 @@
 
         let sessionSets = [];
         let currentIdx = 0;
+        let currentWorkoutId = null;
 
         async function init() {
             const fallback = await db.images.get(0);
@@ -139,7 +140,9 @@
                 const imgRecord = await db.images.get(ex.imageId || 0);
                 const imgSrc = imgRecord ? imgRecord.data : "";
 
-                const details = typeof item === 'object' ? `<br><small>${item.sets}x${item.reps} @ ${item.weight}kg</small>` : '';
+                const details = typeof item === 'object' 
+                    ? `<br><small>${Array.isArray(item.sets) ? item.sets.length : item.sets} sets${!Array.isArray(item.sets) ? ` x ${item.reps} reps @ ${item.weight}kg` : ''}</small>` 
+                    : '';
 
                 const div = document.createElement('div');
                 div.className = 'exercise-item';
@@ -157,6 +160,7 @@
 
         async function startSession() {
             const workoutId = parseInt(document.getElementById('workoutSelect').value);
+            currentWorkoutId = workoutId;
             const workout = await db.workouts.get(workoutId);
             const allExercises = await db.exercises.toArray();
             const selectedChecks = Array.from(document.querySelectorAll('.ex-check:checked'));
@@ -278,6 +282,26 @@
 
         async function finishSession() {
             const date = new Date().toISOString().split('T')[0];
+
+            // Update the workout template with the values used in this session
+            if (currentWorkoutId) {
+                const workout = await db.workouts.get(currentWorkoutId);
+                if (workout) {
+                    workout.exerciseIds = workout.exerciseIds.map(item => {
+                        const exId = typeof item === 'object' ? item.id : item;
+                        const sessionExSets = sessionSets.filter(s => s.exId === exId);
+                        if (sessionExSets.length > 0) {
+                            return {
+                                id: exId,
+                                sets: sessionExSets.map(s => ({ reps: s.reps, weight: s.weight }))
+                            };
+                        }
+                        return item;
+                    });
+                    await db.workouts.put(workout);
+                }
+            }
+
             const logs = [];
             const groups = sessionSets.reduce((acc, s) => {
                 if (!s.completed) return acc; // Only log completed sets
