@@ -3,45 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GymFlow | Stats</title>
+    <title>GymNerd | Stats</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #2563eb; --success: #22c55e; --bg: #f1f5f9; --text: #1e293b; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; color: var(--text); font-weight: bold; }
         
         .streak-badge { 
-            background: white; 
+            background: var(--card); 
             padding: 15px; 
-            border-radius: 12px; 
+            border-radius: 16px; 
             text-align: center; 
             font-weight: 800; 
             margin: 0 auto 20px auto; 
             max-width: 320px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .calendar-card { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin: 0 auto 20px auto; max-width: 320px; }
+        .calendar-card { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin: 0 auto 20px auto; max-width: 320px; }
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .calendar-header h3 { font-size: 0.9rem; margin: 0; text-transform: capitalize; }
-        .nav-btn { background: #f1f5f9; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .nav-btn { background: rgba(255,255,255,0.05); border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; color: white; }
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .day-name { font-size: 0.6rem; text-align: center; color: #64748b; font-weight: bold; padding-bottom: 4px; }
+        .day-name { font-size: 0.6rem; text-align: center; color: var(--text-dim); font-weight: bold; padding-bottom: 4px; }
         .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.7rem; }
         
-        .past-no-workout { background: #fee2e2; color: #991b1b; }
+        .past-no-workout { background: rgba(239, 68, 68, 0.05); color: #ef4444; }
         .has-workout { background: var(--success); color: white; font-weight: bold; }
-        .future-day { background: #f8fafc; color: #94a3b8; border: 1px solid #edf2f7; }
+        .future-day { background: rgba(255,255,255,0.02); color: #475569; border: 1px solid rgba(255,255,255,0.05); }
         .today { border: 1.5px solid var(--primary); }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .chart-box { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .chart-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #f1f5f9; }
-        .chart-thumb { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; background: #f1f5f9; }
+        .chart-box { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .chart-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .chart-thumb { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: #000; }
         .canvas-wrapper { height: 160px; }
     </style>
 </head>

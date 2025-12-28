@@ -3,62 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GymFlow | Start Workout</title>
+    <title>GymNerd | Start Workout</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
-        :root { --primary: #2563eb; --success: #16a34a; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        select, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        select, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         
         .exercise-list { margin-top: 20px; }
         .exercise-item { 
-            background: white; 
+            background: var(--card); 
             padding: 15px; 
             border-radius: 12px; 
             margin-bottom: 10px; 
-            border: 1px solid #e2e8f0; 
+            border: 1px solid rgba(255,255,255,0.05); 
             display: flex; 
             align-items: center; 
             gap: 15px; 
         }
-        .ex-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #f1f5f9; }
+        .ex-thumb { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: #000; }
         .checkbox-wrapper { margin-left: auto; }
-        input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+        input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); }
 
         .start-btn { 
-            background: var(--primary); 
+            background: var(--primary-grad); 
             color: white; 
             border: none; 
             font-weight: bold; 
             cursor: pointer; 
             margin-top: 20px; 
             display: none;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
         }
 
         .player-card { text-align: center; }
-        .player-img { width: 100%; max-height: 250px; object-fit: contain; border-radius: 12px; margin-bottom: 15px; background: #f1f5f9; }
+        .player-img { width: 100%; max-height: 250px; object-fit: contain; border-radius: 16px; margin-bottom: 15px; background: #000; }
         .set-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
-        .stat-box { background: #f1f5f9; padding: 15px; border-radius: 8px; }
-        .stat-label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: bold; }
+        .stat-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; }
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); font-weight: bold; }
         .stat-value { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
 
-        .resume-card { background: #eff6ff; border: 2px solid var(--primary); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .resume-card { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 16px; margin-bottom: 20px; }
         .resume-title { color: var(--primary); font-weight: bold; margin-bottom: 10px; display: block; font-size: 0.9rem; }
 
-        .set-row { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 10px; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; background: #f8fafc; border: 1px solid transparent; }
-        .set-row.completed { background: #dcfce7; border-color: var(--success); }
-        .set-row.skipped { background: #f1f5f9; border-color: #cbd5e1; opacity: 0.8; }
-        .set-row.active { background: #dbeafe; border-color: var(--primary); }
-        .set-row input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-size: 0.9rem; box-sizing: border-box; }
-        .set-label { font-weight: bold; color: #64748b; font-size: 0.8rem; }
+        .set-row { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 10px; align-items: center; padding: 12px; border-radius: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.03); border: 1px solid transparent; transition: all 0.2s; }
+        .set-row.completed { background: rgba(16, 185, 129, 0.1); border-color: var(--success); }
+        .set-row.skipped { background: rgba(255,255,255,0.05); border-color: #475569; opacity: 0.5; }
+        .set-row.active { background: rgba(59, 130, 246, 0.15); border-color: var(--primary); transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { border-color: var(--primary); } 50% { border-color: #60a5fa; } 100% { border-color: var(--primary); } }
+        .set-row input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; text-align: center; font-size: 1rem; box-sizing: border-box; background: #000; color: white; }
+        .set-label { font-weight: bold; color: var(--text-dim); font-size: 0.8rem; }
 
         .player-controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 20px; }
-        .nav-btn { background: #e2e8f0; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
+        .nav-btn { background: rgba(255,255,255,0.1); border: none; font-weight: bold; cursor: pointer; border-radius: 12px; color: white; }
         .finish-btn { background: var(--success); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .skip-btn { background: #fee2e2; color: #ef4444; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; padding: 12px; margin-top: 10px; width: 100%; }
+        .skip-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: bold; cursor: pointer; border-radius: 12px; padding: 12px; margin-top: 10px; width: 100%; }
         
         .hidden { display: none !important; }
     </style>
@@ -131,7 +135,7 @@
         }
 
         function checkActiveSession() {
-            const saved = localStorage.getItem('gymFlow_activeSession');
+            const saved = localStorage.getItem('gymNerd_activeSession');
             if (saved) {
                 document.getElementById('resumeCard').classList.remove('hidden');
             }
@@ -139,15 +143,15 @@
 
         function saveSessionState() {
             const state = { sessionSets, currentIdx, currentWorkoutId };
-            localStorage.setItem('gymFlow_activeSession', JSON.stringify(state));
+            localStorage.setItem('gymNerd_activeSession', JSON.stringify(state));
         }
 
         function clearSessionState() {
-            localStorage.removeItem('gymFlow_activeSession');
+            localStorage.removeItem('gymNerd_activeSession');
         }
 
         function resumeSession() {
-            const saved = localStorage.getItem('gymFlow_activeSession');
+            const saved = localStorage.getItem('gymNerd_activeSession');
             if (!saved) return;
             const state = JSON.parse(saved);
             sessionSets = state.sessionSets;

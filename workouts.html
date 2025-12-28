@@ -3,49 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GymFlow | Workouts</title>
+    <title>GymNerd | Workouts</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
-        :root { --primary: #2563eb; --success: #16a34a; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         .input-group { display: flex; flex-direction: column; gap: 10px; }
-        input, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; }
+        input, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.05); color: white; }
         
-        button.primary { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
         button.update { background: var(--success); color: white; border: none; font-weight: bold; cursor: pointer; display: none; }
         .cancel-link { text-align: center; font-size: 0.8rem; color: #ef4444; cursor: pointer; display: none; margin-top: 5px; text-decoration: underline; }
 
-        .ex-picker { max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin: 10px 0; background: #fff; }
-        details.picker-group { margin-bottom: 5px; border-bottom: 1px solid #f1f5f9; }
-        summary.picker-header { font-size: 0.85rem; font-weight: bold; padding: 8px; cursor: pointer; text-transform: capitalize; list-style: none; display: flex; justify-content: space-between; }
+        .ex-picker { max-height: 300px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; margin: 10px 0; background: rgba(0,0,0,0.2); }
+        details.picker-group { margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        summary.picker-header { font-size: 0.85rem; font-weight: bold; padding: 12px; cursor: pointer; text-transform: capitalize; list-style: none; display: flex; justify-content: space-between; color: var(--text-dim); }
         .picker-item { display: flex; align-items: center; gap: 10px; padding: 6px 15px; flex-wrap: wrap; }
         .ex-inputs { display: none; gap: 5px; align-items: center; margin-left: 30px; width: 100%; margin-top: 5px; }
         .ex-checkbox:checked ~ .ex-inputs { display: flex; flex-direction: column; align-items: flex-start; }
-        summary.picker-header::after { content: '▾'; color: #94a3b8; }
+        summary.picker-header::after { content: '▾'; }
         details[open] summary.picker-header::after { content: '▴'; }
 
         .set-row-input { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
-        .set-row-input input { width: 60px; padding: 5px; font-size: 0.8rem; border-radius: 4px; border: 1px solid #cbd5e1; }
-        .add-set-btn { background: #f1f5f9; border: 1px dashed #cbd5e1; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; color: #64748b; margin-bottom: 10px; }
+        .set-row-input input { width: 70px; padding: 8px; font-size: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #000; }
+        .add-set-btn { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; color: var(--text-dim); margin-bottom: 10px; }
         .remove-set-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1rem; padding: 0 5px; }
 
-        .picker-item { display: flex; align-items: center; gap: 10px; padding: 6px 15px; }
-        .picker-item input[type="checkbox"] { width: auto; cursor: pointer; }
+        .picker-item input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary); }
 
-        .workout-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; }
+        .workout-card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
         .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .workout-name { font-weight: 800; font-size: 1.1rem; color: var(--primary); }
-        .exercise-tag { display: block; background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 5px; border: 1px solid #e2e8f0; }
+        .workout-name { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
+        .exercise-tag { display: block; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; font-size: 0.85rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
         
         .set-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-        .set-pill { background: white; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: #64748b; font-weight: 600; }
+        .set-pill { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; color: var(--text-dim); font-weight: 600; }
         
         .actions { display: flex; gap: 15px; }
         .edit-link { color: var(--primary); background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
         .del-link { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
+    
+        .section-title { margin-top: 40px; margin-bottom: 20px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; padding-left: 5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; }
     </style>
 </head>
 <body>
@@ -66,6 +69,7 @@
         </div>
     </div>
 
+    <h3 class="section-title">Workouts</h3>
     <div id="workout-list"></div>
 
     <script>
