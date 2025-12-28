@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GymFlow | Home</title>
+    <title>GymNerd | Home</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
-        :root { --primary: #2563eb; --success: #059669; --danger: #ef4444; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         /* Developer Bar Styling */
         .dev-bar { 
-            background: #1e293b; 
-            color: #94a3b8; 
+            background: #000; 
+            color: #475569; 
             padding: 8px 15px; 
             font-size: 0.7rem; 
             display: flex; 
@@ -35,16 +36,17 @@
         .dev-btn:hover { background: var(--danger); }
 
         .main-content { padding: 20px; }
-        h1 { text-align: center; font-weight: 800; margin-bottom: 40px; margin-top: 20px; }
+        h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
         
         .menu-grid { display: grid; gap: 15px; }
-        .nav-card { background: white; padding: 20px; border-radius: 12px; text-decoration: none; color: inherit; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; font-weight: 600; transition: 0.2s; border: 2px solid transparent; }
-        .nav-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+        .nav-card { background: var(--card); padding: 24px; border-radius: 16px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.05); }
+        .nav-card:active { transform: scale(0.97); }
         
-        details { background: #fff; border-radius: 12px; margin-top: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; }
-        summary::after { content: '▼'; font-size: 0.8rem; color: #64748b; }
-        .content-box { padding: 0 20px 20px 20px; border-top: 1px solid #f1f5f9; }
+        details { background: var(--card); border-radius: 16px; margin-top: 40px; border: 1px solid rgba(255,255,255,0.05); }
+        summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
+        summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
+        details[open] summary .chevron { transform: rotate(180deg); }
+        .content-box { padding: 0 20px 20px 20px; border-top: 1px solid rgba(255,255,255,0.05); }
         
         .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .export-btn { background: var(--success); color: white; }
@@ -62,10 +64,10 @@
     </div>
 
     <div class="main-content">
-        <h1>GymFlow</h1>
+        <h1>GymNerd</h1>
         
         <div class="menu-grid">
-            <a href="livesession.html" class="nav-card" style="background: var(--primary); color: white;"><span>🚀 Start Workout</span><span>→</span></a>
+            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span>🚀 Start Workout</span><span>→</span></a>
             <a href="exercises.html" class="nav-card"><span>🏋 Exercises</span><span>→</span></a>
             <a href="workouts.html" class="nav-card"><span>💪 My Workouts</span><span>→</span></a>
             <a href="logging.html" class="nav-card"><span>📝 Log Session</span><span>→</span></a>
@@ -73,7 +75,7 @@
         </div>
 
         <details>
-            <summary>⚙️ Data Management</summary>
+            <summary><span>⚙️ Data Management</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
             <div class="content-box">
                 <h4>Backup</h4>
                 <button class="sync-btn export-btn" onclick="exportData()">📤 Export 4 JSON Files</button>
@@ -90,8 +92,8 @@
 
     <script>
         const db = new Dexie("GymAppDB");
-        db.version(6).stores({ 
-            exercises: '++id, name, type, imageId', 
+        db.version(7).stores({ 
+            exercises: '++id, name, namePT, type, imageId', 
             logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
             workouts: '++id, name, exerciseIds', 
             images: '++id' 
@@ -125,7 +127,7 @@
                     const blob = new Blob([JSON.stringify(data[key], null, 2)], {type: "application/json"});
                     const a = document.createElement('a'); 
                     a.href = URL.createObjectURL(blob);
-                    a.download = `GymFlow_${key}_${date}.json`; 
+                    a.download = `GymNerd_${key}_${date}.json`; 
                     a.click();
                     URL.revokeObjectURL(a.href);
                 }, i * 500);

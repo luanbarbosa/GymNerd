@@ -3,34 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GymFlow | Log</title>
+    <title>GymNerd | Log</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
-        :root { --primary: #2563eb; --success: #16a34a; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        select, input, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; width: 100%; box-sizing: border-box; }
-        .exercise-row { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 50px 1fr 30px; gap: 15px; align-items: center; }
-        .ex-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #f1f5f9; }
+        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        select, input, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
+        .exercise-row { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); display: grid; grid-template-columns: 50px 1fr 30px; gap: 15px; align-items: center; }
+        .ex-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #000; }
         .input-pair { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; grid-column: span 3; }
-        .save-session { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .input-pair input { background: #000; }
+        .save-session { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
         .save-session.success { background: var(--success); }
 
-        details.history-section { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-top: 20px; }
-        summary.section-header { font-weight: 800; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
-        summary.section-header::after { content: '▾'; color: #64748b; }
+        details.history-section { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-top: 20px; }
+        summary.section-header { font-weight: 800; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
+        summary.section-header::after { content: '▾'; }
         details[open] summary.section-header::after { content: '▴'; }
 
         details.month-group { margin-bottom: 15px; }
-        summary.month-header { font-weight: 700; font-size: 0.85rem; color: #64748b; cursor: pointer; padding: 8px 0; list-style: none; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; }
+        summary.month-header { font-weight: 700; font-size: 0.85rem; color: var(--text-dim); cursor: pointer; padding: 8px 0; list-style: none; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
         summary.month-header::after { content: '▾'; }
         details[open] summary.month-header::after { content: '▴'; }
 
-        details.history-group { background: white; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; overflow: hidden; }
+        details.history-group { background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; overflow: hidden; }
         summary.date-header { padding: 12px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; list-style: none; display: flex; justify-content: space-between; }
-        .log-entry { padding: 10px 15px; border-bottom: 1px solid #f8fafc; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+        .log-entry { padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-dim); }
     </style>
 </head>
 <body>
