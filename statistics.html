@@ -7,25 +7,36 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .header { display: flex; align-items: center; justify-content: flex-start; gap: 15px; margin-bottom: 15px; }
-        .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
-        .back-btn { text-decoration: none; color: var(--text); font-weight: bold; }
-        
-        .streak-badge { 
-            background: var(--card); 
-            padding: 15px; 
-            border-radius: 16px; 
-            text-align: center; 
-            font-weight: 800; 
-            margin: 0 auto 20px auto; 
-            max-width: 320px;
-            border: 1px solid rgba(255,255,255,0.05);
+        :root { 
+            --primary: #3b82f6; 
+            --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --text: #f8fafc; 
+            --text-dim: #94a3b8; 
+            --success: #10b981; 
+            --danger: #ef4444;
+            --card-border: rgba(255, 255, 255, 0.08);
         }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; line-height: 1.5; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+        .header h2 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.025em; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
+        
+        /* Dashboard Grid */
+        .stats-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: var(--card); padding: 16px; border-radius: 20px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 4px; }
+        .stat-label { font-size: 0.75rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+        .stat-sub { font-size: 0.7rem; color: var(--text-dim); opacity: 0.8; }
 
-        .calendar-card { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin: 0 auto 20px auto; max-width: 320px; }
+        .main-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 32px; }
+
+        .card { background: var(--card); padding: 20px; border-radius: 24px; border: 1px solid var(--card-border); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .calendar-card { width: 100%; box-sizing: border-box; }
+        
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .calendar-header h3 { font-size: 0.9rem; margin: 0; text-transform: capitalize; }
         .nav-btn { background: rgba(255,255,255,0.05); border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; color: white; }
@@ -34,24 +45,26 @@
         .day-name { font-size: 0.6rem; text-align: center; color: var(--text-dim); font-weight: bold; padding-bottom: 4px; }
         .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.7rem; }
         
-        .past-no-workout { background: rgba(239, 68, 68, 0.05); color: #ef4444; }
+        .past-no-workout { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
         .has-workout { background: var(--success); color: white; font-weight: bold; }
         .future-day { background: rgba(255,255,255,0.02); color: #475569; border: 1px solid rgba(255,255,255,0.05); }
         .today { border: 1.5px solid var(--primary); }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .chart-box { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .section-title { margin-top: 32px; margin-bottom: 16px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.025em; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; text-transform: capitalize; grid-column: 1 / -1; }
+        .chart-box { background: var(--card); padding: 20px; border-radius: 24px; border: 1px solid var(--card-border); }
         .chart-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .chart-thumb { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: #000; }
-        .canvas-wrapper { height: 160px; }
+        .canvas-wrapper { height: 180px; }
     </style>
 </head>
 <body>
     <div class="header"><a href="index.html" class="back-btn">←</a><h2>Statistics</h2></div>
 
-    <div id="streak-badge" class="streak-badge" style="display:none"></div>
+    <div id="stats-overview" class="stats-overview"></div>
 
-    <div class="calendar-card">
+    <div class="main-grid">
+        <div class="card calendar-card">
         <div class="calendar-header">
             <button class="nav-btn" onclick="changeMonth(-1)">❮</button>
             <h3 id="monthDisplay">Month Year</h3>
@@ -63,6 +76,20 @@
             <div class="day-name">S</div>
         </div>
         <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+
+        <div class="card frequency-card">
+        <div class="calendar-header">
+            <h3>Workout Frequency</h3>
+                <select id="frequencyFilter" onchange="updateFrequencyChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
+                <option value="month" selected>Monthly</option>
+                <option value="year">Yearly</option>
+            </select>
+        </div>
+            <div class="canvas-wrapper" style="height: 200px;">
+            <canvas id="frequencyChart"></canvas>
+        </div>
+        </div>
     </div>
 
     <div class="stats-grid" id="chartsWrapper"></div>
@@ -71,8 +98,8 @@
         const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
         
         const db = new Dexie("GymAppDB");
-        db.version(6).stores({ 
-            exercises: '++id, name, type, imageId', 
+        db.version(7).stores({ 
+            exercises: '++id, name, namePT, type, imageId', 
             logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
             workouts: '++id, name, exerciseIds', 
             images: '++id' 
@@ -85,6 +112,7 @@
             renderCalendar(logs);
             renderCharts(logs);
             updateStreakBadge();
+            updateFrequencyChart(logs);
         }
 
         function changeMonth(offset) {
@@ -121,76 +149,248 @@
 
         async function renderCharts(logs) {
             const wrapper = document.getElementById('chartsWrapper');
-            const grouped = {};
-            logs.forEach(l => { if(!grouped[l.exerciseName]) grouped[l.exerciseName] = []; grouped[l.exerciseName].push(l); });
+            const allExercises = await db.exercises.toArray();
+            const exMap = allExercises.reduce((acc, ex) => { acc[ex.id] = ex; return acc; }, {});
+
+            const groupedByType = {};
+            const lineDataLabelsPlugin = {
+                id: 'lineDataLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx, data } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.textAlign = 'center';
+                    chart.getDatasetMeta(0).data.forEach((point, index) => {
+                        const value = data.datasets[0].data[index];
+                        ctx.fillText(value, point.x, point.y - 10);
+                    });
+                    ctx.restore();
+                }
+            };
+
+            logs.forEach(l => {
+                const ex = exMap[l.exerciseId];
+                const type = ex ? ex.type : 'Other';
+                const exId = l.exerciseId;
+                if (!groupedByType[type]) groupedByType[type] = {};
+                if (!groupedByType[type][exId]) groupedByType[type][exId] = [];
+                groupedByType[type][exId].push(l);
+            });
+
             wrapper.innerHTML = "";
 
-            for (const name of Object.keys(grouped)) {
-                const entries = grouped[name].sort((a,b) => new Date(a.date) - new Date(b.date));
-                const lastEntry = entries[entries.length - 1];
-                
-                // CRITICAL FIX: Lookup image data from the images table
-                const imgSrc = await getImg(lastEntry.imageId);
-                
-                const box = document.createElement('div'); 
-                box.className = 'chart-box';
-                const safeName = name.replace(/[^a-z0-9]/gi, '');
-                
-                box.innerHTML = `
-                    <div class="chart-header">
-                        <img src="${imgSrc}" class="chart-thumb">
-                        <strong>${name}</strong>
-                    </div>
-                    <div class="canvas-wrapper"><canvas id="c-${safeName}"></canvas></div>`;
-                wrapper.appendChild(box);
+            for (const type of Object.keys(groupedByType).sort()) {
+                const sectionTitle = document.createElement('h3');
+                sectionTitle.className = 'section-title';
+                sectionTitle.innerText = type;
+                wrapper.appendChild(sectionTitle);
 
-                new Chart(document.getElementById(`c-${safeName}`), {
-                    type: 'line', 
-                    data: { 
-                        labels: entries.map(e => e.date.slice(5)), 
-                        datasets: [{ 
-                            data: entries.map(e => e.weight), 
-                            borderColor: '#22c55e', 
-                            borderWidth: 2,
-                            tension: 0.2, 
-                            fill: false 
-                        }] 
-                    },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false, 
-                        plugins: { legend: { display: false } }
-                    }
-                });
+                const exercisesInType = groupedByType[type];
+                for (const exId of Object.keys(exercisesInType)) {
+                    const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
+                    const lastEntry = entries[entries.length - 1];
+                    const currentEx = exMap[exId];
+                    const displayName = currentEx ? currentEx.name : lastEntry.exerciseName;
+                    const imgSrc = await getImg(currentEx ? currentEx.imageId : lastEntry.imageId);
+                    
+                    const box = document.createElement('div'); 
+                    box.className = 'chart-box';
+                    const canvasId = `c-${lastEntry.exerciseId}`;
+                    
+                    box.innerHTML = `
+                        <div class="chart-header">
+                            <img src="${imgSrc}" class="chart-thumb">
+                            <strong>${displayName}</strong>
+                        </div>
+                        <div class="canvas-wrapper"><canvas id="${canvasId}"></canvas></div>`;
+                    wrapper.appendChild(box);
+
+                    new Chart(document.getElementById(canvasId), {
+                        type: 'line', 
+                        plugins: [lineDataLabelsPlugin],
+                        data: { 
+                            labels: entries.map(e => e.date.slice(5)), 
+                            datasets: [{ 
+                                data: entries.map(e => e.weight), 
+                                borderColor: '#3b82f6', 
+                                borderWidth: 3,
+                                tension: 0.4, 
+                                fill: true,
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                pointRadius: 4,
+                                pointBackgroundColor: '#3b82f6',
+                                pointHoverRadius: 6
+                            }] 
+                        },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { display: false },
+                                y: { 
+                                    grace: '15%',
+                                    grid: { color: 'rgba(255,255,255,0.05)' }, 
+                                    ticks: { color: '#94a3b8', font: { size: 10 } } 
+                                }
+                            }
+                        }
+                    });
+                }
             }
         }
 
+        let frequencyChart = null;
+        async function updateFrequencyChart(logs) {
+            if (!logs) logs = await db.logs.toArray();
+            const period = document.getElementById('frequencyFilter').value;
+            const uniqueDates = [...new Set(logs.map(l => l.date))].sort();
+            const counts = {};
+            const today = new Date();
+
+            if (period === 'year') {
+                uniqueDates.forEach(d => {
+                    const year = d.split('-')[0];
+                    counts[year] = (counts[year] || 0) + 1;
+                });
+            } else if (period === 'month') {
+                const currentYear = today.getFullYear();
+                for (let i = 0; i < 12; i++) {
+                    const monthName = new Date(currentYear, i, 1).toLocaleString('default', { month: 'short' });
+                    counts[monthName] = 0;
+                }
+                uniqueDates.forEach(d => {
+                    const [y, m, day] = d.split('-').map(Number);
+                    if (y === currentYear) {
+                        const monthName = new Date(y, m - 1, day).toLocaleString('default', { month: 'short' });
+                        if (counts.hasOwnProperty(monthName)) counts[monthName]++;
+                    }
+                });
+            }
+
+            const ctx = document.getElementById('frequencyChart').getContext('2d');
+            if (frequencyChart) frequencyChart.destroy();
+
+            const barDataLabelsPlugin = {
+                id: 'barDataLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.textAlign = 'center';
+                    chart.data.datasets.forEach((dataset, i) => {
+                        chart.getDatasetMeta(i).data.forEach((bar, index) => {
+                            const value = dataset.data[index];
+                            if (value > 0) ctx.fillText(value, bar.x, bar.y - 5);
+                        });
+                    });
+                    ctx.restore();
+                }
+            };
+
+            frequencyChart = new Chart(ctx, {
+                type: 'bar',
+                plugins: [barDataLabelsPlugin],
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderRadius: 8,
+                        hoverBackgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grace: '15%', ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
         async function updateStreakBadge() {
+            const overview = document.getElementById('stats-overview');
             const workoutDates = await db.logs.orderBy('date').uniqueKeys();
-            if (workoutDates.length === 0) return;
+            
+            if (workoutDates.length === 0) {
+                overview.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-label">Current Streak</div>
+                        <div class="stat-value">0 <span style="font-size: 0.9rem">Days</span></div>
+                        <div class="stat-sub">Start your journey!</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Best Record</div>
+                        <div class="stat-value">0 <span style="font-size: 0.9rem">Days</span></div>
+                        <div class="stat-sub">No records yet</div>
+                    </div>
+                `;
+                return;
+            }
 
             const workoutDatesSet = new Set(workoutDates);
-            const todayStr = new Date().toISOString().split('T')[0];
-            const today = new Date(todayStr);
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            const today = new Date(todayStr + 'T00:00:00');
 
-            const badge = document.getElementById('streak-badge');
-            badge.style.display = 'block';
+            let longestStreak = 0;
+            let currentStreakCount = 0;
+            let prevDate = null;
 
-            if (workoutDatesSet.has(todayStr)) {
-                let streak = 0;
-                let curr = new Date(todayStr);
-                while (workoutDatesSet.has(curr.toISOString().split('T')[0])) {
-                    streak++;
-                    curr.setDate(curr.getDate() - 1);
+            for (const dateStr of workoutDates) {
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const curr = new Date(y, m - 1, d);
+                if (prevDate) {
+                    const diff = Math.round((curr - prevDate) / (1000 * 60 * 60 * 24));
+                    if (diff === 1) {
+                        currentStreakCount++;
+                    } else {
+                        longestStreak = Math.max(longestStreak, currentStreakCount);
+                        currentStreakCount = 1;
+                    }
+                } else {
+                    currentStreakCount = 1;
                 }
-                badge.innerText = `${streak} days streak`;
-                badge.style.color = 'var(--success)';
-            } else {
-                const lastDate = new Date(workoutDates[workoutDates.length - 1]);
-                const diff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-                badge.innerText = `${diff} days since last workout`;
-                badge.style.color = '#64748b';
+                prevDate = curr;
             }
+            longestStreak = Math.max(longestStreak, currentStreakCount);
+
+            let currentStreak = 0;
+            let checkDate = new Date(today);
+            
+            // If no workout today, check if there was one yesterday to keep the streak active in the UI
+            if (!workoutDatesSet.has(todayStr)) {
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+
+            while (workoutDatesSet.has(checkDate.toLocaleDateString('en-CA'))) {
+                currentStreak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+
+            const lastWorkoutStr = workoutDates[workoutDates.length - 1];
+            const lastWorkout = new Date(lastWorkoutStr + 'T00:00:00');
+            const daysSince = Math.round((today - lastWorkout) / (1000 * 60 * 60 * 24));
+
+            overview.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Current Streak</div>
+                    <div class="stat-value" style="color: ${currentStreak > 0 ? 'var(--success)' : 'var(--text)'}">
+                        ${currentStreak} <span style="font-size: 0.9rem">Days</span>
+                    </div>
+                    <div class="stat-sub">${currentStreak > 0 ? 'Keep it up!' : daysSince + ' days since last'}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Best Record</div>
+                    <div class="stat-value">${longestStreak} <span style="font-size: 0.9rem">Days</span></div>
+                    <div class="stat-sub">Personal Best</div>
+                </div>
+            `;
         }
 
         init();
