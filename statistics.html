@@ -280,6 +280,32 @@
             const badge = document.getElementById('streak-badge');
             badge.style.display = 'block';
 
+            // Calculate Longest Streak (Record)
+            let longestStreak = 0;
+            let currentStreakCount = 0;
+            let prevDate = null;
+
+            for (const dateStr of workoutDates) {
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const curr = new Date(y, m - 1, d);
+                if (prevDate) {
+                    const diff = Math.round((curr - prevDate) / (1000 * 60 * 60 * 24));
+                    if (diff === 1) {
+                        currentStreakCount++;
+                    } else {
+                        longestStreak = Math.max(longestStreak, currentStreakCount);
+                        currentStreakCount = 1;
+                    }
+                } else {
+                    currentStreakCount = 1;
+                }
+                prevDate = curr;
+            }
+            longestStreak = Math.max(longestStreak, currentStreakCount);
+
+            let statusText = "";
+            let statusColor = "";
+
             if (workoutDatesSet.has(todayStr)) {
                 let streak = 0;
                 let curr = new Date(todayStr);
@@ -287,14 +313,22 @@
                     streak++;
                     curr.setDate(curr.getDate() - 1);
                 }
-                badge.innerText = `${streak} days streak`;
-                badge.style.color = 'var(--success)';
+                statusText = `${streak} day${streak !== 1 ? 's' : ''} streak`;
+                statusColor = 'var(--success)';
             } else {
-                const lastDate = new Date(workoutDates[workoutDates.length - 1]);
-                const diff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-                badge.innerText = `${diff} days since last workout`;
-                badge.style.color = '#64748b';
+                const lastWorkout = new Date(workoutDates[workoutDates.length - 1]);
+                const diff = Math.floor((today - lastWorkout) / (1000 * 60 * 60 * 24));
+                statusText = `${diff} day${diff !== 1 ? 's' : ''} since last workout`;
+                statusColor = '#64748b';
             }
+
+            badge.style.color = statusColor;
+            badge.innerHTML = `
+                <div>${statusText}</div>
+                <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 4px; font-weight: 600; opacity: 0.8;">
+                    RECORD: ${longestStreak} DAY${longestStreak !== 1 ? 'S' : ''}
+                </div>
+            `;
         }
 
         init();
