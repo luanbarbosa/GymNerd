@@ -45,7 +45,7 @@
         .day-name { font-size: 0.6rem; text-align: center; color: var(--text-dim); font-weight: bold; padding-bottom: 4px; }
         .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.7rem; }
         
-        .past-no-workout { background: rgba(255, 255, 255, 0.02); color: rgba(255, 255, 255, 0.2); }
+        .past-no-workout { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
         .has-workout { background: var(--success); color: white; font-weight: bold; }
         .future-day { background: rgba(255,255,255,0.02); color: #475569; border: 1px solid rgba(255,255,255,0.05); }
         .today { border: 1.5px solid var(--primary); }
@@ -153,6 +153,22 @@
             const exMap = allExercises.reduce((acc, ex) => { acc[ex.id] = ex; return acc; }, {});
 
             const groupedByType = {};
+            const lineDataLabelsPlugin = {
+                id: 'lineDataLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx, data } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.textAlign = 'center';
+                    chart.getDatasetMeta(0).data.forEach((point, index) => {
+                        const value = data.datasets[0].data[index];
+                        ctx.fillText(value, point.x, point.y - 10);
+                    });
+                    ctx.restore();
+                }
+            };
+
             logs.forEach(l => {
                 const ex = exMap[l.exerciseId];
                 const type = ex ? ex.type : 'Other';
@@ -192,6 +208,7 @@
 
                     new Chart(document.getElementById(canvasId), {
                         type: 'line', 
+                        plugins: [lineDataLabelsPlugin],
                         data: { 
                             labels: entries.map(e => e.date.slice(5)), 
                             datasets: [{ 
@@ -201,7 +218,8 @@
                                 tension: 0.4, 
                                 fill: true,
                                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                pointRadius: 0,
+                                pointRadius: 4,
+                                pointBackgroundColor: '#3b82f6',
                                 pointHoverRadius: 6
                             }] 
                         },
@@ -211,7 +229,11 @@
                             plugins: { legend: { display: false } },
                             scales: {
                                 x: { display: false },
-                                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                                y: { 
+                                    grace: '15%',
+                                    grid: { color: 'rgba(255,255,255,0.05)' }, 
+                                    ticks: { color: '#94a3b8', font: { size: 10 } } 
+                                }
                             }
                         }
                     });
