@@ -1,12 +1,10 @@
-<<<<<<< Updated upstream
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GymNerd | Log</title>
+    <title>GymNerd | History</title>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
@@ -15,6 +13,7 @@
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        .card h2 { margin-top: 0; margin-bottom: 15px; font-size: 1.2rem; }
         select, input, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         .exercise-row { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); display: grid; grid-template-columns: 50px 1fr 30px; gap: 15px; align-items: center; }
         .ex-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #000; }
@@ -25,42 +24,36 @@
 
         details.history-section { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-top: 20px; }
         summary.section-header { font-weight: 800; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
-        summary.section-header::after { content: '▾'; }
-        details[open] summary.section-header::after { content: '▴'; }
+        summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
+        details[open] summary .chevron { transform: rotate(180deg); }
 
         details.month-group { margin-bottom: 15px; }
         summary.month-header { font-weight: 700; font-size: 0.85rem; color: var(--text-dim); cursor: pointer; padding: 8px 0; list-style: none; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
-        summary.month-header::after { content: '▾'; }
-        details[open] summary.month-header::after { content: '▴'; }
 
         details.history-group { background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; overflow: hidden; }
-        summary.date-header { padding: 12px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; list-style: none; display: flex; justify-content: space-between; }
+        summary.date-header { padding: 12px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         .log-entry { padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-dim); }
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Log Session</h2></div>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Workout History</h2></div>
     <div class="card">
+        <div class="section-header"><h2>Log workout</h2></div>
         <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Workout --</option></select>
         <input type="date" id="logDate" style="margin-top:10px">
     </div>
     <div id="workoutSheet"></div>
     <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()">💾 Save Session</button>
     <details class="history-section">
-        <summary class="section-header">Workout History</summary>
+        <summary class="section-header"><span>History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
         <div id="history" style="padding: 0 15px 10px 15px;"></div>
     </details>
 
     <script>
         const db = new Dexie("GymAppDB");
-        db.version(7).stores({ 
-            exercises: '++id, name, namePT, type, imageId', 
-            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
-            workouts: '++id, name, exerciseIds', 
-            images: '++id' 
-        });
-
-        document.getElementById('logDate').value = new Date().toLocaleDateString('en-CA');
+        db.version(6).stores({ exercises: '++id, name, type, imageId', logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', workouts: '++id, name, exerciseIds', images: '++id' });
+        
+        document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
         let allEx = [];
 
         async function init() {
@@ -103,7 +96,7 @@
                 }
 
                 sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-imgid="${ex.imageId || ''}">
-                    <img src="${img ? img.data : ''}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()">✕</button>
+                    <img src="${img ? img.data : ''}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     <div class="input-pair"><input type="number" placeholder="Sets" class="s" value="${sets}"><input type="number" step="0.5" placeholder="Kg" class="w" value="${weight}"><input type="number" placeholder="Reps" class="r" value="${reps}"></div></div>`;
             }
             document.getElementById('saveBtn').style.display = "block";
@@ -111,28 +104,6 @@
 
         async function saveSession() {
             const date = document.getElementById('logDate').value;
-
-            // Calculate streak record before saving
-            const existingDates = await db.logs.orderBy('date').uniqueKeys();
-            const calculateLongest = (dates) => {
-                let max = 0, current = 0, prev = null;
-                for (const dStr of dates) {
-                    const [y, m, d] = dStr.split('-').map(Number);
-                    const curr = new Date(y, m - 1, d);
-                    if (prev) {
-                        const diff = Math.round((curr - prev) / 86400000);
-                        if (diff === 1) current++;
-                        else { max = Math.max(max, current); current = 1; }
-                    } else current = 1;
-                    prev = curr;
-                }
-                return Math.max(max, current);
-            };
-
-            const oldRecord = calculateLongest(existingDates);
-            const newDates = Array.from(new Set([...existingDates, date])).sort();
-            const newRecord = calculateLongest(newDates);
-
             const logs = [];
             document.querySelectorAll('.exercise-row').forEach(r => {
                 const sets = r.querySelector('.s').value;
@@ -140,25 +111,14 @@
                 const reps = r.querySelector('.r').value;
                 if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, sets: parseInt(sets) || 3, weight: parseFloat(weight), reps: parseInt(reps), date });
             });
-
-            if (logs.length === 0) return alert("Please enter weight and reps for at least one exercise.");
-
             await db.logs.bulkAdd(logs);
+            location.reload();
+        }
 
-            if (newRecord > oldRecord && newRecord > 1) {
-                confetti({
-                    particleCount: 150,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: ['#3b82f6', '#10b981', '#f8fafc']
-                });
-                setTimeout(() => {
-                    alert(`🎉 NEW STREAK RECORD: ${newRecord} DAYS!`);
-                    location.href = "statistics.html";
-                }, 1500);
-            } else {
-                alert("Workout saved!");
-                location.href = "statistics.html";
+        async function deleteDateLogs(date) {
+            if(confirm(`Delete all entries for ${date}?`)) {
+                await db.logs.where('date').equals(date).delete();
+                renderHistory();
             }
         }
 
@@ -180,15 +140,15 @@
                 monthDet.className = "month-group";
                 const [y, m] = month.split('-');
                 const monthName = new Date(y, m - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
-                monthDet.innerHTML = `<summary class="month-header">${monthName}</summary>`;
+                monthDet.innerHTML = `<summary class="month-header"><span>${monthName}</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
                 
                 for (const date of Object.keys(groups[month]).sort().reverse()) {
                     const dateDet = document.createElement('details');
                     dateDet.className = "history-group";
-                    dateDet.innerHTML = `<summary class="date-header">${date}</summary>`;
+                    dateDet.innerHTML = `<summary class="date-header"><span>${date}</span><button onclick="event.stopPropagation(); deleteDateLogs('${date}')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;margin-left:auto;margin-right:12px;display:flex;align-items:center;opacity:0.6;width:auto" title="Delete Session"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
                     for (const l of groups[month][date]) {
                         const img = await db.images.get(l.imageId || 0);
-                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${img ? img.data : ''}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <span>${l.sets || 3} sets x ${l.weight}kg x ${l.reps}</span></div>`;
+                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${img ? img.data : ''}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <div style="display:flex;align-items:center;gap:10px"><span>${l.sets || 3} sets x ${l.weight}kg x ${l.reps}</span></div></div>`;
                     }
                     monthDet.appendChild(dateDet);
                 }
@@ -199,5 +159,3 @@
     </script>
 </body>
 </html>
-=======
->>>>>>> Stashed changes
