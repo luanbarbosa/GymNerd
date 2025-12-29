@@ -52,9 +52,14 @@
 
     <script>
         const db = new Dexie("GymAppDB");
-        db.version(6).stores({ exercises: '++id, name, type, imageId', logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', workouts: '++id, name, exerciseIds', images: '++id' });
-        
-        document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+        db.version(7).stores({ 
+            exercises: '++id, name, namePT, type, imageId', 
+            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
+            workouts: '++id, name, exerciseIds', 
+            images: '++id' 
+        });
+
+        document.getElementById('logDate').value = new Date().toLocaleDateString('en-CA');
         let allEx = [];
 
         async function init() {

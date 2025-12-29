@@ -126,8 +126,8 @@
 
     <script>
         const db = new Dexie("GymAppDB");
-        db.version(6).stores({ 
-            exercises: '++id, name, type, imageId', 
+        db.version(7).stores({ 
+            exercises: '++id, name, namePT, type, imageId', 
             logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
             workouts: '++id, name, exerciseIds', 
             images: '++id' 
@@ -392,7 +392,7 @@
         }
 
         async function finishSession() {
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = new Date().toLocaleDateString('en-CA');
 
             // Calculate streak record before saving
             const existingDates = await db.logs.orderBy('date').uniqueKeys();

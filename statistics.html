@@ -98,8 +98,8 @@
         const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
         
         const db = new Dexie("GymAppDB");
-        db.version(6).stores({ 
-            exercises: '++id, name, type, imageId', 
+        db.version(7).stores({ 
+            exercises: '++id, name, namePT, type, imageId', 
             logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
             workouts: '++id, name, exerciseIds', 
             images: '++id' 
@@ -156,9 +156,10 @@
             logs.forEach(l => {
                 const ex = exMap[l.exerciseId];
                 const type = ex ? ex.type : 'Other';
+                const exId = l.exerciseId;
                 if (!groupedByType[type]) groupedByType[type] = {};
-                if (!groupedByType[type][l.exerciseName]) groupedByType[type][l.exerciseName] = [];
-                groupedByType[type][l.exerciseName].push(l);
+                if (!groupedByType[type][exId]) groupedByType[type][exId] = [];
+                groupedByType[type][exId].push(l);
             });
 
             wrapper.innerHTML = "";
@@ -170,10 +171,12 @@
                 wrapper.appendChild(sectionTitle);
 
                 const exercisesInType = groupedByType[type];
-                for (const name of Object.keys(exercisesInType)) {
-                    const entries = exercisesInType[name].sort((a,b) => new Date(a.date) - new Date(b.date));
+                for (const exId of Object.keys(exercisesInType)) {
+                    const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
                     const lastEntry = entries[entries.length - 1];
-                    const imgSrc = await getImg(lastEntry.imageId);
+                    const currentEx = exMap[exId];
+                    const displayName = currentEx ? currentEx.name : lastEntry.exerciseName;
+                    const imgSrc = await getImg(currentEx ? currentEx.imageId : lastEntry.imageId);
                     
                     const box = document.createElement('div'); 
                     box.className = 'chart-box';
@@ -182,7 +185,7 @@
                     box.innerHTML = `
                         <div class="chart-header">
                             <img src="${imgSrc}" class="chart-thumb">
-                            <strong>${name}</strong>
+                            <strong>${displayName}</strong>
                         </div>
                         <div class="canvas-wrapper"><canvas id="${canvasId}"></canvas></div>`;
                     wrapper.appendChild(box);
@@ -311,7 +314,7 @@
 
             const workoutDatesSet = new Set(workoutDates);
             const todayStr = new Date().toLocaleDateString('en-CA');
-            const today = new Date(todayStr);
+            const today = new Date(todayStr + 'T00:00:00');
 
             let longestStreak = 0;
             let currentStreakCount = 0;
@@ -348,8 +351,9 @@
                 checkDate.setDate(checkDate.getDate() - 1);
             }
 
-            const lastWorkout = new Date(workoutDates[workoutDates.length - 1]);
-            const daysSince = Math.floor((today - lastWorkout) / (1000 * 60 * 60 * 24));
+            const lastWorkoutStr = workoutDates[workoutDates.length - 1];
+            const lastWorkout = new Date(lastWorkoutStr + 'T00:00:00');
+            const daysSince = Math.round((today - lastWorkout) / (1000 * 60 * 60 * 24));
 
             overview.innerHTML = `
                 <div class="stat-card">
