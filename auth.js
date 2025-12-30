@@ -4,13 +4,23 @@
     const isLocal = storedHash.startsWith("__");
 
     if (isLocal) {
-        console.log("Auth status: Local (Bypass active)");
+        console.info("Auth status: Local (Bypass active). Use ?auth=true to test.");
         // Only trigger prompt locally if ?auth=true is in the URL
         if (!location.search.includes('auth=true')) return;
         // Use a temporary hash for local testing (Password: "admin")
         storedHash = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
     } else {
+        if (!storedHash || storedHash.length < 10) {
+            console.error("Auth Error: APP_PASSWORD_HASH secret appears to be missing or empty in GitHub Settings.");
+            return;
+        }
         console.log("Auth status: Protected");
+    }
+
+    // Ensure we are in a secure context for crypto.subtle
+    if (!window.crypto || !window.crypto.subtle) {
+        alert("Security Error: This browser does not support the required cryptography features. Please use HTTPS or a modern browser.");
+        return;
     }
 
     if (sessionStorage.getItem('gym_access') === 'true') return;
