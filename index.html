@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymNerd | Home</title>
+    <script src="auth.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
@@ -59,6 +60,7 @@
     <div class="dev-bar">
         <span>Dev Tools</span>
         <div class="dev-actions">
+            <button class="dev-btn" onclick="testAuth()">🔐 Test Auth</button>
             <button class="dev-btn" onclick="clearAllData()">⚠️ Clear All Data</button>
         </div>
     </div>
@@ -91,33 +93,6 @@
     </div>
 
     <script>
-        // Password Protection Logic
-        (async function() {
-            const storedHash = "__PASSWORD_HASH__";
-            // Skip check if placeholder hasn't been replaced (local dev)
-            if (storedHash.startsWith("__")) return;
-
-            if (sessionStorage.getItem('gym_access') === 'true') return;
-
-            const password = prompt("Please enter the password to access GymNerd:");
-            if (!password) {
-                document.body.innerHTML = "<div style='color:white;text-align:center;margin-top:50px;font-family:sans-serif;'><h1>Access Denied</h1><p>A password is required to use this application.</p></div>";
-                return;
-            }
-
-            const msgUint8 = new TextEncoder().encode(password);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-            if (hashHex !== storedHash) {
-                alert("Incorrect password!");
-                document.body.innerHTML = "<div style='color:white;text-align:center;margin-top:50px;font-family:sans-serif;'><h1>Access Denied</h1></div>";
-            } else {
-                sessionStorage.setItem('gym_access', 'true');
-            }
-        })();
-
         const db = new Dexie("GymAppDB");
         db.version(7).stores({ 
             exercises: '++id, name, namePT, type, imageId', 
@@ -127,6 +102,10 @@
         });
 
         // Developer Actions
+        function testAuth() {
+            window.location.search = 'auth=true';
+        }
+
         async function clearAllData() {
             if (confirm("DANGER: This will permanently delete all exercises, routines, history, and images. Continue?")) {
                 try {
