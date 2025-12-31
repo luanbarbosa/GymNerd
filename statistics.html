@@ -8,6 +8,7 @@
     <link rel="apple-touch-icon" href="favicon.png">
     <script src="auth.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="db.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -100,14 +101,6 @@
     <script>
         const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
         
-        const db = new Dexie("GymAppDB");
-        db.version(7).stores({ 
-            exercises: '++id, name, namePT, type, imageId', 
-            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
-            workouts: '++id, name, exerciseIds', 
-            images: '++id' 
-        });
-
         let currentViewDate = new Date();
 
         async function init() {
@@ -194,8 +187,8 @@
                     const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
                     const lastEntry = entries[entries.length - 1];
                     const currentEx = exMap[exId];
-                    const displayName = currentEx ? currentEx.name : lastEntry.exerciseName;
-                    const imgSrc = await getImg(currentEx ? currentEx.imageId : lastEntry.imageId);
+                    const displayName = currentEx ? currentEx.name : "Unknown Exercise";
+                    const imgSrc = await getImg(currentEx?.imageId);
                     
                     const box = document.createElement('div'); 
                     box.className = 'chart-box';
@@ -321,7 +314,7 @@
             const overview = document.getElementById('stats-overview');
             
             // Ensure DB is open (iOS fix)
-            if (!db.isOpen()) await db.open();
+            await ensureDbOpen();
             
             const allLogs = await db.logs.toArray();
             const workoutDates = [...new Set(allLogs.map(l => l.date))].sort();
@@ -342,60 +335,20 @@
                 return;
             }
 
-            const workoutDatesSet = new Set(workoutDates);
-            const todayStr = new Date().toLocaleDateString('en-CA');
-            const today = new Date(todayStr + 'T00:00:00');
-
-            let longestStreak = 0;
-            let currentStreakCount = 0;
-            let prevDate = null;
-
-            for (const dateStr of workoutDates) {
-                const [y, m, d] = dateStr.split('-').map(Number);
-                const curr = new Date(y, m - 1, d);
-                if (prevDate) {
-                    const diff = Math.round((curr - prevDate) / (1000 * 60 * 60 * 24));
-                    if (diff === 1) {
-                        currentStreakCount++;
-                    } else {
-                        longestStreak = Math.max(longestStreak, currentStreakCount);
-                        currentStreakCount = 1;
-                    }
-                } else {
-                    currentStreakCount = 1;
-                }
-                prevDate = curr;
-            }
-            longestStreak = Math.max(longestStreak, currentStreakCount);
-
-            let currentStreak = 0;
-            let checkDate = new Date(today);
-            
-            // If no workout today, check if there was one yesterday to keep the streak active in the UI
-            if (!workoutDatesSet.has(todayStr)) {
-                checkDate.setDate(checkDate.getDate() - 1);
-            }
-
-            while (workoutDatesSet.has(checkDate.toLocaleDateString('en-CA'))) {
-                currentStreak++;
-                checkDate.setDate(checkDate.getDate() - 1);
-            }
-
-            const lastWorkoutStr = workoutDates[workoutDates.length - 1];
-            const lastWorkout = new Date(lastWorkoutStr + 'T00:00:00');
-            const daysSince = Math.round((today - lastWorkout) / (1000 * 60 * 60 * 24));
+            const streaks = calculateStreaks(workoutDates);
+            const { current, longest, daysSince } = streaks;
 
             overview.innerHTML = `
                 <div class="stat-card">
                     <div class="stat-label">Current Streak</div>
-                    <div class="stat-value" style="color: ${currentStreak > 0 ? 'var(--success)' : 'var(--text)'}">
-                        ${currentStreak} <span style="font-size: 0.9rem">Days</span>
+                    <div class="stat-value" style="color: ${current > 0 ? 'var(--success)' : 'var(--text)'}">
+                        ${current} <span style="font-size: 0.9rem">Days</span>
                     </div>
-                    <div class="stat-sub">${currentStreak > 0 ? 'Keep it up!' : daysSince + ' days since last'}</div>
+                    <div class="stat-sub">${current > 0 ? 'Keep it up!' : daysSince + ' days since last'}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Best Record</div>
-                    <div class="stat-value">${longestStreak} <span style="font-size: 0.9rem">Days</span></div>
+                    <div class="stat-value">${longest} <span style="font-size: 0.9rem">Days</span></div>
                     <div class="stat-sub">Personal Best</div>
                 </div>
             `;
