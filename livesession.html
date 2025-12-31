@@ -68,10 +68,44 @@
         .set-row input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; text-align: center; font-size: 1rem; box-sizing: border-box; background: #000; color: white; }
         .set-label { font-weight: bold; color: var(--text-dim); font-size: 0.8rem; }
 
-        .player-controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 20px; }
-        .nav-btn { background: rgba(255,255,255,0.1); border: none; font-weight: bold; cursor: pointer; border-radius: 12px; color: white; }
+        .player-controls-icons { display: flex; justify-content: center; gap: 20px; margin-top: 25px; }
+        .icon-btn { 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 50%; 
+            border: none; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .icon-btn:active { transform: scale(0.85); box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+        .icon-btn.prev { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-dim); }
+        .icon-btn.skip { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .icon-btn.next { background: var(--primary-grad); }
+
+        .nav-ex-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .nav-ex-btn:active { background: rgba(255,255,255,0.15); transform: scale(0.9); }
+
         .finish-btn { background: var(--success); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .skip-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: bold; cursor: pointer; border-radius: 12px; padding: 12px; margin-top: 10px; width: 100%; }
         
         .hidden { display: none !important; }
     </style>
@@ -114,16 +148,31 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                 </button>
             </div>
-            <h1 id="currentExName" class="current-ex-title">Exercise</h1>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 5px;">
+                <button class="nav-ex-btn" onclick="navExercise(-1)" title="Previous Exercise">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <h1 id="currentExName" class="current-ex-title" style="margin: 0;">Exercise</h1>
+                <button class="nav-ex-btn" onclick="navExercise(1)" title="Next Exercise">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
             <div id="currentExNamePT" style="text-align: center; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8;"></div>
             <div class="card player-card">
                 <img id="playerImg" src="" class="player-img">
+                <button id="activateExBtn" class="start-btn" style="margin-bottom: 20px; display: block;" onclick="activateExercise()">🎯 Play this exercise</button>
                 <div id="setsContainer"></div>
-                <div class="player-controls">
-                    <button class="nav-btn" onclick="prevSet()">Prev</button>
-                    <button id="nextBtn" class="start-btn" style="display:block; margin:0" onclick="nextSet()">Next Set</button>
+                <div class="player-controls-icons">
+                    <button class="icon-btn prev" onclick="prevSet()" title="Previous Set">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button class="icon-btn skip" onclick="skipSet()" title="Skip Set">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <button id="nextBtn" class="icon-btn next" onclick="nextSet()" title="Complete Set">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </button>
                 </div>
-                <button id="skipBtn" class="skip-btn" onclick="abandonExercise()">⏭ Skip Exercise</button>
                 <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Workout</button>
             </div>
         </div>
@@ -133,6 +182,7 @@
 
         let sessionSets = [];
         let currentIdx = 0;
+        let viewingIdx = 0;
         let currentWorkoutId = null;
         let timerInterval = null;
         let seconds = 0;
@@ -186,7 +236,7 @@
         }
 
         function saveSessionState() {
-            const state = { sessionSets, currentIdx, currentWorkoutId };
+            const state = { sessionSets, currentIdx, viewingIdx, currentWorkoutId };
             localStorage.setItem('gymNerd_activeSession', JSON.stringify(state));
         }
 
@@ -200,6 +250,7 @@
             const state = JSON.parse(saved);
             sessionSets = state.sessionSets;
             currentIdx = state.currentIdx;
+            viewingIdx = state.viewingIdx || state.currentIdx;
             currentWorkoutId = state.currentWorkoutId;
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
@@ -264,7 +315,9 @@
             if (selectedChecks.length === 0) return alert("Please select at least one exercise.");
 
             sessionSets = [];
+            let occurrenceId = 0;
             for (const check of selectedChecks) {
+                occurrenceId++;
                 const exId = parseInt(check.value);
                 const ex = allExercises.find(e => e.id === exId);
                 const workoutEx = workout.exerciseIds.find(we => (typeof we === 'object' ? we.id : we) === exId);
@@ -277,6 +330,7 @@
                             namePT: ex.namePT,
                             imageId: ex.imageId,
                             setNum: i + 1,
+                            occurrenceId,
                             totalSets: workoutEx.sets.length,
                             reps: s.reps,
                             weight: s.weight,
@@ -296,6 +350,7 @@
                             namePT: ex.namePT,
                             imageId: ex.imageId,
                             setNum: i,
+                            occurrenceId,
                             totalSets: setsCount,
                             reps,
                             weight,
@@ -306,6 +361,8 @@
                 }
             }
 
+            currentIdx = 0;
+            viewingIdx = 0;
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
             renderSet();
@@ -314,18 +371,18 @@
         async function renderSet() {
             saveSessionState();
             startTimer();
-            const currentSet = sessionSets[currentIdx];
-            document.getElementById('currentExName').innerText = currentSet.name;
-            document.getElementById('currentExNamePT').innerText = currentSet.namePT || "";
+            const viewingSet = sessionSets[viewingIdx];
+            document.getElementById('currentExName').innerText = viewingSet.name;
+            document.getElementById('currentExNamePT').innerText = viewingSet.namePT || "";
             
-            const imgRecord = await db.images.get(currentSet.imageId || 0);
+            const imgRecord = await db.images.get(viewingSet.imageId || 0);
             document.getElementById('playerImg').src = imgRecord ? imgRecord.data : "";
 
             // Find contiguous sets for the same exercise occurrence
-            let start = currentIdx;
-            while (start > 0 && sessionSets[start - 1].exId === currentSet.exId) start--;
-            let end = currentIdx;
-            while (end < sessionSets.length - 1 && sessionSets[end + 1].exId === currentSet.exId) end++;
+            let start = viewingIdx;
+            while (start > 0 && sessionSets[start - 1].occurrenceId === viewingSet.occurrenceId) start--;
+            let end = viewingIdx;
+            while (end < sessionSets.length - 1 && sessionSets[end + 1].occurrenceId === viewingSet.occurrenceId) end++;
 
             const container = document.getElementById('setsContainer');
             container.innerHTML = "";
@@ -335,24 +392,28 @@
                 const isActive = i === currentIdx;
                 const isCompleted = s.completed;
                 const isSkipped = s.skipped;
+                
+                const skipIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger); vertical-align:middle"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+                const checkIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success); vertical-align:middle"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
                 const row = document.createElement('div');
                 row.className = `set-row ${isSkipped ? 'skipped' : (isCompleted ? 'completed' : '')} ${isActive ? 'active' : ''}`;
                 row.innerHTML = `
-                    <div class="set-label">${isSkipped ? '✔️' : (isCompleted ? '✅' : 'S' + s.setNum)}</div>
+                    <div class="set-label">${isSkipped ? skipIcon : (isCompleted ? checkIcon : 'S' + s.setNum)}</div>
                     <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="Reps">
                     <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="Kg">
                 `;
                 container.appendChild(row);
             }
 
-            const isLast = currentIdx === sessionSets.length - 1;
-            document.getElementById('nextBtn').innerText = isLast ? "Last Set Done" : "Next Set";
-            document.getElementById('finishBtn').style.display = isLast ? "block" : "none";
+            const allDone = sessionSets.every(s => s.completed || s.skipped);
+            document.getElementById('finishBtn').style.display = allDone ? "block" : "none";
 
-            // Hide skip button if we are on the last exercise
-            const currentExId = currentSet.exId;
-            const hasMoreExercises = sessionSets.some((s, i) => i > currentIdx && s.exId !== currentExId);
-            document.getElementById('skipBtn').style.display = hasMoreExercises ? "block" : "none";
+            const isActiveEx = currentIdx >= start && currentIdx <= end;
+            const allSetsDone = sessionSets.slice(start, end + 1).every(s => s.completed || s.skipped);
+
+            document.querySelector('.player-controls-icons').classList.toggle('hidden', !isActiveEx);
+            document.getElementById('activateExBtn').classList.toggle('hidden', isActiveEx || allSetsDone);
         }
 
         function updateSetData(idx, field, value) {
@@ -362,8 +423,26 @@
 
         function nextSet() {
             sessionSets[currentIdx].completed = true;
+            sessionSets[currentIdx].skipped = false;
             if (currentIdx < sessionSets.length - 1) {
+                const oldOcc = sessionSets[currentIdx].occurrenceId;
                 currentIdx++;
+                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
+                    viewingIdx = currentIdx;
+                }
+            }
+            renderSet();
+        }
+
+        function skipSet() {
+            sessionSets[currentIdx].skipped = true;
+            sessionSets[currentIdx].completed = false;
+            if (currentIdx < sessionSets.length - 1) {
+                const oldOcc = sessionSets[currentIdx].occurrenceId;
+                currentIdx++;
+                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
+                    viewingIdx = currentIdx;
+                }
             }
             renderSet();
         }
@@ -388,9 +467,39 @@
 
         function prevSet() {
             if (currentIdx > 0) {
+                const oldOcc = sessionSets[currentIdx].occurrenceId;
                 currentIdx--;
+                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
+                    viewingIdx = currentIdx;
+                }
                 renderSet();
             }
+        }
+
+        function navExercise(dir) {
+            const currentOcc = sessionSets[viewingIdx].occurrenceId;
+            if (dir > 0) {
+                let next = viewingIdx;
+                while (next < sessionSets.length && sessionSets[next].occurrenceId === currentOcc) next++;
+                if (next < sessionSets.length) viewingIdx = next;
+            } else {
+                let prev = viewingIdx;
+                while (prev > 0 && sessionSets[prev - 1].occurrenceId === currentOcc) prev--;
+                if (prev > 0) {
+                    prev--;
+                    const prevOcc = sessionSets[prev].occurrenceId;
+                    while (prev > 0 && sessionSets[prev - 1].occurrenceId === prevOcc) prev--;
+                    viewingIdx = prev;
+                }
+            }
+            renderSet();
+        }
+
+        function activateExercise() {
+            const occId = sessionSets[viewingIdx].occurrenceId;
+            const firstIncomplete = sessionSets.findIndex(s => s.occurrenceId === occId && !s.completed && !s.skipped);
+            currentIdx = firstIncomplete !== -1 ? firstIncomplete : viewingIdx;
+            renderSet();
         }
 
         async function finishSession() {
