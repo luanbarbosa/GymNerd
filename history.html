@@ -119,7 +119,7 @@
                 if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, sets: parseInt(sets) || 3, weight: parseFloat(weight), reps: parseInt(reps), date });
             });
             await db.logs.bulkAdd(logs);
-            await DriveStorage.sync(db);
+            localStorage.setItem('has_local_changes', 'true');
             location.reload();
         }
 

@@ -153,7 +153,7 @@
                 await db.logs.bulkAdd(logs);
 
                 if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
-                    await DriveStorage.sync(db);
+                    await DriveStorage.sync(db, ['logs', 'workouts']);
                 }
 
                 if (newRecord > oldRecord && newRecord > 1) {
