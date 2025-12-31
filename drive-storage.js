@@ -152,20 +152,23 @@ const DriveStorage = {
         }
     },
 
-    async sync(db) {
+    async sync(db, tableNames = null) {
         const token = localStorage.getItem('google_token');
         if (!token || token === 'local-bypass') return false;
 
         try {
             if (window.showLoading) window.showLoading();
             
-            const data = {
-                images: await db.images.toArray(),
-                exercises: await db.exercises.toArray(),
-                workouts: await db.workouts.toArray(),
-                logs: await db.logs.toArray(),
-                lastSync: { time: new Date().toISOString() }
-            };
+            const data = {};
+            const tables = tableNames || ['images', 'exercises', 'workouts', 'logs'];
+            
+            for (const table of tables) {
+                if (db[table]) {
+                    data[table] = await db[table].toArray();
+                }
+            }
+            
+            data.lastSync = { time: new Date().toISOString() };
 
             await this.save(data);
             localStorage.setItem('last_sync_time', data.lastSync.time);

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymNerd | Stats</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.png">
     <script src="auth.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -317,7 +318,12 @@
 
         async function updateStreakBadge() {
             const overview = document.getElementById('stats-overview');
-            const workoutDates = await db.logs.orderBy('date').uniqueKeys();
+            
+            // Ensure DB is open (iOS fix)
+            if (!db.isOpen()) await db.open();
+            
+            const allLogs = await db.logs.toArray();
+            const workoutDates = [...new Set(allLogs.map(l => l.date))].sort();
             
             if (workoutDates.length === 0) {
                 overview.innerHTML = `

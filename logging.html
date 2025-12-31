@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymNerd | Log</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.png">
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
@@ -111,56 +111,58 @@
         }
 
         async function saveSession() {
-            const date = document.getElementById('logDate').value;
+            try {
+                // Ensure DB is open (iOS fix)
+                if (!db.isOpen()) await db.open();
 
-            // Calculate streak record before saving
-            const existingDates = await db.logs.orderBy('date').uniqueKeys();
-            const calculateLongest = (dates) => {
-                let max = 0, current = 0, prev = null;
-                for (const dStr of dates) {
-                    const [y, m, d] = dStr.split('-').map(Number);
-                    const curr = new Date(y, m - 1, d);
-                    if (prev) {
-                        const diff = Math.round((curr - prev) / 86400000);
-                        if (diff === 1) current++;
-                        else { max = Math.max(max, current); current = 1; }
-                    } else current = 1;
-                    prev = curr;
-                }
-                return Math.max(max, current);
-            };
+                const date = document.getElementById('logDate').value || new Date().toISOString().split('T')[0];
 
-            const oldRecord = calculateLongest(existingDates);
-            const newDates = Array.from(new Set([...existingDates, date])).sort();
-            const newRecord = calculateLongest(newDates);
+                // Calculate streak record before saving (Avoid uniqueKeys on iOS)
+                const allLogs = await db.logs.toArray();
+                const existingDates = [...new Set(allLogs.map(l => l.date))].sort();
 
-            const logs = [];
-            document.querySelectorAll('.exercise-row').forEach(r => {
-                const sets = r.querySelector('.s').value;
-                const weight = r.querySelector('.w').value;
-                const reps = r.querySelector('.r').value;
-                if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, sets: parseInt(sets) || 3, weight: parseFloat(weight), reps: parseInt(reps), date });
-            });
+                const calculateLongest = (dates) => {
+                    let max = 0, current = 0, prev = null;
+                    for (const dStr of dates) {
+                        const [y, m, d] = dStr.split('-').map(Number);
+                        const curr = new Date(y, m - 1, d);
+                        if (prev) {
+                            const diff = Math.round((curr - prev) / 86400000);
+                            if (diff === 1) current++;
+                            else { max = Math.max(max, current); current = 1; }
+                        } else current = 1;
+                        prev = curr;
+                    }
+                    return Math.max(max, current);
+                };
 
-            if (logs.length === 0) return alert("Please enter weight and reps for at least one exercise.");
+                const oldRecord = calculateLongest(existingDates);
+                const newDates = Array.from(new Set([...existingDates, date])).sort();
+                const newRecord = calculateLongest(newDates);
 
-            await db.logs.bulkAdd(logs);
-
-            await DriveStorage.sync(db);
-
-            if (newRecord > oldRecord && newRecord > 1) {
-                confetti({
-                    particleCount: 150,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: ['#3b82f6', '#10b981', '#f8fafc']
+                const logs = [];
+                document.querySelectorAll('.exercise-row').forEach(r => {
+                    const sets = r.querySelector('.s').value;
+                    const weight = r.querySelector('.w').value;
+                    const reps = r.querySelector('.r').value;
+                    if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, sets: parseInt(sets) || 3, weight: parseFloat(weight), reps: parseInt(reps), date });
                 });
-                setTimeout(() => {
+
+                if (logs.length === 0) return alert("Please enter weight and reps for at least one exercise.");
+
+                await db.logs.bulkAdd(logs);
+
+                if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
+                    await DriveStorage.sync(db);
+                }
+
+                if (newRecord > oldRecord && newRecord > 1) {
                     alert(`🎉 NEW STREAK RECORD: ${newRecord} DAYS!`);
-                    location.href = "statistics.html";
-                }, 1500);
-            } else {
+                }
                 location.href = "statistics.html";
+            } catch (err) {
+                alert("DEBUG ERROR: " + err.message + "\n" + err.stack);
+                console.error(err);
             }
         }
 
