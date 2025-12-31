@@ -112,7 +112,6 @@
 
         async function saveSession() {
             try {
-<<<<<<< HEAD
                 // Ensure DB is open (iOS fix)
                 if (!db.isOpen()) await db.open();
 
@@ -141,31 +140,6 @@
                 const newDates = Array.from(new Set([...existingDates, date])).sort();
                 const newRecord = calculateLongest(newDates);
 
-=======
-                const date = document.getElementById('logDate').value;
-
-                // Calculate streak record before saving
-                const existingDates = await db.logs.orderBy('date').uniqueKeys();
-                const calculateLongest = (dates) => {
-                    let max = 0, current = 0, prev = null;
-                    for (const dStr of dates) {
-                        const [y, m, d] = dStr.split('-').map(Number);
-                        const curr = new Date(y, m - 1, d);
-                        if (prev) {
-                            const diff = Math.round((curr - prev) / 86400000);
-                            if (diff === 1) current++;
-                            else { max = Math.max(max, current); current = 1; }
-                        } else current = 1;
-                        prev = curr;
-                    }
-                    return Math.max(max, current);
-                };
-
-                const oldRecord = calculateLongest(existingDates);
-                const newDates = Array.from(new Set([...existingDates, date])).sort();
-                const newRecord = calculateLongest(newDates);
-
->>>>>>> e6ef6cc (Bug-fix: Live session stuck on mobile.)
                 const logs = [];
                 document.querySelectorAll('.exercise-row').forEach(r => {
                     const sets = r.querySelector('.s').value;
@@ -179,11 +153,7 @@
                 await db.logs.bulkAdd(logs);
 
                 if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
-<<<<<<< HEAD
                     await DriveStorage.sync(db, ['logs', 'workouts']);
-=======
-                    await DriveStorage.sync(db);
->>>>>>> e6ef6cc (Bug-fix: Live session stuck on mobile.)
                 }
 
                 if (newRecord > oldRecord && newRecord > 1) {
