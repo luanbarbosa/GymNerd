@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymNerd | Log</title>
     <script src="auth.js"></script>
+    <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -145,6 +146,8 @@
 
             await db.logs.bulkAdd(logs);
 
+            await DriveStorage.sync(db);
+
             if (newRecord > oldRecord && newRecord > 1) {
                 confetti({
                     particleCount: 150,
@@ -157,7 +160,6 @@
                     location.href = "statistics.html";
                 }, 1500);
             } else {
-                alert("Workout saved!");
                 location.href = "statistics.html";
             }
         }

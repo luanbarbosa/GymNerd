@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymNerd | History</title>
     <script src="auth.js"></script>
+    <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
@@ -118,12 +119,14 @@
                 if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, sets: parseInt(sets) || 3, weight: parseFloat(weight), reps: parseInt(reps), date });
             });
             await db.logs.bulkAdd(logs);
+            await DriveStorage.sync(db);
             location.reload();
         }
 
         async function deleteDateLogs(date) {
             if(confirm(`Delete all entries for ${date}?`)) {
                 await db.logs.where('date').equals(date).delete();
+                localStorage.setItem('has_local_changes', 'true');
                 renderHistory();
             }
         }

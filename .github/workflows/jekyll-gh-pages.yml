@@ -28,12 +28,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Inject Password Hash
+      - name: Inject Secrets
         env:
-          APP_PASSWORD_HASH: ${{ secrets.APP_PASSWORD_HASH }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: |
-          # Use a different delimiter (|) in case the hash contains '/' and use env var to prevent shell expansion
-          sed -i "s|__PASSWORD_HASH__|$APP_PASSWORD_HASH|g" auth.js
+          sed -i "s|__GOOGLE_CLIENT_ID__|$GOOGLE_CLIENT_ID|g" auth.js
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
