@@ -9,6 +9,7 @@
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="db.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
@@ -54,18 +55,12 @@
     </details>
 
     <script>
-        const db = new Dexie("GymAppDB");
-        db.version(7).stores({ 
-            exercises: '++id, name, namePT, type, imageId', 
-            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
-            workouts: '++id, name, exerciseIds', 
-            images: '++id' 
-        });
 
         document.getElementById('logDate').value = new Date().toLocaleDateString('en-CA');
         let allEx = [];
 
         async function init() {
+            await ensureDbOpen();
             const fallback = await db.images.get(0);
             if (!fallback) {
                 await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
@@ -114,32 +109,15 @@
         async function saveSession() {
             try {
                 // Ensure DB is open (iOS fix)
-                if (!db.isOpen()) await db.open();
+                await ensureDbOpen();
 
                 const date = document.getElementById('logDate').value || new Date().toISOString().split('T')[0];
 
                 // Calculate streak record before saving (Avoid uniqueKeys on iOS)
                 const allLogs = await db.logs.toArray();
                 const existingDates = [...new Set(allLogs.map(l => l.date))].sort();
-
-                const calculateLongest = (dates) => {
-                    let max = 0, current = 0, prev = null;
-                    for (const dStr of dates) {
-                        const [y, m, d] = dStr.split('-').map(Number);
-                        const curr = new Date(y, m - 1, d);
-                        if (prev) {
-                            const diff = Math.round((curr - prev) / 86400000);
-                            if (diff === 1) current++;
-                            else { max = Math.max(max, current); current = 1; }
-                        } else current = 1;
-                        prev = curr;
-                    }
-                    return Math.max(max, current);
-                };
-
-                const oldRecord = calculateLongest(existingDates);
-                const newDates = Array.from(new Set([...existingDates, date])).sort();
-                const newRecord = calculateLongest(newDates);
+                const oldRecord = calculateStreaks(existingDates).longest;
+                const newRecord = calculateStreaks([...existingDates, date]).longest;
 
                 const logs = [];
                 document.querySelectorAll('.exercise-row').forEach(r => {

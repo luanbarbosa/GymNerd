@@ -9,6 +9,7 @@
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="db.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
@@ -73,13 +74,6 @@
     </div>
 
     <script>
-        const db = new Dexie("GymAppDB");
-        db.version(7).stores({ 
-            exercises: '++id, name, namePT, type, imageId', 
-            logs: '++id, exerciseId, exerciseName, weight, reps, date, imageId', 
-            workouts: '++id, name, exerciseIds', 
-            images: '++id' 
-        });
 
         // Initialize Auth Status UI
         renderAuthStatus('auth-status-container');
@@ -93,6 +87,7 @@
         }
 
         async function exportData() {
+            await ensureDbOpen();
             const date = new Date().toISOString().slice(0,10);
             const data = {
                 images: await db.images.toArray(),
@@ -121,6 +116,7 @@
                 logs: document.getElementById('importLogs').files[0]
             };
 
+            await ensureDbOpen();
             try {
                 for (const key in files) {
                     if (files[key]) {
@@ -142,6 +138,7 @@
 
         async function restoreFromDrive(isAuto = false) {
             try {
+                await ensureDbOpen();
                 if (window.showLoading) {
                     window.showLoading(isAuto ? "Welcome back! Syncing your data..." : "Restoring from Google Drive...");
                 }
