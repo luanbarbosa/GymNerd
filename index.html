@@ -89,8 +89,10 @@
             await ensureDbOpen();
             const date = new Date().toISOString().slice(0,10);
             const data = {
-                images: await db.images.toArray(),
-                exercises: await db.exercises.toArray(),
+                catalog_exercises: await db.catalog_exercises.toArray(),
+                catalog_images: await db.catalog_images.toArray(),
+                custom_exercises: await db.custom_exercises.toArray(),
+                custom_images: await db.custom_images.toArray(),
                 routines: await db.routines.toArray(),
                 logs: await db.logs.toArray()
             };
@@ -109,9 +111,11 @@
 
         async function importData() {
             const files = {
-                images: document.getElementById('importImg').files[0],
-                exercises: document.getElementById('importEx').files[0],
-                workouts: document.getElementById('importWk').files[0],
+                catalog_images: document.getElementById('importImg').files[0],
+                catalog_exercises: document.getElementById('importEx').files[0],
+                custom_images: null,
+                custom_exercises: null,
+                routines: document.getElementById('importWk').files[0],
                 logs: document.getElementById('importLogs').files[0]
             };
 
@@ -150,12 +154,18 @@
 
                 const proceed = isAuto || confirm("This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
-                    await db.transaction('rw', [db.images, db.exercises, db.workouts, db.logs], async () => {
-                        await db.images.clear();
-                        if (data.images) await db.images.bulkAdd(data.images);
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.logs], async () => {
+                        await db.catalog_images.clear();
+                        if (data.catalog_images) await db.catalog_images.bulkAdd(data.catalog_images);
                         
-                        await db.exercises.clear();
-                        if (data.exercises) await db.exercises.bulkAdd(data.exercises);
+                        await db.catalog_exercises.clear();
+                        if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
+
+                        await db.custom_images.clear();
+                        if (data.custom_images) await db.custom_images.bulkAdd(data.custom_images);
+                        
+                        await db.custom_exercises.clear();
+                        if (data.custom_exercises) await db.custom_exercises.bulkAdd(data.custom_exercises);
                         
                         await db.routines.clear();
                         if (data.routines) await db.routines.bulkAdd(data.routines);

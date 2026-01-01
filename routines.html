@@ -157,35 +157,22 @@
         async function init() {
             try {
                 await ensureDbOpen();
-
-                const EXERCISES_URL = 'https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/feature/catalog/catalog/exercises.json';
-                const IMAGES_URL = 'https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/feature/catalog/catalog/images.json';
-
-                const [exRes, imgRes, localEx, localImgs] = await Promise.all([
-                    fetch(EXERCISES_URL),
-                    fetch(IMAGES_URL),
-                    db.exercises.toArray(),
-                    db.images.toArray()
+                const [catalogEx, catalogImgs, customEx, customImgs] = await Promise.all([
+                    db.catalog_exercises.toArray(),
+                    db.catalog_images.toArray(),
+                    db.custom_exercises.toArray(),
+                    db.custom_images.toArray()
                 ]);
-                
-                const remoteCatalog = await exRes.json();
-                const rawRemoteImages = await imgRes.json();
-                
-                // Map remote images by ID
-                images = rawRemoteImages.reduce((acc, img) => {
-                    acc[img.id] = img.data;
-                    return acc;
-                }, {});
 
-                // Merge local images
-                localImgs.forEach(img => {
-                    images[img.id] = img.data;
-                });
+                // Merge images from both catalog and custom collections
+                images = {};
+                catalogImgs.forEach(img => images[img.id] = img.data);
+                customImgs.forEach(img => images[img.id] = img.data);
 
-                // Combine remote and local exercises
+                // Combine exercises into a single list for the search modal
                 allExercises = [
-                    ...remoteCatalog, 
-                    ...localEx.map(ex => ({ ...ex, isCustom: true }))
+                    ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                    ...customEx.map(ex => ({ ...ex, isCustom: true }))
                 ];
 
                 renderWorkouts();
@@ -352,14 +339,14 @@
                 let imageId = 0;
                 if (currentImageData) {
                     imageId = Date.now();
-                    await db.images.put({ id: imageId, data: currentImageData });
+                    await db.custom_images.put({ id: imageId, data: currentImageData });
                 }
                 const exerciseData = { name, namePT, type, imageId };
                 if (id) {
-                    await db.exercises.update(parseInt(id), exerciseData);
+                    await db.custom_exercises.update(parseInt(id), exerciseData);
                     alert("Exercise updated!");
                 } else {
-                    await db.exercises.add(exerciseData);
+                    await db.custom_exercises.add(exerciseData);
                     alert("Exercise saved to your local collection!");
                 }
                 localStorage.setItem('has_local_changes', 'true');

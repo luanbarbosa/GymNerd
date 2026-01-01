@@ -1,9 +1,11 @@
 const db = new Dexie("GymAppDB");
-db.version(8).stores({ 
-    exercises: '++id, name, namePT, type, imageId', 
-    logs: '++id, exerciseId, weight, reps, date', 
-    routines: '++id, name, exerciseIds', 
-    images: '++id' 
+db.version(10).stores({ 
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId', 
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    logs: '++id, exerciseId, weight, reps, date'
 });
 
 async function ensureDbOpen() {
@@ -58,3 +60,46 @@ function calculateStreaks(dates) {
 
     return { current, longest, daysSince };
 }
+
+/**
+ * Initializes the catalog tables with data from external JSON files
+ * if the tables are currently empty.
+ */
+async function initializeCatalog() {
+    try {
+        await ensureDbOpen();
+        const [exCount, imgCount] = await Promise.all([
+            db.catalog_exercises.count(),
+            db.catalog_images.count()
+        ]);
+        
+        // Only fetch if one of the tables is empty
+        if (exCount > 0 && imgCount > 0) return;
+
+        const [exResp, imgResp] = await Promise.all([
+            fetch('https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/feature/catalog/catalog/exercises.json'),
+            fetch('https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/feature/catalog/catalog/images.json')
+        ]);
+        
+        if (!exResp.ok || !imgResp.ok) return;
+        
+        const exercises = await exResp.json();
+        const images = await imgResp.json();
+        
+        // Negate IDs for catalog exercises to distinguish them from user-created ones
+        const catalogExercises = exercises.map(ex => ({
+            ...ex,
+            id: -ex.id
+        }));
+
+        await db.transaction('rw', db.catalog_exercises, db.catalog_images, async () => {
+            if (exCount === 0) await db.catalog_exercises.bulkAdd(catalogExercises);
+            if (imgCount === 0) await db.catalog_images.bulkAdd(images);
+        });
+    } catch (err) {
+        console.error("Catalog initialization failed:", err);
+    }
+}
+
+// Run initialization on load
+initializeCatalog();

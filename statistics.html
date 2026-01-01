@@ -116,9 +116,10 @@
             init();
         }
 
-        async function getImg(id) {
+        async function getImg(id, isCustom = false) {
             if (!id) return FALLBACK_IMG;
-            const imgRecord = await db.images.get(id);
+            const imgTable = isCustom ? db.custom_images : db.catalog_images;
+            const imgRecord = await imgTable.get(id);
             return imgRecord ? imgRecord.data : FALLBACK_IMG;
         }
 
@@ -145,8 +146,15 @@
 
         async function renderCharts(logs) {
             const wrapper = document.getElementById('chartsWrapper');
-            const allExercises = await db.exercises.toArray();
-            const exMap = allExercises.reduce((acc, ex) => { acc[ex.id] = ex; return acc; }, {});
+            const [catalogEx, customEx] = await Promise.all([
+                db.catalog_exercises.toArray(),
+                db.custom_exercises.toArray()
+            ]);
+            const allExercises = [
+                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                ...customEx.map(ex => ({ ...ex, isCustom: true }))
+            ];
+            const exMap = allExercises.reduce((acc, ex) => { acc[`${ex.id}-${!!ex.isCustom}`] = ex; return acc; }, {});
 
             const groupedByType = {};
             const lineDataLabelsPlugin = {
@@ -166,9 +174,10 @@
             };
 
             logs.forEach(l => {
-                const ex = exMap[l.exerciseId];
+                const exKey = `${l.exerciseId}-${l.isCustom !== undefined ? !!l.isCustom : l.exerciseId > 0}`;
+                const ex = exMap[exKey];
                 const type = ex ? ex.type : 'Other';
-                const exId = l.exerciseId;
+                const exId = exKey;
                 if (!groupedByType[type]) groupedByType[type] = {};
                 if (!groupedByType[type][exId]) groupedByType[type][exId] = [];
                 groupedByType[type][exId].push(l);
@@ -188,11 +197,11 @@
                     const lastEntry = entries[entries.length - 1];
                     const currentEx = exMap[exId];
                     const displayName = currentEx ? currentEx.name : "Unknown Exercise";
-                    const imgSrc = await getImg(currentEx?.imageId);
+                    const imgSrc = await getImg(currentEx?.imageId, currentEx?.isCustom);
                     
                     const box = document.createElement('div'); 
                     box.className = 'chart-box';
-                    const canvasId = `c-${lastEntry.exerciseId}`;
+                    const canvasId = `c-${lastEntry.exerciseId}-${!!lastEntry.isCustom}`.replace(/-/g, '_');
                     
                     box.innerHTML = `
                         <div class="chart-header">

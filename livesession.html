@@ -227,9 +227,9 @@
 
         async function init() {
             await ensureDbOpen();
-            const fallback = await db.images.get(0);
+            const fallback = await db.catalog_images.get(0);
             if (!fallback) {
-                await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
+                await db.catalog_images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
             }
             const workouts = await db.routines.toArray();
             const select = document.getElementById('workoutSelect');
@@ -294,15 +294,24 @@
             }
 
             const workout = await db.routines.get(workoutId);
-            const allExercises = await db.exercises.toArray();
+            const [catalogEx, customEx] = await Promise.all([
+                db.catalog_exercises.toArray(),
+                db.custom_exercises.toArray()
+            ]);
+            const allExercises = [
+                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                ...customEx.map(ex => ({ ...ex, isCustom: true }))
+            ];
             
             container.innerHTML = "";
             for (const item of workout.exerciseIds) {
                 const id = typeof item === 'object' ? item.id : item;
-                const ex = allExercises.find(e => e.id === id);
+                const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
                 if (!ex) continue;
 
-                const imgRecord = await db.images.get(ex.imageId || 0);
+                const imgTable = isCustom ? db.custom_images : db.catalog_images;
+                const imgRecord = await imgTable.get(ex.imageId || 0);
                 const imgSrc = imgRecord ? imgRecord.data : "";
 
                 const details = typeof item === 'object' 
@@ -315,7 +324,7 @@
                     <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
                     <div><strong>${ex.name}</strong>${details}</div>
                     <div class="checkbox-wrapper">
-                        <input type="checkbox" class="ex-check" value="${id}" checked>
+                        <input type="checkbox" class="ex-check" value="${id}" data-iscustom="${isCustom}" checked>
                     </div>
                 `;
                 container.appendChild(div);
@@ -327,7 +336,14 @@
             const workoutId = parseInt(document.getElementById('workoutSelect').value);
             currentWorkoutId = workoutId;
             const workout = await db.routines.get(workoutId);
-            const allExercises = await db.exercises.toArray();
+            const [catalogEx, customEx] = await Promise.all([
+                db.catalog_exercises.toArray(),
+                db.custom_exercises.toArray()
+            ]);
+            const allExercises = [
+                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                ...customEx.map(ex => ({ ...ex, isCustom: true }))
+            ];
             const selectedChecks = Array.from(document.querySelectorAll('.ex-check:checked'));
             
             if (selectedChecks.length === 0) return alert("Please select at least one exercise.");
@@ -339,13 +355,19 @@
             for (const check of selectedChecks) {
                 occurrenceId++;
                 const exId = parseInt(check.value);
-                const ex = allExercises.find(e => e.id === exId);
-                const workoutEx = workout.exerciseIds.find(we => (typeof we === 'object' ? we.id : we) === exId);
+                const isCustom = check.dataset.iscustom === 'true';
+                const ex = allExercises.find(e => e.id === exId && !!e.isCustom === isCustom);
+                const workoutEx = workout.exerciseIds.find(we => {
+                    const weId = typeof we === 'object' ? we.id : we;
+                    const weIsCustom = typeof we === 'object' ? !!we.isCustom : false;
+                    return weId === exId && weIsCustom === isCustom;
+                });
                 
                 if (workoutEx && Array.isArray(workoutEx.sets)) {
                     workoutEx.sets.forEach((s, i) => {
                         sessionSets.push({
                             exId,
+                            isCustom,
                             name: ex.name,
                             namePT: ex.namePT,
                             imageId: ex.imageId,
@@ -366,6 +388,7 @@
                     for (let i = 1; i <= setsCount; i++) {
                         sessionSets.push({
                             exId,
+                            isCustom,
                             name: ex.name,
                             namePT: ex.namePT,
                             imageId: ex.imageId,
@@ -408,7 +431,8 @@
             document.getElementById('prevExBtn').disabled = !hasPrev;
             document.getElementById('nextExBtn').disabled = !hasNext;
 
-            const imgRecord = await db.images.get(viewingSet.imageId || 0);
+            const imgTable = viewingSet.isCustom ? db.custom_images : db.catalog_images;
+            const imgRecord = await imgTable.get(viewingSet.imageId || 0);
             document.getElementById('playerImg').src = imgRecord ? imgRecord.data : "";
 
             // Find contiguous sets for the same exercise occurrence
@@ -555,10 +579,12 @@
                     if (workout) {
                         workout.exerciseIds = workout.exerciseIds.map(item => {
                             const exId = typeof item === 'object' ? item.id : item;
-                            const sessionExSets = sessionSets.filter(s => s.exId === exId);
+                            const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                            const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
                             if (sessionExSets.length > 0) {
                                 return {
                                     id: exId,
+                                    isCustom,
                                     sets: sessionExSets.map(s => ({ reps: s.reps, weight: s.weight }))
                                 };
                             }
@@ -572,6 +598,7 @@
                 const groups = sessionSets.reduce((acc, s) => {
                     if (!s.completed) return acc; // Only log completed sets
                     if (!acc[s.exId]) acc[s.exId] = { ...s, count: 0 };
+                    acc[s.exId].isCustom = s.isCustom;
                     acc[s.exId].count++;
                     // Use the values from the sets (last completed set values will be stored)
                     acc[s.exId].weight = s.weight;
@@ -581,7 +608,7 @@
 
                 for (const id in groups) {
                     const g = groups[id];
-                    logs.push({ exerciseId: g.exId, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
+                    logs.push({ exerciseId: g.exId, isCustom: g.isCustom, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
                 }
 
                 await db.logs.bulkAdd(logs);
@@ -591,7 +618,7 @@
                 if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
                     try {
                         await Promise.race([
-                            DriveStorage.sync(db, ['logs', 'workouts']),
+                            DriveStorage.sync(db, ['logs', 'routines']),
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 8000))
                         ]);
                     } catch (syncErr) {

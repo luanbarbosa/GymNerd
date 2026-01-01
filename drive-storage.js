@@ -160,7 +160,7 @@ const DriveStorage = {
             if (window.showLoading) window.showLoading();
             
             const data = {};
-            const tables = tableNames || ['images', 'exercises', 'workouts', 'logs'];
+            const tables = tableNames || ['catalog_exercises', 'catalog_images', 'custom_exercises', 'custom_images', 'routines', 'logs'];
             
             for (const table of tables) {
                 if (db[table]) {
