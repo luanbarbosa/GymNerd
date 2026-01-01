@@ -45,6 +45,20 @@
         .exercise-name-pt { font-size: 0.85rem; color: var(--text-dim); margin-top: 2px; }
         .copy-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
         .copy-btn:hover { color: var(--primary); }
+
+        .custom-badge {
+            font-size: 0.6rem;
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--primary);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            display: inline-block;
+            margin-top: 4px;
+        }
         
         .loading { text-align: center; padding: 40px; color: var(--text-dim); font-size: 0.9rem; }
         .hidden { display: none !important; }
@@ -80,6 +94,7 @@
             <h2 id="modalTitle">Custom Exercise</h2>
         </div>
         <div class="form-group">
+            <input type="hidden" id="exId">
             <label>Name</label>
             <input type="text" id="exName" placeholder="e.g. Bench Press">
             
@@ -89,10 +104,10 @@
             <label>Type</label>
             <select id="exType">
                 <option value="chest">Chest</option>
-                <option value="legs">Legs</option>
+                <option value="leg">Legs</option>
                 <option value="back">Back</option>
-                <option value="shoulders">Shoulders</option>
-                <option value="arms">Arms</option>
+                <option value="shoulder">Shoulders</option>
+                <option value="arm">Arms</option>
             </select>
 
             <label>Image</label>
@@ -113,22 +128,37 @@
 
         async function init() {
             try {
+                await ensureDbOpen();
+
                 const EXERCISES_URL = 'https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/feature/catalog/catalog/exercises.json';
                 const IMAGES_URL = 'https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/feature/catalog/catalog/images.json';
 
-                const [exRes, imgRes] = await Promise.all([
+                const [exRes, imgRes, localEx, localImgs] = await Promise.all([
                     fetch(EXERCISES_URL),
-                    fetch(IMAGES_URL)
+                    fetch(IMAGES_URL),
+                    db.exercises.toArray(),
+                    db.images.toArray()
                 ]);
                 
-                catalog = await exRes.json();
-                const rawImages = await imgRes.json();
+                const remoteCatalog = await exRes.json();
+                const rawRemoteImages = await imgRes.json();
                 
-                // Map images by ID for fast lookup
-                images = rawImages.reduce((acc, img) => {
+                // Map remote images by ID
+                images = rawRemoteImages.reduce((acc, img) => {
                     acc[img.id] = img.data;
                     return acc;
                 }, {});
+
+                // Merge local images
+                localImgs.forEach(img => {
+                    images[img.id] = img.data;
+                });
+
+                // Combine remote and local exercises
+                catalog = [
+                    ...remoteCatalog, 
+                    ...localEx.map(ex => ({ ...ex, isCustom: true }))
+                ];
 
                 renderExercises(catalog);
             } catch (err) {
@@ -183,11 +213,19 @@
                                 <img src="${images[ex.imageId] || ''}" class="exercise-image" loading="lazy">
                                 <div class="exercise-info">
                                     <h3 class="exercise-name">${ex.name}</h3>
+                                    ${ex.isCustom ? `<span class="custom-badge">Custom</span>` : ''}
                                     ${ex.namePT ? `<div class="exercise-name-pt">${ex.namePT}</div>` : ''}
                                 </div>
-                                <button class="copy-btn" onclick="copyExercise(${ex.id})">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
+                                <div style="display: flex; gap: 4px;">
+                                    ${ex.isCustom ? `
+                                        <button class="copy-btn" onclick="editExercise(${ex.id})" title="Edit">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                        </button>
+                                    ` : ''}
+                                    <button class="copy-btn" onclick="copyExercise(${ex.id}, ${!!ex.isCustom})" title="Copy">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    </button>
+                                </div>
                             </div>
                         `).join('')}
                     </div>
@@ -216,6 +254,7 @@
 
         function openCreateModal() {
             document.getElementById('modalTitle').innerText = "Custom Exercise";
+            document.getElementById('exId').value = '';
             document.getElementById('exName').value = '';
             document.getElementById('exNamePT').value = '';
             document.getElementById('exType').selectedIndex = 0;
@@ -256,13 +295,14 @@
             reader.readAsDataURL(file);
         }
 
-        function copyExercise(exId) {
-            const ex = catalog.find(e => e.id === exId);
+        function copyExercise(exId, isCustom = false) {
+            const ex = catalog.find(e => e.id === exId && !!e.isCustom === !!isCustom);
             if (!ex) return;
             
+            document.getElementById('exId').value = '';
             document.getElementById('exName').value = ex.name;
             document.getElementById('exNamePT').value = ex.namePT || '';
-            document.getElementById('exType').value = ex.type === 'leg' ? 'legs' : ex.type;
+            document.getElementById('exType').value = ex.type;
             
             const imgData = images[ex.imageId];
             if (imgData) {
@@ -280,9 +320,74 @@
             document.getElementById('customExModal').classList.remove('hidden');
         }
 
-        function saveCustomExercise() {
-            // Save action remains empty for now
-            closeModal();
+        async function editExercise(exId) {
+            const ex = catalog.find(e => e.id === exId && e.isCustom);
+            if (!ex) return;
+
+            document.getElementById('exId').value = ex.id;
+            document.getElementById('exName').value = ex.name;
+            document.getElementById('exNamePT').value = ex.namePT || '';
+            document.getElementById('exType').value = ex.type;
+
+            const imgData = images[ex.imageId];
+            if (imgData) {
+                currentImageData = imgData;
+                document.getElementById('exImagePreview').src = imgData;
+                document.getElementById('exImagePreview').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+            } else {
+                currentImageData = null;
+                document.getElementById('exImagePreview').classList.add('hidden');
+                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            }
+
+            document.getElementById('modalTitle').innerText = "Edit Exercise";
+            document.getElementById('customExModal').classList.remove('hidden');
+        }
+
+        async function saveCustomExercise() {
+            const id = document.getElementById('exId').value;
+            const name = document.getElementById('exName').value.trim();
+            const namePT = document.getElementById('exNamePT').value.trim();
+            const type = document.getElementById('exType').value;
+
+            if (!name) {
+                alert("Please enter a name for the exercise.");
+                return;
+            }
+
+            try {
+                await ensureDbOpen();
+
+                let imageId = 0;
+                if (currentImageData) {
+                    // Use a timestamp as a unique ID for the image to avoid conflicts with catalog IDs
+                    imageId = Date.now();
+                    await db.images.put({ id: imageId, data: currentImageData });
+                }
+
+                const exerciseData = {
+                    name,
+                    namePT,
+                    type,
+                    imageId
+                };
+
+                if (id) {
+                    await db.exercises.update(parseInt(id), exerciseData);
+                    alert("Exercise updated!");
+                } else {
+                    await db.exercises.add(exerciseData);
+                    alert("Exercise saved to your local collection!");
+                }
+
+                localStorage.setItem('has_local_changes', 'true');
+                closeModal();
+                init(); // Refresh the list to show the new exercise
+            } catch (err) {
+                console.error("Error saving custom exercise:", err);
+                alert("Failed to save exercise: " + err.message);
+            }
         }
 
         init();
