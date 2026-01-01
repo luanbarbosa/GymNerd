@@ -1,0 +1,16 @@
+[
+    {
+        "name": "Leg press",
+        "namePT": "",
+        "type": "leg",
+        "imageId": 1,
+        "id": 1
+    },
+    {
+        "name": "Leg extension",
+        "namePT": "",
+        "type": "leg",
+        "imageId": 2,
+        "id": 2
+    }
+]
