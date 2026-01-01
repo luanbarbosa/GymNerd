@@ -41,10 +41,10 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Workout History</h2></div>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Routine History</h2></div>
     <div class="card">
-        <div class="section-header"><h2>Log workout</h2></div>
-        <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Workout --</option></select>
+        <div class="section-header"><h2>Log Routine</h2></div>
+        <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Routine --</option></select>
         <input type="date" id="logDate" style="margin-top:10px">
     </div>
     <div id="workoutSheet"></div>
@@ -66,7 +66,7 @@
                 await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
             }
             allEx = await db.exercises.toArray();
-            const wks = await db.workouts.toArray();
+            const wks = await db.routines.toArray();
             const p = document.getElementById('routinePicker');
             wks.forEach(w => p.innerHTML += `<option value="${w.id}">${w.name}</option>`);
             renderHistory();
@@ -76,7 +76,7 @@
             const id = parseInt(document.getElementById('routinePicker').value);
             const sheet = document.getElementById('workoutSheet');
             if(!id) { sheet.innerHTML=""; return; }
-            const wk = await db.workouts.get(id);
+            const wk = await db.routines.get(id);
             sheet.innerHTML = "";
             for (const item of wk.exerciseIds) {
                 const id = typeof item === 'object' ? item.id : item;

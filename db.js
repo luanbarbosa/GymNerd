@@ -2,7 +2,7 @@ const db = new Dexie("GymAppDB");
 db.version(8).stores({ 
     exercises: '++id, name, namePT, type, imageId', 
     logs: '++id, exerciseId, weight, reps, date', 
-    workouts: '++id, name, exerciseIds', 
+    routines: '++id, name, exerciseIds', 
     images: '++id' 
 });
 

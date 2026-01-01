@@ -46,9 +46,8 @@
         <h1>GymNerd</h1>
         
         <div class="menu-grid">
-            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span>🚀 Start Workout</span><span>→</span></a>
-            <a href="exercises.html" class="nav-card"><span>🏋 Exercises</span><span>→</span></a>
-            <a href="workouts.html" class="nav-card"><span>💪 My Workouts</span><span>→</span></a>
+            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span>🚀 Start Routine</span><span>→</span></a>
+            <a href="routines.html" class="nav-card"><span>🏋 My Routines</span><span>→</span></a>
             <a href="history.html" class="nav-card"><span>📋 History</span><span>→</span></a>
             <a href="statistics.html" class="nav-card"><span>📊 Statistics</span><span>→</span></a>
         </div>
@@ -92,7 +91,7 @@
             const data = {
                 images: await db.images.toArray(),
                 exercises: await db.exercises.toArray(),
-                workouts: await db.workouts.toArray(),
+                routines: await db.routines.toArray(),
                 logs: await db.logs.toArray()
             };
             
@@ -158,8 +157,8 @@
                         await db.exercises.clear();
                         if (data.exercises) await db.exercises.bulkAdd(data.exercises);
                         
-                        await db.workouts.clear();
-                        if (data.workouts) await db.workouts.bulkAdd(data.workouts);
+                        await db.routines.clear();
+                        if (data.routines) await db.routines.bulkAdd(data.routines);
                         
                         await db.logs.clear();
                         if (data.logs) await db.logs.bulkAdd(data.logs);

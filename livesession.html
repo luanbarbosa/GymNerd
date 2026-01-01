@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GymNerd | Start Workout</title>
+    <title>GymNerd | Start Routine</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
     <script src="auth.js"></script>
@@ -121,7 +121,7 @@
         <div class="header">
             <div class="header-left">
                 <a href="index.html" class="back-btn">←</a>
-                <h2>Start Workout</h2>
+                <h2>Start Routine</h2>
             </div>
         </div>
         
@@ -135,9 +135,9 @@
             </div>
 
             <div class="card">
-                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Workout</label>
+                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Routine</label>
                 <select id="workoutSelect" onchange="loadExercises()">
-                    <option value="">-- Choose Workout --</option>
+                    <option value="">-- Choose Routine --</option>
                 </select>
                 <div id="exerciseContainer" class="exercise-list"></div>
                 <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session</button>
@@ -149,7 +149,7 @@
         <div class="header">
             <div class="header-left">
                 <a href="livesession.html" class="back-btn">←</a>
-                <h2 id="playerWorkoutTitle">Workout</h2>
+                <h2 id="playerWorkoutTitle">Routine</h2>
             </div>
             <div class="header-timer" onclick="startTimer()" title="Reset Timer">
                 <div id="setTimer" class="timer-val">00:00</div>
@@ -187,7 +187,7 @@
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </button>
                 </div>
-                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Workout</button>
+                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Routine</button>
             </div>
         </div>
     </div>
@@ -231,7 +231,7 @@
             if (!fallback) {
                 await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
             }
-            const workouts = await db.workouts.toArray();
+            const workouts = await db.routines.toArray();
             const select = document.getElementById('workoutSelect');
             workouts.forEach(w => {
                 const opt = document.createElement('option');
@@ -267,7 +267,7 @@
             viewingIdx = state.viewingIdx || state.currentIdx;
             currentWorkoutId = state.currentWorkoutId;
 
-            const workout = await db.workouts.get(currentWorkoutId);
+            const workout = await db.routines.get(currentWorkoutId);
             if (workout) document.getElementById('playerWorkoutTitle').innerText = workout.name;
 
             document.getElementById('setupView').style.display = 'none';
@@ -276,7 +276,7 @@
         }
 
         function discardSession() {
-            if (confirm("Discard unfinished workout?")) {
+            if (confirm("Discard unfinished routine?")) {
                 clearSessionState();
                 document.getElementById('resumeCard').style.display = 'none';
             }
@@ -293,7 +293,7 @@
                 return;
             }
 
-            const workout = await db.workouts.get(workoutId);
+            const workout = await db.routines.get(workoutId);
             const allExercises = await db.exercises.toArray();
             
             container.innerHTML = "";
@@ -326,7 +326,7 @@
         async function startSession() {
             const workoutId = parseInt(document.getElementById('workoutSelect').value);
             currentWorkoutId = workoutId;
-            const workout = await db.workouts.get(workoutId);
+            const workout = await db.routines.get(workoutId);
             const allExercises = await db.exercises.toArray();
             const selectedChecks = Array.from(document.querySelectorAll('.ex-check:checked'));
             
@@ -551,7 +551,7 @@
 
                 // Update the workout template with the values used in this session
                 if (currentWorkoutId) {
-                    const workout = await db.workouts.get(currentWorkoutId);
+                    const workout = await db.routines.get(currentWorkoutId);
                     if (workout) {
                         workout.exerciseIds = workout.exerciseIds.map(item => {
                             const exId = typeof item === 'object' ? item.id : item;
@@ -564,7 +564,7 @@
                             }
                             return item;
                         });
-                        await db.workouts.put(workout);
+                        await db.routines.put(workout);
                     }
                 }
 
