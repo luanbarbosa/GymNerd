@@ -175,7 +175,7 @@
             <div class="card player-card">
                 <img id="playerImg" src="" class="player-img">
                 <div id="setsContainer"></div>
-                <button id="activateExBtn" class="start-btn" style="margin-top: 20px; display: block;" onclick="activateExercise()">Play this exercise</button>
+                <button id="activateExBtn" class="start-btn" style="margin-top: 20px; display: block;" onclick="activateExercise()">🎯 Play this exercise</button>
                 <div class="player-controls-icons">
                     <button class="icon-btn prev" onclick="prevSet()" title="Previous Set">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -581,7 +581,7 @@
 
                 for (const id in groups) {
                     const g = groups[id];
-                    logs.push({ exerciseId: g.exId, exerciseName: g.name, weight: g.weight, reps: g.reps, date: todayStr, imageId: g.imageId, sets: g.count });
+                    logs.push({ exerciseId: g.exId, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
                 }
 
                 await db.logs.bulkAdd(logs);
