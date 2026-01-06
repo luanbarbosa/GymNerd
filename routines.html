@@ -221,7 +221,7 @@
                     <div class="exercise-grid">
                         ${groups[type].map(ex => `
                             <div class="exercise-card" onclick="addExerciseToRoutine(${ex.id}, [], ${!!ex.isCustom}); closeSearchModal();">
-                                <img src="${images[ex.imageId] || ''}" class="ex-thumb" style="width: 50px; height: 50px;">
+                                <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb" style="width: 50px; height: 50px;">
                                 <div class="exercise-info">
                                     <div class="exercise-name">${ex.name}</div>
                                     ${ex.isCustom ? `<span class="custom-badge">Custom</span>` : ''}
@@ -299,8 +299,9 @@
                 document.getElementById('uploadPlaceholder').classList.add('hidden');
             } else {
                 currentImageData = null;
-                document.getElementById('exImagePreview').classList.add('hidden');
-                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                document.getElementById('exImagePreview').src = defaultImage;
+                document.getElementById('exImagePreview').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
             }
             document.getElementById('customModalTitle').innerText = "Copy Exercise";
             document.getElementById('customExModal').classList.remove('hidden');
@@ -321,8 +322,9 @@
                 document.getElementById('uploadPlaceholder').classList.add('hidden');
             } else {
                 currentImageData = null;
-                document.getElementById('exImagePreview').classList.add('hidden');
-                document.getElementById('uploadPlaceholder').classList.remove('hidden');
+                document.getElementById('exImagePreview').src = defaultImage;
+                document.getElementById('exImagePreview').classList.remove('hidden');
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
             }
             document.getElementById('customModalTitle').innerText = "Edit Exercise";
             document.getElementById('customExModal').classList.remove('hidden');
@@ -371,7 +373,7 @@
             card.innerHTML = `
                 <div class="selected-ex-header">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="${images[ex.imageId] || ''}" class="ex-thumb">
+                        <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
                         <span class="selected-ex-title">${ex.name}</span>
                     </div>
                     <button type="button" class="remove-set-btn" onclick="this.closest('.selected-ex-card').remove()">×</button>
@@ -517,7 +519,7 @@
 
                     return `<div class="exercise-tag">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                            <img src="${images[ex.imageId] || ''}" class="ex-thumb" style="width: 30px; height: 30px;">
+                            <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb" style="width: 30px; height: 30px;">
                             <strong>${ex.name}</strong>
                         </div>
                         ${setsHtml}

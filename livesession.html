@@ -227,10 +227,7 @@
 
         async function init() {
             await ensureDbOpen();
-            const fallback = await db.catalog_images.get(0);
-            if (!fallback) {
-                await db.catalog_images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
-            }
+            // Default images will use `defaultImage` defined in `db.js` when specific images are missing.
             const workouts = await db.routines.toArray();
             const select = document.getElementById('workoutSelect');
             workouts.forEach(w => {
@@ -311,12 +308,15 @@
                 if (!ex) continue;
 
                 const imgTable = isCustom ? db.custom_images : db.catalog_images;
-                const imgRecord = await imgTable.get(ex.imageId || 0);
-                const imgSrc = imgRecord ? imgRecord.data : "";
+                let imgSrc = defaultImage;
+                if (ex.imageId) {
+                    const imgRecord = await imgTable.get(ex.imageId);
+                    if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
+                }
 
                 const details = typeof item === 'object' 
                     ? `<br><small>${Array.isArray(item.sets) ? item.sets.length : item.sets} sets${!Array.isArray(item.sets) ? ` x ${item.reps} reps @ ${item.weight}kg` : ''}</small>` 
-                    : '';
+                    : ''; 
 
                 const div = document.createElement('div');
                 div.className = 'exercise-item';
@@ -432,8 +432,12 @@
             document.getElementById('nextExBtn').disabled = !hasNext;
 
             const imgTable = viewingSet.isCustom ? db.custom_images : db.catalog_images;
-            const imgRecord = await imgTable.get(viewingSet.imageId || 0);
-            document.getElementById('playerImg').src = imgRecord ? imgRecord.data : "";
+            let imgSrc = defaultImage;
+            if (viewingSet.imageId) {
+                const imgRecord = await imgTable.get(viewingSet.imageId);
+                if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
+            }
+            document.getElementById('playerImg').src = imgSrc; 
 
             // Find contiguous sets for the same exercise occurrence
             let start = viewingIdx;
