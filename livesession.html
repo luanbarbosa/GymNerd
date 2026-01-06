@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GymNerd | Start Workout</title>
+    <title>GymNerd | Start Routine</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
     <script src="auth.js"></script>
@@ -121,7 +121,7 @@
         <div class="header">
             <div class="header-left">
                 <a href="index.html" class="back-btn">←</a>
-                <h2>Start Workout</h2>
+                <h2>Start Routine</h2>
             </div>
         </div>
         
@@ -135,9 +135,9 @@
             </div>
 
             <div class="card">
-                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Workout</label>
+                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Routine</label>
                 <select id="workoutSelect" onchange="loadExercises()">
-                    <option value="">-- Choose Workout --</option>
+                    <option value="">-- Choose Routine --</option>
                 </select>
                 <div id="exerciseContainer" class="exercise-list"></div>
                 <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session</button>
@@ -149,7 +149,7 @@
         <div class="header">
             <div class="header-left">
                 <a href="livesession.html" class="back-btn">←</a>
-                <h2 id="playerWorkoutTitle">Workout</h2>
+                <h2 id="playerWorkoutTitle">Routine</h2>
             </div>
             <div class="header-timer" onclick="startTimer()" title="Reset Timer">
                 <div id="setTimer" class="timer-val">00:00</div>
@@ -187,7 +187,7 @@
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </button>
                 </div>
-                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Workout</button>
+                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Routine</button>
             </div>
         </div>
     </div>
@@ -227,11 +227,8 @@
 
         async function init() {
             await ensureDbOpen();
-            const fallback = await db.images.get(0);
-            if (!fallback) {
-                await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
-            }
-            const workouts = await db.workouts.toArray();
+            // Default images will use `defaultImage` defined in `db.js` when specific images are missing.
+            const workouts = await db.routines.toArray();
             const select = document.getElementById('workoutSelect');
             workouts.forEach(w => {
                 const opt = document.createElement('option');
@@ -267,7 +264,7 @@
             viewingIdx = state.viewingIdx || state.currentIdx;
             currentWorkoutId = state.currentWorkoutId;
 
-            const workout = await db.workouts.get(currentWorkoutId);
+            const workout = await db.routines.get(currentWorkoutId);
             if (workout) document.getElementById('playerWorkoutTitle').innerText = workout.name;
 
             document.getElementById('setupView').style.display = 'none';
@@ -276,7 +273,7 @@
         }
 
         function discardSession() {
-            if (confirm("Discard unfinished workout?")) {
+            if (confirm("Discard unfinished routine?")) {
                 clearSessionState();
                 document.getElementById('resumeCard').style.display = 'none';
             }
@@ -293,21 +290,33 @@
                 return;
             }
 
-            const workout = await db.workouts.get(workoutId);
-            const allExercises = await db.exercises.toArray();
+            const workout = await db.routines.get(workoutId);
+            const [catalogEx, customEx] = await Promise.all([
+                db.catalog_exercises.toArray(),
+                db.custom_exercises.toArray()
+            ]);
+            const allExercises = [
+                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                ...customEx.map(ex => ({ ...ex, isCustom: true }))
+            ];
             
             container.innerHTML = "";
             for (const item of workout.exerciseIds) {
                 const id = typeof item === 'object' ? item.id : item;
-                const ex = allExercises.find(e => e.id === id);
+                const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
                 if (!ex) continue;
 
-                const imgRecord = await db.images.get(ex.imageId || 0);
-                const imgSrc = imgRecord ? imgRecord.data : "";
+                const imgTable = isCustom ? db.custom_images : db.catalog_images;
+                let imgSrc = defaultImage;
+                if (ex.imageId) {
+                    const imgRecord = await imgTable.get(ex.imageId);
+                    if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
+                }
 
                 const details = typeof item === 'object' 
                     ? `<br><small>${Array.isArray(item.sets) ? item.sets.length : item.sets} sets${!Array.isArray(item.sets) ? ` x ${item.reps} reps @ ${item.weight}kg` : ''}</small>` 
-                    : '';
+                    : ''; 
 
                 const div = document.createElement('div');
                 div.className = 'exercise-item';
@@ -315,7 +324,7 @@
                     <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
                     <div><strong>${ex.name}</strong>${details}</div>
                     <div class="checkbox-wrapper">
-                        <input type="checkbox" class="ex-check" value="${id}" checked>
+                        <input type="checkbox" class="ex-check" value="${id}" data-iscustom="${isCustom}" checked>
                     </div>
                 `;
                 container.appendChild(div);
@@ -326,8 +335,15 @@
         async function startSession() {
             const workoutId = parseInt(document.getElementById('workoutSelect').value);
             currentWorkoutId = workoutId;
-            const workout = await db.workouts.get(workoutId);
-            const allExercises = await db.exercises.toArray();
+            const workout = await db.routines.get(workoutId);
+            const [catalogEx, customEx] = await Promise.all([
+                db.catalog_exercises.toArray(),
+                db.custom_exercises.toArray()
+            ]);
+            const allExercises = [
+                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                ...customEx.map(ex => ({ ...ex, isCustom: true }))
+            ];
             const selectedChecks = Array.from(document.querySelectorAll('.ex-check:checked'));
             
             if (selectedChecks.length === 0) return alert("Please select at least one exercise.");
@@ -339,13 +355,19 @@
             for (const check of selectedChecks) {
                 occurrenceId++;
                 const exId = parseInt(check.value);
-                const ex = allExercises.find(e => e.id === exId);
-                const workoutEx = workout.exerciseIds.find(we => (typeof we === 'object' ? we.id : we) === exId);
+                const isCustom = check.dataset.iscustom === 'true';
+                const ex = allExercises.find(e => e.id === exId && !!e.isCustom === isCustom);
+                const workoutEx = workout.exerciseIds.find(we => {
+                    const weId = typeof we === 'object' ? we.id : we;
+                    const weIsCustom = typeof we === 'object' ? !!we.isCustom : false;
+                    return weId === exId && weIsCustom === isCustom;
+                });
                 
                 if (workoutEx && Array.isArray(workoutEx.sets)) {
                     workoutEx.sets.forEach((s, i) => {
                         sessionSets.push({
                             exId,
+                            isCustom,
                             name: ex.name,
                             namePT: ex.namePT,
                             imageId: ex.imageId,
@@ -366,6 +388,7 @@
                     for (let i = 1; i <= setsCount; i++) {
                         sessionSets.push({
                             exId,
+                            isCustom,
                             name: ex.name,
                             namePT: ex.namePT,
                             imageId: ex.imageId,
@@ -408,8 +431,13 @@
             document.getElementById('prevExBtn').disabled = !hasPrev;
             document.getElementById('nextExBtn').disabled = !hasNext;
 
-            const imgRecord = await db.images.get(viewingSet.imageId || 0);
-            document.getElementById('playerImg').src = imgRecord ? imgRecord.data : "";
+            const imgTable = viewingSet.isCustom ? db.custom_images : db.catalog_images;
+            let imgSrc = defaultImage;
+            if (viewingSet.imageId) {
+                const imgRecord = await imgTable.get(viewingSet.imageId);
+                if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
+            }
+            document.getElementById('playerImg').src = imgSrc; 
 
             // Find contiguous sets for the same exercise occurrence
             let start = viewingIdx;
@@ -551,20 +579,22 @@
 
                 // Update the workout template with the values used in this session
                 if (currentWorkoutId) {
-                    const workout = await db.workouts.get(currentWorkoutId);
+                    const workout = await db.routines.get(currentWorkoutId);
                     if (workout) {
                         workout.exerciseIds = workout.exerciseIds.map(item => {
                             const exId = typeof item === 'object' ? item.id : item;
-                            const sessionExSets = sessionSets.filter(s => s.exId === exId);
+                            const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                            const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
                             if (sessionExSets.length > 0) {
                                 return {
                                     id: exId,
+                                    isCustom,
                                     sets: sessionExSets.map(s => ({ reps: s.reps, weight: s.weight }))
                                 };
                             }
                             return item;
                         });
-                        await db.workouts.put(workout);
+                        await db.routines.put(workout);
                     }
                 }
 
@@ -572,6 +602,7 @@
                 const groups = sessionSets.reduce((acc, s) => {
                     if (!s.completed) return acc; // Only log completed sets
                     if (!acc[s.exId]) acc[s.exId] = { ...s, count: 0 };
+                    acc[s.exId].isCustom = s.isCustom;
                     acc[s.exId].count++;
                     // Use the values from the sets (last completed set values will be stored)
                     acc[s.exId].weight = s.weight;
@@ -581,7 +612,7 @@
 
                 for (const id in groups) {
                     const g = groups[id];
-                    logs.push({ exerciseId: g.exId, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
+                    logs.push({ exerciseId: g.exId, isCustom: g.isCustom, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
                 }
 
                 await db.logs.bulkAdd(logs);
@@ -591,7 +622,7 @@
                 if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
                     try {
                         await Promise.race([
-                            DriveStorage.sync(db, ['logs', 'workouts']),
+                            DriveStorage.sync(db, ['logs', 'routines']),
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 8000))
                         ]);
                     } catch (syncErr) {

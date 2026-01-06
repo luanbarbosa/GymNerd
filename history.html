@@ -41,10 +41,10 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Workout History</h2></div>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Routine History</h2></div>
     <div class="card">
-        <div class="section-header"><h2>Log workout</h2></div>
-        <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Workout --</option></select>
+        <div class="section-header"><h2>Log Routine</h2></div>
+        <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Routine --</option></select>
         <input type="date" id="logDate" style="margin-top:10px">
     </div>
     <div id="workoutSheet"></div>
@@ -61,12 +61,16 @@
 
         async function init() {
             await ensureDbOpen();
-            const fallback = await db.images.get(0);
-            if (!fallback) {
-                await db.images.put({ id: 0, data: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=" });
-            }
-            allEx = await db.exercises.toArray();
-            const wks = await db.workouts.toArray();
+            // Default images will use `defaultImage` defined in `db.js` when specific images are missing.
+            const [catalogEx, customEx] = await Promise.all([
+                db.catalog_exercises.toArray(),
+                db.custom_exercises.toArray()
+            ]);
+            allEx = [
+                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                ...customEx.map(ex => ({ ...ex, isCustom: true }))
+            ];
+            const wks = await db.routines.toArray();
             const p = document.getElementById('routinePicker');
             wks.forEach(w => p.innerHTML += `<option value="${w.id}">${w.name}</option>`);
             renderHistory();
@@ -76,13 +80,19 @@
             const id = parseInt(document.getElementById('routinePicker').value);
             const sheet = document.getElementById('workoutSheet');
             if(!id) { sheet.innerHTML=""; return; }
-            const wk = await db.workouts.get(id);
+            const wk = await db.routines.get(id);
             sheet.innerHTML = "";
             for (const item of wk.exerciseIds) {
                 const id = typeof item === 'object' ? item.id : item;
-                const ex = allEx.find(e => e.id === id);
+                const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                const ex = allEx.find(e => e.id === id && !!e.isCustom === isCustom);
                 if (!ex) continue;
-                const img = await db.images.get(ex.imageId || 0);
+                const imgTable = isCustom ? db.custom_images : db.catalog_images;
+                let imgSrc = defaultImage;
+                if (ex.imageId) {
+                    const imgRec = await imgTable.get(ex.imageId);
+                    if (imgRec && imgRec.data) imgSrc = imgRec.data;
+                }
                 
                 let sets, weight, reps;
                 if (typeof item === 'object') {
@@ -99,8 +109,8 @@
                     sets = 3; weight = ''; reps = '';
                 }
 
-                sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-imgid="${ex.imageId || ''}">
-                    <img src="${img ? img.data : ''}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}">
+                    <img src="${imgSrc}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     <div class="input-pair"><input type="number" placeholder="Sets" class="s" value="${sets}"><input type="number" step="0.5" placeholder="Kg" class="w" value="${weight}"><input type="number" placeholder="Reps" class="r" value="${reps}"></div></div>`;
             }
             document.getElementById('saveBtn').style.display = "block";
@@ -113,7 +123,16 @@
                 const sets = r.querySelector('.s').value;
                 const weight = r.querySelector('.w').value;
                 const reps = r.querySelector('.r').value;
-                if(weight && reps) logs.push({ exerciseId: parseInt(r.dataset.id), exerciseName: r.dataset.name, imageId: parseInt(r.dataset.imgid) || null, sets: parseInt(sets) || 3, weight: parseFloat(weight), reps: parseInt(reps), date });
+                if(weight && reps) logs.push({ 
+                    exerciseId: parseInt(r.dataset.id), 
+                    isCustom: r.dataset.iscustom === 'true',
+                    exerciseName: r.dataset.name, 
+                    imageId: parseInt(r.dataset.imgid) || null, 
+                    sets: parseInt(sets) || 3, 
+                    weight: parseFloat(weight), 
+                    reps: parseInt(reps), 
+                    date 
+                });
             });
             await db.logs.bulkAdd(logs);
             localStorage.setItem('has_local_changes', 'true');
@@ -153,8 +172,13 @@
                     dateDet.className = "history-group";
                     dateDet.innerHTML = `<summary class="date-header"><span>${date}</span><button onclick="event.stopPropagation(); deleteDateLogs('${date}')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;margin-left:auto;margin-right:12px;display:flex;align-items:center;opacity:0.6;width:auto" title="Delete Session"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
                     for (const l of groups[month][date]) {
-                        const img = await db.images.get(l.imageId || 0);
-                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${img ? img.data : ''}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <div style="display:flex;align-items:center;gap:10px"><span>${l.sets || 3} sets x ${l.weight}kg x ${l.reps}</span></div></div>`;
+                        const imgTable = l.isCustom ? db.custom_images : db.catalog_images;
+                        let imgSrc = defaultImage;
+                        if (l.imageId) {
+                            const imgRec = await imgTable.get(l.imageId);
+                            if (imgRec && imgRec.data) imgSrc = imgRec.data;
+                        }
+                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <div style="display:flex;align-items:center;gap:10px"><span>${l.sets || 3} sets x ${l.weight}kg x ${l.reps}</span></div></div>`;
                     }
                     monthDet.appendChild(dateDet);
                 }

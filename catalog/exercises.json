@@ -1,0 +1,212 @@
+[
+  {
+    "id": 1,
+    "imageId": 1,
+    "name": "Sled 45 degrees",
+    "namePT": "Leg press 45 graus",
+    "type": "leg"
+  },
+  {
+    "id": 2,
+    "imageId": 2,
+    "name": "Lever leg extension",
+    "namePT": "Cadeira extensora",
+    "type": "leg"
+  },
+  {
+    "id": 3,
+    "imageId": 3,
+    "name": "Lever seated calf raise",
+    "namePT": "Panturrilha sentada na máquina",
+    "type": "leg"
+  },
+  {
+    "id": 4,
+    "imageId": 4,
+    "name": "Cable donkey kickback",
+    "namePT": "Coice de glúteo",
+    "type": "leg"
+  },
+  {
+    "id": 5,
+    "imageId": 5,
+    "name": "Lunge smith machine",
+    "namePT": "Avanço no Smith",
+    "type": "leg"
+  },
+  {
+    "id": 6,
+    "imageId": 6,
+    "name": "Lever seated hip abduction",
+    "namePT": "Abdução de quadril na máquina",
+    "type": "leg"
+  },
+  {
+    "id": 7,
+    "imageId": 7,
+    "name": "Barbell incline bench press",
+    "namePT": "Supino inclinado com barra",
+    "type": "chest"
+  },
+  {
+    "id": 8,
+    "imageId": 8,
+    "name": "Dumbbell incline bench press",
+    "namePT": "Supino inclinado com halteres",
+    "type": "chest"
+  },
+  {
+    "id": 9,
+    "imageId": 9,
+    "name": "Barbell bench press",
+    "namePT": "Supino reto com barra",
+    "type": "chest"
+  },
+  {
+    "id": 10,
+    "imageId": 10,
+    "name": "Dumbbell bench press",
+    "namePT": "Supino reto com halteres",
+    "type": "chest"
+  },
+  {
+    "id": 11,
+    "imageId": 11,
+    "name": "Lever seated fly",
+    "namePT": "Crucifixo na máquina",
+    "type": "chest"
+  },
+  {
+    "id": 12,
+    "imageId": 12,
+    "name": "Lever chest press (plate loaded)",
+    "namePT": "Supino na máquina com anilhas",
+    "type": "chest"
+  },
+  {
+    "id": 13,
+    "imageId": 13,
+    "name": "Cable low fly",
+    "namePT": "Crucifixo no cabo baixo",
+    "type": "chest"
+  },
+  {
+    "id": 14,
+    "imageId": 14,
+    "name": "EZ barbell curl",
+    "namePT": "Rosca direta com barra EZ",
+    "type": "arm"
+  },
+  {
+    "id": 15,
+    "imageId": 15,
+    "name": "Cable overhead triceps extension (rope)",
+    "namePT": "Extensão de tríceps acima da cabeça no cabo",
+    "type": "arm"
+  },
+  {
+    "id": 16,
+    "imageId": 16,
+    "name": "Cable triceps pushdown (rope)",
+    "namePT": "Tríceps no pulley com corda",
+    "type": "arm"
+  },
+  {
+    "id": 17,
+    "imageId": 17,
+    "name": "Dumbbell hammer curl",
+    "namePT": "Rosca martelo com halteres",
+    "type": "arm"
+  },
+  {
+    "id": 18,
+    "imageId": 18,
+    "name": "Dumbbell incline hammer curl",
+    "namePT": "Rosca martelo inclinada com halteres",
+    "type": "arm"
+  },
+  {
+    "id": 19,
+    "imageId": 19,
+    "name": "Lever biceps curl",
+    "namePT": "Rosca bíceps na máquina",
+    "type": "arm"
+  },
+  {
+    "id": 20,
+    "imageId": 20,
+    "name": "Cable one arm lateral raise",
+    "namePT": "Elevação lateral unilateral no cabo",
+    "type": "shoulder"
+  },
+  {
+    "id": 21,
+    "imageId": 21,
+    "name": "Dumbbell seated shoulder press",
+    "namePT": "Desenvolvimento sentado com halteres",
+    "type": "shoulder"
+  },
+  {
+    "id": 22,
+    "imageId": 22,
+    "name": "Dumbbell seated lateral raise",
+    "namePT": "Elevação lateral sentada com halteres",
+    "type": "shoulder"
+  },
+  {
+    "id": 23,
+    "imageId": 23,
+    "name": "Lever seated shoulder press",
+    "namePT": "Desenvolvimento sentado na máquina",
+    "type": "shoulder"
+  },
+  {
+    "id": 24,
+    "imageId": 24,
+    "name": "Cable bar lateral pulldown",
+    "namePT": "Puxada lateral no pulley",
+    "type": "back"
+  },
+  {
+    "id": 25,
+    "imageId": 25,
+    "name": "Seated row",
+    "namePT": "Remada sentada",
+    "type": "back"
+  },
+  {
+    "id": 26,
+    "imageId": 26,
+    "name": "Lever seated reverse fly",
+    "namePT": "Crucifixo inverso na máquina",
+    "type": "back"
+  },
+  {
+    "id": 27,
+    "imageId": 27,
+    "name": "Cable straight arm pulldown",
+    "namePT": "Pulldown com braços estendidos no cabo",
+    "type": "back"
+  },
+  {
+    "id": 28,
+    "imageId": 28,
+    "name": "Seated machine row (supported)",
+    "namePT": "Remada sentada na máquina com apoio",
+    "type": "back"
+  },
+  {
+    "id": 29,
+    "imageId": 29,
+    "name": "Close grip bar lat pulldown",
+    "namePT": "Pulldown com pegada fechada",
+    "type": "back"
+  },
+  {
+    "id": 30,
+    "imageId": 30,
+    "name": "Assisted pull-up",
+    "namePT": "Barra fixa assistida",
+    "type": "back"
+  }
+]
