@@ -31,7 +31,7 @@
         .form-group { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
         .form-group label { font-size: 0.75rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
         .form-group input, .form-group select { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: var(--card); color: white; font-size: 1rem; outline: none; }
-        .image-preview-box { width: 100%; height: 200px; background: var(--card); border: 2px dashed rgba(255,255,255,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
+        .image-preview-box { width: 100%; height: 200px; background: #fff; border: 2px dashed rgba(0,0,0,0.08); border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
         .save-btn { background: var(--primary-grad); color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1.1rem; cursor: pointer; margin-top: 10px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
         .category-section { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; margin-bottom: 12px; }
         .category-summary { padding: 16px 20px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
@@ -71,7 +71,9 @@
         .set-row-input input { width: 70px; padding: 8px; font-size: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #000; }
         .add-set-btn { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; color: var(--text-dim); margin-bottom: 10px; }
         .remove-set-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1rem; padding: 0 5px; }
-        .ex-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: #000; flex-shrink: 0; }
+        .ex-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: #fff; flex-shrink: 0; }
+        /* Keep preview images on white background when they have transparency */
+        .image-preview-box img { background: #fff; }
 
         .hidden { display: none !important; }
         .workout-card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }

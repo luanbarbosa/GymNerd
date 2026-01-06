@@ -124,8 +124,17 @@
                 for (const key in files) {
                     if (files[key]) {
                         const text = await files[key].text();
-                        const parsedData = JSON.parse(text);
+                        let parsedData = JSON.parse(text);
                         const table = db[key];
+
+                        // Normalize image tables to ensure stored data are data URIs
+                        if (key && key.toLowerCase().includes('image')) {
+                            parsedData = parsedData.map(img => ({
+                                ...img,
+                                data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+                            }));
+                        }
+
                         await table.clear();
                         await table.bulkAdd(parsedData);
                     }
@@ -156,13 +165,25 @@
                 if (proceed) {
                     await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.logs], async () => {
                         await db.catalog_images.clear();
-                        if (data.catalog_images) await db.catalog_images.bulkAdd(data.catalog_images);
+                        if (data.catalog_images) {
+                            const normalizedCatalogImages = data.catalog_images.map(img => ({
+                                ...img,
+                                data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+                            }));
+                            await db.catalog_images.bulkAdd(normalizedCatalogImages);
+                        }
                         
                         await db.catalog_exercises.clear();
                         if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
 
                         await db.custom_images.clear();
-                        if (data.custom_images) await db.custom_images.bulkAdd(data.custom_images);
+                        if (data.custom_images) {
+                            const normalizedCustomImages = data.custom_images.map(img => ({
+                                ...img,
+                                data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+                            }));
+                            await db.custom_images.bulkAdd(normalizedCustomImages);
+                        }
                         
                         await db.custom_exercises.clear();
                         if (data.custom_exercises) await db.custom_exercises.bulkAdd(data.custom_exercises);
