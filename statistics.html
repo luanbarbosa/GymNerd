@@ -58,7 +58,7 @@
         .section-title { margin-top: 32px; margin-bottom: 16px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.025em; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; text-transform: capitalize; grid-column: 1 / -1; }
         .chart-box { background: var(--card); padding: 20px; border-radius: 24px; border: 1px solid var(--card-border); }
         .chart-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .chart-thumb { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: #000; }
+        .chart-thumb { width: 64px; height: 52px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; }
         .canvas-wrapper { height: 180px; }
     </style>
 </head>
@@ -99,7 +99,7 @@
     <div class="stats-grid" id="chartsWrapper"></div>
 
     <script>
-        const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
+        const FALLBACK_IMG = (typeof defaultImage !== 'undefined') ? defaultImage : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5NGFhYjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiIvPjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ii8+PHBhdGggZD0iTTIxIDE1bC01LTUtNCA0LTQtNC04IDgiLz48L3N2Zz4=";
         
         let currentViewDate = new Date();
 
