@@ -39,6 +39,7 @@
         .category-summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
         .category-section[open] .category-summary .chevron { transform: rotate(180deg); }
         .exercise-grid { display: grid; gap: 12px; padding: 0 12px 16px 12px; }
+        .exercise-grid .ex-thumb { width: 72px; height: 48px; border-radius: 10px; }
         
         .exercise-card { background: var(--card); border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: transform 0.2s; }
         .exercise-card:active { transform: scale(0.98); }
@@ -88,7 +89,7 @@
         .set-row-input input { width: 70px; padding: 8px; font-size: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #000; }
         .add-set-btn { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; color: var(--text-dim); margin-bottom: 10px; }
         .remove-set-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1rem; padding: 0 5px; }
-        .ex-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: #fff; flex-shrink: 0; }
+        .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: cover; background: #fff; flex-shrink: 0; }
         /* Keep preview images on white background when they have transparency */
         .image-preview-box img { background: #fff; }
 
@@ -331,7 +332,7 @@
                     <div class="exercise-grid">
                         ${groups[type].map(ex => `
                             <div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)">
-                                <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb" style="width: 50px; height: 50px;">
+                                <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
                                 <div class="exercise-info">
                                     <div class="exercise-name">${ex.name}</div>
                                     ${ex.isCustom ? `<span class="custom-badge">Custom</span>` : ''}
@@ -630,7 +631,7 @@
 
                     return `<div class="exercise-tag">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                            <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb" style="width: 30px; height: 30px;">
+                            <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb" style="width: 48px; height: 32px;">
                             <strong>${ex.name}</strong>
                         </div>
                         ${setsHtml}
