@@ -398,8 +398,8 @@
                     reps: parseInt(row.querySelector('.set-reps').value) || 0,
                     weight: parseFloat(row.querySelector('.set-weight').value) || 0
                 }));
-                // Attach a sort index so the saved routine preserves the selected order
-                return { id, sets, isCustom, sort: index };
+                // Attach a position index so the saved routine preserves the selected order
+                return { id, sets, isCustom, position: index };
             });
         }
 
@@ -510,13 +510,14 @@
                 return;
             }
 
-            // Normalize exercise items and set default sort to INT_MAX when missing
+            // Normalize exercise items and set default position to 0 when missing (support legacy 'sort')
             const items = (workout.exerciseIds || []).map((item, idx) => {
                 if (typeof item === 'object') {
-                    return { ...item, id: item.id, isCustom: !!item.isCustom, sort: (typeof item.sort !== 'undefined') ? item.sort : INT_MAX, __origIndex: idx };
+                    const position = (typeof item.position !== 'undefined') ? item.position : ((typeof item.sort !== 'undefined') ? item.sort : 0);
+                    return { ...item, id: item.id, isCustom: !!item.isCustom, position, __origIndex: idx };
                 }
-                return { id: item, isCustom: false, sort: INT_MAX, __origIndex: idx };
-            }).sort((a,b) => (a.sort - b.sort) || (a.__origIndex - b.__origIndex));
+                return { id: item, isCustom: false, position: 0, __origIndex: idx };
+            }).sort((a,b) => (a.position - b.position) || (a.__origIndex - b.__origIndex));
 
             const tags = items.map(it => {
                 const id = it.id;
@@ -740,12 +741,12 @@
                     used[matchIndex] = true;
                     const origItem = original[matchIndex];
                     if (typeof origItem === 'object') {
-                        newItem = { ...origItem, sort: idx };
+                        newItem = { ...origItem, position: idx };
                     } else {
-                        newItem = { id: origItem, sort: idx };
+                        newItem = { id: origItem, position: idx };
                     }
                 } else {
-                    newItem = { id, isCustom, sort: idx };
+                    newItem = { id, isCustom, position: idx };
                 }
                 return newItem;
             });
