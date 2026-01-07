@@ -35,6 +35,14 @@
         }
         .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: cover; background: #fff; }
         .player-img { background: #fff; }
+        /* Reorder UI */
+        .reorder-btn { display: none; border: none; background: rgba(255,255,255,0.03); color: var(--text); padding: 6px 8px; border-radius: 8px; cursor: pointer; font-weight: 800; }
+        .reorder-btn:active { transform: scale(0.96); }
+        .exercise-list.reorder-mode .reorder-btn { display: inline-flex; }
+
+        .drag-handle { display:inline-flex; border:none; background:transparent; color:var(--text-dim); font-size:1.1rem; padding: 6px 8px; border-radius:8px; }
+        .exercise-item.placeholder { border: 2px dashed rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
+        .dragging { position: fixed; z-index: 1000; pointer-events: none; transform: scale(1.02); box-shadow: 0 10px 30px rgba(0,0,0,0.4); opacity: 0.98; border-radius: 12px; }
         .checkbox-wrapper { margin-left: auto; }
         input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); }
 
@@ -140,6 +148,7 @@
                 <select id="workoutSelect" onchange="loadExercises()">
                     <option value="">-- Choose Routine --</option>
                 </select>
+
                 <div id="exerciseContainer" class="exercise-list"></div>
                 <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session</button>
             </div>
@@ -323,14 +332,125 @@
                 div.className = 'exercise-item';
                 div.innerHTML = `
                     <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
-                    <div><strong>${ex.name}</strong>${details}</div>
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" class="ex-check" value="${id}" data-iscustom="${isCustom}" checked>
+                    <div style="flex:1; min-width:0;"><strong>${ex.name}</strong>${details}</div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button class="drag-handle" title="Drag to reorder">☰</button>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" class="ex-check" value="${id}" data-iscustom="${isCustom}" checked>
+                        </div>
                     </div>
                 `;
                 container.appendChild(div);
             }
             startBtn.style.display = "block";
+            attachDragHandlers();
+        }
+
+        // --- Drag & drop reordering (touch-friendly) ---
+        let _dragState = null;
+
+        function attachDragHandlers() {
+            const container = document.getElementById('exerciseContainer');
+            if (!container) return;
+            container.querySelectorAll('.drag-handle').forEach(h => {
+                if (h._dragAttached) return;
+                h.addEventListener('touchstart', _onHandleTouchStart, { passive: false });
+                h.addEventListener('pointerdown', _onHandlePointerDown);
+                h._dragAttached = true;
+            });
+        }
+
+        function _onHandleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            _onHandlePointerDown(touch);
+        }
+
+        function _onHandlePointerDown(e) {
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) return;
+            const item = handle.closest('.exercise-item');
+            if (!item) return;
+            _startDrag(e, item);
+        }
+
+        function _startDrag(e, item) {
+            _dragState = {
+                draggingEl: item,
+                container: document.getElementById('exerciseContainer'),
+                placeholder: null,
+                ghost: null,
+                offsetY: 0
+            };
+
+            const rect = item.getBoundingClientRect();
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            _dragState.offsetY = clientY - rect.top;
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'exercise-item placeholder';
+            placeholder.style.height = rect.height + 'px';
+            item.parentNode.insertBefore(placeholder, item.nextSibling);
+
+            const ghost = item.cloneNode(true);
+            ghost.classList.add('dragging');
+            ghost.style.width = rect.width + 'px';
+            ghost.style.left = rect.left + 'px';
+            ghost.style.top = (clientY - _dragState.offsetY) + 'px';
+            document.body.appendChild(ghost);
+
+            item.style.display = 'none';
+
+            _dragState.placeholder = placeholder;
+            _dragState.ghost = ghost;
+
+            window.addEventListener('touchmove', _onTouchMove, { passive: false });
+            window.addEventListener('pointermove', _onPointerMove);
+            window.addEventListener('touchend', _endDrag);
+            window.addEventListener('pointerup', _endDrag);
+        }
+
+        function _onTouchMove(e) {
+            e.preventDefault();
+            const y = e.touches[0].clientY;
+            _moveGhost(y);
+        }
+
+        function _onPointerMove(e) {
+            const y = e.clientY;
+            _moveGhost(y);
+        }
+
+        function _moveGhost(y) {
+            if (!_dragState) return;
+            const ghost = _dragState.ghost;
+            ghost.style.top = (y - _dragState.offsetY) + 'px';
+
+            const container = _dragState.container;
+            let insertBefore = null;
+            for (const child of Array.from(container.children)) {
+                if (child === _dragState.draggingEl || child === _dragState.placeholder) continue;
+                const r = child.getBoundingClientRect();
+                const mid = r.top + r.height / 2;
+                if (y < mid) { insertBefore = child; break; }
+            }
+            if (insertBefore) container.insertBefore(_dragState.placeholder, insertBefore);
+            else container.appendChild(_dragState.placeholder);
+        }
+
+        function _endDrag() {
+            if (!_dragState) return;
+            const { draggingEl, placeholder, ghost } = _dragState;
+            placeholder.parentNode.insertBefore(draggingEl, placeholder);
+            draggingEl.style.display = '';
+            placeholder.remove();
+            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+
+            window.removeEventListener('touchmove', _onTouchMove);
+            window.removeEventListener('pointermove', _onPointerMove);
+            window.removeEventListener('touchend', _endDrag);
+            window.removeEventListener('pointerup', _endDrag);
+            _dragState = null;
         }
 
         async function startSession() {
@@ -345,7 +465,8 @@
                 ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
             ];
-            const selectedChecks = Array.from(document.querySelectorAll('.ex-check:checked'));
+            const container = document.getElementById('exerciseContainer');
+            const selectedChecks = Array.from(container.querySelectorAll('.exercise-item')).map(div => div.querySelector('.ex-check')).filter(ch => ch && ch.checked);
             
             if (selectedChecks.length === 0) return alert("Please select at least one exercise.");
 
