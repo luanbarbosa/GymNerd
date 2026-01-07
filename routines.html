@@ -95,10 +95,23 @@
 
         .hidden { display: none !important; }
         .workout-card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
-        .workout-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .workout-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
         .workout-name { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
-        .exercise-tag { display: block; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; font-size: 0.85rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); }
-        
+        .exercise-tag { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 12px; font-size: 0.9rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 4px 12px rgba(0,0,0,0.25); transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
+        .exercise-tag:hover { transform: translateY(-3px); }
+        .exercise-tag .drag-handle { font-size: 0.95rem; color: rgba(148,163,184,0.9); padding: 6px; border-radius: 8px; cursor: grab; user-select: none; touch-action: none; background: rgba(255,255,255,0.02); border-radius: 6px; }
+        .exercise-tag .ex-thumb { width: 48px; height: 32px; border-radius: 8px; }
+        .exercise-tag strong { font-weight:700; color: var(--text); }
+        .exercise-tag .meta { color: var(--text-dim); font-size: 0.85rem; }
+        .draggable.dragging { opacity: 0.85; transform: scale(0.98); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .draggable { user-select: none; }
+        .drop-placeholder { border: 2px dashed rgba(148,163,184,0.25); margin: 6px 0; border-radius: 12px; background: rgba(255,255,255,0.01); }
+        .drag-ghost { position: fixed; z-index: 9999; pointer-events: none; transform: translate(-50%,-50%) scale(0.98); opacity: 0.95; transition: transform 0.08s ease; width: auto; max-width: 90%; box-shadow: 0 12px 30px rgba(0,0,0,0.5); border-radius: 12px; }
+        /* Drop indicator */
+        .exercise-tag.drop-target { border-top: 3px solid rgba(59,130,246,0.9); box-shadow: none; }
+        .exercise-list-drop-bottom { box-shadow: inset 0 -3px 0 rgba(59,130,246,0.9); border-radius: 12px; }
+
+
         .set-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
         .set-pill { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; color: var(--text-dim); font-weight: 600; }
         
@@ -107,73 +120,28 @@
         .del-btn { color: var(--danger); background: rgba(255,255,255,0.05); border: none; cursor: pointer; display: flex; align-items: center; padding: 10px; border-radius: 10px; transition: background 0.2s; }
 
         .section-title { margin-top: 40px; margin-bottom: 20px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; padding-left: 5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; }
+        /* Tabs */
+        #routines-tabs { display:flex; gap:8px; flex-wrap:nowrap; }
+        .tab-btn { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); color: var(--text-dim); cursor: pointer; font-weight:800; }
+        .tab-btn.active { background: var(--primary); color: #fff; border-color: rgba(255,255,255,0.06); box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+        .tab-card { background: var(--card); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); }
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>My Workouts</h2></div>
-
-    <div class="card">
-        <div class="input-group">
-            <label style="font-size:0.8rem; font-weight:bold">Workout Name</label>
-            <input type="text" id="workoutName" placeholder="e.g. Leg Day">
-            <input type="hidden" id="editId">
-            
-            <label style="font-size:0.8rem; font-weight:bold; margin-top: 10px;">Routine Exercises</label>
-            <button type="button" class="add-set-btn" style="width: 100%; padding: 14px; font-size: 1rem; margin-top: 5px; border-style: solid; background: rgba(255,255,255,0.05);" onclick="openSearchModal()">🔍 Add Exercise</button>
-    <div id="searchModal" class="modal hidden">
-        <div class="header">
-            <button class="back-btn" onclick="closeSearchModal()">←</button>
-            <h2>Add Exercise</h2>
+    <div class="header" style="justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <a href="index.html" class="back-btn">←</a>
+            <h2>Routines</h2>
         </div>
-        <div id="selectBar" class="hidden" aria-hidden="true">
-            <div id="selectCount">0 selected</div>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <button id="cancelSelectBtn" class="cancel-btn" onclick="exitSelectMode()">Cancel</button>
-                <button id="addSelectedBtn" class="add-btn" onclick="addSelectedExercises()" disabled>Add Selected</button>
-            </div>
-        </div>
-        <div class="input-group">
-            <button type="button" class="add-set-btn" style="border-style: solid; background: var(--card); color: var(--primary); font-weight: 800; margin-bottom: 10px;" onclick="openCreateModal()">➕ Create Custom Exercise</button>
-            <input type="text" id="modalSearchInput" placeholder="Search by name..." oninput="updateModalResults()">
-        </div>
-        <div id="modalResults" class="exercise-list" style="margin-top: 10px;"></div>
-    </div>
-
-    <div id="customExModal" class="modal modal-sub hidden">
-        <div class="header">
-            <button class="back-btn" onclick="closeCustomModal()">←</button>
-            <h2 id="customModalTitle">Custom Exercise</h2>
-        </div>
-        <div class="form-group">
-            <input type="hidden" id="exId">
-            <label>Name</label>
-            <input type="text" id="exName" placeholder="e.g. Bench Press">
-            <label>Name (Portuguese)</label>
-            <input type="text" id="exNamePT" placeholder="e.g. Supino Reto">
-            <label>Type</label>
-            <select id="exType">
-                <option value="chest">Chest</option><option value="leg">Legs</option><option value="back">Back</option><option value="shoulder">Shoulders</option><option value="arm">Arms</option>
-            </select>
-            <label>Image</label>
-            <input type="file" id="exImageInput" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
-            <div class="image-preview-box" onclick="document.getElementById('exImageInput').click()">
-                <img id="exImagePreview" src="" class="hidden" style="width: 100%; height: 100%; object-fit: cover;">
-                <div id="uploadPlaceholder">📸 Tap to upload</div>
-            </div>
-            <button class="save-btn" onclick="saveCustomExercise()">Save Exercise</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <button id="newRoutineBtn" class="primary" style="padding:10px 14px; font-size:0.9rem;" onclick="window.location.href='routinecrud.html'">+ New Routine</button>
         </div>
     </div>
 
-            <div id="selectedList" class="selected-ex-list"></div>
-            
-            <button id="addBtn" class="primary" onclick="saveWorkout()">Create Workout</button>
-            <button id="updateBtn" class="update" onclick="updateWorkout()">Update Workout</button>
-            <div id="cancelEdit" class="cancel-link" onclick="resetForm()">Cancel Editing</div>
-        </div>
-    </div>
-
-    <h3 class="section-title">Workouts</h3>
-    <div id="workout-list"></div>
+    <div class="card" style="padding:10px 12px; margin-bottom:20px;">
+        <div id="routines-tabs" style="display:flex; gap:8px; overflow:auto; padding-bottom:8px;"></div>
+        <div id="routines-content" style="margin-top:12px;"></div>
+    </div> 
 
     <script>
 
@@ -187,6 +155,7 @@
         let pressTimer = null;
         let longPressTriggered = false;
         const PRESS_DURATION = 500; // ms
+        const INT_MAX = 2147483647; // default when sort is not defined
 
         function startPressTimer(el, exId, isCustom, e) {
             pressTimer = setTimeout(() => {
@@ -286,7 +255,7 @@
                     ...customEx.map(ex => ({ ...ex, isCustom: true }))
                 ];
 
-                renderWorkouts();
+                renderTabs();
                 updateModalResults();
             } catch (err) {
                 console.error("Failed to load exercises:", err);
@@ -338,16 +307,7 @@
                                     ${ex.isCustom ? `<span class="custom-badge">Custom</span>` : ''}
                                     ${ex.namePT ? `<div class="exercise-name-pt">${ex.namePT}</div>` : ''}
                                 </div>
-                                <div class="actions" onclick="event.stopPropagation()" style="display: flex; gap: 4px;">
-                                    ${ex.isCustom ? `
-                                        <button class="copy-btn" onclick="editExercise(${ex.id})" title="Edit">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                        </button>
-                                    ` : ''}
-                                    <button class="copy-btn" onclick="copyExercise(${ex.id}, ${!!ex.isCustom})" title="Copy">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                    </button>
-                                </div>
+                                <div class="actions" onclick="event.stopPropagation()" style="display: flex; gap: 4px;"></div>
                                 <div class="select-badge">✓</div>
                             </div>
                         `).join('')}
@@ -356,121 +316,17 @@
             `).join('');
         }
 
-        function openCreateModal() {
-            document.getElementById('customModalTitle').innerText = "Custom Exercise";
-            document.getElementById('exId').value = '';
-            document.getElementById('exName').value = '';
-            document.getElementById('exNamePT').value = '';
-            document.getElementById('exType').selectedIndex = 0;
-            currentImageData = null;
-            document.getElementById('exImagePreview').classList.add('hidden');
-            document.getElementById('uploadPlaceholder').classList.remove('hidden');
-            document.getElementById('customExModal').classList.remove('hidden');
-        }
 
-        function closeCustomModal() {
-            document.getElementById('customExModal').classList.add('hidden');
-        }
 
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 400;
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    currentImageData = canvas.toDataURL('image/jpeg', 0.7);
-                    document.getElementById('exImagePreview').src = currentImageData;
-                    document.getElementById('exImagePreview').classList.remove('hidden');
-                    document.getElementById('uploadPlaceholder').classList.add('hidden');
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
 
-        function copyExercise(exId, isCustom = false) {
-            const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom);
-            if (!ex) return;
-            document.getElementById('exId').value = '';
-            document.getElementById('exName').value = ex.name;
-            document.getElementById('exNamePT').value = ex.namePT || '';
-            document.getElementById('exType').value = ex.type;
-            const imgData = images[ex.imageId];
-            if (imgData) {
-                currentImageData = imgData;
-                document.getElementById('exImagePreview').src = imgData;
-                document.getElementById('exImagePreview').classList.remove('hidden');
-                document.getElementById('uploadPlaceholder').classList.add('hidden');
-            } else {
-                currentImageData = null;
-                document.getElementById('exImagePreview').src = defaultImage;
-                document.getElementById('exImagePreview').classList.remove('hidden');
-                document.getElementById('uploadPlaceholder').classList.add('hidden');
-            }
-            document.getElementById('customModalTitle').innerText = "Copy Exercise";
-            document.getElementById('customExModal').classList.remove('hidden');
-        }
 
-        async function editExercise(exId) {
-            const ex = allExercises.find(e => e.id === exId && e.isCustom);
-            if (!ex) return;
-            document.getElementById('exId').value = ex.id;
-            document.getElementById('exName').value = ex.name;
-            document.getElementById('exNamePT').value = ex.namePT || '';
-            document.getElementById('exType').value = ex.type;
-            const imgData = images[ex.imageId];
-            if (imgData) {
-                currentImageData = imgData;
-                document.getElementById('exImagePreview').src = imgData;
-                document.getElementById('exImagePreview').classList.remove('hidden');
-                document.getElementById('uploadPlaceholder').classList.add('hidden');
-            } else {
-                currentImageData = null;
-                document.getElementById('exImagePreview').src = defaultImage;
-                document.getElementById('exImagePreview').classList.remove('hidden');
-                document.getElementById('uploadPlaceholder').classList.add('hidden');
-            }
-            document.getElementById('customModalTitle').innerText = "Edit Exercise";
-            document.getElementById('customExModal').classList.remove('hidden');
-        }
 
-        async function saveCustomExercise() {
-            const id = document.getElementById('exId').value;
-            const name = document.getElementById('exName').value.trim();
-            const namePT = document.getElementById('exNamePT').value.trim();
-            const type = document.getElementById('exType').value;
-            if (!name) { alert("Please enter a name for the exercise."); return; }
-            try {
-                await ensureDbOpen();
-                let imageId = 0;
-                if (currentImageData) {
-                    imageId = Date.now();
-                    await db.custom_images.put({ id: imageId, data: currentImageData });
-                }
-                const exerciseData = { name, namePT, type, imageId };
-                if (id) {
-                    await db.custom_exercises.update(parseInt(id), exerciseData);
-                    alert("Exercise updated!");
-                } else {
-                    await db.custom_exercises.add(exerciseData);
-                    alert("Exercise saved to your local collection!");
-                }
-                localStorage.setItem('has_local_changes', 'true');
-                closeCustomModal();
-                await init(); 
-            } catch (err) {
-                console.error("Error saving custom exercise:", err);
-                alert("Failed to save exercise: " + err.message);
-            }
-        }
+
+
+
+
+
+
 
         function addExerciseToRoutine(exId, sets = [], isCustom = false) {
             const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom);
@@ -535,14 +391,15 @@
         }
 
         function getSelectedExercisesData() {
-            return Array.from(document.querySelectorAll('.selected-ex-card')).map(card => {
+            return Array.from(document.querySelectorAll('.selected-ex-card')).map((card, index) => {
                 const id = parseInt(card.dataset.id);
                 const isCustom = card.dataset.isCustom === 'true';
                 const sets = Array.from(card.querySelectorAll('.set-row-input')).map(row => ({
                     reps: parseInt(row.querySelector('.set-reps').value) || 0,
                     weight: parseFloat(row.querySelector('.set-weight').value) || 0
                 }));
-                return { id, sets, isCustom };
+                // Attach a sort index so the saved routine preserves the selected order
+                return { id, sets, isCustom, sort: index };
             });
         }
 
@@ -553,7 +410,7 @@
             await db.routines.add({ name, exerciseIds });
             localStorage.setItem('has_local_changes', 'true');
             resetForm();
-            renderWorkouts();
+            renderTabs();
         }
 
         async function prepareEdit(id) {
@@ -597,7 +454,7 @@
             await db.routines.update(id, { name, exerciseIds });
             localStorage.setItem('has_local_changes', 'true');
             resetForm();
-            renderWorkouts();
+            renderTabs();
         }
 
         function resetForm() {
@@ -610,55 +467,298 @@
         }
 
         async function renderWorkouts() {
+            // legacy entry point - delegate to the tabbed renderer
+            await renderTabs();
+        }
+        // New tab-based UI: render tabs and selected routine content
+        async function renderTabs() {
             const workouts = await db.routines.toArray();
-            const container = document.getElementById('workout-list');
-            container.innerHTML = workouts.map(w => {
-                const tags = w.exerciseIds.map(item => {
-                    const id = typeof item === 'object' ? item.id : item;
-                    const isCustom = typeof item === 'object' ? !!item.isCustom : false;
-                    const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
-                    if (!ex) return "";
-
-                    let setsHtml = '';
-                    if (typeof item === 'object' && Array.isArray(item.sets)) {
-                        setsHtml = `<div class="set-pills">` + 
-                            item.sets.map(s => `<span class="set-pill">${s.reps} × ${s.weight}kg</span>`).join('') + 
-                            `</div>`;
-                    } else if (typeof item === 'object') {
-                        // Fallback for old structure
-                        setsHtml = `<div class="set-pills"><span class="set-pill">${item.sets} sets × ${item.reps} × ${item.weight}kg</span></div>`;
-                    }
-
-                    return `<div class="exercise-tag">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                            <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb" style="width: 48px; height: 32px;">
-                            <strong>${ex.name}</strong>
-                        </div>
-                        ${setsHtml}
-                    </div>`;
-                }).join('');
-
-                return `
-                    <div class="workout-card">
-                        <div class="workout-header">
-                            <span class="workout-name">${w.name}</span>
-                            <div class="actions">
-                                <button class="edit-btn" onclick="prepareEdit(${w.id})" title="Edit">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                                </button>
-                                <button class="del-btn" onclick="deleteWorkout(${w.id})" title="Delete">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div>${tags}</div>
-                    </div>
-                `;
-            }).join('');
+            const tabsContainer = document.getElementById('routines-tabs');
+            const content = document.getElementById('routines-content');
+            tabsContainer.innerHTML = '';
+            if (!workouts || workouts.length === 0) {
+                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">No routines yet. Click <strong>New Routine</strong> to create one.</div>';
+                return;
+            }
+            workouts.forEach((w, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'tab-btn';
+                btn.innerText = w.name || 'Routine ' + (i + 1);
+                btn.dataset.id = w.id;
+                btn.onclick = function() {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    renderRoutineContent(parseInt(this.dataset.id));
+                };
+                tabsContainer.appendChild(btn);
+            });
+            // Activate a tab: prefer id from querystring if present, otherwise first tab
+            const params = new URLSearchParams(window.location.search);
+            const selectedId = params.get('id');
+            const first = tabsContainer.querySelector('.tab-btn');
+            if (selectedId) {
+                const btn = tabsContainer.querySelector(`[data-id="${selectedId}"]`);
+                if (btn) btn.click(); else if (first) first.click();
+            } else if (first) first.click();
         }
 
+        async function renderRoutineContent(id) {
+            const workout = await db.routines.get(id);
+            const content = document.getElementById('routines-content');
+            if (!workout) {
+                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">Routine not found.</div>';
+                return;
+            }
+
+            // Normalize exercise items and set default sort to INT_MAX when missing
+            const items = (workout.exerciseIds || []).map((item, idx) => {
+                if (typeof item === 'object') {
+                    return { ...item, id: item.id, isCustom: !!item.isCustom, sort: (typeof item.sort !== 'undefined') ? item.sort : INT_MAX, __origIndex: idx };
+                }
+                return { id: item, isCustom: false, sort: INT_MAX, __origIndex: idx };
+            }).sort((a,b) => (a.sort - b.sort) || (a.__origIndex - b.__origIndex));
+
+            const tags = items.map(it => {
+                const id = it.id;
+                const isCustom = !!it.isCustom;
+                const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
+                if (!ex) return "";
+                let setsHtml = '';
+                if (Array.isArray(it.sets)) {
+                    setsHtml = `<div class="set-pills">` +
+                        it.sets.map(s => `<span class="set-pill">${s.reps} × ${s.weight}kg</span>`).join('') +
+                        `</div>`;
+                } else if (typeof it.sets !== 'undefined') {
+                    setsHtml = `<div class="set-pills"><span class="set-pill">${it.sets} sets × ${it.reps} × ${it.weight}kg</span></div>`;
+                }
+                return `<div class="exercise-tag draggable" draggable="true" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0;">
+                        <span class="drag-handle" title="Drag to reorder">☰</span>
+                        <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb" style="width: 48px; height: 32px;">
+                        <strong>${ex.name}</strong>
+                    </div>
+                    ${setsHtml}
+                </div>`;
+            }).join('');
+
+            content.innerHTML = `
+                <div class="workout-card">
+                    <div class="workout-header">
+                        <div class="actions">
+                            <button class="edit-btn" onclick="window.location.href='routinecrud.html?id=${workout.id}'" title="Edit">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            </button>
+                            <button class="del-btn" onclick="deleteWorkout(${workout.id})" title="Delete">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="exerciseList">${tags}</div>
+                </div>
+            `;
+
+            // Enable drag sorting (persist order on drop)
+            enableDragSorting(document.getElementById('exerciseList'), workout.id);
+        }
+        // Drag & drop helpers for reordering exercises
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function clearDropIndicators(container) {
+            container.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+            container.classList.remove('exercise-list-drop-bottom');
+            // remove any leftover placeholders
+            container.querySelectorAll('.drop-placeholder').forEach(p => p.parentElement && p.parentElement.removeChild(p));
+        }
+
+        function enableDragSorting(container, workoutId) {
+            if (!container) return;
+            let draggingEl = null;
+            let isPointerDragging = false;
+            let placeholder = null;
+            function updateGhostPosition(ghost, x, y) {
+                if (!ghost) return;
+                const offset = 18;
+                ghost.style.left = (x + offset) + 'px';
+                ghost.style.top = (y + offset) + 'px';
+            }
+
+            container.querySelectorAll('.draggable').forEach(item => {
+                // HTML5 drag (desktop)
+                item.addEventListener('dragstart', e => {
+                    draggingEl = item;
+                    item.classList.add('dragging');
+                    // create placeholder to show empty space
+                    placeholder = document.createElement('div');
+                    placeholder.className = 'drop-placeholder';
+                    placeholder.style.height = item.getBoundingClientRect().height + 'px';
+                    item.parentElement.insertBefore(placeholder, item);
+                    // create floating ghost for better visibility
+                    const ghost = item.cloneNode(true);
+                    ghost.classList.add('drag-ghost');
+                    ghost.style.width = item.getBoundingClientRect().width + 'px';
+                    document.body.appendChild(ghost);
+                    updateGhostPosition(ghost, e.clientX, e.clientY);
+                    // keep layout but hide original visually
+                    item.style.visibility = 'hidden';
+                    // suppress default drag image
+                    try { e.dataTransfer.setDragImage(new Image(), 0, 0); } catch (err) {}
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', '');
+                    draggingEl._ghost = ghost;
+                });
+                item.addEventListener('dragend', e => {
+                    if (draggingEl) {
+                        draggingEl.classList.remove('dragging');
+                        draggingEl.style.visibility = '';
+                        if (draggingEl._ghost && draggingEl._ghost.parentElement) draggingEl._ghost.parentElement.removeChild(draggingEl._ghost);
+                        draggingEl._ghost = null;
+                    }
+                    if (placeholder && placeholder.parentElement) {
+                        placeholder.parentElement.insertBefore(draggingEl, placeholder);
+                        placeholder.parentElement.removeChild(placeholder);
+                    }
+                    draggingEl = null;
+                    placeholder = null;
+                    clearDropIndicators(container);
+                    persistOrder(workoutId);
+                });
+                item.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    if (!placeholder) return;
+                    const after = getDragAfterElement(container, e.clientY);
+                    clearDropIndicators(container);
+                    if (after == null) {
+                        container.appendChild(placeholder);
+                        container.classList.add('exercise-list-drop-bottom');
+                    } else {
+                        container.insertBefore(placeholder, after);
+                        after.classList.add('drop-target');
+                    }
+                    if (draggingEl && draggingEl._ghost) updateGhostPosition(draggingEl._ghost, e.clientX, e.clientY);
+                });
+
+                // Pointer-based drag (touch / stylus / pointer)
+                const handle = item.querySelector('.drag-handle');
+                if (handle) {
+                    handle.addEventListener('pointerdown', e => {
+                        // Only start pointer drag on primary button
+                        if (e.button && e.button !== 0) return;
+                        e.preventDefault();
+                        // create placeholder
+                        placeholder = document.createElement('div');
+                        placeholder.className = 'drop-placeholder';
+                        placeholder.style.height = item.getBoundingClientRect().height + 'px';
+                        item.parentElement.insertBefore(placeholder, item);
+
+                        draggingEl = item;
+                        isPointerDragging = true;
+                        item.classList.add('dragging');
+                        // create floating ghost
+                        const ghost = item.cloneNode(true);
+                        ghost.classList.add('drag-ghost');
+                        ghost.style.width = item.getBoundingClientRect().width + 'px';
+                        document.body.appendChild(ghost);
+                        updateGhostPosition(ghost, e.clientX, e.clientY);
+                        item.style.visibility = 'hidden';
+                        try { item.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+                        draggingEl._ghost = ghost;
+                    });
+                }
+            });
+
+            // Global pointer move/up handlers to track pointer drags
+            function onPointerMove(e) {
+                if (!isPointerDragging || !draggingEl || !placeholder) return;
+                const after = getDragAfterElement(container, e.clientY);
+                clearDropIndicators(container);
+                if (after == null) {
+                    container.appendChild(placeholder);
+                    container.classList.add('exercise-list-drop-bottom');
+                } else {
+                    container.insertBefore(placeholder, after);
+                    after.classList.add('drop-target');
+                }
+                if (draggingEl && draggingEl._ghost) updateGhostPosition(draggingEl._ghost, e.clientX, e.clientY);
+            }
+            function onPointerUp(e) {
+                if (!isPointerDragging) return;
+                if (draggingEl) {
+                    draggingEl.classList.remove('dragging');
+                    draggingEl.style.visibility = '';
+                }
+                if (draggingEl && draggingEl._ghost && draggingEl._ghost.parentElement) draggingEl._ghost.parentElement.removeChild(draggingEl._ghost);
+                if (placeholder && placeholder.parentElement) {
+                    placeholder.parentElement.insertBefore(draggingEl, placeholder);
+                    placeholder.parentElement.removeChild(placeholder);
+                }
+                isPointerDragging = false;
+                draggingEl = null;
+                placeholder = null;
+                clearDropIndicators(container);
+                persistOrder(workoutId);
+            }
+
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+        }
+
+        async function persistOrder(workoutId) {
+            const list = document.getElementById('exerciseList');
+            if (!list) return;
+            const children = [...list.querySelectorAll('.draggable')];
+            const workout = await db.routines.get(workoutId);
+            if (!workout) return;
+            const original = workout.exerciseIds || [];
+
+
+            const used = new Array(original.length).fill(false);
+            const newOrder = children.map((el, idx) => {
+                const id = parseInt(el.dataset.id);
+                const isCustom = el.dataset.isCustom === 'true';
+                let matchIndex = -1;
+                for (let i=0;i<original.length;i++){
+                    const item = original[i];
+                    const itemId = typeof item === 'object' ? item.id : item;
+                    const itemIsCustom = typeof item === 'object' ? !!item.isCustom : false;
+                    if (!used[i] && itemId === id && itemIsCustom === isCustom) {
+                        matchIndex = i; break;
+                    }
+                }
+                let newItem;
+                if (matchIndex >=0) {
+                    used[matchIndex] = true;
+                    const origItem = original[matchIndex];
+                    if (typeof origItem === 'object') {
+                        newItem = { ...origItem, sort: idx };
+                    } else {
+                        newItem = { id: origItem, sort: idx };
+                    }
+                } else {
+                    newItem = { id, isCustom, sort: idx };
+                }
+                return newItem;
+            });
+            await db.routines.update(workoutId, { exerciseIds: newOrder });
+            localStorage.setItem('has_local_changes', 'true');
+
+
+        }
+
+
+
         async function deleteWorkout(id) {
-            if(confirm("Delete routine?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderWorkouts(); }
+            if(confirm("Delete routine?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }
         }
 
         init();
