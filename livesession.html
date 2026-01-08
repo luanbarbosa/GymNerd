@@ -279,12 +279,27 @@
 
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
-            renderSet();
+                // Try to keep screen awake: prefer Wake Lock API, otherwise start silent audio (iOS fallback)
+                (async () => {
+                    try {
+                        if ('wakeLock' in navigator) {
+                            await requestWakeLock();
+                        } else {
+                            // start silent audio on user gesture (startSession is a user gesture)
+                            await startSilentAudio();
+                        }
+                    } catch (err) {
+                        console.warn('Could not acquire wake lock or start silent audio:', err);
+                    }
+                    renderSet();
+                })();
         }
 
         function discardSession() {
             if (confirm("Discard unfinished routine?")) {
                 clearSessionState();
+                // Stop any wake resources (wake lock or silent audio) before leaving
+                try { await releaseWakeResources(); } catch (e) { console.warn('Error releasing wake resources', e); }
                 document.getElementById('resumeCard').style.display = 'none';
             }
         }
@@ -763,6 +778,112 @@
         }
 
         init();
-    </script>
+        </script>
+        <script>
+        // Prevent screen from sleeping using Wake Lock API, with silent-audio fallback for iOS
+        let wakeLock = null;
+        let audioCtx = null;
+        let audioSource = null;
+        let htmlSilentAudio = null;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock was released');
+                    });
+                    return true;
+                }
+            } catch (err) {
+                console.error('Wake Lock error:', err);
+            }
+            return false;
+        }
+
+        // Attempt to start a silent looping audio as a fallback (works on many iOS versions)
+        async function startSilentAudio() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // create a tiny silent buffer and loop it
+                if (!audioSource) {
+                    const sampleRate = audioCtx.sampleRate || 44100;
+                    const frameCount = sampleRate * 1; // 1 second of silence
+                    const buffer = audioCtx.createBuffer(1, frameCount, sampleRate);
+                    const src = audioCtx.createBufferSource();
+                    src.buffer = buffer;
+                    src.loop = true;
+                    src.connect(audioCtx.destination);
+                    src.start(0);
+                    audioSource = src; 
+                }
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                return true;
+            } catch (err) {
+                console.warn('WebAudio silent fallback failed, trying HTMLAudio element', err);
+                try {
+                    if (!htmlSilentAudio) {
+                        htmlSilentAudio = document.createElement('audio');
+                        htmlSilentAudio.loop = true;
+                        // Minimal WAV silence data URI (very small)
+                        htmlSilentAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+                        htmlSilentAudio.volume = 0.01;
+                        await htmlSilentAudio.play();
+                    }
+                    return true;
+                } catch (e) {
+                    console.warn('HTMLAudio silent fallback failed', e);
+                }
+            }
+            return false;
+        }
+
+        function stopSilentAudio() {
+            try {
+                if (audioSource) {
+                    try { audioSource.stop(0); } catch (e) {}
+                    audioSource.disconnect();
+                    audioSource = null;
+                }
+                if (audioCtx) {
+                    try { audioCtx.close(); } catch (e) {}
+                    audioCtx = null;
+                }
+                if (htmlSilentAudio) {
+                    try { htmlSilentAudio.pause(); htmlSilentAudio.src = ''; } catch (e) {}
+                    htmlSilentAudio = null;
+                }
+            } catch (err) {
+                console.warn('Error stopping silent audio', err);
+            }
+        }
+
+        // Release both wake lock and silent audio when finishing
+        async function releaseWakeResources() {
+            try {
+                if (wakeLock) {
+                    try { await wakeLock.release(); } catch (e) { console.warn('Failed to release wakeLock', e); }
+                    wakeLock = null;
+                }
+            } catch (err) {
+                console.warn('Error releasing wake lock', err);
+            }
+            stopSilentAudio();
+        }
+
+        // If Wake Lock API is present, keep trying to re-acquire when visibility changes
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible') {
+                if ('wakeLock' in navigator) {
+                    await requestWakeLock();
+                }
+            }
+        });
+        // Clean up when page is hidden or unloaded
+        window.addEventListener('pagehide', () => { try { releaseWakeResources(); } catch(e){} });
+        window.addEventListener('beforeunload', () => { try { releaseWakeResources(); } catch(e){} });
+        </script>
 </body>
 </html>
