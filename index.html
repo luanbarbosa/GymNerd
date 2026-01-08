@@ -94,7 +94,8 @@
                 custom_exercises: await db.custom_exercises.toArray(),
                 custom_images: await db.custom_images.toArray(),
                 routines: await db.routines.toArray(),
-                logs: await db.logs.toArray()
+                logs: await db.logs.toArray(),
+                weights: await db.weights.toArray()
             };
             
             Object.keys(data).forEach((key, i) => {
@@ -116,7 +117,8 @@
                 custom_images: null,
                 custom_exercises: null,
                 routines: document.getElementById('importWk').files[0],
-                logs: document.getElementById('importLogs').files[0]
+                logs: document.getElementById('importLogs').files[0],
+                weights: null
             };
 
             await ensureDbOpen();
@@ -138,6 +140,14 @@
                         await table.clear();
                         await table.bulkAdd(parsedData);
                     }
+                }
+                // Import weights if user selects a file named weights.json
+                const weightsFile = Array.from(document.querySelectorAll('input[type="file"]')).find(f => f.files[0] && f.files[0].name.includes('weights'));
+                if (weightsFile && weightsFile.files[0]) {
+                    const text = await weightsFile.files[0].text();
+                    let parsedData = JSON.parse(text);
+                    await db.weights.clear();
+                    await db.weights.bulkAdd(parsedData);
                 }
                 await DriveStorage.sync(db);
                 alert("Import successful!"); 
