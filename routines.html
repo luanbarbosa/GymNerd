@@ -40,7 +40,6 @@
         .category-section[open] .category-summary .chevron { transform: rotate(180deg); }
         .exercise-grid { display: grid; gap: 12px; padding: 0 12px 16px 12px; }
         .exercise-grid .ex-thumb { width: 72px; height: 48px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
-        
         .exercise-card { background: var(--card); border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: transform 0.2s; }
         .exercise-card:active { transform: scale(0.98); }
         .exercise-card { position: relative; }
@@ -112,7 +111,6 @@
 
         .sort-btn { color: var(--text-dim); background: rgba(255,255,255,0.02); border: none; cursor: pointer; display: flex; align-items: center; padding: 8px; border-radius: 10px; transition: background 0.12s; }
         .sort-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-
         .draggable.dragging { opacity: 0.85; transform: scale(0.98); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .draggable { user-select: none; }
         .drop-placeholder { border: 2px dashed rgba(148,163,184,0.25); margin: 6px 0; border-radius: 12px; background: rgba(255,255,255,0.01); }
@@ -783,8 +781,6 @@
                 persistOrder(workoutId);
             }
         }
-
-
 
         async function deleteWorkout(id) {
             if(confirm("Delete routine?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }

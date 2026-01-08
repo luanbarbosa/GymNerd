@@ -42,22 +42,66 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Routine History</h2></div>
-    <div class="card">
-        <div class="section-header"><h2>Log Routine</h2></div>
-        <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Routine --</option></select>
-        <input type="date" id="logDate" style="margin-top:10px">
-    </div>
-    <div id="workoutSheet"></div>
-    <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()">💾 Save Session</button>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2>History</h2></div>
+        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                <button id="toggleRoutineForm" class="save-session" style="flex:1">New Routine Entry</button>
+                <button id="toggleWeightForm" class="save-session" style="flex:1">New Weight Entry</button>
+        </div>
+
+        <div id="routineFormSection" class="card" style="display:none; margin-bottom: 20px;">
+                <div class="section-header"><h2>Log Routine</h2></div>
+                <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Routine --</option></select>
+                <input type="date" id="logDate" style="margin-top:10px">
+                <div id="workoutSheet"></div>
+                <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()">💾 Save Session</button>
+                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('routineFormSection')">Cancel</button>
+        </div>
+
+        <div id="weightFormSection" class="card" style="display:none; margin-bottom: 20px;">
+                <div class="section-header"><h2>Log Weight</h2></div>
+                <form id="weightForm" onsubmit="event.preventDefault(); saveWeightEntry();">
+                        <input type="date" id="weightDate" required style="margin-bottom:10px">
+                        <input type="number" id="weightKg" step="0.1" min="0" placeholder="Weight (kg)" required>
+                        <button type="submit" class="save-session" style="margin-top:10px">💾 Save Weight</button>
+                </form>
+                <div id="weightSaveMsg" style="color:var(--success);margin-top:8px;display:none">Weight saved!</div>
+                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('weightFormSection')">Cancel</button>
+        </div>
     <details class="history-section">
         <summary class="section-header"><span>History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
         <div id="history" style="padding: 0 15px 10px 15px;"></div>
     </details>
 
-    <script>
-        
-        document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+        <script>
+                function showForm(id) {
+                    document.getElementById(id).style.display = 'block';
+                }
+                function hideForm(id) {
+                    document.getElementById(id).style.display = 'none';
+                }
+                document.getElementById('toggleRoutineForm').onclick = () => {
+                    showForm('routineFormSection');
+                    document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+                };
+                document.getElementById('toggleWeightForm').onclick = () => {
+                    showForm('weightFormSection');
+                    document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+                };
+                // Set default dates on page load
+                document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+
+                async function saveWeightEntry() {
+                        const date = document.getElementById('weightDate').value;
+                        const weight = parseFloat(document.getElementById('weightKg').value);
+                        if (!date || isNaN(weight)) return;
+                        await ensureDbOpen();
+                        await db.weights.put({ date, weight });
+                        localStorage.setItem('has_local_changes', 'true');
+                        document.getElementById('weightSaveMsg').style.display = 'block';
+                        setTimeout(() => { document.getElementById('weightSaveMsg').style.display = 'none'; }, 1500);
+                        hideForm('weightFormSection');
+                }
         let allEx = [];
 
         async function init() {
