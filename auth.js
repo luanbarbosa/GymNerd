@@ -1,6 +1,14 @@
 (async function() {
+    console.log('auth.js initializing');
     let CLIENT_ID = "__GOOGLE_CLIENT_ID__";
     const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const REDIRECT_PATH = '/oauth2callback.html';
+
+    // Internal: promise used to dedupe concurrent refresh attempts
+    // Use `var` and prefer an existing window property so re-loading the
+    // script (during development or accidental double-include) doesn't
+    // throw a redeclare SyntaxError.
+    var _refreshPromise = window._refreshPromise || null;
 
     window.logout = () => {
         localStorage.removeItem('google_token');
@@ -13,7 +21,7 @@
         if (!loader) {
             loader = document.createElement('div');
             loader.id = 'global-loader';
-            loader.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 1000000; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; font-family: sans-serif; backdrop-filter: blur(4px);";
+            loader.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.92); z-index: 2000000; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; font-family: sans-serif; backdrop-filter: blur(4px); pointer-events: all;";
             loader.innerHTML = `
                 <div style="width: 40px; height: 40px; border: 4px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
                 <div id="loader-message" style="font-weight: 600; font-size: 0.9rem;">${message}</div>
@@ -26,9 +34,40 @@
         }
     };
 
+    // Log unhandled promise rejections to help diagnose silent failures
+    // If a known external error occurs, attempt a token refresh so startup
+    // doesn't get stuck (some external libs throw async errors).
+    window.addEventListener('unhandledrejection', (ev) => {
+        try {
+            console.error('Unhandled promise rejection:', ev.reason);
+            const msg = ev.reason && (ev.reason.message || ev.reason.error || ev.reason.toString());
+            if (msg && typeof msg === 'string' && msg.includes('No checkout popup config found')) {
+                // Try to trigger a refresh attempt shortly after this error
+                setTimeout(() => {
+                    try {
+                        console.log('Detected external GSI error — attempting token refresh');
+                        if (typeof ensureGoogleAccessToken === 'function') {
+                            ensureGoogleAccessToken().then(ok => console.log('ensureGoogleAccessToken ->', ok)).catch(e=>console.error(e));
+                        }
+                    } catch(e) { console.error(e); }
+                }, 50);
+            }
+        } catch(e){}
+    });
+
     window.hideLoading = () => {
         const loader = document.getElementById('global-loader');
-        if (loader) loader.style.display = 'none';
+        if (loader) {
+            loader.style.display = 'none';
+            // If a refresh error was deferred while loading, show it now
+            try {
+                const deferred = sessionStorage.getItem('deferred_refresh_error');
+                if (deferred) {
+                    sessionStorage.removeItem('deferred_refresh_error');
+                    try { renderRefreshError(); } catch(e){}
+                }
+            } catch(e){}
+        }
     };
 
     window.clearAllAppData = async () => {
@@ -92,18 +131,153 @@
         }
     };
 
+    // Show explicit UI when a refresh attempt fails but a refresh token existed.
+    function renderRefreshError() {
+        // Ensure any global loader is hidden so the error UI is interactive
+        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+
+        const blocker = document.createElement('div');
+        blocker.id = 'refresh-error-blocker';
+        blocker.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,17,26,0.98); z-index: 1000000; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; color: white; font-family: sans-serif;";
+
+        const title = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : 'Session Expired';
+        const message = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_refresh_session') : 'Could not refresh your session automatically. Please sign in again.';
+        const retryText = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('retry') : 'Retry';
+        const signInText = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('sign_in_with_google') : 'Sign in with Google';
+
+        blocker.innerHTML = `
+            <div style="max-width:420px; width:100%;">
+                <h2 style="margin-bottom:8px; font-size:1.6rem;">${title}</h2>
+                <p style="color:#94a3b8; margin-bottom:20px;">${message}</p>
+                <div style="display:flex; gap:10px;">
+                    <button id="refresh-retry-btn" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:#1e293b; color:white; font-weight:700;">${retryText}</button>
+                    <button id="refresh-signin-btn" style="flex:1; padding:12px; border-radius:10px; border:none; background:#3b82f6; color:white; font-weight:700;">${signInText}</button>
+                </div>
+                <div style="margin-top:12px; color:#94a3b8; font-size:0.85rem;">You can also clear local data from the settings if you prefer.</div>
+            </div>
+        `;
+
+        // Hook buttons synchronously so they are immediately responsive
+        const attachHandlers = () => {
+            const retry = document.getElementById('refresh-retry-btn');
+            const signin = document.getElementById('refresh-signin-btn');
+
+            if (retry) retry.addEventListener('click', async () => {
+                try {
+                    showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...');
+                    const ok = await refreshAccessToken();
+                    hideLoading();
+                    if (ok) {
+                        location.reload();
+                    } else {
+                        alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_refresh_session') : 'Refresh failed. Please sign in.');
+                    }
+                } catch (e) {
+                    hideLoading();
+                    alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_refresh_session') : 'Refresh failed. Please sign in.');
+                }
+            });
+
+            if (signin) signin.addEventListener('click', () => {
+                try { document.body.removeChild(blocker); } catch(e){}
+                handleAuth();
+            });
+
+            try { GN_I18N.applyTranslations(blocker); } catch(e){}
+        };
+
+        if (document.body) {
+            document.body.appendChild(blocker);
+            attachHandlers();
+            // Attempt a one-time automatic refresh to ensure the function is invoked
+            try {
+                const attempted = sessionStorage.getItem('auto_refresh_attempted');
+                if (!attempted) {
+                    sessionStorage.setItem('auto_refresh_attempted', '1');
+                    (async () => {
+                        try {
+                            showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...');
+                            const ok = await refreshAccessToken();
+                            hideLoading();
+                            if (ok) location.reload();
+                        } catch (e) {
+                            hideLoading();
+                        }
+                    })();
+                }
+            } catch(e){}
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.appendChild(blocker);
+                attachHandlers();
+                try {
+                    const attempted = sessionStorage.getItem('auto_refresh_attempted');
+                    if (!attempted) {
+                        sessionStorage.setItem('auto_refresh_attempted', '1');
+                        (async () => {
+                            try {
+                                showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...');
+                                const ok = await refreshAccessToken();
+                                hideLoading();
+                                if (ok) location.reload();
+                            } catch (e) {
+                                hideLoading();
+                            }
+                        })();
+                    }
+                } catch(e){}
+            });
+        }
+    }
+
     // Check if already authenticated
-    const token = localStorage.getItem('google_token');
-    const expiresAt = localStorage.getItem('google_token_expires_at');
+    // Show a blocking loader while we probe session state to avoid a blank page
+    try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('checking_session') || 'Checking session...' : 'Checking session...'); } catch(e){}
+    let token = localStorage.getItem('google_token');
+    let expiresAt = localStorage.getItem('google_token_expires_at');
     let validSession = false;
 
-    if (token && expiresAt) {
-        if (Date.now() < parseInt(expiresAt)) {
-            validSession = true;
-        } else {
-            localStorage.removeItem('google_token');
-            localStorage.removeItem('google_token_expires_at');
+    try {
+        if (token && expiresAt) {
+            if (Date.now() < parseInt(expiresAt)) {
+                validSession = true;
+            } else {
+                // expired: try to refresh using refresh token if available.
+                // If a refresh token exists but refresh fails, show an explicit
+                // UI so user can retry or re-login.
+                const hadRefresh = !!localStorage.getItem('google_refresh_token');
+                try {
+                    console.log('startup: token expired, attempting refresh');
+                    const refreshed = await refreshAccessToken();
+                    console.log('startup: refresh result', refreshed);
+                    if (refreshed) {
+                        validSession = true;
+                        token = localStorage.getItem('google_token');
+                        expiresAt = localStorage.getItem('google_token_expires_at');
+                        // Reload so the rest of the UI (rendered earlier) updates
+                        // to reflect the newly refreshed credentials.
+                        try { location.reload(); } catch(e) {}
+                    } else {
+                        if (hadRefresh) {
+                            renderRefreshError();
+                            return;
+                        }
+                        localStorage.removeItem('google_token');
+                        localStorage.removeItem('google_token_expires_at');
+                    }
+                } catch (e) {
+                    console.error('startup refresh error', e);
+                    if (hadRefresh) {
+                        renderRefreshError();
+                        return;
+                    }
+                    localStorage.removeItem('google_token');
+                    localStorage.removeItem('google_token_expires_at');
+                }
+            }
         }
+    } catch (e) {
+        console.error('Error during auth startup check', e);
     }
 
     // Load Google Identity Services script
@@ -114,6 +288,127 @@
         document.head.appendChild(script);
     });
 
+    // PKCE helpers and token refresh
+    function generateRandomString(length = 64) {
+        const array = new Uint8Array(length);
+        crypto.getRandomValues(array);
+        return Array.from(array).map(b => ('0' + b.toString(16)).slice(-2)).join('').slice(0, length);
+    }
+
+    async function sha256(buffer) {
+        const enc = new TextEncoder();
+        const data = enc.encode(buffer);
+        const hash = await crypto.subtle.digest('SHA-256', data);
+        return new Uint8Array(hash);
+    }
+
+    function base64UrlEncode(bytes) {
+        let str = btoa(String.fromCharCode(...bytes));
+        return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
+    async function createCodeChallenge(verifier) {
+        const hashed = await sha256(verifier);
+        return base64UrlEncode(hashed);
+    }
+
+    async function exchangeCodeForTokens(code, code_verifier, redirect_uri) {
+        // Always POST to the configured Cloud Function exchange endpoint.
+        const exchangeUrl = 'https://us-central1-gymnerd-9cabd.cloudfunctions.net/exchangeTokenV2';
+
+        const resp = await fetch(exchangeUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, code_verifier, redirect_uri })
+        });
+
+        const ct = (resp.headers.get('content-type') || '').toLowerCase();
+        if (!ct.includes('application/json')) {
+            const text = await resp.text();
+            throw new Error('non_json_response: ' + text.slice(0, 200));
+        }
+
+        const data = await resp.json();
+        if (!resp.ok) throw new Error('exchange_failed: ' + JSON.stringify(data));
+        return data;
+    }
+
+    async function refreshAccessToken() {
+        const refresh_token = localStorage.getItem('google_refresh_token');
+        if (!refresh_token) return false;
+        console.log('refreshAccessToken: start');
+        // If a refresh is already in progress, return the same promise so we
+        // don't trigger multiple calls to the Cloud Function.
+        if (_refreshPromise) return await _refreshPromise;
+
+        try {
+            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('refreshing_session') || 'Refreshing session...' : 'Refreshing session...');
+        } catch(e){}
+
+        _refreshPromise = (async () => {
+            try {
+                // Use server-side exchange so client_secret stays on the server.
+                const exchangeUrl = 'https://us-central1-gymnerd-9cabd.cloudfunctions.net/exchangeTokenV2';
+                const resp = await fetch(exchangeUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token })
+                });
+
+                const dataText = await resp.text();
+                let data = {};
+                try { data = JSON.parse(dataText); } catch(e) { data = { raw: dataText }; }
+
+                if (resp.ok && data.access_token) {
+                    console.log('refreshAccessToken: success');
+                    localStorage.setItem('google_token', data.access_token);
+                    localStorage.setItem('google_token_expires_at', Date.now() + (data.expires_in * 1000));
+                    // Google may or may not return a new refresh_token. If it does, store it.
+                    if (data.refresh_token) localStorage.setItem('google_refresh_token', data.refresh_token);
+                    return true;
+                }
+
+                console.warn('Refresh failed', { status: resp.status, data });
+                // Remove stored refresh token to force a fresh login next.
+                localStorage.removeItem('google_refresh_token');
+                return false;
+            } catch (e) {
+                console.error('Refresh error', e);
+                return false;
+            } finally {
+                // Clear promise so future refreshes can run again
+                _refreshPromise = null;
+            }
+        })();
+
+        try {
+            return await _refreshPromise;
+        } finally {
+            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+        }
+    }
+
+    // Ensure a valid access token is available. Attempts refresh if needed.
+    window.ensureGoogleAccessToken = async () => {
+        const token = localStorage.getItem('google_token');
+        const expiresAt = localStorage.getItem('google_token_expires_at');
+
+        if (token && expiresAt && Date.now() < parseInt(expiresAt) - 5000) {
+            return true;
+        }
+
+        // Try refresh token
+        const ok = await refreshAccessToken();
+        if (ok) return true;
+
+        // Cleanup stale tokens
+        localStorage.removeItem('google_token');
+        localStorage.removeItem('google_token_expires_at');
+        return false;
+    };
+
+    
+
     window.handleAuth = async () => {
         if (window.location.protocol === 'file:') {
             localStorage.setItem('google_token', 'local-bypass');
@@ -121,32 +416,91 @@
             location.reload();
             return;
         }
+        // Start PKCE flow in a popup so we can receive a refresh token
+        const code_verifier = base64UrlEncode(crypto.getRandomValues(new Uint8Array(96)));
+        const code_challenge = await createCodeChallenge(code_verifier);
+        // Force the hosted GitHub Pages project redirect path so it matches
+        // the registered Authorized Redirect URI in Google Cloud Console.
+        const redirect_uri = window.location.origin + '/GymNerd/oauth2callback.html';
 
-        const client = google.accounts.oauth2.initTokenClient({
+        // store verifier in session for later exchange
+        sessionStorage.setItem('pkce_code_verifier', code_verifier);
+
+        const params = new URLSearchParams({
             client_id: CLIENT_ID,
+            redirect_uri,
+            response_type: 'code',
             scope: SCOPES,
-            callback: (response) => {
-                if (response.access_token) {
-                    localStorage.setItem('google_token', response.access_token);
-                    localStorage.setItem('needs_initial_download', 'true');
-                    // Store expiration timestamp (current time + expires_in seconds)
-                    const expiresAt = Date.now() + (response.expires_in * 1000);
-                    localStorage.setItem('google_token_expires_at', expiresAt);
-                    location.reload();
-                }
-            },
+            access_type: 'offline',
+            prompt: 'consent',
+            code_challenge: code_challenge,
+            code_challenge_method: 'S256',
+            include_granted_scopes: 'true'
         });
-        client.requestAccessToken();
+
+        const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+
+        
+
+        // Always use a full-window redirect for the OAuth flow. This avoids
+        // popup-blocking issues on iOS and simplifies the flow: the callback
+        // page will store the code and return to the app, where we resume the
+        // PKCE exchange (see load-time handler earlier in this file).
+        window.location.href = authUrl;
+        return;
     };
+
+    // If the app was opened via redirect (standalone / iOS home-screen), the
+    // `oauth2callback.html` will store the code in sessionStorage. Detect that
+    // case on load and continue the PKCE token exchange here.
+    const storedCode = sessionStorage.getItem('oauth2_code') || localStorage.getItem('oauth2_code');
+    if (storedCode) {
+        try {
+            // Use the same redirect URI used when initiating auth
+            const redirect_uri = window.location.origin + '/GymNerd/oauth2callback.html';
+            const verifier = sessionStorage.getItem('pkce_code_verifier');
+            // Clean up stored code immediately
+            sessionStorage.removeItem('oauth2_code');
+            localStorage.removeItem('oauth2_code');
+
+            // Exchange code for tokens
+            const tokenData = await exchangeCodeForTokens(storedCode, verifier, redirect_uri);
+            if (tokenData.access_token) {
+                localStorage.setItem('google_token', tokenData.access_token);
+                localStorage.setItem('google_token_expires_at', Date.now() + (tokenData.expires_in * 1000));
+                if (tokenData.refresh_token) localStorage.setItem('google_refresh_token', tokenData.refresh_token);
+                localStorage.setItem('needs_initial_download', 'true');
+                location.reload();
+            } else {
+                console.error('Token exchange failed', tokenData);
+            }
+        } catch (err) {
+            console.error('Exchange error', err);
+        }
+    }
 
     if (!validSession) {
         renderLogin();
-    } else if (window.location.protocol !== 'file:' && token !== 'local-bypass') {
-        await loadScript;
+    } else {
+        if (window.location.protocol !== 'file:' && token !== 'local-bypass') {
+            await loadScript;
+        }
+        try { if (window.showApp) window.showApp(); } catch(e){}
     }
 
     function renderLogin() {
+        // Hide any loading indicator before showing login UI
+        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+
         const isLocal = window.location.protocol === 'file:';
+        // If an initial download is pending, show the blocking loader instead
+        // of the login overlay so the user can't interact with the app.
+        try {
+            if (localStorage.getItem('needs_initial_download') === 'true') {
+                if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') || 'Welcome back! Syncing your data...' : 'Welcome back! Syncing your data...');
+                return;
+            }
+        } catch(e){}
         const blocker = document.createElement('div');
         blocker.id = 'auth-blocker';
         blocker.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 999999; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; color: white; font-family: sans-serif;";

@@ -280,8 +280,10 @@
         }
 
         function updateModalResults() {
-            const query = document.getElementById('modalSearchInput').value.toLowerCase();
+            const inputEl = document.getElementById('modalSearchInput');
+            const query = (inputEl && inputEl.value) ? inputEl.value.toLowerCase() : '';
             const resultsDiv = document.getElementById('modalResults');
+            if (!resultsDiv) return; // nothing to render into (modal markup may be absent)
             const forceOpen = query.length > 0;
             
             const filtered = allExercises.filter(ex => 

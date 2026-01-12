@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>OAuth Callback</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+<body style="background:#0f172a;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;">
+  <div style="text-align:center;max-width:420px;padding:20px;">
+    <h2 style="margin-bottom:8px;">Signing you in…</h2>
+    <p style="color:#94a3b8;margin-bottom:12px;">If this page does not close automatically, copy the code shown below and return to the app.</p>
+    <pre id="code" style="background:#071024;padding:12px;border-radius:8px;overflow-x:auto;">Waiting for code...</pre>
+  </div>
+
+  <script>
+    (function(){
+      function parseQuery(qs) {
+        const params = {};
+        qs.replace(/^\?/,'').split('&').forEach(pair => {
+          if (!pair) return;
+          const [k,v] = pair.split('=');
+          params[decodeURIComponent(k)] = decodeURIComponent((v||'').replace(/\+/g,' '));
+        });
+        return params;
+      }
+
+      const params = parseQuery(window.location.search);
+      const code = params.code;
+      const error = params.error;
+      const display = document.getElementById('code');
+
+      if (code && window.opener) {
+        try {
+          window.opener.postMessage({ type: 'oauth2callback', code }, window.location.origin);
+          display.innerText = code;
+          // Give opener a moment to receive message then close
+          setTimeout(() => window.close(), 800);
+        } catch (e) {
+          display.innerText = 'Could not send code to opener.\n' + code;
+        }
+      } else if (code) {
+        // No opener (standalone / iOS home-screen webapp). Persist the code
+        // so the main app can pick it up and continue the PKCE exchange.
+        try {
+          sessionStorage.setItem('oauth2_code', code);
+        } catch (e) {
+          localStorage.setItem('oauth2_code', code);
+        }
+
+        display.innerText = code + '\n\nReturning to app...';
+
+        // Compute base path e.g. '/GymNerd/' from current pathname and
+        // navigate back so the main page can detect the stored code.
+        const base = window.location.pathname.replace(/\/[^\/]*$/, '/');
+        setTimeout(() => {
+          window.location.href = window.location.origin + base;
+        }, 700);
+      } else if (error) {
+        display.innerText = 'Error: ' + error;
+      } else {
+        display.innerText = 'No code found in URL.';
+      }
+    })();
+  </script>
+</body>
+</html>

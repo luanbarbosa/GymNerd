@@ -6,6 +6,11 @@ const DriveStorage = {
     FOLDER_NAME: 'GymNerd',
 
     async _getHeaders() {
+        // Ensure the token is valid; try refresh if needed
+        if (window.ensureGoogleAccessToken) {
+            const ok = await window.ensureGoogleAccessToken();
+            if (!ok) throw new Error("No Google token found. Please login.");
+        }
         const token = localStorage.getItem('google_token');
         if (!token || token === 'local-bypass') throw new Error("No Google token found. Please login.");
         return {
