@@ -1,6 +1,7 @@
 (async function() {
     let CLIENT_ID = "__GOOGLE_CLIENT_ID__";
     const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const REDIRECT_PATH = '/oauth2callback.html';
 
     window.logout = () => {
         localStorage.removeItem('google_token');
@@ -101,6 +102,8 @@
         if (Date.now() < parseInt(expiresAt)) {
             validSession = true;
         } else {
+            // expired: try to refresh using refresh token if available
+            // cleanup will be done by ensureGoogleAccessToken if refresh fails
             localStorage.removeItem('google_token');
             localStorage.removeItem('google_token_expires_at');
         }
@@ -114,6 +117,100 @@
         document.head.appendChild(script);
     });
 
+    // PKCE helpers and token refresh
+    function generateRandomString(length = 64) {
+        const array = new Uint8Array(length);
+        crypto.getRandomValues(array);
+        return Array.from(array).map(b => ('0' + b.toString(16)).slice(-2)).join('').slice(0, length);
+    }
+
+    async function sha256(buffer) {
+        const enc = new TextEncoder();
+        const data = enc.encode(buffer);
+        const hash = await crypto.subtle.digest('SHA-256', data);
+        return new Uint8Array(hash);
+    }
+
+    function base64UrlEncode(bytes) {
+        let str = btoa(String.fromCharCode(...bytes));
+        return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
+    async function createCodeChallenge(verifier) {
+        const hashed = await sha256(verifier);
+        return base64UrlEncode(hashed);
+    }
+
+    async function exchangeCodeForTokens(code, code_verifier, redirect_uri) {
+        const body = new URLSearchParams({
+            code,
+            client_id: CLIENT_ID,
+            code_verifier,
+            redirect_uri,
+            grant_type: 'authorization_code'
+        });
+
+        const resp = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        });
+        return resp.json();
+    }
+
+    async function refreshAccessToken() {
+        const refresh_token = localStorage.getItem('google_refresh_token');
+        if (!refresh_token) return false;
+
+        try {
+            const body = new URLSearchParams({
+                client_id: CLIENT_ID,
+                grant_type: 'refresh_token',
+                refresh_token
+            });
+
+            const resp = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+
+            const data = await resp.json();
+            if (data.access_token) {
+                localStorage.setItem('google_token', data.access_token);
+                localStorage.setItem('google_token_expires_at', Date.now() + (data.expires_in * 1000));
+                return true;
+            } else {
+                console.warn('Refresh failed', data);
+                // If refresh fails, remove stored refresh token
+                localStorage.removeItem('google_refresh_token');
+                return false;
+            }
+        } catch (e) {
+            console.error('Refresh error', e);
+            return false;
+        }
+    }
+
+    // Ensure a valid access token is available. Attempts refresh if needed.
+    window.ensureGoogleAccessToken = async () => {
+        const token = localStorage.getItem('google_token');
+        const expiresAt = localStorage.getItem('google_token_expires_at');
+
+        if (token && expiresAt && Date.now() < parseInt(expiresAt) - 5000) {
+            return true;
+        }
+
+        // Try refresh token
+        const ok = await refreshAccessToken();
+        if (ok) return true;
+
+        // Cleanup stale tokens
+        localStorage.removeItem('google_token');
+        localStorage.removeItem('google_token_expires_at');
+        return false;
+    };
+
     window.handleAuth = async () => {
         if (window.location.protocol === 'file:') {
             localStorage.setItem('google_token', 'local-bypass');
@@ -121,22 +218,59 @@
             location.reload();
             return;
         }
+        // Start PKCE flow in a popup so we can receive a refresh token
+        const code_verifier = base64UrlEncode(crypto.getRandomValues(new Uint8Array(96)));
+        const code_challenge = await createCodeChallenge(code_verifier);
+        const redirect_uri = window.location.origin + REDIRECT_PATH;
 
-        const client = google.accounts.oauth2.initTokenClient({
+        // store verifier in session for later exchange
+        sessionStorage.setItem('pkce_code_verifier', code_verifier);
+
+        const params = new URLSearchParams({
             client_id: CLIENT_ID,
+            redirect_uri,
+            response_type: 'code',
             scope: SCOPES,
-            callback: (response) => {
-                if (response.access_token) {
-                    localStorage.setItem('google_token', response.access_token);
-                    localStorage.setItem('needs_initial_download', 'true');
-                    // Store expiration timestamp (current time + expires_in seconds)
-                    const expiresAt = Date.now() + (response.expires_in * 1000);
-                    localStorage.setItem('google_token_expires_at', expiresAt);
-                    location.reload();
-                }
-            },
+            access_type: 'offline',
+            prompt: 'consent',
+            code_challenge: code_challenge,
+            code_challenge_method: 'S256',
+            include_granted_scopes: 'true'
         });
-        client.requestAccessToken();
+
+        const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+
+        const popup = window.open(authUrl, 'oauth2', 'width=500,height=650');
+
+        // Message listener to receive code from oauth2callback.html
+        const handler = async (e) => {
+            if (e.origin !== window.location.origin) return;
+            const data = e.data || {};
+            if (data.type === 'oauth2callback' && data.code) {
+                try {
+                    const verifier = sessionStorage.getItem('pkce_code_verifier');
+                    const tokenData = await exchangeCodeForTokens(data.code, verifier, redirect_uri);
+                    if (tokenData.access_token) {
+                        localStorage.setItem('google_token', tokenData.access_token);
+                        localStorage.setItem('google_token_expires_at', Date.now() + (tokenData.expires_in * 1000));
+                        if (tokenData.refresh_token) {
+                            localStorage.setItem('google_refresh_token', tokenData.refresh_token);
+                        }
+                        localStorage.setItem('needs_initial_download', 'true');
+                        window.removeEventListener('message', handler);
+                        location.reload();
+                    } else {
+                        console.error('Token exchange failed', tokenData);
+                        alert('Authentication failed. See console for details.');
+                    }
+                } catch (err) {
+                    console.error('Exchange error', err);
+                    alert('Authentication failed. See console for details.');
+                }
+            }
+        };
+
+        window.addEventListener('message', handler);
     };
 
     if (!validSession) {
