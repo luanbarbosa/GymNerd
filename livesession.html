@@ -295,7 +295,7 @@
                 })();
         }
 
-        function discardSession() {
+        async function discardSession() {
             if (confirm("Discard unfinished routine?")) {
                 clearSessionState();
                 // Stop any wake resources (wake lock or silent audio) before leaving
