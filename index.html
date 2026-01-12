@@ -6,6 +6,15 @@
     <title>GymNerd | Home</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
+    <!-- Optional: set this to your deployed token-exchange function URL.
+         Example:
+         window.EXCHANGE_TOKEN_URL = 'https://us-central1-PROJECT.cloudfunctions.net/exchangeToken';
+         If empty, the app will first try same-origin `/exchangeToken` (works when deployed
+         to Firebase Hosting with rewrites). GitHub Pages won't accept POSTs at that path.
+    -->
+    <script>
+        window.EXCHANGE_TOKEN_URL = '';
+    </script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -15,7 +24,7 @@
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .main-content { padding: 20px; }
+        .main-content { padding: 20px; display: none; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
         
         .menu-grid { display: grid; gap: 15px; }
@@ -35,6 +44,15 @@
     </style>
 </head>
 <body>
+
+    <script>
+        // Keep the main UI hidden until auth + initial sync complete
+        window.showApp = function() {
+            try { document.querySelector('.main-content').style.display = 'block'; } catch(e){}
+            try { const blocker = document.getElementById('auth-blocker'); if (blocker) blocker.remove(); } catch(e){}
+            try { const loader = document.getElementById('global-loader'); if (loader) loader.style.display = 'none'; } catch(e){}
+        };
+    </script>
 
     <div class="main-content">
         <div id="auth-status-container"></div>
@@ -166,10 +184,11 @@
                 }
                 
                 const data = await DriveStorage.load();
-                if (!data) {
-                    if (!isAuto) alert("No backup found on Google Drive.");
-                    return;
-                }
+                        if (!data) {
+                            if (!isAuto) alert("No backup found on Google Drive.");
+                            if (isAuto && window.showApp) window.showApp();
+                            return;
+                        }
 
                 const proceed = isAuto || confirm("This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
@@ -209,7 +228,11 @@
                     if (data.lastSync) localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync);
                     localStorage.setItem('has_local_changes', 'false');
 
-                    location.reload();
+                    if (isAuto) {
+                        if (window.showApp) window.showApp();
+                    } else {
+                        location.reload();
+                    }
                 }
             } catch (error) {
                 if (error.message === "AUTH_EXPIRED") {

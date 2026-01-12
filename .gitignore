@@ -2,3 +2,7 @@
 .secrets/*
 .env
 *.log
+/functions/node_modules
+/functions/node_modules
+/.firebase
+.firebaserc
