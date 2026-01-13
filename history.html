@@ -6,6 +6,7 @@
     <title>GymNerd | History</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
+    <script src="i18n.js"></script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -42,30 +43,30 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>History</h2></div>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2 data-i18n="history">History</h2></div>
         <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-                <button id="toggleRoutineForm" class="save-session" style="flex:1">New Routine Entry</button>
-                <button id="toggleWeightForm" class="save-session" style="flex:1">New Weight Entry</button>
+                <button id="toggleRoutineForm" class="save-session" style="flex:1" data-i18n="new_routine_entry">New Routine Entry</button>
+                <button id="toggleWeightForm" class="save-session" style="flex:1" data-i18n="new_weight_entry">New Weight Entry</button>
         </div>
 
         <div id="routineFormSection" class="card" style="display:none; margin-bottom: 20px;">
-                <div class="section-header"><h2>Log Routine</h2></div>
+                <div class="section-header"><h2 data-i18n="log_routine">Log Routine</h2></div>
                 <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Routine --</option></select>
                 <input type="date" id="logDate" style="margin-top:10px">
                 <div id="workoutSheet"></div>
-                <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()">💾 Save Session</button>
-                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('routineFormSection')">Cancel</button>
+                <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()" data-i18n="save_session">💾 Save Session</button>
+                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('routineFormSection')" data-i18n="cancel">Cancel</button>
         </div>
 
         <div id="weightFormSection" class="card" style="display:none; margin-bottom: 20px;">
-                <div class="section-header"><h2>Log Weight</h2></div>
+                <div class="section-header"><h2 data-i18n="log_weight">Log Weight</h2></div>
                 <form id="weightForm" onsubmit="event.preventDefault(); saveWeightEntry();">
                         <input type="date" id="weightDate" required style="margin-bottom:10px">
                         <input type="number" id="weightKg" step="0.1" min="0" placeholder="Weight (kg)" required>
-                        <button type="submit" class="save-session" style="margin-top:10px">💾 Save Weight</button>
+                        <button type="submit" class="save-session" style="margin-top:10px" data-i18n="save_weight">💾 Save Weight</button>
                 </form>
                 <div id="weightSaveMsg" style="color:var(--success);margin-top:8px;display:none">Weight saved!</div>
-                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('weightFormSection')">Cancel</button>
+                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('weightFormSection')" data-i18n="cancel">Cancel</button>
         </div>
     <details class="history-section">
         <summary class="section-header"><span>History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
@@ -154,8 +155,8 @@
                     sets = 3; weight = ''; reps = '';
                 }
 
-                sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}">
-                    <img src="${imgSrc}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-name-pt="${ex.namePT || ''}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}">
+                    <img src="${imgSrc}" class="ex-thumb"><strong>${GN_I18N.exerciseName(ex)}</strong><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     <div class="input-pair"><input type="number" placeholder="Sets" class="s" value="${sets}"><input type="number" step="0.5" placeholder="Kg" class="w" value="${weight}"><input type="number" placeholder="Reps" class="r" value="${reps}"></div></div>`;
             }
             document.getElementById('saveBtn').style.display = "block";
@@ -168,16 +169,17 @@
                 const sets = r.querySelector('.s').value;
                 const weight = r.querySelector('.w').value;
                 const reps = r.querySelector('.r').value;
-                if(weight && reps) logs.push({ 
-                    exerciseId: parseInt(r.dataset.id), 
-                    isCustom: r.dataset.iscustom === 'true',
-                    exerciseName: r.dataset.name, 
-                    imageId: parseInt(r.dataset.imgid) || null, 
-                    sets: parseInt(sets) || 3, 
-                    weight: parseFloat(weight), 
-                    reps: parseInt(reps), 
-                    date 
-                });
+                    if(weight && reps) logs.push({ 
+                        exerciseId: parseInt(r.dataset.id), 
+                        isCustom: r.dataset.iscustom === 'true',
+                        exerciseName: r.dataset.name, 
+                        exerciseNamePT: r.dataset.namePt || r.getAttribute('data-name-pt') || '',
+                        imageId: parseInt(r.dataset.imgid) || null, 
+                        sets: parseInt(sets) || 3, 
+                        weight: parseFloat(weight), 
+                        reps: parseInt(reps), 
+                        date 
+                    });
             });
             await db.logs.bulkAdd(logs);
             localStorage.setItem('has_local_changes', 'true');
@@ -185,7 +187,8 @@
         }
 
         async function deleteDateLogs(date) {
-            if(confirm(`Delete all entries for ${date}?`)) {
+            const msg = GN_I18N.t('delete_all_entries_for_date').replace('{date}', date);
+            if (confirm(msg)) {
                 await db.logs.where('date').equals(date).delete();
                 localStorage.setItem('has_local_changes', 'true');
                 renderHistory();
@@ -223,7 +226,8 @@
                             const imgRec = await imgTable.get(l.imageId);
                             if (imgRec && imgRec.data) imgSrc = imgRec.data;
                         }
-                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <div style="display:flex;align-items:center;gap:10px"><span>${l.sets || 3} sets x ${l.weight}kg x ${l.reps}</span></div></div>`;
+                        const localizedName = GN_I18N.exerciseName({ name: l.exerciseName, namePT: l.exerciseNamePT });
+                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${localizedName}</div> <div style="display:flex;align-items:center;gap:10px"><span>${l.sets || 3} sets x ${l.weight}kg x ${l.reps}</span></div></div>`;
                     }
                     monthDet.appendChild(dateDet);
                 }

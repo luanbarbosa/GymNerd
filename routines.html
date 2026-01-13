@@ -6,6 +6,7 @@
     <title>GymNerd | Routines</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
+    <script src="i18n.js"></script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -139,10 +140,10 @@
     <div class="header" style="justify-content:space-between; align-items:center;">
         <div style="display:flex; align-items:center; gap:15px;">
             <a href="index.html" class="back-btn">←</a>
-            <h2>Routines</h2>
+            <h2 data-i18n="routines">Routines</h2>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-            <button id="newRoutineBtn" class="primary" style="padding:10px 14px; font-size:0.9rem;" onclick="window.location.href='routinecrud.html'">+ New Routine</button>
+            <button id="newRoutineBtn" class="primary" style="padding:10px 14px; font-size:0.9rem;" onclick="window.location.href='routinecrud.html'" data-i18n="new_routine">+ New Routine</button>
         </div>
     </div>
 
@@ -313,7 +314,7 @@
                             <div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)">
                                 <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
                                 <div class="exercise-info">
-                                    <div class="exercise-name">${ex.name}</div>
+                                    <div class="exercise-name">${GN_I18N.exerciseName(ex)}</div>
                                     ${ex.isCustom ? `<span class="custom-badge">Custom</span>` : ''}
                                     ${ex.namePT ? `<div class="exercise-name-pt">${ex.namePT}</div>` : ''}
                                 </div>
@@ -352,7 +353,7 @@
                 <div class="selected-ex-header">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
-                        <span class="selected-ex-title">${ex.name}</span>
+                        <span class="selected-ex-title">${GN_I18N.exerciseName(ex)}</span>
                     </div>
                     <button type="button" class="remove-set-btn" onclick="this.closest('.selected-ex-card').remove()">×</button>
                 </div>
@@ -416,7 +417,7 @@
         async function saveWorkout() {
             const name = document.getElementById('workoutName').value;
             const exerciseIds = getSelectedExercisesData();
-            if (!name || exerciseIds.length === 0) return alert("Missing name or exercises for the routine");
+            if (!name || exerciseIds.length === 0) return alert(GN_I18N.t('missing_name_or_exercises'));
             await db.routines.add({ name, exerciseIds });
             localStorage.setItem('has_local_changes', 'true');
             resetForm();
@@ -459,7 +460,7 @@
             const name = document.getElementById('workoutName').value;
             const exerciseIds = getSelectedExercisesData();
 
-            if (!name || exerciseIds.length === 0) return alert("Missing name or exercises for the routine");
+            if (!name || exerciseIds.length === 0) return alert(GN_I18N.t('missing_name_or_exercises'));
 
             await db.routines.update(id, { name, exerciseIds });
             localStorage.setItem('has_local_changes', 'true');
@@ -545,7 +546,7 @@
                 return `<div class="exercise-tag draggable" draggable="true" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
                     <div class="main">
                         <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
-                        <strong class="exercise-title">${ex.name}</strong>
+                        <strong class="exercise-title">${GN_I18N.exerciseName(ex)}</strong>
                         ${setsHtml}
                     </div>
                     <span class="drag-handle" title="Drag to reorder">☰</span>
@@ -785,7 +786,7 @@
         }
 
         async function deleteWorkout(id) {
-            if(confirm("Delete routine?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }
+            if (confirm(GN_I18N.t('delete_routine_confirm'))) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }
         }
 
         init();

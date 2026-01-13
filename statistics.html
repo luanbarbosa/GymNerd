@@ -6,6 +6,7 @@
     <title>GymNerd | Stats</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
+    <script src="i18n.js"></script>
     <script src="auth.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
@@ -63,7 +64,7 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Statistics</h2></div>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2 data-i18n="statistics">Statistics</h2></div>
 
     <div id="stats-overview" class="stats-overview"></div>
 
@@ -251,7 +252,7 @@
                     const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
                     const lastEntry = entries[entries.length - 1];
                     const currentEx = exMap[exId];
-                    const displayName = currentEx ? currentEx.name : "Unknown Exercise";
+                    const displayName = currentEx ? GN_I18N.exerciseName(currentEx) : "Unknown Exercise";
                     const imgSrc = await getImg(currentEx?.imageId, currentEx?.isCustom);
                     
                     const box = document.createElement('div'); 
@@ -386,14 +387,14 @@
             if (workoutDates.length === 0) {
                 overview.innerHTML = `
                     <div class="stat-card">
-                        <div class="stat-label">Current Streak</div>
-                        <div class="stat-value">0 <span style="font-size: 0.9rem">Days</span></div>
-                        <div class="stat-sub">Start your journey!</div>
+                            <div class="stat-label" data-i18n="current_streak">Current Streak</div>
+                            <div class="stat-value">0 <span style="font-size: 0.9rem" data-i18n="days">Days</span></div>
+                            <div class="stat-sub" data-i18n="start_your_journey">Start your journey!</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Best Record</div>
-                        <div class="stat-value">0 <span style="font-size: 0.9rem">Days</span></div>
-                        <div class="stat-sub">No records yet</div>
+                        <div class="stat-label" data-i18n="best_record">Best Record</div>
+                        <div class="stat-value">0 <span style="font-size: 0.9rem" data-i18n="days">Days</span></div>
+                        <div class="stat-sub" data-i18n="no_records_yet">No records yet</div>
                     </div>
                 `;
                 return;

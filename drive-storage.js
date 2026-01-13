@@ -183,9 +183,9 @@ const DriveStorage = {
         } catch (error) {
             console.error("Auto-sync failed:", error);
             if (error.message === "AUTH_EXPIRED") {
-                alert("Your Google session expired. Please login again to keep syncing.");
+                alert(GN_I18N.t('google_session_expired'));
             } else {
-                alert("Auto-sync failed: " + error.message);
+                alert(GN_I18N.t('auto_sync_failed').replace('{msg}', error.message));
             }
             return false;
         } finally {

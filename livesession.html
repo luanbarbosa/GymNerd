@@ -6,6 +6,7 @@
     <title>GymNerd | Start Routine</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
+    <script src="i18n.js"></script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -130,38 +131,38 @@
         <div class="header">
             <div class="header-left">
                 <a href="index.html" class="back-btn">←</a>
-                <h2>Start Routine</h2>
+                <h2 data-i18n="start_routine">Start Routine</h2>
             </div>
         </div>
         
         <div class="view-content">
             <div id="resumeCard" class="resume-card" style="display: none;">
-                <span class="resume-title">🏃 Unfinished session found</span>
+                <span class="resume-title" data-i18n="unfinished_session">🏃 Unfinished session found</span>
                 <div style="display:flex; gap:10px">
-                    <button onclick="resumeSession()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2">Continue</button>
-                    <button onclick="discardSession()" style="background:white; color:#ef4444; border:1px solid #fee2e2; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:1">Discard</button>
+                    <button onclick="resumeSession()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2" data-i18n="continue_btn">Continue</button>
+                    <button onclick="discardSession()" style="background:white; color:#ef4444; border:1px solid #fee2e2; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:1" data-i18n="discard_btn">Discard</button>
                 </div>
             </div>
 
             <div class="card">
-                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Routine</label>
+                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px" data-i18n="select_routine">Select a Routine</label>
                 <select id="workoutSelect" onchange="loadExercises()">
-                    <option value="">-- Choose Routine --</option>
+                    <option value="" data-i18n="choose_routine_option">-- Choose Routine --</option>
                 </select>
 
                 <div id="exerciseContainer" class="exercise-list"></div>
-                <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session</button>
+                <button id="startBtn" class="start-btn" onclick="startSession()" data-i18n="start_session">🚀 Start Session</button>
             </div>
         </div>
     </div>
 
     <div id="playerView" style="display: none;">
         <div class="header">
-            <div class="header-left">
+                <div class="header-left">
                 <a href="livesession.html" class="back-btn">←</a>
-                <h2 id="playerWorkoutTitle">Routine</h2>
+                <h2 id="playerWorkoutTitle" data-i18n="routine_label">Routine</h2>
             </div>
-            <div class="header-timer" onclick="startTimer()" title="Reset Timer">
+            <div class="header-timer" onclick="startTimer()" data-i18n-attr='{"title":"reset_timer"}'>
                 <div id="setTimer" class="timer-val">00:00</div>
                 <button class="timer-reset">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
@@ -170,14 +171,14 @@
         </div>
         <div class="view-content">
             <div class="ex-nav-bar">
-                <button id="prevExBtn" class="nav-ex-btn" onclick="navExercise(-1)" title="Previous Exercise">
+                <button id="prevExBtn" class="nav-ex-btn" onclick="navExercise(-1)" data-i18n-attr='{"title":"prev_exercise"}'>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
                 <div class="ex-title-group">
-                    <h1 id="currentExName" class="current-ex-title">Exercise</h1>
+                    <h1 id="currentExName" class="current-ex-title" data-i18n="exercise_label">Exercise</h1>
                     <div id="currentExNamePT" class="current-ex-subtitle"></div>
                 </div>
-                <button id="nextExBtn" class="nav-ex-btn" onclick="navExercise(1)" title="Next Exercise">
+                <button id="nextExBtn" class="nav-ex-btn" onclick="navExercise(1)" data-i18n-attr='{"title":"next_exercise"}'>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
                 <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
@@ -185,19 +186,19 @@
             <div class="card player-card">
                 <img id="playerImg" src="" class="player-img">
                 <div id="setsContainer"></div>
-                <button id="activateExBtn" class="start-btn" style="margin-top: 20px; display: block;" onclick="activateExercise()">🎯 Play this exercise</button>
+                <button id="activateExBtn" class="start-btn" style="margin-top: 20px; display: block;" onclick="activateExercise()" data-i18n="play_exercise">🎯 Play this exercise</button>
                 <div class="player-controls-icons">
-                    <button class="icon-btn prev" onclick="prevSet()" title="Previous Set">
+                    <button class="icon-btn prev" onclick="prevSet()" data-i18n-attr='{"title":"prev_set"}'>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
-                    <button class="icon-btn skip" onclick="skipSet()" title="Skip Set">
+                    <button class="icon-btn skip" onclick="skipSet()" data-i18n-attr='{"title":"skip_set"}'>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
-                    <button id="nextBtn" class="icon-btn next" onclick="nextSet()" title="Complete Set">
+                    <button id="nextBtn" class="icon-btn next" onclick="nextSet()" data-i18n-attr='{"title":"complete_set"}'>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </button>
                 </div>
-                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Routine</button>
+                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()" data-i18n="finish_routine">🏁 Finish Routine</button>
             </div>
         </div>
     </div>
@@ -296,7 +297,7 @@
         }
 
         async function discardSession() {
-            if (confirm("Discard unfinished routine?")) {
+            if (confirm(GN_I18N.t('discard_unfinished_routine'))) {
                 clearSessionState();
                 // Stop any wake resources (wake lock or silent audio) before leaving
                 try { await releaseWakeResources(); } catch (e) { console.warn('Error releasing wake resources', e); }
@@ -339,17 +340,18 @@
                     if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
                 }
 
-                const details = typeof item === 'object' 
-                    ? `<br><small>${Array.isArray(item.sets) ? item.sets.length : item.sets} sets${!Array.isArray(item.sets) ? ` x ${item.reps} reps @ ${item.weight}kg` : ''}</small>` 
-                    : ''; 
+                const setsCount = Array.isArray(item.sets) ? item.sets.length : item.sets;
+                const details = typeof item === 'object'
+                    ? `<br><small>${setsCount} ${GN_I18N.t('sets')}${!Array.isArray(item.sets) ? ` x ${item.reps} ${GN_I18N.t('reps')} @ ${item.weight}${GN_I18N.t('kg')}` : ''}</small>`
+                    : '';
 
                 const div = document.createElement('div');
                 div.className = 'exercise-item';
                 div.innerHTML = `
                     <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
-                    <div style="flex:1; min-width:0;"><strong>${ex.name}</strong>${details}</div>
+                    <div style="flex:1; min-width:0;"><strong>${GN_I18N.exerciseName(ex)}</strong>${details}</div>
                     <div style="display:flex; gap:8px; align-items:center;">
-                        <button class="drag-handle" title="Drag to reorder">☰</button>
+                        <button class="drag-handle" title="${GN_I18N.t('drag_to_reorder')}" data-i18n-attr='{"title":"drag_to_reorder"}'>☰</button>
                         <div class="checkbox-wrapper">
                             <input type="checkbox" class="ex-check" value="${id}" data-iscustom="${isCustom}" checked>
                         </div>
@@ -483,7 +485,7 @@
             const container = document.getElementById('exerciseContainer');
             const selectedChecks = Array.from(container.querySelectorAll('.exercise-item')).map(div => div.querySelector('.ex-check')).filter(ch => ch && ch.checked);
             
-            if (selectedChecks.length === 0) return alert("Please select at least one exercise.");
+            if (selectedChecks.length === 0) return alert(GN_I18N.t('please_select_at_least_one_exercise'));
 
             sessionSets = [];
             document.getElementById('playerWorkoutTitle').innerText = workout.name;
@@ -560,8 +562,12 @@
             }
 
             const viewingSet = sessionSets[viewingIdx];
-            document.getElementById('currentExName').innerText = viewingSet.name;
-            document.getElementById('currentExNamePT').innerText = viewingSet.namePT || "";
+            const localized = GN_I18N.exerciseName(viewingSet);
+            document.getElementById('currentExName').innerText = localized;
+            // show PT subtitle only when current language is not pt-BR
+            try {
+                document.getElementById('currentExNamePT').innerText = (GN_I18N.current === 'pt-BR') ? '' : (viewingSet.namePT || '');
+            } catch(e) { document.getElementById('currentExNamePT').innerText = viewingSet.namePT || ''; }
             
             const hasPrev = viewingSet.occurrenceId > sessionSets[0].occurrenceId;
             const hasNext = viewingSet.occurrenceId < sessionSets[sessionSets.length - 1].occurrenceId;
@@ -598,8 +604,8 @@
                 row.className = `set-row ${isSkipped ? 'skipped' : (isCompleted ? 'completed' : '')} ${isActive ? 'active' : ''}`;
                 row.innerHTML = `
                     <div class="set-label">${isSkipped ? skipIcon : (isCompleted ? checkIcon : 'S' + s.setNum)}</div>
-                    <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="Reps">
-                    <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="Kg">
+                    <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="${GN_I18N.t('reps')}" data-i18n-attr='{"placeholder":"reps"}'>
+                    <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="${GN_I18N.t('kg')}" data-i18n-attr='{"placeholder":"kg"}'>
                 `;
                 container.appendChild(row);
             }
@@ -646,7 +652,7 @@
         }
 
         function abandonExercise() {
-            if (!confirm("Skip the rest of this exercise?")) return;
+            if (!confirm(GN_I18N.t('skip_rest_confirm'))) return;
             const currentExId = sessionSets[currentIdx].exId;
             
             // Mark all remaining sets of this exercise as skipped
@@ -749,7 +755,16 @@
 
                 for (const id in groups) {
                     const g = groups[id];
-                    logs.push({ exerciseId: g.exId, isCustom: g.isCustom, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
+                    logs.push({ 
+                        exerciseId: g.exId, 
+                        isCustom: g.isCustom, 
+                        exerciseName: g.name || '',
+                        exerciseNamePT: g.namePT || '',
+                        weight: g.weight, 
+                        reps: g.reps, 
+                        date: todayStr, 
+                        sets: g.count 
+                    });
                 }
 
                 await db.logs.bulkAdd(logs);
@@ -768,16 +783,24 @@
                 }
 
                 if (newRecord > oldRecord && newRecord > 1) {
-                    alert(`🎉 NEW STREAK RECORD: ${newRecord} DAYS!`);
+                    alert(GN_I18N.t('new_streak_record').replace('{n}', newRecord));
                 }
                 location.href = "statistics.html";
             } catch (err) {
-                alert("DEBUG ERROR: " + err.message + "\n" + err.stack);
+                alert(GN_I18N.t('debug_error').replace('{msg}', err.message).replace('{stack}', err.stack));
                 console.error(err);
             }
         }
 
         init();
+
+        function _updateDocumentTitle() {
+            try {
+                document.title = `${GN_I18N.t('app_name')} | ${GN_I18N.t('start_routine')}`;
+            } catch (e) { /* ignore if GN_I18N not ready */ }
+        }
+        _updateDocumentTitle();
+        window.addEventListener('gn_language_changed', _updateDocumentTitle);
         </script>
         <script>
         // Prevent screen from sleeping using Wake Lock API, with silent-audio fallback for iOS

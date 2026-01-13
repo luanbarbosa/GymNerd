@@ -6,6 +6,7 @@
     <title>GymNerd | Routine</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
+    <script src="i18n.js"></script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -55,19 +56,19 @@
 <body>
     <div class="header" style="gap: 15px; justify-content: flex-start;">
         <a href="routines.html" class="back-btn" style="outline:none; box-shadow:none; border:none; background:none;">←</a>
-        <h2 id="pageTitle" style="margin:0; text-align:left; flex:1;">New Routine</h2>
+        <h2 id="pageTitle" data-i18n="new_routine" style="margin:0; text-align:left; flex:1;">New Routine</h2>
     </div>
 
     <div class="card">
         <div style="display:flex; flex-direction:column; gap:12px;">
-            <label style="font-size:0.8rem; font-weight:800">Routine Name</label>
-            <input id="routineName" placeholder="e.g. Upper Push" />
-            <label style="font-size:0.8rem; font-weight:800; margin-top: 10px;">Routine Exercises</label>
-            <button class="add-set-btn" style="width:100%;" onclick="openSearchModal()">🔍 Add Exercise</button>
+            <label style="font-size:0.8rem; font-weight:800" data-i18n-attr='{"textContent":"routine_name_label"}'>Routine Name</label>
+            <input id="routineName" data-i18n-attr='{"placeholder":"routine_name_placeholder"}' placeholder="e.g. Upper Push" />
+            <label style="font-size:0.8rem; font-weight:800; margin-top: 10px;" data-i18n="log_routine">Routine Exercises</label>
+            <button class="add-set-btn" style="width:100%;" onclick="openSearchModal()" data-i18n="add_exercise">🔍 Add Exercise</button>
             <div id="selectedList" class="selected-ex-list"></div>
             <div style="display:flex; gap:8px;">
-                <button class="primary" id="saveRoutineBtn" onclick="saveRoutine()">Save Routine</button>
-                <button style="background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim);" onclick="location.href='routines.html'">Cancel</button>
+                <button class="primary" id="saveRoutineBtn" onclick="saveRoutine()" data-i18n="save_routine">Save Routine</button>
+                <button style="background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim);" onclick="location.href='routines.html'" data-i18n="cancel">Cancel</button>
             </div>
         </div>
     </div>
@@ -76,18 +77,18 @@
     <div id="searchModal" class="modal hidden">
         <div class="header" style="gap: 15px; justify-content: flex-start;">
             <a href="javascript:void(0)" class="back-btn" onclick="closeSearchModal()" style="outline:none; box-shadow:none; border:none; background:none; font-size:1.5rem; color:var(--text); text-decoration:none;">←</a>
-            <h2 style="margin:0; text-align:left; flex:1;">Add Exercise</h2>
+            <h2 data-i18n="add_exercise" style="margin:0; text-align:left; flex:1;">Add Exercise</h2>
         </div>
         <div id="selectBar" class="hidden" aria-hidden="true">
-            <div id="selectCount">0 selected</div>
+            <div id="selectCount"></div>
             <div style="display:flex; gap:8px; align-items:center;">
-                <button id="cancelSelectBtn" class="cancel-btn" onclick="exitSelectMode()">Cancel</button>
-                <button id="addSelectedBtn" class="add-btn" onclick="addSelectedExercisesFromModal()" disabled>Add Selected</button>
+                <button id="cancelSelectBtn" class="cancel-btn" onclick="exitSelectMode()" data-i18n="cancel">Cancel</button>
+                <button id="addSelectedBtn" class="add-btn" onclick="addSelectedExercisesFromModal()" disabled data-i18n="add_selected">Add Selected</button>
             </div>
         </div>
         <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
-            <button type="button" class="add-set-btn" style="border-style: solid; background: var(--card); color: var(--primary); font-weight: 800; margin-bottom: 10px;" onclick="openCreateModal()">➕ Create Custom Exercise</button>
-            <input type="text" id="modalSearchInput" placeholder="Search by name..." oninput="updateModalResults()">
+            <button type="button" class="add-set-btn" style="border-style: solid; background: var(--card); color: var(--primary); font-weight: 800; margin-bottom: 10px;" onclick="openCreateModal()" data-i18n="create_custom_ex">➕ Create Custom Exercise</button>
+            <input type="text" id="modalSearchInput" data-i18n-attr='{"placeholder":"search_placeholder"}' placeholder="Search by name..." oninput="updateModalResults()">
             <div id="modalResults" class="exercise-list" style="margin-top: 10px;"></div>
         </div>
     </div>
@@ -95,23 +96,23 @@
     <div id="customExModal" class="modal modal-sub hidden">
         <div class="header" style="gap: 15px; justify-content: flex-start;">
             <button class="back-btn" onclick="closeCustomModal()" style="outline:none; box-shadow:none; border:none; background:none;">←</button>
-            <h2 id="customModalTitle" style="margin:0; text-align:left; flex:1;">Custom Exercise</h2>
+            <h2 id="customModalTitle" data-i18n="custom_exercise" style="margin:0; text-align:left; flex:1;">Custom Exercise</h2>
         </div>
         <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
             <input type="hidden" id="exId">
-            <label>Name</label>
+            <label data-i18n="name_label">Name</label>
             <input type="text" id="exName" placeholder="e.g. Bench Press">
-            <label>Name (Portuguese)</label>
+            <label data-i18n="name_pt_label">Name (Portuguese)</label>
             <input type="text" id="exNamePT" placeholder="e.g. Supino Reto">
-            <label>Type</label>
+            <label data-i18n="type_label">Type</label>
             <select id="exType">
                 <option value="chest">Chest</option><option value="leg">Legs</option><option value="back">Back</option><option value="shoulder">Shoulders</option><option value="arm">Arms</option>
             </select>
-            <label>Image</label>
+            <label data-i18n="image_label">Image</label>
             <input type="file" id="exImageInput" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
             <div class="image-preview-box" onclick="document.getElementById('exImageInput').click()">
                 <img id="exImagePreview" src="" class="hidden" style="width: 100%; height: 100%; object-fit: contain; object-position: center;">
-                <div id="uploadPlaceholder">📸 Tap to upload</div>
+                <div id="uploadPlaceholder" data-i18n="tap_to_upload">📸 Tap to upload</div>
             </div>
             <button class="save-btn" onclick="saveCustomExercise()">Save Exercise</button>
         </div>
@@ -165,7 +166,15 @@
         }
         function preventContextMenu(e) { e.preventDefault(); }
         function toggleSelect(exId, isCustom, el) { const key = `${isCustom ? 'c' : 's'}:${exId}`; if (selectedExercises.has(key)) { selectedExercises.delete(key); el.classList.remove('selected'); } else { selectedExercises.add(key); el.classList.add('selected'); } updateSelectBar(); }
-        function updateSelectBar() { const count = selectedExercises.size; document.getElementById('selectCount').innerText = `${count} selected`; document.getElementById('addSelectedBtn').disabled = count === 0; }
+        function updateSelectBar() {
+            const count = selectedExercises.size;
+            try {
+                document.getElementById('selectCount').innerText = `${count} ${GN_I18N.t('selected')}`;
+            } catch (e) {
+                document.getElementById('selectCount').innerText = `${count} selected`;
+            }
+            document.getElementById('addSelectedBtn').disabled = count === 0;
+        }
         function addSelectedExercisesFromModal() { for (const key of Array.from(selectedExercises)) { const [prefix, idStr] = key.split(':'); const isCustom = prefix === 'c'; const id = parseInt(idStr); addExerciseToRoutine(id, [], isCustom); } exitSelectMode(); closeSearchModal(); }
 
         async function init() {
@@ -187,7 +196,7 @@
             const id = params.get('id');
             if (id) {
                 editingId = parseInt(id);
-                document.getElementById('pageTitle').innerText = 'Edit Routine';
+                try { document.getElementById('pageTitle').innerText = GN_I18N.t('edit_routine'); } catch(e) { document.getElementById('pageTitle').innerText = 'Edit Routine'; }
                 const workout = await db.routines.get(editingId);
                 if (workout) {
                     document.getElementById('routineName').value = workout.name;
@@ -208,7 +217,7 @@
             const query = document.getElementById('modalSearchInput').value.toLowerCase();
             const resultsDiv = document.getElementById('modalResults');
             const filtered = allExercises.filter(ex => ex.name.toLowerCase().includes(query) || (ex.namePT && ex.namePT.toLowerCase().includes(query)));
-            if (filtered.length === 0) { resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">No exercises found</div>'; return; }
+            if (filtered.length === 0) { try { resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">' + GN_I18N.t('no_exercises_found') + '</div>'; } catch(e) { resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">No exercises found</div>'; } return; }
             const groups = filtered.reduce((acc, ex) => { if (!acc[ex.type]) acc[ex.type] = []; acc[ex.type].push(ex); return acc; }, {});
             resultsDiv.innerHTML = Object.keys(groups).sort().map(type => `
                 <details class="category-section">
@@ -221,11 +230,11 @@
                             <div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)" oncontextmenu="event.preventDefault()">
                                 <img src="${images[ex.imageId] || ''}" class="ex-thumb">
                                 <div style="flex-grow:1">
-                                    <div style="font-weight:700">${ex.name}</div>
+                                    <div style="font-weight:700">${GN_I18N.exerciseName(ex)}</div>
                                     ${ex.namePT ? `<div style=\"color:var(--text-dim); font-size:0.85rem\">${ex.namePT}</div>` : ''}
                                 </div>
                                 <div style="display:flex; gap:8px; align-items:center;">
-                                    ${ex.isCustom ? `<button style=\"background:none;border:none;color:var(--primary);\" onclick=\"editExercise(${ex.id})\">Edit</button>` : ''}
+                                    ${ex.isCustom ? `<button style=\"background:none;border:none;color:var(--primary);\" onclick=\"editExercise(${ex.id})\">${GN_I18N.t('edit')}</button>` : ''}
                                 </div>
                                                                 <svg class="tick-icon" viewBox="0 0 32 32" fill="none">
                                                                     <circle cx="16" cy="16" r="16" fill="var(--success)"/>
@@ -250,19 +259,19 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <img src="${images[ex.imageId] || ''}" class="ex-thumb">
-                        <strong>${ex.name}</strong>
+                        <strong>${GN_I18N.exerciseName(ex)}</strong>
                     </div>
                     <button type="button" class="remove-set-btn" onclick="this.closest('.selected-ex-card').remove()">×</button>
                 </div>
                 <div class="sets-container"></div>
-                <button type="button" class="add-set-btn" onclick="addSetRowToCard(this)">+ Add Set</button>
+                <button type="button" class="add-set-btn" onclick="addSetRowToCard(this)">${GN_I18N.t('add_set')}</button>
             `;
             container.appendChild(card);
             const setsContainer = card.querySelector('.sets-container');
             if (sets.length > 0) sets.forEach((s, i) => addSetRowToContainer(setsContainer, i+1, s.reps, s.weight)); else addSetRowToContainer(setsContainer, 1);
         }
         function addSetRowToCard(btn) { const container = btn.previousElementSibling; const nextNum = container.children.length + 1; addSetRowToContainer(container, nextNum); }
-        function addSetRowToContainer(container, num, reps = '', weight = '') { const div = document.createElement('div'); div.className = 'set-row-input'; div.innerHTML = `<span style="font-size:0.7rem; color:#64748b; width:20px">S${num}</span><input type="number" placeholder="Reps" class="set-reps" value="${reps}"><input type="number" step="0.5" placeholder="Kg" class="set-weight" value="${weight}"><button type="button" class="remove-set-btn" onclick="removeSetRow(this)">×</button>`; container.appendChild(div); }
+        function addSetRowToContainer(container, num, reps = '', weight = '') { const div = document.createElement('div'); div.className = 'set-row-input'; div.innerHTML = `<span style="font-size:0.7rem; color:#64748b; width:20px">S${num}</span><input type="number" placeholder="${GN_I18N.t('reps')}" class="set-reps" value="${reps}"><input type="number" step="0.5" placeholder="${GN_I18N.t('kg')}" class="set-weight" value="${weight}"><button type="button" class="remove-set-btn" onclick="removeSetRow(this)">×</button>`; container.appendChild(div); }
         function removeSetRow(btn) { const container = btn.parentElement.parentElement; btn.parentElement.remove(); Array.from(container.children).forEach((row, i) => { row.querySelector('span').innerText = `S${i + 1}`; }); }
 
         function getSelectedExercisesData() { return Array.from(document.querySelectorAll('.selected-ex-card')).map(card => { const id = parseInt(card.dataset.id); const isCustom = card.dataset.isCustom === 'true'; const sets = Array.from(card.querySelectorAll('.set-row-input')).map(row => ({ reps: parseInt(row.querySelector('.set-reps').value) || 0, weight: parseFloat(row.querySelector('.set-weight').value) || 0 })); return { id, sets, isCustom }; }); }
@@ -270,7 +279,7 @@
         async function saveRoutine() {
             const name = document.getElementById('routineName').value.trim();
             const exerciseIds = getSelectedExercisesData();
-            if (!name || exerciseIds.length === 0) return alert('Missing name or exercises for the routine');
+            if (!name || exerciseIds.length === 0) return alert(GN_I18N.t('missing_name_or_exercises'));
             if (editingId) {
                 await db.routines.update(editingId, { name, exerciseIds });
                 localStorage.setItem('has_local_changes', 'true');
@@ -283,10 +292,10 @@
         }
 
         // Minimal custom-exercise handlers (reused)
-        function openCreateModal() { document.getElementById('customModalTitle').innerText = 'Custom Exercise'; document.getElementById('exId').value = ''; document.getElementById('exName').value = ''; document.getElementById('exNamePT').value = ''; document.getElementById('exType').selectedIndex = 0; currentImageData = null; document.getElementById('exImagePreview').classList.add('hidden'); document.getElementById('uploadPlaceholder').classList.remove('hidden'); document.getElementById('customExModal').classList.remove('hidden'); }
+        function openCreateModal() { try { document.getElementById('customModalTitle').innerText = GN_I18N.t('create_custom_ex'); } catch(e) { document.getElementById('customModalTitle').innerText = 'Custom Exercise'; } document.getElementById('exId').value = ''; document.getElementById('exName').value = ''; document.getElementById('exNamePT').value = ''; document.getElementById('exType').selectedIndex = 0; currentImageData = null; document.getElementById('exImagePreview').classList.add('hidden'); document.getElementById('uploadPlaceholder').classList.remove('hidden'); document.getElementById('customExModal').classList.remove('hidden'); }
         function closeCustomModal() { document.getElementById('customExModal').classList.add('hidden'); }
         function handleImageUpload(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const MAX_WIDTH = 400; const scaleSize = MAX_WIDTH / img.width; canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); currentImageData = canvas.toDataURL('image/jpeg', 0.7); document.getElementById('exImagePreview').src = currentImageData; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); }; img.src = e.target.result; }; reader.readAsDataURL(file); }
-        async function saveCustomExercise() { const id = document.getElementById('exId').value; const name = document.getElementById('exName').value.trim(); const namePT = document.getElementById('exNamePT').value.trim(); const type = document.getElementById('exType').value; if (!name) { alert('Please enter a name for the exercise.'); return; } try { await ensureDbOpen(); let imageId = 0; if (currentImageData) { imageId = Date.now(); await db.custom_images.put({ id: imageId, data: currentImageData }); } const exerciseData = { name, namePT, type, imageId }; if (id) { await db.custom_exercises.update(parseInt(id), exerciseData); alert('Exercise updated!'); } else { await db.custom_exercises.add(exerciseData); alert('Exercise saved to your local collection!'); } localStorage.setItem('has_local_changes', 'true'); closeCustomModal(); await init(); } catch (err) { console.error('Error saving custom exercise:', err); alert('Failed to save exercise: ' + err.message); } }
+        async function saveCustomExercise() { const id = document.getElementById('exId').value; const name = document.getElementById('exName').value.trim(); const namePT = document.getElementById('exNamePT').value.trim(); const type = document.getElementById('exType').value; if (!name) { alert(GN_I18N.t('please_enter_exercise_name')); return; } try { await ensureDbOpen(); let imageId = 0; if (currentImageData) { imageId = Date.now(); await db.custom_images.put({ id: imageId, data: currentImageData }); } const exerciseData = { name, namePT, type, imageId }; if (id) { await db.custom_exercises.update(parseInt(id), exerciseData); alert(GN_I18N.t('exercise_updated')); } else { await db.custom_exercises.add(exerciseData); alert(GN_I18N.t('exercise_saved_local')); } localStorage.setItem('has_local_changes', 'true'); closeCustomModal(); await init(); } catch (err) { console.error('Error saving custom exercise:', err); alert(GN_I18N.t('failed_save_exercise').replace('{msg}', err.message)); } }
 
         function copyExercise(exId, isCustom = false) { const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom); if (!ex) return; document.getElementById('exId').value = ''; document.getElementById('exName').value = ex.name; document.getElementById('exNamePT').value = ex.namePT || ''; document.getElementById('exType').value = ex.type; const imgData = images[ex.imageId]; if (imgData) { currentImageData = imgData; document.getElementById('exImagePreview').src = imgData; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } else { currentImageData = null; document.getElementById('exImagePreview').src = ''; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } document.getElementById('customModalTitle').innerText = 'Copy Exercise'; document.getElementById('customExModal').classList.remove('hidden'); }
         function editExercise(exId) { const ex = allExercises.find(e => e.id === exId && e.isCustom); if (!ex) return; document.getElementById('exId').value = ex.id; document.getElementById('exName').value = ex.name; document.getElementById('exNamePT').value = ex.namePT || ''; document.getElementById('exType').value = ex.type; const imgData = images[ex.imageId]; if (imgData) { currentImageData = imgData; document.getElementById('exImagePreview').src = imgData; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } else { currentImageData = null; document.getElementById('exImagePreview').src = ''; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } document.getElementById('customModalTitle').innerText = 'Edit Exercise'; document.getElementById('customExModal').classList.remove('hidden'); }

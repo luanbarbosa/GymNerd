@@ -15,6 +15,7 @@
     <script>
         window.EXCHANGE_TOKEN_URL = '';
     </script>
+    <script src="i18n.js"></script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -55,19 +56,27 @@
     </script>
 
     <div class="main-content">
+        <div style="display:flex; justify-content:flex-end; gap:8px; align-items:center; margin-bottom:12px;">
+            <label for="lang-select" data-i18n="language_label" style="color:var(--text-dim); font-weight:700; font-size:0.8rem;">Language</label>
+            <select id="lang-select" class="gn-lang-select" style="background:var(--card); color:var(--text); border-radius:8px; padding:8px; border:1px solid rgba(255,255,255,0.04);">
+                <option value="en">🇬🇧 English</option>
+                <option value="pt-BR">🇧🇷 Português (Brasil)</option>
+            </select>
+        </div>
+
         <div id="auth-status-container"></div>
 
         <button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
-            <span>☁️ Sync Pending Changes</span><span>→</span>
+            <span data-i18n="sync_pending">☁️ Sync Pending Changes</span><span>→</span>
         </button>
 
-        <h1>GymNerd</h1>
+        <h1 data-i18n="app_name">GymNerd</h1>
         
         <div class="menu-grid">
-            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span>🚀 Start Routine</span><span>→</span></a>
-            <a href="routines.html" class="nav-card"><span>🏋 Routines</span><span>→</span></a>
-            <a href="history.html" class="nav-card"><span>📋 History</span><span>→</span></a>
-            <a href="statistics.html" class="nav-card"><span>📊 Statistics</span><span>→</span></a>
+            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span data-i18n="start_routine">🚀 Start Routine</span><span>→</span></a>
+            <a href="routines.html" class="nav-card"><span data-i18n="routines">🏋 Routines</span><span>→</span></a>
+            <a href="history.html" class="nav-card"><span data-i18n="history">📋 History</span><span>→</span></a>
+            <a href="statistics.html" class="nav-card"><span data-i18n="statistics">📊 Statistics</span><span>→</span></a>
         </div>
 
         <details>
