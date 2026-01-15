@@ -5,9 +5,17 @@
                 title_main: 'GymNerd',
                 sync_pending: '☁️ Sync Pending Changes',
                 start_routine: '🚀 Start Routine',
+                menu_start_routine: '🚀 Start Routine',
+                page_start_routine: 'Start Routine',
                 routines: '🏋 Routines',
+                menu_routines: '🏋 Routines',
+                page_routines: 'Routines',
                 history: '📋 History',
+                menu_history: '📋 History',
+                page_history: 'History',
                 statistics: '📊 Statistics',
+                menu_statistics: '📊 Statistics',
+                page_statistics: 'Statistics',
                 data_management: '⚙️ Data Management',
                 cloud_sync: 'Cloud Sync',
                 sync_to_drive: '☁️ Sync to Google Drive',
@@ -45,14 +53,53 @@
                 retry: 'Retry',
                 retrying: 'Retrying...',
                 failed_to_refresh_session: 'Could not refresh your session automatically. Please sign in again.'
+                ,
+                /* Statistics page */
+                workout_frequency: 'Workout Frequency',
+                monthly: 'Monthly',
+                yearly: 'Yearly',
+                weight_progress: 'Weight Progress',
+                no_weight_data: 'No weight data',
+                weight_kg: 'Weight (kg)',
+                unknown_exercise: 'Unknown Exercise',
+                current_streak: 'Current Streak',
+                days: 'Days',
+                start_your_journey: 'Start your journey!',
+                best_record: 'Best Record',
+                no_records_yet: 'No records yet',
+                keep_it_up: 'Keep it up!',
+                days_since_last: 'days since last',
+                personal_best: 'Personal Best'
+                ,
+                /* Exercise types */
+                exercise_type_shoulder: 'Shoulder',
+                exercise_type_chest: 'Chest',
+                exercise_type_back: 'Back',
+                exercise_type_legs: 'Legs',
+                exercise_type_arms: 'Arms',
+                exercise_type_leg: 'Legs',
+                exercise_type_arm: 'Arms',
+                exercise_type_core: 'Core',
+                exercise_type_cardio: 'Cardio',
+                exercise_type_mobility: 'Mobility',
+                exercise_type_strength: 'Strength',
+                exercise_type_other: 'Other'
             },
             pt: {
                 title_main: 'GymNerd',
                 sync_pending: '☁️ Alterações pendentes',
                 start_routine: '🚀 Iniciar Treino',
+                menu_start_routine: '🚀 Iniciar Treino',
+                page_start_routine: 'Iniciar Treino',
                 routines: '🏋 Rotinas',
+                menu_routines: '🏋 Rotinas',
+                page_routines: 'Rotinas',
                 history: '📋 Histórico',
+                menu_history: '📋 Histórico',
+                page_history: 'Histórico',
                 statistics: '📊 Estatísticas',
+                menu_statistics: '📊 Estatísticas',
+                page_statistics: 'Estatísticas',
                 data_management: '⚙️ Gerenciar Dados',
                 cloud_sync: 'Sincronização com a Nuvem',
                 sync_to_drive: '☁️ Sincronizar com Google Drive',
@@ -90,6 +137,37 @@
                 retry: 'Tentar novamente',
                 retrying: 'Tentando...',
                 failed_to_refresh_session: 'Não foi possível atualizar sua sessão automaticamente. Por favor, entre novamente.'
+                ,
+                /* Statistics page */
+                workout_frequency: 'Frequência de Treinos',
+                monthly: 'Mensal',
+                yearly: 'Anual',
+                weight_progress: 'Progresso de Peso',
+                no_weight_data: 'Sem dados de peso',
+                weight_kg: 'Peso (kg)',
+                unknown_exercise: 'Exercício Desconhecido',
+                current_streak: 'Sequência Atual',
+                days: 'Dias',
+                start_your_journey: 'Comece sua jornada!',
+                best_record: 'Melhor Recorde',
+                no_records_yet: 'Nenhum registro ainda',
+                keep_it_up: 'Mantenha assim!',
+                days_since_last: 'dias desde o último',
+                personal_best: 'Recorde Pessoal'
+                ,
+                /* Exercise types */
+                exercise_type_shoulder: 'Ombros',
+                exercise_type_chest: 'Peito',
+                exercise_type_back: 'Costas',
+                exercise_type_legs: 'Pernas',
+                exercise_type_arms: 'Braços',
+                exercise_type_leg: 'Pernas',
+                exercise_type_arm: 'Braços',
+                exercise_type_core: 'Core',
+                exercise_type_cardio: 'Cardio',
+                exercise_type_mobility: 'Mobilidade',
+                exercise_type_strength: 'Força',
+                exercise_type_other: 'Outro'
             }
         },
         getLang: function(){
@@ -102,6 +180,15 @@
         t: function(key){
             const lang = this.getLang();
             return (this.translations[lang] && this.translations[lang][key]) || key;
+        },
+        localizeExerciseType: function(type){
+            if (!type) return type;
+            try {
+                const key = 'exercise_type_' + type.replace(/\s+/g, '_').toLowerCase();
+                const translated = this.t(key);
+                if (translated && translated !== key) return translated;
+            } catch(e){}
+            return type;
         },
         applyTranslations: function(root){
             try{
