@@ -84,6 +84,26 @@
                 exercise_type_mobility: 'Mobility',
                 exercise_type_strength: 'Strength',
                 exercise_type_other: 'Other'
+                ,
+                /* History page specific keys (unique names) */
+                history_header: 'History',
+                history_btn_new_routine: 'New Routine Entry',
+                history_btn_new_weight: 'New Weight Entry',
+                history_section_log_routine: 'Log Routine',
+                history_section_log_weight: 'Log Weight',
+                history_placeholder_choose_routine: '-- Choose Routine --',
+                history_save_session: '💾 Save Session',
+                history_save_weight: '💾 Save Weight',
+                history_cancel: 'Cancel',
+                history_weight_kg: 'Weight (kg)',
+                history_weight_saved: 'Weight saved!',
+                history_sets: 'Sets',
+                history_kg: 'Kg',
+                history_reps: 'Reps',
+                history_delete_session: 'Delete Session',
+                history_confirm_delete: 'Delete all entries for {date}?',
+                history_fmt_sets_short: 'sets',
+                history_fmt_kg_suffix: 'kg'
             },
             pt: {
                 title_main: 'GymNerd',
@@ -168,6 +188,26 @@
                 exercise_type_mobility: 'Mobilidade',
                 exercise_type_strength: 'Força',
                 exercise_type_other: 'Outro'
+                ,
+                /* History page specific keys (unique names) */
+                history_header: 'Histórico',
+                history_btn_new_routine: 'Novo Registro de Rotina',
+                history_btn_new_weight: 'Novo Registro de Peso',
+                history_section_log_routine: 'Registrar Treino',
+                history_section_log_weight: 'Registrar Peso',
+                history_placeholder_choose_routine: '-- Escolha a Rotina --',
+                history_save_session: '💾 Salvar Sessão',
+                history_save_weight: '💾 Salvar Peso',
+                history_cancel: 'Cancelar',
+                history_weight_kg: 'Peso (kg)',
+                history_weight_saved: 'Peso salvo!',
+                history_sets: 'Séries',
+                history_kg: 'Kg',
+                history_reps: 'Repetições',
+                history_delete_session: 'Excluir Sessão',
+                history_confirm_delete: 'Excluir todas as entradas para {date}?',
+                history_fmt_sets_short: 'sér',
+                history_fmt_kg_suffix: 'kg'
             }
         },
         getLang: function(){

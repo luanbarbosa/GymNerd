@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
     <script src="auth.js"></script>
+    <script src="gn-i18n.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
@@ -42,33 +43,33 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>History</h2></div>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2 data-i18n="history_header">History</h2></div>
         <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-                <button id="toggleRoutineForm" class="save-session" style="flex:1">New Routine Entry</button>
-                <button id="toggleWeightForm" class="save-session" style="flex:1">New Weight Entry</button>
+                <button id="toggleRoutineForm" class="save-session" style="flex:1" data-i18n="history_btn_new_routine">New Routine Entry</button>
+                <button id="toggleWeightForm" class="save-session" style="flex:1" data-i18n="history_btn_new_weight">New Weight Entry</button>
         </div>
 
         <div id="routineFormSection" class="card" style="display:none; margin-bottom: 20px;">
-                <div class="section-header"><h2>Log Routine</h2></div>
-                <select id="routinePicker" onchange="generateSheet()"><option value="">-- Choose Routine --</option></select>
+                <div class="section-header"><h2 data-i18n="history_section_log_routine">Log Routine</h2></div>
+                <select id="routinePicker" onchange="generateSheet()"><option value="" data-i18n="history_placeholder_choose_routine">-- Choose Routine --</option></select>
                 <input type="date" id="logDate" style="margin-top:10px">
                 <div id="workoutSheet"></div>
-                <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()">💾 Save Session</button>
-                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('routineFormSection')">Cancel</button>
+                <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()" data-i18n="history_save_session">💾 Save Session</button>
+                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('routineFormSection')" data-i18n="history_cancel">Cancel</button>
         </div>
 
         <div id="weightFormSection" class="card" style="display:none; margin-bottom: 20px;">
-                <div class="section-header"><h2>Log Weight</h2></div>
+                <div class="section-header"><h2 data-i18n="history_section_log_weight">Log Weight</h2></div>
                 <form id="weightForm" onsubmit="event.preventDefault(); saveWeightEntry();">
                         <input type="date" id="weightDate" required style="margin-bottom:10px">
-                        <input type="number" id="weightKg" step="0.1" min="0" placeholder="Weight (kg)" required>
-                        <button type="submit" class="save-session" style="margin-top:10px">💾 Save Weight</button>
+                    <input type="number" id="weightKg" step="0.1" min="0" data-i18n-placeholder="history_weight_kg" placeholder="Weight (kg)" required>
+                    <button type="submit" class="save-session" style="margin-top:10px" data-i18n="history_save_weight">💾 Save Weight</button>
                 </form>
-                <div id="weightSaveMsg" style="color:var(--success);margin-top:8px;display:none">Weight saved!</div>
-                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('weightFormSection')">Cancel</button>
+                <div id="weightSaveMsg" style="color:var(--success);margin-top:8px;display:none" data-i18n="history_weight_saved">Weight saved!</div>
+                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('weightFormSection')" data-i18n="history_cancel">Cancel</button>
         </div>
     <details class="history-section">
-        <summary class="section-header"><span>History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+    <summary class="section-header"><span data-i18n="history_header">History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
         <div id="history" style="padding: 0 15px 10px 15px;"></div>
     </details>
 
@@ -78,6 +79,12 @@
                 }
                 function hideForm(id) {
                     document.getElementById(id).style.display = 'none';
+                }
+                function formatDateDisplay(dateStr){
+                    if (!dateStr) return dateStr;
+                    const parts = dateStr.split('-');
+                    if (parts.length !== 3) return dateStr;
+                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
                 }
                 document.getElementById('toggleRoutineForm').onclick = () => {
                     showForm('routineFormSection');
@@ -127,6 +134,9 @@
             if(!id) { sheet.innerHTML=""; return; }
             const wk = await db.routines.get(id);
             sheet.innerHTML = "";
+            const phSets = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_sets') : 'Sets';
+            const phKg = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_kg') : 'Kg';
+            const phReps = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_reps') : 'Reps';
             for (const item of wk.exerciseIds) {
                 const id = typeof item === 'object' ? item.id : item;
                 const isCustom = typeof item === 'object' ? !!item.isCustom : false;
@@ -156,7 +166,7 @@
 
                 sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}">
                     <img src="${imgSrc}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                    <div class="input-pair"><input type="number" placeholder="Sets" class="s" value="${sets}"><input type="number" step="0.5" placeholder="Kg" class="w" value="${weight}"><input type="number" placeholder="Reps" class="r" value="${reps}"></div></div>`;
+                    <div class="input-pair"><input type="number" placeholder="${phSets}" class="s" value="${sets}"><input type="number" step="0.5" placeholder="${phKg}" class="w" value="${weight}"><input type="number" placeholder="${phReps}" class="r" value="${reps}"></div></div>`;
             }
             document.getElementById('saveBtn').style.display = "block";
         }
@@ -185,10 +195,20 @@
         }
 
         async function deleteDateLogs(date) {
-            if(confirm(`Delete all entries for ${date}?`)) {
-                await db.logs.where('date').equals(date).delete();
-                localStorage.setItem('has_local_changes', 'true');
-                renderHistory();
+            const fmt = formatDateDisplay(date);
+            if (window.GN_I18N && typeof GN_I18N.t === 'function') {
+                const tmpl = GN_I18N.t('history_confirm_delete');
+                if (confirm(tmpl.replace('{date}', fmt))) {
+                    await db.logs.where('date').equals(date).delete();
+                    localStorage.setItem('has_local_changes', 'true');
+                    renderHistory();
+                }
+            } else {
+                if(confirm(`Delete all entries for ${fmt}?`)) {
+                    await db.logs.where('date').equals(date).delete();
+                    localStorage.setItem('has_local_changes', 'true');
+                    renderHistory();
+                }
             }
         }
 
@@ -203,19 +223,23 @@
             }, {});
 
             const container = document.getElementById('history');
+            const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
+            const locale = lang === 'pt' ? 'pt' : 'en';
             container.innerHTML = "";
 
             for (const month of Object.keys(groups).sort().reverse()) {
                 const monthDet = document.createElement('details');
                 monthDet.className = "month-group";
                 const [y, m] = month.split('-');
-                const monthName = new Date(y, m - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+                const monthName = new Date(y, m - 1).toLocaleString(locale, { month: 'long', year: 'numeric' });
                 monthDet.innerHTML = `<summary class="month-header"><span>${monthName}</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
                 
                 for (const date of Object.keys(groups[month]).sort().reverse()) {
                     const dateDet = document.createElement('details');
                     dateDet.className = "history-group";
-                    dateDet.innerHTML = `<summary class="date-header"><span>${date}</span><button onclick="event.stopPropagation(); deleteDateLogs('${date}')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;margin-left:auto;margin-right:12px;display:flex;align-items:center;opacity:0.6;width:auto" title="Delete Session"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
+                    const delTitle = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_delete_session') : 'Delete Session';
+                    const formattedDate = formatDateDisplay(date);
+                    dateDet.innerHTML = `<summary class="date-header"><span>${formattedDate}</span><button onclick="event.stopPropagation(); deleteDateLogs('${date}')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;margin-left:auto;margin-right:12px;display:flex;align-items:center;opacity:0.6;width:auto" title="${delTitle}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
                     for (const l of groups[month][date]) {
                         const imgTable = l.isCustom ? db.custom_images : db.catalog_images;
                         let imgSrc = defaultImage;
@@ -223,12 +247,18 @@
                             const imgRec = await imgTable.get(l.imageId);
                             if (imgRec && imgRec.data) imgSrc = imgRec.data;
                         }
-                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <div style="display:flex;align-items:center;gap:10px"><span>${l.sets || 3} sets x ${l.weight}kg x ${l.reps}</span></div></div>`;
+                        const setsText = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_fmt_sets_short') : 'sets';
+                        const kgSuffix = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_fmt_kg_suffix') : 'kg';
+                        dateDet.innerHTML += `<div class="log-entry"><div style="display:flex;align-items:center;gap:8px"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${l.exerciseName}</div> <div style="display:flex;align-items:center;gap:10px"><span>${l.sets || 3} ${setsText} x ${l.weight}${kgSuffix} x ${l.reps}</span></div></div>`;
                     }
                     monthDet.appendChild(dateDet);
                 }
                 container.appendChild(monthDet);
             }
+        }
+        if (window.GN_I18N) {
+            try { GN_I18N.applyTranslations(document); } catch(e){}
+            try { document.title = GN_I18N.t('title_main') + ' | ' + GN_I18N.t('history_header'); } catch(e){}
         }
         init();
     </script>
