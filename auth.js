@@ -584,21 +584,54 @@
         blocker.id = 'auth-blocker';
         blocker.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 999999; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; color: white; font-family: sans-serif;";
         blocker.innerHTML = `
-            <div style="max-width: 400px; width: 100%;">
+            <div style="max-width: 420px; width: 100%;">
                 <h1 style="font-size: 3.5rem; font-weight: 900; margin-bottom: 10px; font-style: italic; background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));">GymNerd</h1>
-                <p style="color: #94a3b8; margin-bottom: 30px; font-size: 1.1rem;">${isLocal ? 'Running in Local Mode.' : 'Sync your workout data with Google Drive.'}</p>
+                <p style="color: #94a3b8; margin-bottom: 18px; font-size: 1.05rem;">${isLocal ? 'Running in Local Mode.' : 'Sync your workout data with Google Drive.'}</p>
+
+                <div style="position:absolute; top:20px; right:20px; display:flex; align-items:center; gap:8px;">
+                    <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">Language</label>
+                    <select id="gn-lang-select" style="padding:8px 10px; border-radius:10px; background: rgba(255,255,255,0.02); color: white; border:1px solid rgba(255,255,255,0.06); font-weight:700; cursor:pointer;">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="pt">🇧🇷 Português</option>
+                    </select>
+                </div>
+
                 <button onclick="handleAuth()" style="width: 100%; padding: 16px; background: #3b82f6; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);">
                     ${isLocal ? 'Enter App' : 'Sign in with Google'}
                 </button>
             </div>
         `;
-        
-        // Ensure we append to body even if script runs in head
+
+        // Attach language selector handlers and persist selection to localStorage
+        const attachLangHandlers = () => {
+            try {
+                const sel = blocker.querySelector('#gn-lang-select');
+                const key = 'gn_lang';
+                const detectBrowser = () => {
+                    try {
+                        const nl = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+                        return nl.startsWith('pt') ? 'pt' : 'en';
+                    } catch(e) { return 'en'; }
+                };
+
+                const initial = localStorage.getItem(key) || detectBrowser();
+                if (sel) sel.value = initial;
+                try { localStorage.setItem(key, initial); } catch(e){}
+
+                if (sel) sel.addEventListener('change', (ev) => {
+                    try { localStorage.setItem(key, ev.target.value); } catch(e){}
+                });
+            } catch(e) { console.warn('lang selector init failed', e); }
+        };
+
+        // Ensure we append to body even if script runs in head, and call handlers
         if (document.body) {
             document.body.appendChild(blocker);
+            attachLangHandlers();
         } else {
             document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(blocker);
+                attachLangHandlers();
             });
         }
     }
