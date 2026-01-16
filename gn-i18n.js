@@ -104,6 +104,29 @@
                 history_confirm_delete: 'Delete all entries for {date}?',
                 history_fmt_sets_short: 'sets',
                 history_fmt_kg_suffix: 'kg'
+                ,
+                /* Livesession specific */
+                resume_unfinished: '🏃 Unfinished session found',
+                resume_continue: 'Continue',
+                resume_discard: 'Discard',
+                label_select_routine: 'Select a Routine',
+                choose_routine_placeholder: '-- Choose Routine --',
+                start_session: '🚀 Start Session',
+                play_exercise: '🎯 Play this exercise',
+                finish_routine: '🏁 Finish Routine',
+                reset_timer: 'Reset Timer',
+                previous_exercise: 'Previous Exercise',
+                next_exercise: 'Next Exercise',
+                previous_set: 'Previous Set',
+                skip_set: 'Skip Set',
+                complete_set: 'Complete Set',
+                please_select_exercise: 'Please select at least one exercise.',
+                discard_confirm: 'Discard unfinished routine?',
+                skip_exercise_confirm: 'Skip the rest of this exercise?',
+                new_streak_record: '🎉 NEW STREAK RECORD: {n} DAYS!',
+                debug_error_prefix: 'DEBUG ERROR: '
+                ,
+                drag_to_reorder: 'Drag to reorder'
             },
             pt: {
                 title_main: 'GymNerd',
@@ -208,6 +231,29 @@
                 history_confirm_delete: 'Excluir todas as entradas para {date}?',
                 history_fmt_sets_short: 'sér',
                 history_fmt_kg_suffix: 'kg'
+                ,
+                /* Livesession specific */
+                resume_unfinished: '🏃 Sessão incompleta encontrada',
+                resume_continue: 'Continuar',
+                resume_discard: 'Descartar',
+                label_select_routine: 'Selecione uma Rotina',
+                choose_routine_placeholder: '-- Escolha a Rotina --',
+                start_session: '🚀 Iniciar Sessão',
+                play_exercise: '🎯 Executar este exercício',
+                finish_routine: '🏁 Finalizar Rotina',
+                reset_timer: 'Redefinir Temporizador',
+                previous_exercise: 'Exercício Anterior',
+                next_exercise: 'Próximo Exercício',
+                previous_set: 'Série Anterior',
+                skip_set: 'Pular Série',
+                complete_set: 'Completar Série',
+                please_select_exercise: 'Por favor selecione pelo menos um exercício.',
+                discard_confirm: 'Descartar rotina incompleta?',
+                skip_exercise_confirm: 'Pular o resto deste exercício?',
+                new_streak_record: '🎉 NOVO RECORDE DE SEQUÊNCIA: {n} DIAS!',
+                debug_error_prefix: 'ERRO DE DEBUG: '
+                ,
+                drag_to_reorder: 'Arraste para reordenar'
             }
         },
         getLang: function(){
