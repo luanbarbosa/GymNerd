@@ -135,7 +135,7 @@ const DriveStorage = {
 
     async deleteFile() {
         try {
-            if (window.showLoading) window.showLoading("Deleting backup from Google Drive...");
+            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('deleting_backup_drive') : "Deleting backup from Google Drive...");
             const folderId = await this.getFolderId(false);
             if (!folderId) return;
 
@@ -183,9 +183,9 @@ const DriveStorage = {
         } catch (error) {
             console.error("Auto-sync failed:", error);
             if (error.message === "AUTH_EXPIRED") {
-                alert("Your Google session expired. Please login again to keep syncing.");
+                alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('google_session_expired') : "Your Google session expired. Please login again to keep syncing.");
             } else {
-                alert("Auto-sync failed: " + error.message);
+                alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('auto_sync_failed_prefix') + error.message) : ("Auto-sync failed: " + error.message));
             }
             return false;
         } finally {

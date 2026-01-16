@@ -16,7 +16,7 @@
         location.reload();
     };
 
-    window.showLoading = (message = "Syncing with Google Drive...") => {
+    window.showLoading = (message = (typeof GN_I18N !== 'undefined' ? GN_I18N.t('syncing_with_drive') : "Syncing with Google Drive...")) => {
         let loader = document.getElementById('global-loader');
         const createAndAttach = () => {
             if (document.getElementById('global-loader')) return;
@@ -83,7 +83,7 @@
     };
 
     window.clearAllAppData = async () => {
-        if (!confirm("DANGER: This will permanently delete all local data and your backup on Google Drive. Continue?")) return;
+        if (!confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('danger_clear_confirm') : "DANGER: This will permanently delete all local data and your backup on Google Drive. Continue?")) return;
 
         try {
             // 1. Delete from Drive if logged in
@@ -106,11 +106,11 @@
             // 3. Clear Local Storage
             localStorage.clear();
 
-            alert("All data cleared successfully.");
+            alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('all_data_cleared') : "All data cleared successfully.");
             location.reload();
         } catch (err) {
             console.error("Clear failed:", err);
-            alert("Failed to clear some data. Check console.");
+            alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_clear_data') : "Failed to clear some data. Check console.");
         }
     };
 
@@ -142,20 +142,41 @@
             const isBypass = token === 'local-bypass';
             container.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #94a3b8; padding: 12px; background: #1e293b; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155;">
-                    <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;"><span style="color: ${isBypass ? '#f59e0b' : '#10b981'};">●</span> ${isBypass ? 'Local Mode' : 'Connected to Drive'}</span>
-                    <button onclick="clearAllAppData()" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem;">Clear All</button>
-                    <button onclick="logout()" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 0.8rem; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">Logout</button>
+                    <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;"><span style="color: ${isBypass ? '#f59e0b' : '#10b981'};">●</span> ${typeof GN_I18N !== 'undefined' ? (isBypass ? GN_I18N.t('local_mode') : GN_I18N.t('connected_to_drive')) : (isBypass ? 'Local Mode' : 'Connected to Drive')}</span>
+                    <select id="gn-lang-select-status" style="padding:6px 8px; border-radius:8px; background: rgba(255,255,255,0.02); color: #f8fafc; border:1px solid rgba(255,255,255,0.05); font-weight:700;">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="pt">🇧🇷 Português</option>
+                    </select>
+                    <button onclick="clearAllAppData()" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('clear_all') : 'Clear All'}</button>
+                    <button onclick="logout()" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 0.8rem; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('logout') : 'Logout'}</button>
                 </div>
             `;
         } else {
             container.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #94a3b8; padding: 12px; background: #1e293b; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155;">
-                    <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;"><span style="color: #f59e0b;">●</span> ${isLocal ? 'Local Mode' : 'Not Connected'}</span>
-                    <button onclick="clearAllAppData()" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem;">Clear Local</button>
-                    <button onclick="handleAuth()" style="background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Login</button>
+                    <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;"><span style="color: #f59e0b;">●</span> ${typeof GN_I18N !== 'undefined' ? (isLocal ? GN_I18N.t('local_mode') : GN_I18N.t('not_connected')) : (isLocal ? 'Local Mode' : 'Not Connected')}</span>
+                    <select id="gn-lang-select-status" style="padding:6px 8px; border-radius:8px; background: rgba(255,255,255,0.02); color: #f8fafc; border:1px solid rgba(255,255,255,0.05); font-weight:700;">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="pt">🇧🇷 Português</option>
+                    </select>
+                    <button onclick="clearAllAppData()" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('clear_local') : 'Clear Local'}</button>
+                    <button onclick="handleAuth()" style="background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('login') : 'Login'}</button>
                 </div>
             `;
         }
+
+        // Initialize language selector inside the status box
+        try {
+            const sel = container.querySelector('#gn-lang-select-status');
+            const key = 'gn_lang';
+            const detectBrowser = () => {
+                try { return (navigator.language || navigator.userLanguage || 'en').toLowerCase().startsWith('pt') ? 'pt' : 'en'; } catch(e) { return 'en'; }
+            };
+            const initial = localStorage.getItem(key) || getCookie(key) || detectBrowser();
+            if (sel) sel.value = initial;
+            try { localStorage.setItem(key, initial); } catch(e) {}
+            if (sel) sel.addEventListener('change', (ev) => { try { localStorage.setItem(key, ev.target.value); location.reload(); } catch(e) {} });
+        } catch(e) {}
     };
 
     // Show explicit UI when a refresh attempt fails but a refresh token existed.
@@ -180,7 +201,7 @@
                     <button id="refresh-retry-btn" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:#1e293b; color:white; font-weight:700;">${retryText}</button>
                     <button id="refresh-signin-btn" style="flex:1; padding:12px; border-radius:10px; border:none; background:#3b82f6; color:white; font-weight:700;">${signInText}</button>
                 </div>
-                <div style="margin-top:12px; color:#94a3b8; font-size:0.85rem;">You can also clear local data from the settings if you prefer.</div>
+                <div style="margin-top:12px; color:#94a3b8; font-size:0.85rem;">" + ((typeof GN_I18N !== 'undefined') ? GN_I18N.t('you_can_also_clear_local_data') : 'You can also clear local data from the settings if you prefer.') + "</div>
             </div>
         `;
 
@@ -584,21 +605,54 @@
         blocker.id = 'auth-blocker';
         blocker.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 999999; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; color: white; font-family: sans-serif;";
         blocker.innerHTML = `
-            <div style="max-width: 400px; width: 100%;">
+            <div style="max-width: 420px; width: 100%;">
                 <h1 style="font-size: 3.5rem; font-weight: 900; margin-bottom: 10px; font-style: italic; background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));">GymNerd</h1>
-                <p style="color: #94a3b8; margin-bottom: 30px; font-size: 1.1rem;">${isLocal ? 'Running in Local Mode.' : 'Sync your workout data with Google Drive.'}</p>
+                <p style="color: #94a3b8; margin-bottom: 18px; font-size: 1.05rem;">${isLocal ? (typeof GN_I18N !== 'undefined' ? GN_I18N.t('running_local_mode_msg') : 'Running in Local Mode.') : (typeof GN_I18N !== 'undefined' ? GN_I18N.t('sync_workout_msg') : 'Sync your workout data with Google Drive.')}</p>
+
+                <div style="position:absolute; top:20px; right:20px; display:flex; align-items:center; gap:8px;">
+                    <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('language') : 'Language'}</label>
+                    <select id="gn-lang-select" style="padding:8px 10px; border-radius:10px; background: rgba(255,255,255,0.02); color: white; border:1px solid rgba(255,255,255,0.06); font-weight:700; cursor:pointer;">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="pt">🇧🇷 Português</option>
+                    </select>
+                </div>
+
                 <button onclick="handleAuth()" style="width: 100%; padding: 16px; background: #3b82f6; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);">
-                    ${isLocal ? 'Enter App' : 'Sign in with Google'}
+                    ${isLocal ? (typeof GN_I18N !== 'undefined' ? GN_I18N.t('enter_app') : 'Enter App') : (typeof GN_I18N !== 'undefined' ? GN_I18N.t('sign_in_with_google') : 'Sign in with Google')}
                 </button>
             </div>
         `;
-        
-        // Ensure we append to body even if script runs in head
+
+        // Attach language selector handlers and persist selection to localStorage
+        const attachLangHandlers = () => {
+            try {
+                const sel = blocker.querySelector('#gn-lang-select');
+                const key = 'gn_lang';
+                const detectBrowser = () => {
+                    try {
+                        const nl = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+                        return nl.startsWith('pt') ? 'pt' : 'en';
+                    } catch(e) { return 'en'; }
+                };
+
+                const initial = localStorage.getItem(key) || getCookie(key) || detectBrowser();
+                if (sel) sel.value = initial;
+                try { localStorage.setItem(key, initial); } catch(e){}
+
+                if (sel) sel.addEventListener('change', (ev) => {
+                    try { localStorage.setItem(key, ev.target.value); location.reload(); } catch(e){}
+                });
+            } catch(e) { console.warn('lang selector init failed', e); }
+        };
+
+        // Ensure we append to body even if script runs in head, and call handlers
         if (document.body) {
             document.body.appendChild(blocker);
+            attachLangHandlers();
         } else {
             document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(blocker);
+                attachLangHandlers();
             });
         }
     }

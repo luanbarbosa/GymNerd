@@ -15,6 +15,7 @@
     <script>
         window.EXCHANGE_TOKEN_URL = '';
     </script>
+    <script src="gn-i18n.js"></script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -58,34 +59,34 @@
         <div id="auth-status-container"></div>
 
         <button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
-            <span>☁️ Sync Pending Changes</span><span>→</span>
+            <span data-i18n="sync_pending">☁️ Sync Pending Changes</span><span>→</span>
         </button>
 
-        <h1>GymNerd</h1>
+        <h1 data-i18n="title_main">GymNerd</h1>
         
         <div class="menu-grid">
-            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span>🚀 Start Routine</span><span>→</span></a>
-            <a href="routines.html" class="nav-card"><span>🏋 Routines</span><span>→</span></a>
-            <a href="history.html" class="nav-card"><span>📋 History</span><span>→</span></a>
-            <a href="statistics.html" class="nav-card"><span>📊 Statistics</span><span>→</span></a>
+            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span data-i18n="menu_start_routine">🚀 Start Routine</span><span>→</span></a>
+            <a href="routines.html" class="nav-card"><span data-i18n="menu_routines">🏋 Routines</span><span>→</span></a>
+            <a href="history.html" class="nav-card"><span data-i18n="menu_history">📋 History</span><span>→</span></a>
+            <a href="statistics.html" class="nav-card"><span data-i18n="menu_statistics">📊 Statistics</span><span>→</span></a>
         </div>
 
         <details>
-            <summary><span>⚙️ Data Management</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+            <summary><span data-i18n="data_management">⚙️ Data Management</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
             <div class="content-box">
-                <h4>Cloud Sync</h4>
-                <button id="sync-drive-btn" class="sync-btn" style="background: #3b82f6; color: white;" onclick="syncToDrive()">☁️ Sync to Google Drive</button>
-                <button id="restore-drive-btn" class="sync-btn" style="background: #6366f1; color: white;" onclick="restoreFromDrive()">📥 Restore from Google Drive</button>
+                <h4 data-i18n="cloud_sync">Cloud Sync</h4>
+                <button id="sync-drive-btn" class="sync-btn" style="background: #3b82f6; color: white;" onclick="syncToDrive()" data-i18n="sync_to_drive">☁️ Sync to Google Drive</button>
+                <button id="restore-drive-btn" class="sync-btn" style="background: #6366f1; color: white;" onclick="restoreFromDrive()" data-i18n="restore_from_drive">📥 Restore from Google Drive</button>
 
-                <h4>Backup</h4>
-                <button class="sync-btn export-btn" onclick="exportData()">📤 Export 4 JSON Files</button>
+                <h4 data-i18n="backup">Backup</h4>
+                <button class="sync-btn export-btn" onclick="exportData()" data-i18n="export_json">📤 Export 4 JSON Files</button>
                 
-                <h4>Restore</h4>
-                <label>1. Images Database (.json)</label><input type="file" id="importImg" accept=".json">
-                <label>2. Exercises (.json)</label><input type="file" id="importEx" accept=".json">
-                <label>3. Routines (.json)</label><input type="file" id="importWk" accept=".json">
-                <label>4. History (.json)</label><input type="file" id="importLogs" accept=".json">
-                <button class="sync-btn import-btn" onclick="importData()">📥 Process Import</button>
+                <h4 data-i18n="restore">Restore</h4>
+                <label data-i18n="label_images">1. Images Database (.json)</label><input type="file" id="importImg" accept=".json">
+                <label data-i18n="label_exercises">2. Exercises (.json)</label><input type="file" id="importEx" accept=".json">
+                <label data-i18n="label_routines">3. Routines (.json)</label><input type="file" id="importWk" accept=".json">
+                <label data-i18n="label_history">4. History (.json)</label><input type="file" id="importLogs" accept=".json">
+                <button class="sync-btn import-btn" onclick="importData()" data-i18n="process_import">📥 Process Import</button>
             </div>
         </details>
     </div>
@@ -168,11 +169,11 @@
                     await db.weights.bulkAdd(parsedData);
                 }
                 await DriveStorage.sync(db);
-                alert("Import successful!"); 
+                alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!"); 
                 location.reload();
             } catch (err) {
                 console.error("Import error:", err);
-                alert("Error importing data. Check console for details.");
+                alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_error') : "Error importing data. Check console for details.");
             }
         }
 
@@ -180,17 +181,16 @@
             try {
                 await ensureDbOpen();
                 if (window.showLoading) {
-                    window.showLoading(isAuto ? "Welcome back! Syncing your data..." : "Restoring from Google Drive...");
+                    window.showLoading((typeof GN_I18N !== 'undefined') ? (isAuto ? GN_I18N.t('welcome_back_syncing') : GN_I18N.t('restoring_from_drive')) : (isAuto ? "Welcome back! Syncing your data..." : "Restoring from Google Drive..."));
                 }
                 
                 const data = await DriveStorage.load();
                         if (!data) {
-                            if (!isAuto) alert("No backup found on Google Drive.");
+                            if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('no_backup') : "No backup found on Google Drive.");
                             if (isAuto && window.showApp) window.showApp();
                             return;
                         }
-
-                const proceed = isAuto || confirm("This will overwrite all local data with the version from Google Drive. Continue?");
+                const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
                     await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.logs], async () => {
                         await db.catalog_images.clear();
@@ -236,12 +236,12 @@
                 }
             } catch (error) {
                 if (error.message === "AUTH_EXPIRED") {
-                    if (!isAuto) alert("Your session has expired. Please login again.");
+                    if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : "Your session has expired. Please login again.");
                     renderAuthStatus('auth-status-container');
                     return;
                 }
                 console.error("Restore failed:", error);
-                if (!isAuto) alert("Restore failed: " + error.message);
+                if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('restore_failed_prefix') + error.message) : ("Restore failed: " + error.message));
             } finally {
                 if (window.hideLoading) window.hideLoading();
             }
@@ -263,6 +263,14 @@
         }
 
         checkSyncStatus();
+        // Apply translations for home screen
+        try {
+            if (window.GN_I18N) {
+                document.addEventListener('DOMContentLoaded', () => GN_I18N.applyTranslations(document));
+                // Also apply immediately in case DOMContentLoaded already fired
+                GN_I18N.applyTranslations(document);
+            }
+        } catch(e) {}
         </script>
 </body>
 </html>

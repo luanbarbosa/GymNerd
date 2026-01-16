@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GymNerd | Start Routine</title>
+    <title></title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="gn-i18n.js"></script>
     <style>
         :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
@@ -130,27 +131,27 @@
         <div class="header">
             <div class="header-left">
                 <a href="index.html" class="back-btn">←</a>
-                <h2>Start Routine</h2>
+                <h2 data-i18n="page_start_routine"></h2>
             </div>
         </div>
         
         <div class="view-content">
             <div id="resumeCard" class="resume-card" style="display: none;">
-                <span class="resume-title">🏃 Unfinished session found</span>
+                <span class="resume-title" data-i18n="resume_unfinished"></span>
                 <div style="display:flex; gap:10px">
-                    <button onclick="resumeSession()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2">Continue</button>
-                    <button onclick="discardSession()" style="background:white; color:#ef4444; border:1px solid #fee2e2; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:1">Discard</button>
+                    <button id="resumeContinueBtn" onclick="resumeSession()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2" data-i18n="resume_continue"></button>
+                    <button id="resumeDiscardBtn" onclick="discardSession()" style="background:white; color:#ef4444; border:1px solid #fee2e2; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:1" data-i18n="resume_discard"></button>
                 </div>
             </div>
 
             <div class="card">
-                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px">Select a Routine</label>
+                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px" data-i18n="label_select_routine"></label>
                 <select id="workoutSelect" onchange="loadExercises()">
-                    <option value="">-- Choose Routine --</option>
+                    <option value="" data-i18n="choose_routine_placeholder"></option>
                 </select>
 
                 <div id="exerciseContainer" class="exercise-list"></div>
-                <button id="startBtn" class="start-btn" onclick="startSession()">🚀 Start Session</button>
+                <button id="startBtn" class="start-btn" onclick="startSession()" data-i18n="start_session"></button>
             </div>
         </div>
     </div>
@@ -159,9 +160,9 @@
         <div class="header">
             <div class="header-left">
                 <a href="livesession.html" class="back-btn">←</a>
-                <h2 id="playerWorkoutTitle">Routine</h2>
+                <h2 id="playerWorkoutTitle"></h2>
             </div>
-            <div class="header-timer" onclick="startTimer()" title="Reset Timer">
+            <div class="header-timer" onclick="startTimer()">
                 <div id="setTimer" class="timer-val">00:00</div>
                 <button class="timer-reset">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
@@ -170,14 +171,13 @@
         </div>
         <div class="view-content">
             <div class="ex-nav-bar">
-                <button id="prevExBtn" class="nav-ex-btn" onclick="navExercise(-1)" title="Previous Exercise">
+                <button id="prevExBtn" class="nav-ex-btn" onclick="navExercise(-1)">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
                 <div class="ex-title-group">
-                    <h1 id="currentExName" class="current-ex-title">Exercise</h1>
-                    <div id="currentExNamePT" class="current-ex-subtitle"></div>
+                    <h1 id="currentExName" class="current-ex-title"></h1>
                 </div>
-                <button id="nextExBtn" class="nav-ex-btn" onclick="navExercise(1)" title="Next Exercise">
+                <button id="nextExBtn" class="nav-ex-btn" onclick="navExercise(1)">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
                 <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
@@ -185,19 +185,19 @@
             <div class="card player-card">
                 <img id="playerImg" src="" class="player-img">
                 <div id="setsContainer"></div>
-                <button id="activateExBtn" class="start-btn" style="margin-top: 20px; display: block;" onclick="activateExercise()">🎯 Play this exercise</button>
+                <button id="activateExBtn" class="start-btn" style="margin-top: 20px; display: block;" onclick="activateExercise()" data-i18n="play_exercise"></button>
                 <div class="player-controls-icons">
-                    <button class="icon-btn prev" onclick="prevSet()" title="Previous Set">
+                    <button class="icon-btn prev" onclick="prevSet()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
-                    <button class="icon-btn skip" onclick="skipSet()" title="Skip Set">
+                    <button class="icon-btn skip" onclick="skipSet()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
-                    <button id="nextBtn" class="icon-btn next" onclick="nextSet()" title="Complete Set">
+                    <button id="nextBtn" class="icon-btn next" onclick="nextSet()">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </button>
                 </div>
-                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()">🏁 Finish Routine</button>
+                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()" data-i18n="finish_routine"></button>
             </div>
         </div>
     </div>
@@ -216,6 +216,8 @@
             const seconds = (s % 60).toString().padStart(2, '0');
             return `${minutes}:${seconds}`;
         }
+
+        /* Use GN_I18N.getLang() from gn-i18n.js for language detection. */
 
         function stopTimer() {
             if (timerInterval) {
@@ -240,12 +242,26 @@
             // Default images will use `defaultImage` defined in `db.js` when specific images are missing.
             const workouts = await db.routines.toArray();
             const select = document.getElementById('workoutSelect');
+            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             workouts.forEach(w => {
                 const opt = document.createElement('option');
                 opt.value = w.id;
-                opt.textContent = w.name;
+                opt.textContent = (lang.startsWith('pt') && w.namePT) ? w.namePT : w.name;
                 select.appendChild(opt);
             });
+            // apply static translations from GN_I18N
+            try { GN_I18N.applyTranslations(document); } catch(e){}
+            // set document title
+            try { document.title = GN_I18N.t('title_main') + ' | ' + GN_I18N.t('page_start_routine'); } catch(e){}
+            // set control/tooltips
+            try {
+                document.querySelector('.header-timer').title = GN_I18N.t('reset_timer');
+                const prevEx = document.getElementById('prevExBtn'); if (prevEx) prevEx.title = GN_I18N.t('previous_exercise');
+                const nextEx = document.getElementById('nextExBtn'); if (nextEx) nextEx.title = GN_I18N.t('next_exercise');
+                const prevSetBtn = document.querySelector('.icon-btn.prev'); if (prevSetBtn) prevSetBtn.title = GN_I18N.t('previous_set');
+                const skipSetBtn = document.querySelector('.icon-btn.skip'); if (skipSetBtn) skipSetBtn.title = GN_I18N.t('skip_set');
+                const nextSetBtn = document.getElementById('nextBtn'); if (nextSetBtn) nextSetBtn.title = GN_I18N.t('complete_set');
+            } catch(e){}
             checkActiveSession();
         }
 
@@ -275,7 +291,10 @@
             currentWorkoutId = state.currentWorkoutId;
 
             const workout = await db.routines.get(currentWorkoutId);
-            if (workout) document.getElementById('playerWorkoutTitle').innerText = workout.name;
+            if (workout) {
+                const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+                document.getElementById('playerWorkoutTitle').innerText = (lang.startsWith('pt') && workout.namePT) ? workout.namePT : workout.name;
+            }
 
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
@@ -296,7 +315,7 @@
         }
 
         async function discardSession() {
-            if (confirm("Discard unfinished routine?")) {
+            if (confirm(GN_I18N.t('discard_confirm'))) {
                 clearSessionState();
                 // Stop any wake resources (wake lock or silent audio) before leaving
                 try { await releaseWakeResources(); } catch (e) { console.warn('Error releasing wake resources', e); }
@@ -324,6 +343,7 @@
                 ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
             ];
+            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             
             container.innerHTML = "";
             for (const item of workout.exerciseIds) {
@@ -340,16 +360,17 @@
                 }
 
                 const details = typeof item === 'object' 
-                    ? `<br><small>${Array.isArray(item.sets) ? item.sets.length : item.sets} sets${!Array.isArray(item.sets) ? ` x ${item.reps} reps @ ${item.weight}kg` : ''}</small>` 
+                    ? `<br><small>${Array.isArray(item.sets) ? item.sets.length : item.sets} ${GN_I18N.t('history_sets')}${!Array.isArray(item.sets) ? ` x ${item.reps} ${GN_I18N.t('history_reps')} @ ${item.weight}${GN_I18N.t('history_fmt_kg_suffix')}` : ''}</small>` 
                     : ''; 
 
+                const displayName = (lang === 'pt' && ex.namePT) ? ex.namePT : ex.name;
                 const div = document.createElement('div');
                 div.className = 'exercise-item';
                 div.innerHTML = `
                     <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
-                    <div style="flex:1; min-width:0;"><strong>${ex.name}</strong>${details}</div>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <button class="drag-handle" title="Drag to reorder">☰</button>
+                    <div style="flex:1; min-width:0;"><strong>${displayName}</strong>${details}</div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                        <button class="drag-handle" title="${GN_I18N.t('drag_to_reorder')}">☰</button>
                         <div class="checkbox-wrapper">
                             <input type="checkbox" class="ex-check" value="${id}" data-iscustom="${isCustom}" checked>
                         </div>
@@ -358,6 +379,8 @@
                 container.appendChild(div);
             }
             startBtn.style.display = "block";
+            // translate any newly inserted elements (option/labels inside this container)
+            try { GN_I18N.applyTranslations(document.getElementById('workoutSelect').parentNode); } catch(e){}
             attachDragHandlers();
         }
 
@@ -483,10 +506,11 @@
             const container = document.getElementById('exerciseContainer');
             const selectedChecks = Array.from(container.querySelectorAll('.exercise-item')).map(div => div.querySelector('.ex-check')).filter(ch => ch && ch.checked);
             
-            if (selectedChecks.length === 0) return alert("Please select at least one exercise.");
+            if (selectedChecks.length === 0) return alert(GN_I18N.t('please_select_exercise'));
 
             sessionSets = [];
-            document.getElementById('playerWorkoutTitle').innerText = workout.name;
+            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+            document.getElementById('playerWorkoutTitle').innerText = (lang.startsWith('pt') && workout.namePT) ? workout.namePT : workout.name;
 
             let occurrenceId = 0;
             for (const check of selectedChecks) {
@@ -560,13 +584,20 @@
             }
 
             const viewingSet = sessionSets[viewingIdx];
-            document.getElementById('currentExName').innerText = viewingSet.name;
-            document.getElementById('currentExNamePT').innerText = viewingSet.namePT || "";
+            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+            const displayName = (lang.startsWith('pt') && viewingSet.namePT) ? viewingSet.namePT : viewingSet.name;
+            document.getElementById('currentExName').innerText = displayName;
             
             const hasPrev = viewingSet.occurrenceId > sessionSets[0].occurrenceId;
             const hasNext = viewingSet.occurrenceId < sessionSets[sessionSets.length - 1].occurrenceId;
             document.getElementById('prevExBtn').disabled = !hasPrev;
             document.getElementById('nextExBtn').disabled = !hasNext;
+            // localize navigation/tooltips
+            try{
+                document.getElementById('prevExBtn').title = GN_I18N.t('previous_exercise');
+                document.getElementById('nextExBtn').title = GN_I18N.t('next_exercise');
+                document.querySelector('.header-timer').title = GN_I18N.t('reset_timer');
+            }catch(e){}
 
             const imgTable = viewingSet.isCustom ? db.custom_images : db.catalog_images;
             let imgSrc = defaultImage;
@@ -596,10 +627,11 @@
 
                 const row = document.createElement('div');
                 row.className = `set-row ${isSkipped ? 'skipped' : (isCompleted ? 'completed' : '')} ${isActive ? 'active' : ''}`;
+                const setsLabel = isSkipped ? skipIcon : (isCompleted ? checkIcon : (s.setNum + GN_I18N.t('history_fmt_sets_short')));
                 row.innerHTML = `
-                    <div class="set-label">${isSkipped ? skipIcon : (isCompleted ? checkIcon : 'S' + s.setNum)}</div>
-                    <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="Reps">
-                    <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="Kg">
+                    <div class="set-label">${setsLabel}</div>
+                    <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="${GN_I18N.t('history_reps')}">
+                    <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="${GN_I18N.t('history_kg')}">
                 `;
                 container.appendChild(row);
             }
@@ -645,8 +677,13 @@
             renderSet();
         }
 
+        function confirmSkipExercise() {
+            const msg = GN_I18N.t('skip_exercise_confirm');
+            return confirm(msg);
+        }
+
         function abandonExercise() {
-            if (!confirm("Skip the rest of this exercise?")) return;
+            if (!confirm(GN_I18N.t('skip_exercise_confirm'))) return;
             const currentExId = sessionSets[currentIdx].exId;
             
             // Mark all remaining sets of this exercise as skipped
@@ -768,11 +805,12 @@
                 }
 
                 if (newRecord > oldRecord && newRecord > 1) {
-                    alert(`🎉 NEW STREAK RECORD: ${newRecord} DAYS!`);
+                    const tpl = GN_I18N.t('new_streak_record');
+                    alert(tpl.replace('{n}', String(newRecord)));
                 }
                 location.href = "statistics.html";
             } catch (err) {
-                alert("DEBUG ERROR: " + err.message + "\n" + err.stack);
+                alert(GN_I18N.t('debug_error_prefix') + err.message + "\n" + err.stack);
                 console.error(err);
             }
         }

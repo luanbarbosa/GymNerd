@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GymNerd | Routines</title>
+    <title>GymNerd | Rotinas</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
     <script src="auth.js"></script>
+    <script src="gn-i18n.js"></script>
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
@@ -139,10 +140,10 @@
     <div class="header" style="justify-content:space-between; align-items:center;">
         <div style="display:flex; align-items:center; gap:15px;">
             <a href="index.html" class="back-btn">←</a>
-            <h2>Routines</h2>
+            <h2>Rotinas</h2>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-            <button id="newRoutineBtn" class="primary" style="padding:10px 14px; font-size:0.9rem;" onclick="window.location.href='routinecrud.html'">+ New Routine</button>
+            <button id="newRoutineBtn" class="primary" style="padding:10px 14px; font-size:0.9rem;" onclick="window.location.href='routinecrud.html'">+ Nova Rotina</button>
         </div>
     </div>
 
@@ -156,6 +157,14 @@
         let allExercises = [];
         let images = {};
         let currentImageData = null;
+
+        function getDisplayedName(ex) {
+            try {
+                const lang = (GN_I18N && GN_I18N.safeGetLang) ? GN_I18N.safeGetLang() : (navigator.language || 'en');
+                const chosen = (lang && lang.toLowerCase().startsWith('pt') && ex.namePT) ? ex.namePT : ex.name;
+                return chosen;
+            } catch (e) { return ex.name; }
+        }
 
         // Select-mode / long-press support
         let selectMode = false;
@@ -226,7 +235,7 @@
 
         function updateSelectBar() {
             const count = selectedExercises.size;
-            document.getElementById('selectCount').innerText = `${count} selected`;
+            document.getElementById('selectCount').innerText = `${count} selecionados`;
             document.getElementById('addSelectedBtn').disabled = count === 0;
         }
 
@@ -285,14 +294,15 @@
             const resultsDiv = document.getElementById('modalResults');
             if (!resultsDiv) return; // nothing to render into (modal markup may be absent)
             const forceOpen = query.length > 0;
-            
+            const lang = (GN_I18N && GN_I18N.safeGetLang) ? GN_I18N.safeGetLang() : (navigator.language || 'en');
+
             const filtered = allExercises.filter(ex => 
                 ex.name.toLowerCase().includes(query) ||
                 (ex.namePT && ex.namePT.toLowerCase().includes(query))
             );
 
             if (filtered.length === 0) {
-                resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">No exercises found</div>';
+                resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Nenhum exercício encontrado</div>';
                 return;
             }
 
@@ -302,41 +312,40 @@
                 return acc;
             }, {});
 
-            resultsDiv.innerHTML = Object.keys(groups).sort().map(type => `
-                <details class="category-section" ${forceOpen ? 'open' : ''}>
-                    <summary class="category-summary">
-                        <span>${type}</span>
-                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </summary>
-                    <div class="exercise-grid">
-                        ${groups[type].map(ex => `
-                            <div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)">
-                                <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
-                                <div class="exercise-info">
-                                    <div class="exercise-name">${ex.name}</div>
-                                    ${ex.isCustom ? `<span class="custom-badge">Custom</span>` : ''}
-                                    ${ex.namePT ? `<div class="exercise-name-pt">${ex.namePT}</div>` : ''}
-                                </div>
-                                <div class="actions" onclick="event.stopPropagation()" style="display: flex; gap: 4px;"></div>
-                                <div class="select-badge">✓</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </details>
-            `).join('');
+            // Build grouped HTML with a simple loop to avoid nested template complexities
+            const types = Object.keys(groups).sort();
+            let html = '';
+            for (let i = 0; i < types.length; i++) {
+                const type = types[i];
+                const displayType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(type) : type;
+                html += '<details class="category-section" ' + (forceOpen ? 'open' : '') + '>' +
+                        '<summary class="category-summary">' +
+                            '<span>' + displayType + '</span>' +
+                            '<svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>' +
+                        '</summary>' +
+                        '<div class="exercise-grid">';
+
+                const group = groups[type] || [];
+                for (let j = 0; j < group.length; j++) {
+                    const ex = group[j];
+                    const ptLine = (!(lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? ('<div class="exercise-name-pt">' + ex.namePT + '</div>') : '';
+                    const customBadge = ex.isCustom ? '<span class="custom-badge">Personalizado</span>' : '';
+                    html += '<div class="exercise-card" onmousedown="startPressTimer(this, ' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', this, event)">' +
+                                '<img src="' + (images[ex.imageId] || defaultImage) + '" class="ex-thumb">' +
+                                '<div class="exercise-info">' +
+                                    '<div class="exercise-name">' + getDisplayedName(ex) + '</div>' +
+                                    customBadge +
+                                    ptLine +
+                                '</div>' +
+                                '<div class="actions" onclick="event.stopPropagation()" style="display: flex; gap: 4px;"></div>' +
+                                '<div class="select-badge">✓</div>' +
+                            '</div>';
+                }
+
+                html += '</div></details>';
+            }
+            resultsDiv.innerHTML = html;
         }
-
-
-
-
-
-
-
-
-
-
-
-
 
         function addExerciseToRoutine(exId, sets = [], isCustom = false) {
             const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom);
@@ -352,12 +361,12 @@
                 <div class="selected-ex-header">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
-                        <span class="selected-ex-title">${ex.name}</span>
+                        <span class="selected-ex-title">${getDisplayedName(ex)}</span>
                     </div>
                     <button type="button" class="remove-set-btn" onclick="this.closest('.selected-ex-card').remove()">×</button>
                 </div>
                 <div class="sets-container"></div>
-                <button type="button" class="add-set-btn" onclick="addSetRowToCard(this)">+ Add Set</button>
+                <button type="button" class="add-set-btn" onclick="addSetRowToCard(this)">+ Adicionar Série</button>
             `;
             container.appendChild(card);
 
@@ -385,7 +394,7 @@
             div.className = 'set-row-input';
             div.innerHTML = `
                 <span style="font-size:0.7rem; color:#64748b; width:20px">S${num}</span>
-                <input type="number" placeholder="Reps" class="set-reps" value="${reps}">
+                <input type="number" placeholder="Repetições" class="set-reps" value="${reps}">
                 <input type="number" step="0.5" placeholder="Kg" class="set-weight" value="${weight}">
                 <button type="button" class="remove-set-btn" onclick="removeSetRow(this)">×</button>
             `;
@@ -416,7 +425,7 @@
         async function saveWorkout() {
             const name = document.getElementById('workoutName').value;
             const exerciseIds = getSelectedExercisesData();
-            if (!name || exerciseIds.length === 0) return alert("Missing name or exercises for the routine");
+            if (!name || exerciseIds.length === 0) return alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('missing_routine_name') : "Falta nome ou exercícios na rotina");
             await db.routines.add({ name, exerciseIds });
             localStorage.setItem('has_local_changes', 'true');
             resetForm();
@@ -459,7 +468,7 @@
             const name = document.getElementById('workoutName').value;
             const exerciseIds = getSelectedExercisesData();
 
-            if (!name || exerciseIds.length === 0) return alert("Missing name or exercises for the routine");
+            if (!name || exerciseIds.length === 0) return alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('missing_routine_name') : "Falta nome ou exercícios na rotina");
 
             await db.routines.update(id, { name, exerciseIds });
             localStorage.setItem('has_local_changes', 'true');
@@ -487,13 +496,13 @@
             const content = document.getElementById('routines-content');
             tabsContainer.innerHTML = '';
             if (!workouts || workouts.length === 0) {
-                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">No routines yet. Click <strong>New Routine</strong> to create one.</div>';
+                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.</div>';
                 return;
             }
             workouts.forEach((w, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'tab-btn';
-                btn.innerText = w.name || 'Routine ' + (i + 1);
+                btn.innerText = w.name || 'Rotina ' + (i + 1);
                 btn.dataset.id = w.id;
                 btn.onclick = function() {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -516,7 +525,7 @@
             const workout = await db.routines.get(id);
             const content = document.getElementById('routines-content');
             if (!workout) {
-                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">Routine not found.</div>';
+                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">Rotina não encontrada.</div>';
                 return;
             }
 
@@ -540,15 +549,15 @@
                         it.sets.map(s => `<span class="set-pill">${s.reps} × ${s.weight}kg</span>`).join('') +
                         `</div>`;
                 } else if (typeof it.sets !== 'undefined') {
-                    setsHtml = `<div class="set-pills"><span class="set-pill">${it.sets} sets × ${it.reps} × ${it.weight}kg</span></div>`;
+                    setsHtml = `<div class="set-pills"><span class="set-pill">${it.sets} séries × ${it.reps} × ${it.weight}kg</span></div>`;
                 }
                 return `<div class="exercise-tag draggable" draggable="true" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
                     <div class="main">
                         <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
-                        <strong class="exercise-title">${ex.name}</strong>
+                        <strong class="exercise-title">${getDisplayedName(ex)}</strong>
                         ${setsHtml}
                     </div>
-                    <span class="drag-handle" title="Drag to reorder">☰</span>
+                    <span class="drag-handle" title="Arrastar para reordenar">☰</span>
                 </div>`;
             }).join('');
 
@@ -556,13 +565,13 @@
                 <div class="workout-card">
                     <div class="workout-header">
                         <div class="actions">
-                            <button class="sort-btn" onclick="toggleSortMode(${workout.id}, this)" title="Sort">
+                            <button class="sort-btn" onclick="toggleSortMode(${workout.id}, this)" title="Ordenar">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="14" y2="12"></line><line x1="4" y1="17" x2="10" y2="17"></line></svg>
                             </button>
-                            <button class="edit-btn" onclick="window.location.href='routinecrud.html?id=${workout.id}'" title="Edit">
+                            <button class="edit-btn" onclick="window.location.href='routinecrud.html?id=${workout.id}'" title="Editar">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                             </button>
-                            <button class="del-btn" onclick="deleteWorkout(${workout.id})" title="Delete">
+                            <button class="del-btn" onclick="deleteWorkout(${workout.id})" title="Excluir">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
                         </div>
@@ -785,7 +794,7 @@
         }
 
         async function deleteWorkout(id) {
-            if(confirm("Delete routine?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }
+            if(confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('confirm_delete_routine') : "Excluir rotina?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }
         }
 
         init();

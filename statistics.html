@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
     <script src="auth.js"></script>
+    <script src="gn-i18n.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -63,7 +64,7 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2>Statistics</h2></div>
+    <div class="header"><a href="index.html" class="back-btn">←</a><h2 data-i18n="page_statistics"></h2></div>
 
     <div id="stats-overview" class="stats-overview"></div>
 
@@ -72,23 +73,19 @@
         <div class="card calendar-card">
         <div class="calendar-header">
             <button class="nav-btn" onclick="changeMonth(-1)">❮</button>
-            <h3 id="monthDisplay">Month Year</h3>
+            <h3 id="monthDisplay"></h3>
             <button class="nav-btn" onclick="changeMonth(1)">❯</button>
         </div>
-        <div class="calendar-grid">
-            <div class="day-name">S</div><div class="day-name">M</div><div class="day-name">T</div>
-            <div class="day-name">W</div><div class="day-name">T</div><div class="day-name">F</div>
-            <div class="day-name">S</div>
-        </div>
+        <div class="calendar-grid" id="dayNames"></div>
         <div class="calendar-grid" id="calendarGrid"></div>
         </div>
 
         <div class="card frequency-card">
-        <div class="calendar-header">
-            <h3>Workout Frequency</h3>
+            <div class="calendar-header">
+            <h3 data-i18n="workout_frequency"></h3>
                 <select id="frequencyFilter" onchange="updateFrequencyChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
-                <option value="month" selected>Monthly</option>
-                <option value="year">Yearly</option>
+                <option value="month" selected data-i18n="monthly">Monthly</option>
+                <option value="year" data-i18n="yearly">Yearly</option>
             </select>
         </div>
             <div class="canvas-wrapper" style="height: 200px;">
@@ -97,7 +94,7 @@
         </div>
 
         <div class="card" id="weightCard">
-            <div class="calendar-header"><h3>Weight Progress</h3></div>
+            <div class="calendar-header"><h3 data-i18n="weight_progress"></h3></div>
             <div class="canvas-wrapper" style="height: 200px;">
                 <canvas id="weightChart"></canvas>
             </div>
@@ -128,7 +125,7 @@
                 ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
                 ctx.font = '14px sans-serif';
                 ctx.fillStyle = '#94a3b8';
-                ctx.fillText('No weight data', 20, 40);
+                ctx.fillText(GN_I18N.t('no_weight_data'), 20, 40);
                 return;
             }
             const labels = weights.map(w => w.date.slice(5));
@@ -139,7 +136,7 @@
                 data: {
                     labels,
                     datasets: [{
-                        label: 'Weight (kg)',
+                        label: GN_I18N.t('weight_kg'),
                         data,
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16,185,129,0.1)',
@@ -181,15 +178,31 @@
         function renderCalendar(logs) {
             const grid = document.getElementById('calendarGrid');
             const display = document.getElementById('monthDisplay');
+            const dayNamesContainer = document.getElementById('dayNames');
+            const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+            const locale = lang === 'pt' ? 'pt' : 'en';
+            // render localized short weekday names; start Monday for Portuguese
+            const weekStartsOnMonday = (lang === 'pt');
+            dayNamesContainer.innerHTML = '';
+            const startIndex = weekStartsOnMonday ? 1 : 0; // 0 = Sunday, 1 = Monday
+            for (let i = 0; i < 7; i++) {
+                const dayIndex = (startIndex + i) % 7;
+                // 2021-01-03 is a Sunday; add offset to get correct weekday
+                const d = new Date(2021, 0, 3 + dayIndex);
+                const short = d.toLocaleString(locale, { weekday: 'short' });
+                dayNamesContainer.innerHTML += `<div class="day-name">${short}</div>`;
+            }
             grid.innerHTML = "";
             const year = currentViewDate.getFullYear(), month = currentViewDate.getMonth();
             const today = new Date(); today.setHours(0,0,0,0);
-            display.innerText = currentViewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+            display.innerText = currentViewDate.toLocaleString(locale, { month: 'long', year: 'numeric' });
             const firstDayIndex = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const workoutDates = new Set(logs.map(l => l.date));
 
-            for (let i = 0; i < firstDayIndex; i++) grid.innerHTML += `<div></div>`;
+            // Adjust first day index when week starts on Monday
+            const adjustedFirstDayIndex = weekStartsOnMonday ? ((firstDayIndex + 6) % 7) : firstDayIndex;
+            for (let i = 0; i < adjustedFirstDayIndex; i++) grid.innerHTML += `<div></div>`;
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const dateObj = new Date(year, month, d);
@@ -201,6 +214,8 @@
 
         async function renderCharts(logs) {
             const wrapper = document.getElementById('chartsWrapper');
+
+            // exercise type localization is provided by GN_I18N.localizeExerciseType
             const [catalogEx, customEx] = await Promise.all([
                 db.catalog_exercises.toArray(),
                 db.custom_exercises.toArray()
@@ -243,7 +258,7 @@
             for (const type of Object.keys(groupedByType).sort()) {
                 const sectionTitle = document.createElement('h3');
                 sectionTitle.className = 'section-title';
-                sectionTitle.innerText = type;
+                sectionTitle.innerText = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? GN_I18N.localizeExerciseType(type) : type;
                 wrapper.appendChild(sectionTitle);
 
                 const exercisesInType = groupedByType[type];
@@ -251,7 +266,8 @@
                     const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
                     const lastEntry = entries[entries.length - 1];
                     const currentEx = exMap[exId];
-                    const displayName = currentEx ? currentEx.name : "Unknown Exercise";
+                    const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+                    const displayName = currentEx ? ((lang === 'pt' && currentEx.namePT) ? currentEx.namePT : currentEx.name) : GN_I18N.t('unknown_exercise');
                     const imgSrc = await getImg(currentEx?.imageId, currentEx?.isCustom);
                     
                     const box = document.createElement('div'); 
@@ -305,6 +321,8 @@
         async function updateFrequencyChart(logs) {
             if (!logs) logs = await db.logs.toArray();
             const period = document.getElementById('frequencyFilter').value;
+            const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+            const locale = lang === 'pt' ? 'pt' : 'en';
             const uniqueDates = [...new Set(logs.map(l => l.date))].sort();
             const counts = {};
             const today = new Date();
@@ -317,13 +335,13 @@
             } else if (period === 'month') {
                 const currentYear = today.getFullYear();
                 for (let i = 0; i < 12; i++) {
-                    const monthName = new Date(currentYear, i, 1).toLocaleString('default', { month: 'short' });
+                    const monthName = new Date(currentYear, i, 1).toLocaleString(locale, { month: 'short' });
                     counts[monthName] = 0;
                 }
                 uniqueDates.forEach(d => {
                     const [y, m, day] = d.split('-').map(Number);
                     if (y === currentYear) {
-                        const monthName = new Date(y, m - 1, day).toLocaleString('default', { month: 'short' });
+                        const monthName = new Date(y, m - 1, day).toLocaleString(locale, { month: 'short' });
                         if (counts.hasOwnProperty(monthName)) counts[monthName]++;
                     }
                 });
@@ -386,14 +404,14 @@
             if (workoutDates.length === 0) {
                 overview.innerHTML = `
                     <div class="stat-card">
-                        <div class="stat-label">Current Streak</div>
-                        <div class="stat-value">0 <span style="font-size: 0.9rem">Days</span></div>
-                        <div class="stat-sub">Start your journey!</div>
+                        <div class="stat-label">${GN_I18N.t('current_streak')}</div>
+                        <div class="stat-value">0 <span style="font-size: 0.9rem">${GN_I18N.t('days')}</span></div>
+                        <div class="stat-sub">${GN_I18N.t('start_your_journey')}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Best Record</div>
-                        <div class="stat-value">0 <span style="font-size: 0.9rem">Days</span></div>
-                        <div class="stat-sub">No records yet</div>
+                        <div class="stat-label">${GN_I18N.t('best_record')}</div>
+                        <div class="stat-value">0 <span style="font-size: 0.9rem">${GN_I18N.t('days')}</span></div>
+                        <div class="stat-sub">${GN_I18N.t('no_records_yet')}</div>
                     </div>
                 `;
                 return;
@@ -404,18 +422,24 @@
 
             overview.innerHTML = `
                 <div class="stat-card">
-                    <div class="stat-label">Current Streak</div>
+                    <div class="stat-label">${GN_I18N.t('current_streak')}</div>
                     <div class="stat-value" style="color: ${current > 0 ? 'var(--success)' : 'var(--text)'}">
-                        ${current} <span style="font-size: 0.9rem">Days</span>
+                        ${current} <span style="font-size: 0.9rem">${GN_I18N.t('days')}</span>
                     </div>
-                    <div class="stat-sub">${current > 0 ? 'Keep it up!' : daysSince + ' days since last'}</div>
+                    <div class="stat-sub">${current > 0 ? GN_I18N.t('keep_it_up') : (daysSince + ' ' + GN_I18N.t('days_since_last'))}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Best Record</div>
-                    <div class="stat-value">${longest} <span style="font-size: 0.9rem">Days</span></div>
-                    <div class="stat-sub">Personal Best</div>
+                    <div class="stat-label">${GN_I18N.t('best_record')}</div>
+                    <div class="stat-value">${longest} <span style="font-size: 0.9rem">${GN_I18N.t('days')}</span></div>
+                    <div class="stat-sub">${GN_I18N.t('personal_best')}</div>
                 </div>
             `;
+        }
+
+        // Apply translations and localized title, then initialize
+        if (window.GN_I18N) {
+            try { GN_I18N.applyTranslations(document); } catch(e){}
+            try { document.title = GN_I18N.t('title_main') + ' | ' + GN_I18N.t('page_statistics'); } catch(e){}
         }
 
         init();
