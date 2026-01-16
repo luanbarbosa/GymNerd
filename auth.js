@@ -172,7 +172,7 @@
             const detectBrowser = () => {
                 try { return (navigator.language || navigator.userLanguage || 'en').toLowerCase().startsWith('pt') ? 'pt' : 'en'; } catch(e) { return 'en'; }
             };
-            const initial = localStorage.getItem(key) || detectBrowser();
+            const initial = localStorage.getItem(key) || getCookie(key) || detectBrowser();
             if (sel) sel.value = initial;
             try { localStorage.setItem(key, initial); } catch(e) {}
             if (sel) sel.addEventListener('change', (ev) => { try { localStorage.setItem(key, ev.target.value); location.reload(); } catch(e) {} });
@@ -635,7 +635,7 @@
                     } catch(e) { return 'en'; }
                 };
 
-                const initial = localStorage.getItem(key) || detectBrowser();
+                const initial = localStorage.getItem(key) || getCookie(key) || detectBrowser();
                 if (sel) sel.value = initial;
                 try { localStorage.setItem(key, initial); } catch(e){}
 
