@@ -171,7 +171,7 @@
     "id": 25,
     "imageId": 25,
     "name": "Seated row",
-    "namePT": "Remada sentada",
+    "namePT": "Remada baixa sentada",
     "type": "back"
   },
   {
@@ -208,5 +208,145 @@
     "name": "Assisted pull-up",
     "namePT": "Barra fixa assistida",
     "type": "back"
+  },
+  {
+    "id": 31,
+    "imageId": 31,
+    "name": "Decline crunch",
+    "namePT": "Abdominal reto no banco declinado",
+    "type": "abs"
+  },
+  {
+    "id": 32,
+    "imageId": 32,
+    "name": "Alternating dumbbell curl",
+    "namePT": "Rosca alternada com halteres",
+    "type": "arm"
+  },
+  {
+    "id": 33,
+    "imageId": 33,
+    "name": "Concentration curl",
+    "namePT": "Rosca concentrada",
+    "type": "arm"
+  },
+  {
+    "id": 34,
+    "imageId": 34,
+    "name": "Dumbbell skullcrusher",
+    "namePT": "Tríceps testa com halteres",
+    "type": "arm"
+  },
+  {
+    "id": 35,
+    "imageId": 35,
+    "name": "Rope triceps pushdown",
+    "namePT": "Tríceps no pulley com corda",
+    "type": "arm"
+  },
+  {
+    "id": 36,
+    "imageId": 36,
+    "name": "Seated overhead dumbbell triceps extension",
+    "namePT": "Tríceps Francês com Halter Sentado",
+    "type": "arm"
+  },
+  {
+    "id": 37,
+    "imageId": 37,
+    "name": "Close grip supinated lat pulldown",
+    "namePT": "Puxada supinada fechada",
+    "type": "back"
+  },
+  {
+    "id": 38,
+    "imageId": 38,
+    "name": "Dumbbell shrug",
+    "namePT": "Encolhimento com halteres",
+    "type": "back"
+  },
+  {
+    "id": 39,
+    "imageId": 39,
+    "name": "Barbell bent over pronated row",
+    "namePT": "Remada Curvada Pronada com Barra",
+    "type": "back"
+  },
+  {
+    "id": 40,
+    "imageId": 40,
+    "name": "Rope pulldown",
+    "namePT": "Pulldown com corda",
+    "type": "back"
+  },
+  {
+    "id": 41,
+    "imageId": 41,
+    "name": "Treadmill running",
+    "namePT": "Corrida na esteira",
+    "type": "cardio"
+  },
+  {
+    "id": 42,
+    "imageId": 42,
+    "name": "Decline cable fly",
+    "namePT": "Crucifixo declinado crossover",
+    "type": "chest"
+  },
+  {
+    "id": 43,
+    "imageId": 43,
+    "name": "Flat dumbbell fly",
+    "namePT": "Crucifixo Reto com Halteres",
+    "type": "chest"
+  },
+  {
+    "id": 44,
+    "imageId": 44,
+    "name": "Barbell hip thrust",
+    "namePT": "Elevação pelvica com barra",
+    "type": "legs"
+  },
+  {
+    "id": 45,
+    "imageId": 45,
+    "name": "Barbell romanian deadlift",
+    "namePT": "Stiff com barra",
+    "type": "legs"
+  },
+  {
+    "id": 46,
+    "imageId": 46,
+    "name": "Front squat with dumbbells",
+    "namePT": "Agachamento frontal com halteres",
+    "type": "legs"
+  },
+  {
+    "id": 47,
+    "imageId": 47,
+    "name": "Seated leg curl",
+    "namePT": "Cadeira flexora",
+    "type": "legs"
+  },
+  {
+    "id": 48,
+    "imageId": 48,
+    "name": "Single leg extension",
+    "namePT": "Cadeira extensora unilateral",
+    "type": "legs"
+  },
+  {
+    "id": 49,
+    "imageId": 49,
+    "name": "Smith machine squat",
+    "namePT": "Agachamento no smith",
+    "type": "legs"
+  },
+  {
+    "id": 50,
+    "imageId": 50,
+    "name": "Standing calf raise",
+    "namePT": "Panturrilha articulada em pé",
+    "type": "legs"
   }
 ]
