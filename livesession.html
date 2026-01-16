@@ -152,6 +152,8 @@
             gap: 8px;
         }
         .save-warning-box .warning-note { color: var(--text); opacity: 0.95; font-size: 0.92rem; text-align: center; }
+        .finished-illustration { display:flex; justify-content:center; margin-top:12px; }
+        .finished-illustration svg { width:160px; height:auto; display:block; }
     </style>
 </head>
 <body>
@@ -248,6 +250,26 @@
             <div class="card" style="text-align:center; padding:30px;">
                 <h2 data-i18n="finished_title" style="margin-top:0;"></h2>
                 <p data-i18n="finished_subtitle" style="color:var(--text-dim); margin:10px 0 20px;"></p>
+                <div class="finished-illustration" aria-hidden="true">
+                    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Success illustration">
+                        <defs>
+                            <linearGradient id="g1" x1="0" x2="1">
+                                <stop offset="0" stop-color="#60a5fa"/>
+                                <stop offset="1" stop-color="#2563eb"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="60" cy="60" r="56" fill="#0b1220" stroke="url(#g1)" stroke-width="2" />
+                        <g transform="translate(30,30)">
+                            <path d="M10 35 L20 45 L40 15" stroke="#10b981" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                            <rect x="0" y="50" width="40" height="8" rx="4" fill="#f59e0b" opacity="0.15"/>
+                            <g>
+                                <circle cx="8" cy="8" r="2" fill="#f59e0b"/>
+                                <circle cx="32" cy="8" r="2" fill="#f97316"/>
+                                <circle cx="20" cy="28" r="2" fill="#fde68a"/>
+                            </g>
+                        </g>
+                    </svg>
+                </div>
                 <div style="display:flex; gap:10px; justify-content:center; align-items:center; flex-direction:column;">
                     <div id="saveRoutineOpt" class="save-warning-box" style="display:none; margin-bottom:12px;">
                         <div class="warning-note" data-i18n="save_routine_warning"></div>
