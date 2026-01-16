@@ -34,6 +34,8 @@
             align-items: center; 
             gap: 15px; 
         }
+
+
         .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; }
         .player-img { background: #fff; }
         /* Reorder UI */
@@ -65,17 +67,27 @@
         }
 
         .player-card { text-align: center; }
+        .current-ex-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 14px; color: var(--text); line-height: 1.15; text-align: center; word-break: break-word; }
         .player-img { width: 100%; max-height: 250px; object-fit: contain; border-radius: 16px; margin-bottom: 15px; background: #fff; }
         /* External spacer: visual spacing will be placed outside the player card so the card's content doesn't get extra inner padding */
         .player-bottom-spacer { height: calc(100px + env(safe-area-inset-bottom)); }
-        .ex-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 25px; padding: 12px 16px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
+        .ex-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 25px; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
         .ex-title-group { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .current-ex-title { margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; white-space: normal; overflow: visible; overflow-wrap: anywhere; word-break: break-word; }
+        /* exercise title removed per request */
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .header-timer { display: flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.1); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); cursor: pointer; }
         .timer-val { font-size: 1.2rem; font-weight: 800; color: white; font-variant-numeric: tabular-nums; }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
         .progress-bar { height: 100%; background: var(--primary-grad); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* Exercise progress graph (balls and connectors) */
+        .exercise-graph { display:flex; gap:8px; align-items:center; justify-content:center; padding-top:8px; padding-left:16px; padding-right:16px; box-sizing:border-box; overflow:hidden; }
+        .exercise-node { width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#0b1220; background:#1e293b; border:2px solid rgba(255,255,255,0.04); cursor:pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4); flex-shrink:0; }
+        .exercise-node.completed { background: var(--success); color: white; border-color: rgba(16,185,129,0.15); }
+        .exercise-node.active { box-shadow: 0 6px 18px rgba(59,130,246,0.16); transform: scale(1.06); }
+        .exercise-node.skipped { background: rgba(255,255,255,0.04); color: var(--text-dim); border-color: rgba(255,255,255,0.04); }
+        .exercise-connector { width:26px; height:4px; background: rgba(255,255,255,0.06); border-radius:2px; flex-shrink:0; }
+        .exercise-connector.completed { background: linear-gradient(90deg, #10b981, #34d399); }
+        .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
         .timer-reset { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0; display: flex; align-items: center; transition: color 0.2s; width: auto !important; }
         .timer-reset:active { color: var(--primary); }
 
@@ -156,6 +168,27 @@
         .save-warning-box .warning-note { color: var(--text); opacity: 0.95; font-size: 0.92rem; text-align: center; }
         .finished-illustration { display:flex; justify-content:center; margin-top:12px; }
         .finished-illustration svg { width:160px; height:auto; display:block; }
+        /* Exercise progress graph styles */
+        .exercise-graph { padding:8px 18px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; overflow:visible; }
+        /* Player card title overlay (title removed) */
+        .player-card { position: relative; }
+        .exercise-node { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:rgba(255,255,255,0.06); color:var(--text); width:34px; height:34px; flex:0 0 auto; border:2px solid rgba(255,255,255,0.06); font-weight:700; }
+        .exercise-node-label { display:block; width:100%; text-align:center; line-height:1; font-size:14px; }
+        /* Slight optical nudge for symbol-based nodes to match numeric centering */
+        .exercise-node.completed .exercise-node-label,
+        .exercise-node.skipped .exercise-node-label { transform: translateX(0.6px); }
+        .exercise-node.completed { background:linear-gradient(90deg,var(--primary),#2563eb); color:white; border-color:transparent; }
+        .exercise-node.skipped { background: rgba(239,68,68,0.14); color:#ef4444; border-color: rgba(239,68,68,0.2); }
+        .exercise-node.active { 
+            /* stronger solid white ring for the viewed exercise */
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 0 3px rgba(255,255,255,0.98);
+            transform: translateY(-2px);
+            border-width: 3px;
+            border-color: #ffffff;
+            z-index: 2;
+        }
+        .exercise-connector { background:rgba(255,255,255,0.06); height:4px; border-radius:2px; display:inline-block; }
+        .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
     </style>
 </head>
 <body>
@@ -214,14 +247,16 @@
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
                 <div class="ex-title-group">
-                    <h1 id="currentExName" class="current-ex-title"></h1>
+                    <div id="exerciseProgressGraph" class="exercise-graph" aria-hidden="true"></div>
                 </div>
                 <button id="nextExBtn" class="nav-ex-btn" onclick="navExercise(1)">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
                 <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
             </div>
+            <!-- graph moved inside title box above -->
             <div class="card player-card">
+                <h3 id="currentExName" class="current-ex-title" aria-live="polite"></h3>
                 <img id="playerImg" src="" class="player-img">
                 <div id="setsContainer"></div>
                 <!-- Player controls moved to fixed bottom bar -->
@@ -729,6 +764,122 @@
             renderSet();
         }
 
+        // Render horizontal graph of exercise occurrences (balls + connectors)
+        function renderExerciseGraph() {
+            const graphEl = document.getElementById('exerciseProgressGraph');
+            const countEl = document.getElementById('exerciseCompletedCount');
+            if (!graphEl) return;
+            graphEl.innerHTML = '';
+            if (!sessionSets || sessionSets.length === 0) {
+                if (countEl) countEl.innerText = '';
+                return;
+            }
+
+            // Build occurrences in order and record first index for each occurrence
+            const occs = [];
+            const occMap = {};
+            sessionSets.forEach((s, idx) => {
+                if (!occMap[s.occurrenceId]) {
+                    occMap[s.occurrenceId] = { occurrenceId: s.occurrenceId, startIdx: idx, sets: [], name: s.name, namePT: s.namePT };
+                    occs.push(occMap[s.occurrenceId]);
+                }
+                occMap[s.occurrenceId].sets.push(s);
+            });
+
+            const totalOcc = occs.length;
+            let completedOcc = 0;
+            // Highlight the occurrence that is currently being viewed (not just the active running set)
+            const activeOccId = (sessionSets[viewingIdx] && sessionSets[viewingIdx].occurrenceId) ? sessionSets[viewingIdx].occurrenceId : null;
+            // Determine available width based on the title group (graph is inside it)
+            const titleGroup = document.querySelector('.ex-title-group');
+            let avail = graphEl.clientWidth - 8;
+            if (titleGroup) {
+                avail = Math.max(0, titleGroup.clientWidth - 16);
+            }
+
+            // Base dimensions (unscaled) - tuned to reduce overall width
+            const baseNode = 34; // px
+            const baseConn = 16; // px (reduced)
+            const baseGap = 6; // px between items (reduced)
+            const n = occs.length;
+            const requiredWidth = n * baseNode + (n - 1) * (baseConn + baseGap);
+
+            // Compute scale to fit inside available space; enforce a lower bound so elements remain tappable
+            const scale = (requiredWidth > 0 && avail > 0) ? Math.min(1, avail / requiredWidth) : 1;
+            const nodeSize = Math.max(12, Math.floor(baseNode * scale));
+            const connSize = Math.max(6, Math.floor(baseConn * scale));
+            const gapSize = Math.max(4, Math.floor(baseGap * scale));
+
+            // Create an inner wrapper that will be scaled. This guarantees the whole graph is shrunk proportionally
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.justifyContent = 'center';
+            wrapper.style.gap = gapSize + 'px';
+            wrapper.style.transformOrigin = 'center center';
+            wrapper.style.willChange = 'transform';
+
+            // Build nodes/connectors inside wrapper (unscaled sizes)
+            occs.forEach((occ, i) => {
+                const allDone = occ.sets.every(ss => ss.completed || ss.skipped);
+                const allSkipped = occ.sets.every(ss => ss.skipped && !ss.completed);
+                if (allDone) completedOcc++;
+
+                const node = document.createElement('div');
+                node.className = 'exercise-node' + (allDone ? ' completed' : '') + (allSkipped ? ' skipped' : '') + (occ.occurrenceId === activeOccId ? ' active' : '');
+                node.setAttribute('role', 'button');
+                node.setAttribute('tabindex', '0');
+                // Accessible label for screen readers
+                const labelState = allSkipped ? 'skipped' : (allDone ? 'completed' : 'pending');
+                node.setAttribute('aria-label', `${i + 1} ${labelState}`);
+                // Render an X for fully-skipped occurrences, a check for completed, or index otherwise
+                if (allSkipped) {
+                    node.innerHTML = `<span class="exercise-node-label">&#10005;</span>`; // X
+                } else {
+                    node.innerHTML = allDone ? `<span class="exercise-node-label">&#10003;</span>` : `<span class="exercise-node-label">${i + 1}</span>`;
+                }
+                node.style.width = node.style.height = baseNode + 'px';
+                node.style.fontSize = '14px';
+                node.addEventListener('click', () => {
+                    // When user clicks a graph node, only switch the viewed exercise occurrence
+                    // Do not modify `currentIdx` so the play button behaves like arrow navigation
+                    viewingIdx = occ.startIdx;
+                    renderSet();
+                });
+                node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); node.click(); } });
+
+                wrapper.appendChild(node);
+
+                if (i < occs.length - 1) {
+                    const conn = document.createElement('div');
+                    // Keep connectors neutral regardless of node status
+                    conn.className = 'exercise-connector';
+                    conn.style.width = baseConn + 'px';
+                    conn.style.height = '4px';
+                    wrapper.appendChild(conn);
+                }
+            });
+
+            // Append wrapper and apply scaling transform so the whole graph fits into 'avail'
+            graphEl.appendChild(wrapper);
+            const finalScale = requiredWidth > 0 ? Math.min(1, avail / requiredWidth) : 1;
+            wrapper.style.transform = `scale(${finalScale})`;
+
+            // Allow the graph to overflow slightly so nodes aren't visually cut; set a comfortable height
+            graphEl.style.height = Math.ceil(baseNode * finalScale) + 12 + 'px';
+            graphEl.style.overflow = 'visible';
+
+            if (countEl) countEl.innerText = `${completedOcc}/${totalOcc}`;
+
+            // Re-render on next animation frame to avoid measurement timing issues
+            if (!window._exerciseGraphResizeAttached) {
+                window._exerciseGraphResizeAttached = true;
+                const schedule = () => { try { requestAnimationFrame(renderExerciseGraph); } catch (e) {} };
+                window.addEventListener('resize', schedule);
+                window.addEventListener('orientationchange', schedule);
+            }
+        }
+
         async function renderSet() {
             saveSessionState();
             startTimer();
@@ -740,10 +891,20 @@
                 progressEl.style.width = `${total > 0 ? (completed / total) * 100 : 0}%`;
             }
 
+            // Render small exercise-progress graph (balls + connectors)
+            try { renderExerciseGraph(); } catch (e) { console.warn('renderExerciseGraph error', e); }
+
             const viewingSet = sessionSets[viewingIdx];
+            // Defensive: if viewingSet is not yet available, clear the title and bail out.
+            if (!viewingSet) {
+                const titleEl = document.getElementById('currentExName');
+                if (titleEl) titleEl.innerText = '';
+                return;
+            }
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             const displayName = (lang.startsWith('pt') && viewingSet.namePT) ? viewingSet.namePT : viewingSet.name;
-            document.getElementById('currentExName').innerText = displayName;
+            const titleEl = document.getElementById('currentExName');
+            if (titleEl) titleEl.innerText = displayName;
             
             const hasPrev = viewingSet.occurrenceId > sessionSets[0].occurrenceId;
             const hasNext = viewingSet.occurrenceId < sessionSets[sessionSets.length - 1].occurrenceId;
