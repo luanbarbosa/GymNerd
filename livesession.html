@@ -66,9 +66,11 @@
 
         .player-card { text-align: center; }
         .player-img { width: 100%; max-height: 250px; object-fit: contain; border-radius: 16px; margin-bottom: 15px; background: #fff; }
+        /* External spacer: visual spacing will be placed outside the player card so the card's content doesn't get extra inner padding */
+        .player-bottom-spacer { height: calc(100px + env(safe-area-inset-bottom)); }
         .ex-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 25px; padding: 12px 16px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
         .ex-title-group { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .current-ex-title { margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .current-ex-title { margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; white-space: normal; overflow: visible; overflow-wrap: anywhere; word-break: break-word; }
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .header-timer { display: flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.1); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); cursor: pointer; }
         .timer-val { font-size: 1.2rem; font-weight: 800; color: white; font-variant-numeric: tabular-nums; }
@@ -225,6 +227,7 @@
                 <!-- Player controls moved to fixed bottom bar -->
                 <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()" data-i18n="finish_routine"></button>
             </div>
+            <div id="playerBottomSpacer" class="player-bottom-spacer" aria-hidden="true"></div>
         </div>
     </div>
 
