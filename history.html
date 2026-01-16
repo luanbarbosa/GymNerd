@@ -100,12 +100,28 @@
                     return `${parts[2]}-${parts[1]}-${parts[0]}`;
                 }
                 document.getElementById('toggleRoutineForm').onclick = () => {
-                    showForm('routineFormSection');
-                    document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+                    const r = document.getElementById('routineFormSection');
+                    const w = document.getElementById('weightFormSection');
+                    const isOpen = r.style.display === 'block';
+                    if (isOpen) {
+                        r.style.display = 'none';
+                    } else {
+                        r.style.display = 'block';
+                        w.style.display = 'none';
+                        document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+                    }
                 };
                 document.getElementById('toggleWeightForm').onclick = () => {
-                    showForm('weightFormSection');
-                    document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+                    const r = document.getElementById('routineFormSection');
+                    const w = document.getElementById('weightFormSection');
+                    const isOpen = w.style.display === 'block';
+                    if (isOpen) {
+                        w.style.display = 'none';
+                    } else {
+                        w.style.display = 'block';
+                        r.style.display = 'none';
+                        document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+                    }
                 };
                 // Set default dates on page load
                 document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
