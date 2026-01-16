@@ -8,6 +8,8 @@
     <link rel="apple-touch-icon" href="favicon.png">
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
+    <!-- SortableJS for touch-friendly drag & drop reordering -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <script src="gn-i18n.js"></script>
@@ -34,6 +36,13 @@
             align-items: center; 
             gap: 15px; 
         }
+        /* Smooth positional transitions when items are reordered */
+        .exercise-item {
+            transition: transform 180ms cubic-bezier(.2,.8,.2,1);
+            will-change: transform;
+        }
+
+
         .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; }
         .player-img { background: #fff; }
         /* Reorder UI */
@@ -44,12 +53,16 @@
         /* Hide drag handle by default; show when reorder mode is active */
         .drag-handle { display: none; border: none; background: transparent; color: var(--text-dim); font-size: 1.1rem; padding: 6px 8px; border-radius: 8px; }
         .exercise-list.reorder-mode .drag-handle { display: inline-flex; }
+        /* Hide delete/remove action while reordering to avoid accidental deletes */
+        .exercise-list.reorder-mode .remove-ex-btn { display: none !important; }
         .reorder-btn .label { font-weight: 800; color: var(--text-dim); font-size: 0.95rem; }
         .reorder-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
         .reorder-btn.active .label { color: #fff; }
         .reorder-btn:focus { outline: 2px solid rgba(59,130,246,0.12); outline-offset: 2px; }
         .exercise-item.placeholder { border: 2px dashed rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
         .dragging { position: fixed; z-index: 1000; pointer-events: none; transform: scale(1.02); box-shadow: 0 10px 30px rgba(0,0,0,0.4); opacity: 0.98; border-radius: 12px; }
+        /* Sortable placeholder styling (dashed box matching exercise-item height) */
+        .sortable-placeholder { border: 2px dashed rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); border-radius: 12px; }
         .checkbox-wrapper { margin-left: auto; }
         input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); }
 
@@ -64,16 +77,40 @@
             box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
         }
 
-        .player-card { text-align: center; }
-        .player-img { width: 100%; max-height: 250px; object-fit: contain; border-radius: 16px; margin-bottom: 15px; background: #fff; }
-        .ex-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 25px; padding: 12px 16px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
+        .player-card { text-align: center; padding-top: 12px; }
+        .current-ex-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 10px; color: var(--text); line-height: 1.15; text-align: center; word-break: break-word; }
+        /* Reserve space for up to 2 lines; center vertically when only one line */
+        .current-ex-title {
+            min-height: 2.6em; /* roughly 2 lines based on font-size */
+            display: flex;
+            align-items: center; /* centers single-line vertically */
+            justify-content: center;
+            padding: 0 12px;
+            text-align: center;
+            white-space: normal; /* allow wrapping to second line */
+            overflow: hidden;
+        }
+        /* Fixed image box so all exercise images share the same visible area */
+        .player-img { width: 100%; height: 200px; object-fit: contain; object-position: center; border-radius: 16px; margin-bottom: 15px; background: #fff; display: block; }
+        /* External spacer: visual spacing will be placed outside the player card so the card's content doesn't get extra inner padding */
+        .player-bottom-spacer { height: calc(100px + env(safe-area-inset-bottom)); }
+        .ex-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
         .ex-title-group { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .current-ex-title { margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* exercise title removed per request */
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .header-timer { display: flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.1); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); cursor: pointer; }
         .timer-val { font-size: 1.2rem; font-weight: 800; color: white; font-variant-numeric: tabular-nums; }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
         .progress-bar { height: 100%; background: var(--primary-grad); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* Exercise progress graph (balls and connectors) */
+        .exercise-graph { display:flex; gap:8px; align-items:center; justify-content:center; padding-top:8px; padding-left:16px; padding-right:16px; box-sizing:border-box; overflow:hidden; }
+        .exercise-node { width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#0b1220; background:#1e293b; border:2px solid rgba(255,255,255,0.04); cursor:pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4); flex-shrink:0; }
+        .exercise-node.completed { background: var(--success); color: white; border-color: rgba(16,185,129,0.15); }
+        .exercise-node.active { box-shadow: 0 6px 18px rgba(59,130,246,0.16); transform: scale(1.06); }
+        .exercise-node.skipped { background: rgba(255,255,255,0.04); color: var(--text-dim); border-color: rgba(255,255,255,0.04); }
+        .exercise-connector { width:26px; height:4px; background: rgba(255,255,255,0.06); border-radius:2px; flex-shrink:0; }
+        .exercise-connector.completed { background: linear-gradient(90deg, #10b981, #34d399); }
+        .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
         .timer-reset { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0; display: flex; align-items: center; transition: color 0.2s; width: auto !important; }
         .timer-reset:active { color: var(--primary); }
 
@@ -89,25 +126,37 @@
         .set-label { font-weight: bold; color: var(--text-dim); font-size: 0.8rem; }
 
         .player-controls-icons { display: flex; justify-content: center; gap: 20px; margin-top: 25px; }
-        .icon-btn { 
-            width: 60px; 
-            height: 60px; 
-            border-radius: 50%; 
-            border: none; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+        /* Bottom action bar (fixed) */
+        .BottomActionBar{position:fixed;left:0;right:0;bottom:0;height:84px;background:linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));backdrop-filter:blur(6px);display:flex;align-items:center;padding:12px 16px;gap:12px}
+        .BottomActionBar .ba-left{display:none}
+        .BottomActionBar .ba-center{display:flex;gap:20px;flex:1;align-items:center;justify-content:center;position:relative;left:auto;transform:none}
+        .BottomActionBar .confirm{width:56px;height:56px;border-radius:14px;background:linear-gradient(90deg,var(--primary),#2563eb);border:none;color:white;font-size:22px;display:flex;align-items:center;justify-content:center}
+        /* Play button inside bottom bar: center and wrap to its title */
+        .BottomActionBar #activateExBtn{display:none;box-sizing:border-box;display:inline-flex;height:56px;padding:0 28px;border-radius:14px;font-weight:800;background:var(--primary-grad);color:#fff;flex:0 0 auto;width:auto;min-width:140px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;align-items:center;justify-content:center;font-size:16px;align-self:center;line-height:1;margin:0}
+        .icon-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: pointer;
+            transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
             color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.28);
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            background-clip: padding-box;
         }
-        .icon-btn:active { transform: scale(0.85); box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
-        .icon-btn.prev { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-dim); }
-        .icon-btn.skip { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .icon-btn:active { transform: scale(0.92); box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
+        .icon-btn.prev { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim); }
+        .icon-btn.skip { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.18); }
         .icon-btn.next { background: var(--primary-grad); }
+
+        /* Ensure SVGs inside buttons are centered and sized consistently */
+        .icon-btn svg { width: 20px; height: 20px; display: block; }
 
         .nav-ex-btn {
             background: none;
@@ -132,6 +181,42 @@
         .remove-ex-btn svg { display: block; }
         
         .hidden { display: none !important; }
+        .save-warning-box {
+            background: linear-gradient(180deg, rgba(250,204,21,0.12), rgba(250,204,21,0.06));
+            border: 1px solid rgba(250,204,21,0.18);
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .save-warning-box .warning-note { color: var(--text); opacity: 0.95; font-size: 0.92rem; text-align: center; }
+        .finished-illustration { display:flex; justify-content:center; margin-top:12px; }
+        .finished-illustration svg { width:160px; height:auto; display:block; }
+        /* Exercise progress graph styles */
+        .exercise-graph { padding:8px 18px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; overflow:visible; }
+        /* Player card title overlay (title removed) */
+        .player-card { position: relative; }
+        .exercise-node { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:rgba(255,255,255,0.06); color:var(--text); width:34px; height:34px; flex:0 0 auto; border:2px solid rgba(255,255,255,0.06); font-weight:700; }
+        .exercise-node-label { display:block; width:100%; text-align:center; line-height:1; font-size:14px; }
+        /* Slight optical nudge for symbol-based nodes to match numeric centering */
+        .exercise-node.completed .exercise-node-label,
+        .exercise-node.skipped .exercise-node-label { transform: translateX(0.6px); }
+        .exercise-node.completed { background:linear-gradient(90deg,var(--primary),#2563eb); color:white; border-color:transparent; }
+        .exercise-node.skipped { background: rgba(239,68,68,0.14); color:#ef4444; border-color: rgba(239,68,68,0.2); }
+        .exercise-node.active { 
+            /* stronger solid white ring for the viewed exercise */
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 0 3px rgba(255,255,255,0.98);
+            transform: translateY(-2px);
+            border-width: 3px;
+            border-color: #ffffff;
+            z-index: 2;
+        }
+        .exercise-connector { background:rgba(255,255,255,0.06); height:4px; border-radius:2px; display:inline-block; }
+        .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
     </style>
 </head>
 <body>
@@ -190,34 +275,82 @@
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
                 <div class="ex-title-group">
-                    <h1 id="currentExName" class="current-ex-title"></h1>
+                    <div id="exerciseProgressGraph" class="exercise-graph" aria-hidden="true"></div>
                 </div>
                 <button id="nextExBtn" class="nav-ex-btn" onclick="navExercise(1)">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
                 <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
             </div>
+            <!-- graph moved inside title box above -->
             <div class="card player-card">
+                <h3 id="currentExName" class="current-ex-title" aria-live="polite"></h3>
                 <img id="playerImg" src="" class="player-img">
                 <div id="setsContainer"></div>
-                <button id="activateExBtn" class="start-btn" style="margin-top: 20px; display: block;" onclick="activateExercise()" data-i18n="play_exercise"></button>
-                <div class="player-controls-icons">
-                    <button class="icon-btn prev" onclick="prevSet()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    </button>
-                    <button class="icon-btn skip" onclick="skipSet()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                    <button id="nextBtn" class="icon-btn next" onclick="nextSet()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </button>
-                </div>
+                <!-- Player controls moved to fixed bottom bar -->
                 <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()" data-i18n="finish_routine"></button>
             </div>
+            <div id="playerBottomSpacer" class="player-bottom-spacer" aria-hidden="true"></div>
         </div>
     </div>
 
-    <script>
+    
+        <!-- Fixed bottom action bar for player controls -->
+        <aside id="bottomBar" class="BottomActionBar" role="region" aria-label="Player actions" style="display:none;">
+            <div class="ba-center">
+                <button id="bb-prev" class="icon-btn prev" title="Previous">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button id="bb-skip" class="icon-btn skip" title="Skip">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+                <button id="activateExBtn" class="start-btn" style="display:none;" onclick="activateExercise()" data-i18n="play_exercise">Play</button>
+                <button id="bb-next" class="icon-btn next" title="Complete">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Finished view shown when all exercises are completed -->
+        <div id="finishedView" style="display:none; padding:20px; max-width:500px; margin: 80px auto 120px;">
+            <div class="card" style="text-align:center; padding:30px;">
+                <h2 data-i18n="finished_title" style="margin-top:0;"></h2>
+                <p data-i18n="finished_subtitle" style="color:var(--text-dim); margin:10px 0 20px;"></p>
+                <div class="finished-illustration" aria-hidden="true">
+                    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Success illustration">
+                        <defs>
+                            <linearGradient id="g1" x1="0" x2="1">
+                                <stop offset="0" stop-color="#60a5fa"/>
+                                <stop offset="1" stop-color="#2563eb"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="60" cy="60" r="56" fill="#0b1220" stroke="url(#g1)" stroke-width="2" />
+                        <g transform="translate(30,30)">
+                            <path d="M10 35 L20 45 L40 15" stroke="#10b981" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                            <rect x="0" y="50" width="40" height="8" rx="4" fill="#f59e0b" opacity="0.15"/>
+                            <g>
+                                <circle cx="8" cy="8" r="2" fill="#f59e0b"/>
+                                <circle cx="32" cy="8" r="2" fill="#f97316"/>
+                                <circle cx="20" cy="28" r="2" fill="#fde68a"/>
+                            </g>
+                        </g>
+                    </svg>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:center; align-items:center; flex-direction:column;">
+                    <div id="saveRoutineOpt" class="save-warning-box" style="display:none; margin-bottom:12px;">
+                        <div class="warning-note" data-i18n="save_routine_warning"></div>
+                        <small style="color:var(--text-dim);" data-i18n="save_routine_note"></small>
+                        <label style="display:flex; gap:10px; align-items:center; color:var(--text); margin-top:6px;">
+                            <input id="saveRoutineCheckbox" type="checkbox" />
+                            <span data-i18n="save_changes_to_routine"></span>
+                        </label>
+                    </div>
+                    <button id="finishRoutineBtn" class="finish-btn" style="min-width:140px; width:100%;" onclick="finishSession()" data-i18n="finish_routine"></button>
+                </div>
+            </div>
+        </div>
+
+        <script>
 
         let sessionSets = [];
         let currentIdx = 0;
@@ -225,6 +358,7 @@
         let currentWorkoutId = null;
         let timerInterval = null;
         let seconds = 0;
+        let routineModified = false;
 
         function formatTime(s) {
             const minutes = Math.floor(s / 60).toString().padStart(2, '0');
@@ -313,6 +447,10 @@
 
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
+            const bb = document.getElementById('bottomBar'); if (bb) bb.style.display = 'flex';
+            // reset routine modified flag on resume; checkbox hidden until user changes values
+            routineModified = false;
+            const saveOpt = document.getElementById('saveRoutineOpt'); if (saveOpt) saveOpt.style.display = 'none';
                 // Try to keep screen awake: prefer Wake Lock API, otherwise start silent audio (iOS fallback)
                 (async () => {
                     try {
@@ -413,8 +551,9 @@
             attachDragHandlers();
         }
 
-        // --- Drag & drop reordering (touch-friendly) ---
+        // --- Drag & drop reordering (mobile-optimized custom) ---
         let _dragState = null;
+        let _dragListeners = [];
 
         function attachDragHandlers() {
             const container = document.getElementById('exerciseContainer');
@@ -425,6 +564,240 @@
                 h.addEventListener('pointerdown', _onHandlePointerDown);
                 h._dragAttached = true;
             });
+        }
+
+        function detachDragHandlers() {
+            const container = document.getElementById('exerciseContainer');
+            if (!container) return;
+            container.querySelectorAll('.drag-handle').forEach(h => {
+                if (!h._dragAttached) return;
+                try { h.removeEventListener('touchstart', _onHandleTouchStart); } catch (e) {}
+                try { h.removeEventListener('pointerdown', _onHandlePointerDown); } catch (e) {}
+                h._dragAttached = false;
+            });
+        }
+
+        function _onHandleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            _onHandlePointerDown(touch);
+        }
+
+        function _onHandlePointerDown(e) {
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) return;
+            const item = handle.closest('.exercise-item');
+            if (!item) return;
+            _startDrag(e, item);
+        }
+
+        function _startDrag(e, item) {
+            // Prevent multiple drags
+            if (_dragState) return;
+            const container = document.getElementById('exerciseContainer');
+            const rect = item.getBoundingClientRect();
+            const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0;
+            const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0;
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'exercise-item placeholder';
+            placeholder.style.height = rect.height + 'px';
+            placeholder.style.width = rect.width + 'px';
+            placeholder.style.boxSizing = 'border-box';
+
+            const ghost = item.cloneNode(true);
+            // remove any interactive/remove buttons from the ghost so they don't appear while dragging
+            const ghostRemove = ghost.querySelectorAll('.remove-ex-btn');
+            ghostRemove.forEach(el => el.remove());
+            ghost.classList.add('dragging');
+            ghost.style.width = rect.width + 'px';
+            ghost.style.left = rect.left + 'px';
+            ghost.style.top = rect.top + 'px';
+            ghost.style.position = 'fixed';
+            ghost.style.margin = '0';
+            ghost.style.transform = 'translate3d(0,0,0)';
+            ghost.style.willChange = 'transform';
+            document.body.appendChild(ghost);
+
+            // hide original and insert placeholder
+            item.style.display = 'none';
+            const originalParent = item.parentNode;
+            const originalNextSibling = item.nextSibling;
+            item.parentNode.insertBefore(placeholder, originalNextSibling);
+
+            // prevent page scroll during drag
+            const preventScroll = (ev) => { ev.preventDefault(); };
+            document.addEventListener('touchmove', preventScroll, { passive: false });
+
+            _dragState = {
+                draggingEl: item,
+                container,
+                placeholder,
+                ghost,
+                offsetY: clientY - rect.top,
+                offsetX: clientX - rect.left,
+                raf: null,
+                lastY: clientY,
+                lastX: clientX,
+                preventScroll,
+                originalParent,
+                originalNextSibling
+            };
+
+            function moveHandler(ev) {
+                const y = ev.clientY || (ev.touches && ev.touches[0] && ev.touches[0].clientY) || 0;
+                const x = ev.clientX || (ev.touches && ev.touches[0] && ev.touches[0].clientX) || 0;
+                _dragState.lastY = y; _dragState.lastX = x;
+                if (!_dragState.raf) {
+                    _dragState.raf = requestAnimationFrame(() => {
+                        _dragState.ghost.style.transform = `translate3d(${_dragState.lastX - _dragState.offsetX - rect.left}px, ${_dragState.lastY - _dragState.offsetY - rect.top}px, 0)`;
+                        // reposition placeholder using elementFromPoint with a movement threshold + FLIP animation
+                        try {
+                            const elUnder = document.elementFromPoint(_dragState.lastX, _dragState.lastY);
+                            if (!elUnder) return;
+                            const candidate = elUnder.closest('.exercise-item');
+                            const container = _dragState.container;
+
+                            // capture before positions
+                            const beforeChildren = Array.from(container.querySelectorAll('.exercise-item'));
+                            const beforeRects = beforeChildren.map(c => c.getBoundingClientRect());
+
+                            let moved = false;
+
+                            if (!candidate) {
+                                // append at end if not already there
+                                if (container.lastElementChild !== _dragState.placeholder) {
+                                    container.appendChild(_dragState.placeholder);
+                                    moved = true;
+                                    _dragState.lastCandidate = null;
+                                    _dragState.lastSide = 'end';
+                                }
+                            } else if (candidate === _dragState.placeholder || candidate === _dragState.draggingEl) {
+                                // do nothing
+                            } else {
+                                const r = candidate.getBoundingClientRect();
+                                const topThresh = r.top + r.height * 0.25;
+                                const bottomThresh = r.top + r.height * 0.75;
+                                let side = 'middle';
+                                if (_dragState.lastY < topThresh) side = 'before';
+                                else if (_dragState.lastY > bottomThresh) side = 'after';
+
+                                // only move if we are comfortably past threshold and candidate/side changed
+                                if (side !== 'middle') {
+                                    const sameCandidate = (_dragState.lastCandidate === candidate);
+                                    const sameSide = (_dragState.lastSide === side);
+                                    if (!sameCandidate || !sameSide) {
+                                        if (side === 'before') candidate.parentNode.insertBefore(_dragState.placeholder, candidate);
+                                        else candidate.parentNode.insertBefore(_dragState.placeholder, candidate.nextSibling);
+                                        moved = true;
+                                        _dragState.lastCandidate = candidate;
+                                        _dragState.lastSide = side;
+                                    }
+                                }
+                            }
+
+                            if (moved) {
+                                // capture after positions and animate differences (FLIP)
+                                const afterChildren = Array.from(container.querySelectorAll('.exercise-item'));
+                                const afterRects = afterChildren.map(c => c.getBoundingClientRect());
+
+                                beforeChildren.forEach((el, i) => {
+                                    if (el === _dragState.draggingEl || el === _dragState.placeholder) return;
+                                    const before = beforeRects[i];
+                                    const newIndex = afterChildren.indexOf(el);
+                                    if (newIndex === -1) return;
+                                    const after = afterRects[newIndex];
+                                    const dx = before.left - after.left;
+                                    const dy = before.top - after.top;
+                                    if (dx || dy) {
+                                        el.style.transition = 'none';
+                                        el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+                                        requestAnimationFrame(() => {
+                                            el.style.transition = 'transform 180ms cubic-bezier(.2,.8,.2,1)';
+                                            el.style.transform = '';
+                                            const cleanup = () => { el.style.transition = ''; el.removeEventListener('transitionend', cleanup); };
+                                            el.addEventListener('transitionend', cleanup);
+                                        });
+                                    }
+                                });
+                            }
+                        } catch (err) { console.warn('drag reposition error', err); }
+                        // if pointer moves outside visible viewport by a margin, cancel and revert
+                        const margin = 40;
+                        if (_dragState.lastX < -margin || _dragState.lastX > (window.innerWidth + margin) || _dragState.lastY < -margin || _dragState.lastY > (window.innerHeight + margin)) {
+                            try { _cancelDrag(); } catch (err) { console.warn('cancelDrag failed', err); }
+                            _dragState.raf = null;
+                            return;
+                        }
+                        _dragState.raf = null;
+                    });
+                }
+            }
+
+            function upHandler() { _endDrag(); }
+
+            // attach listeners
+            window.addEventListener('touchmove', moveHandler, { passive: false });
+            window.addEventListener('pointermove', moveHandler);
+            window.addEventListener('touchend', upHandler);
+            window.addEventListener('pointerup', upHandler);
+            window.addEventListener('touchcancel', upHandler);
+
+            _dragListeners.push({ moveHandler, upHandler });
+        }
+
+        function _endDrag() {
+            if (!_dragState) return;
+            const { draggingEl, placeholder, ghost, preventScroll } = _dragState;
+            // place element where placeholder is
+            try {
+                placeholder.parentNode.insertBefore(draggingEl, placeholder);
+            } catch (e) { console.warn('insert before failed', e); }
+            draggingEl.style.display = '';
+            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+
+            // remove scroll prevention
+            try { document.removeEventListener('touchmove', preventScroll, { passive: false }); } catch (e) { document.removeEventListener('touchmove', preventScroll); }
+
+            // remove listeners
+            for (const L of _dragListeners) {
+                try { window.removeEventListener('touchmove', L.moveHandler); } catch (e) {}
+                try { window.removeEventListener('pointermove', L.moveHandler); } catch (e) {}
+                try { window.removeEventListener('touchend', L.upHandler); } catch (e) {}
+                try { window.removeEventListener('pointerup', L.upHandler); } catch (e) {}
+                try { window.removeEventListener('touchcancel', L.upHandler); } catch (e) {}
+            }
+            _dragListeners = [];
+
+            _dragState = null;
+        }
+
+        function _cancelDrag() {
+            if (!_dragState) return;
+            const { draggingEl, placeholder, ghost, preventScroll, originalParent, originalNextSibling } = _dragState;
+            // revert item to original position
+            try {
+                if (originalParent) {
+                    if (originalNextSibling && originalNextSibling.parentNode === originalParent) originalParent.insertBefore(draggingEl, originalNextSibling);
+                    else originalParent.appendChild(draggingEl);
+                }
+            } catch (e) { console.warn('revert insert failed', e); }
+            draggingEl.style.display = '';
+            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+
+            try { document.removeEventListener('touchmove', preventScroll, { passive: false }); } catch (e) { document.removeEventListener('touchmove', preventScroll); }
+
+            for (const L of _dragListeners) {
+                try { window.removeEventListener('touchmove', L.moveHandler); } catch (e) {}
+                try { window.removeEventListener('pointermove', L.moveHandler); } catch (e) {}
+                try { window.removeEventListener('touchend', L.upHandler); } catch (e) {}
+                try { window.removeEventListener('pointerup', L.upHandler); } catch (e) {}
+                try { window.removeEventListener('touchcancel', L.upHandler); } catch (e) {}
+            }
+            _dragListeners = [];
+            _dragState = null;
         }
 
                 // Toggle sort mode for the exercise list. When turning off, persist order to DB.
@@ -471,104 +844,19 @@
                     const btn = document.getElementById('toggleSortBtn');
                     const isActive = container.classList.toggle('reorder-mode');
                     if (btn) btn.classList.toggle('active', isActive);
-                    if (!isActive) {
+
+                    if (isActive) {
+                        // enable custom drag handlers
+                        attachDragHandlers();
+                    } else {
+                        // disable handlers and persist order
+                        detachDragHandlers();
+                        // ensure any active drag is ended
+                        try { _endDrag(); } catch (e) {}
                         const workoutId = parseInt(document.getElementById('workoutSelect').value);
                         if (workoutId) persistExerciseOrder(workoutId).catch(err => console.warn('persistExerciseOrder failed', err));
                     }
                 }
-
-        function _onHandleTouchStart(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            _onHandlePointerDown(touch);
-        }
-
-        function _onHandlePointerDown(e) {
-            const handle = e.target.closest('.drag-handle');
-            if (!handle) return;
-            const item = handle.closest('.exercise-item');
-            if (!item) return;
-            _startDrag(e, item);
-        }
-
-        function _startDrag(e, item) {
-            _dragState = {
-                draggingEl: item,
-                container: document.getElementById('exerciseContainer'),
-                placeholder: null,
-                ghost: null,
-                offsetY: 0
-            };
-
-            const rect = item.getBoundingClientRect();
-            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-            _dragState.offsetY = clientY - rect.top;
-
-            const placeholder = document.createElement('div');
-            placeholder.className = 'exercise-item placeholder';
-            placeholder.style.height = rect.height + 'px';
-            item.parentNode.insertBefore(placeholder, item.nextSibling);
-
-            const ghost = item.cloneNode(true);
-            ghost.classList.add('dragging');
-            ghost.style.width = rect.width + 'px';
-            ghost.style.left = rect.left + 'px';
-            ghost.style.top = (clientY - _dragState.offsetY) + 'px';
-            document.body.appendChild(ghost);
-
-            item.style.display = 'none';
-
-            _dragState.placeholder = placeholder;
-            _dragState.ghost = ghost;
-
-            window.addEventListener('touchmove', _onTouchMove, { passive: false });
-            window.addEventListener('pointermove', _onPointerMove);
-            window.addEventListener('touchend', _endDrag);
-            window.addEventListener('pointerup', _endDrag);
-        }
-
-        function _onTouchMove(e) {
-            e.preventDefault();
-            const y = e.touches[0].clientY;
-            _moveGhost(y);
-        }
-
-        function _onPointerMove(e) {
-            const y = e.clientY;
-            _moveGhost(y);
-        }
-
-        function _moveGhost(y) {
-            if (!_dragState) return;
-            const ghost = _dragState.ghost;
-            ghost.style.top = (y - _dragState.offsetY) + 'px';
-
-            const container = _dragState.container;
-            let insertBefore = null;
-            for (const child of Array.from(container.children)) {
-                if (child === _dragState.draggingEl || child === _dragState.placeholder) continue;
-                const r = child.getBoundingClientRect();
-                const mid = r.top + r.height / 2;
-                if (y < mid) { insertBefore = child; break; }
-            }
-            if (insertBefore) container.insertBefore(_dragState.placeholder, insertBefore);
-            else container.appendChild(_dragState.placeholder);
-        }
-
-        function _endDrag() {
-            if (!_dragState) return;
-            const { draggingEl, placeholder, ghost } = _dragState;
-            placeholder.parentNode.insertBefore(draggingEl, placeholder);
-            draggingEl.style.display = '';
-            placeholder.remove();
-            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
-
-            window.removeEventListener('touchmove', _onTouchMove);
-            window.removeEventListener('pointermove', _onPointerMove);
-            window.removeEventListener('touchend', _endDrag);
-            window.removeEventListener('pointerup', _endDrag);
-            _dragState = null;
-        }
 
         async function startSession() {
             const workoutId = parseInt(document.getElementById('workoutSelect').value);
@@ -647,7 +935,127 @@
             viewingIdx = 0;
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
+            const bb = document.getElementById('bottomBar'); if (bb) bb.style.display = 'flex';
+            // reset routineModified state and hide the save option until user edits values
+            routineModified = false;
+            const saveOpt = document.getElementById('saveRoutineOpt'); if (saveOpt) saveOpt.style.display = 'none';
             renderSet();
+        }
+
+        // Render horizontal graph of exercise occurrences (balls + connectors)
+        function renderExerciseGraph() {
+            const graphEl = document.getElementById('exerciseProgressGraph');
+            const countEl = document.getElementById('exerciseCompletedCount');
+            if (!graphEl) return;
+            graphEl.innerHTML = '';
+            if (!sessionSets || sessionSets.length === 0) {
+                if (countEl) countEl.innerText = '';
+                return;
+            }
+
+            // Build occurrences in order and record first index for each occurrence
+            const occs = [];
+            const occMap = {};
+            sessionSets.forEach((s, idx) => {
+                if (!occMap[s.occurrenceId]) {
+                    occMap[s.occurrenceId] = { occurrenceId: s.occurrenceId, startIdx: idx, sets: [], name: s.name, namePT: s.namePT };
+                    occs.push(occMap[s.occurrenceId]);
+                }
+                occMap[s.occurrenceId].sets.push(s);
+            });
+
+            const totalOcc = occs.length;
+            let completedOcc = 0;
+            // Highlight the occurrence that is currently being viewed (not just the active running set)
+            const activeOccId = (sessionSets[viewingIdx] && sessionSets[viewingIdx].occurrenceId) ? sessionSets[viewingIdx].occurrenceId : null;
+            // Determine available width based on the title group (graph is inside it)
+            const titleGroup = document.querySelector('.ex-title-group');
+            let avail = graphEl.clientWidth - 8;
+            if (titleGroup) {
+                avail = Math.max(0, titleGroup.clientWidth - 16);
+            }
+
+            // Base dimensions (unscaled) - tuned to reduce overall width
+            const baseNode = 34; // px
+            const baseConn = 16; // px (reduced)
+            const baseGap = 6; // px between items (reduced)
+            const n = occs.length;
+            const requiredWidth = n * baseNode + (n - 1) * (baseConn + baseGap);
+
+            // Compute scale to fit inside available space; enforce a lower bound so elements remain tappable
+            const scale = (requiredWidth > 0 && avail > 0) ? Math.min(1, avail / requiredWidth) : 1;
+            const nodeSize = Math.max(12, Math.floor(baseNode * scale));
+            const connSize = Math.max(6, Math.floor(baseConn * scale));
+            const gapSize = Math.max(4, Math.floor(baseGap * scale));
+
+            // Create an inner wrapper that will be scaled. This guarantees the whole graph is shrunk proportionally
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.justifyContent = 'center';
+            wrapper.style.gap = gapSize + 'px';
+            wrapper.style.transformOrigin = 'center center';
+            wrapper.style.willChange = 'transform';
+
+            // Build nodes/connectors inside wrapper (unscaled sizes)
+            occs.forEach((occ, i) => {
+                const allDone = occ.sets.every(ss => ss.completed || ss.skipped);
+                const allSkipped = occ.sets.every(ss => ss.skipped && !ss.completed);
+                if (allDone) completedOcc++;
+
+                const node = document.createElement('div');
+                node.className = 'exercise-node' + (allDone ? ' completed' : '') + (allSkipped ? ' skipped' : '') + (occ.occurrenceId === activeOccId ? ' active' : '');
+                node.setAttribute('role', 'button');
+                node.setAttribute('tabindex', '0');
+                // Accessible label for screen readers
+                const labelState = allSkipped ? 'skipped' : (allDone ? 'completed' : 'pending');
+                node.setAttribute('aria-label', `${i + 1} ${labelState}`);
+                // Render an X for fully-skipped occurrences, a check for completed, or index otherwise
+                if (allSkipped) {
+                    node.innerHTML = `<span class="exercise-node-label">&#10005;</span>`; // X
+                } else {
+                    node.innerHTML = allDone ? `<span class="exercise-node-label">&#10003;</span>` : `<span class="exercise-node-label">${i + 1}</span>`;
+                }
+                node.style.width = node.style.height = baseNode + 'px';
+                node.style.fontSize = '14px';
+                node.addEventListener('click', () => {
+                    // When user clicks a graph node, only switch the viewed exercise occurrence
+                    // Do not modify `currentIdx` so the play button behaves like arrow navigation
+                    viewingIdx = occ.startIdx;
+                    renderSet();
+                });
+                node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); node.click(); } });
+
+                wrapper.appendChild(node);
+
+                if (i < occs.length - 1) {
+                    const conn = document.createElement('div');
+                    // Keep connectors neutral regardless of node status
+                    conn.className = 'exercise-connector';
+                    conn.style.width = baseConn + 'px';
+                    conn.style.height = '4px';
+                    wrapper.appendChild(conn);
+                }
+            });
+
+            // Append wrapper and apply scaling transform so the whole graph fits into 'avail'
+            graphEl.appendChild(wrapper);
+            const finalScale = requiredWidth > 0 ? Math.min(1, avail / requiredWidth) : 1;
+            wrapper.style.transform = `scale(${finalScale})`;
+
+            // Allow the graph to overflow slightly so nodes aren't visually cut; set a comfortable height
+            graphEl.style.height = Math.ceil(baseNode * finalScale) + 12 + 'px';
+            graphEl.style.overflow = 'visible';
+
+            if (countEl) countEl.innerText = `${completedOcc}/${totalOcc}`;
+
+            // Re-render on next animation frame to avoid measurement timing issues
+            if (!window._exerciseGraphResizeAttached) {
+                window._exerciseGraphResizeAttached = true;
+                const schedule = () => { try { requestAnimationFrame(renderExerciseGraph); } catch (e) {} };
+                window.addEventListener('resize', schedule);
+                window.addEventListener('orientationchange', schedule);
+            }
         }
 
         async function renderSet() {
@@ -661,10 +1069,20 @@
                 progressEl.style.width = `${total > 0 ? (completed / total) * 100 : 0}%`;
             }
 
+            // Render small exercise-progress graph (balls + connectors)
+            try { renderExerciseGraph(); } catch (e) { console.warn('renderExerciseGraph error', e); }
+
             const viewingSet = sessionSets[viewingIdx];
+            // Defensive: if viewingSet is not yet available, clear the title and bail out.
+            if (!viewingSet) {
+                const titleEl = document.getElementById('currentExName');
+                if (titleEl) titleEl.innerText = '';
+                return;
+            }
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             const displayName = (lang.startsWith('pt') && viewingSet.namePT) ? viewingSet.namePT : viewingSet.name;
-            document.getElementById('currentExName').innerText = displayName;
+            const titleEl = document.getElementById('currentExName');
+            if (titleEl) titleEl.innerText = displayName;
             
             const hasPrev = viewingSet.occurrenceId > sessionSets[0].occurrenceId;
             const hasNext = viewingSet.occurrenceId < sessionSets[sessionSets.length - 1].occurrenceId;
@@ -715,29 +1133,83 @@
             }
 
             const allDone = sessionSets.every(s => s.completed || s.skipped);
-            document.getElementById('finishBtn').style.display = allDone ? "block" : "none";
+
+            // If everything is done, show a clean finished page
+            const finishedView = document.getElementById('finishedView');
+            const playerViewEl = document.getElementById('playerView');
+            const bottomBarEl = document.getElementById('bottomBar');
+            if (allDone) {
+                stopTimer();
+                if (playerViewEl) playerViewEl.style.display = 'none';
+                if (bottomBarEl) bottomBarEl.style.display = 'none';
+                if (finishedView) finishedView.style.display = 'block';
+                return;
+            } else {
+                if (finishedView) finishedView.style.display = 'none';
+                if (playerViewEl) playerViewEl.style.display = 'block';
+                if (bottomBarEl) bottomBarEl.style.display = 'flex';
+            }
+
+            // legacy inline finish button hidden when using finished view
+            const finishBtnEl = document.getElementById('finishBtn');
+            if (finishBtnEl) finishBtnEl.style.display = 'none';
 
             const isActiveEx = currentIdx >= start && currentIdx <= end;
             const allSetsDone = sessionSets.slice(start, end + 1).every(s => s.completed || s.skipped);
 
-            document.querySelector('.player-controls-icons').classList.toggle('hidden', !isActiveEx);
-            document.getElementById('activateExBtn').classList.toggle('hidden', isActiveEx || allSetsDone);
+            // Toggle inline player-controls (if present)
+            const pc = document.querySelector('.player-controls-icons'); if (pc) pc.classList.toggle('hidden', !isActiveEx);
+
+            // Bottom bar controls: show prev/skip/next only when the viewed exercise is the active one.
+            const bbPrev = document.getElementById('bb-prev');
+            const bbSkip = document.getElementById('bb-skip');
+            const bbNext = document.getElementById('bb-next');
+            const actBtn = document.getElementById('activateExBtn');
+            if (isActiveEx) {
+                if (bbPrev) bbPrev.style.display = 'inline-flex';
+                if (bbSkip) bbSkip.style.display = 'inline-flex';
+                if (bbNext) bbNext.style.display = 'inline-flex';
+                if (actBtn) actBtn.style.display = 'none';
+            } else {
+                if (bbPrev) bbPrev.style.display = 'none';
+                if (bbSkip) bbSkip.style.display = 'none';
+                if (bbNext) bbNext.style.display = 'none';
+                if (actBtn) actBtn.style.display = (allSetsDone ? 'none' : 'inline-flex');
+            }
+
+            // Disable prev button when at the first set of the current exercise occurrence
+            if (bbPrev) {
+                // compute start index for the current active occurrence (based on currentIdx)
+                let curStart = currentIdx;
+                while (curStart > 0 && sessionSets[curStart - 1].occurrenceId === sessionSets[currentIdx].occurrenceId) curStart--;
+                bbPrev.disabled = !(currentIdx > curStart);
+                // visually indicate disabled state
+                if (bbPrev.disabled) bbPrev.style.opacity = 0.3; else bbPrev.style.opacity = 1;
+            }
         }
 
         function updateSetData(idx, field, value) {
-            sessionSets[idx][field] = field === 'weight' ? parseFloat(value) || 0 : parseInt(value) || 0;
+            const parsed = field === 'weight' ? parseFloat(value) || 0 : parseInt(value) || 0;
+            const prev = sessionSets[idx] ? sessionSets[idx][field] : undefined;
+            sessionSets[idx][field] = parsed;
+            // If user changed reps/weight, mark routine as modified and show the save checkbox
+            if (parsed !== prev) {
+                routineModified = true;
+                const saveOpt = document.getElementById('saveRoutineOpt');
+                if (saveOpt) saveOpt.style.display = 'flex';
+                const cb = document.getElementById('saveRoutineCheckbox'); if (cb) cb.checked = false;
+            }
             saveSessionState();
         }
 
         function nextSet() {
             sessionSets[currentIdx].completed = true;
             sessionSets[currentIdx].skipped = false;
-            if (currentIdx < sessionSets.length - 1) {
-                const oldOcc = sessionSets[currentIdx].occurrenceId;
-                currentIdx++;
-                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
-                    viewingIdx = currentIdx;
-                }
+            // After completing a set, automatically advance to the next unfinished set (wrap around)
+            const next = findNextUnfinishedIndex(currentIdx);
+            if (next !== -1) {
+                currentIdx = next;
+                viewingIdx = currentIdx;
             }
             renderSet();
         }
@@ -745,12 +1217,11 @@
         function skipSet() {
             sessionSets[currentIdx].skipped = true;
             sessionSets[currentIdx].completed = false;
-            if (currentIdx < sessionSets.length - 1) {
-                const oldOcc = sessionSets[currentIdx].occurrenceId;
-                currentIdx++;
-                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
-                    viewingIdx = currentIdx;
-                }
+            // After skipping a set, automatically advance to the next unfinished set (wrap around)
+            const next = findNextUnfinishedIndex(currentIdx);
+            if (next !== -1) {
+                currentIdx = next;
+                viewingIdx = currentIdx;
             }
             renderSet();
         }
@@ -771,20 +1242,42 @@
                 }
             });
 
-            const nextExIdx = sessionSets.findIndex((s, i) => i > currentIdx && s.exId !== currentExId);
-            if (nextExIdx !== -1) {
-                currentIdx = nextExIdx;
+            // Move to next unfinished set overall (wrap around). If none exist, stay where we are.
+            const next = findNextUnfinishedIndex(currentIdx);
+            if (next !== -1) {
+                currentIdx = next;
+                viewingIdx = currentIdx;
             }
             renderSet();
         }
 
+        // Find the next index of a set that is not completed or skipped, searching forward
+        // from `fromIdx`. If none found after `fromIdx`, search from start up to `fromIdx` (wrap).
+        // Returns -1 when there are no unfinished sets.
+        function findNextUnfinishedIndex(fromIdx) {
+            if (!sessionSets || sessionSets.length === 0) return -1;
+            // search after current index
+            for (let i = fromIdx + 1; i < sessionSets.length; i++) {
+                if (!sessionSets[i].completed && !sessionSets[i].skipped) return i;
+            }
+            // wrap: search from beginning up to fromIdx
+            for (let i = 0; i <= fromIdx; i++) {
+                if (!sessionSets[i].completed && !sessionSets[i].skipped) return i;
+            }
+            return -1;
+        }
+
         function prevSet() {
-            if (currentIdx > 0) {
-                const oldOcc = sessionSets[currentIdx].occurrenceId;
+            if (!sessionSets || sessionSets.length === 0) return;
+            // Only move back within the same exercise occurrence. Do nothing if already at the first set of this exercise.
+            const curOcc = sessionSets[currentIdx].occurrenceId;
+            // find first index of this occurrence
+            let occStart = currentIdx;
+            while (occStart > 0 && sessionSets[occStart - 1].occurrenceId === curOcc) occStart--;
+            if (currentIdx > occStart) {
                 currentIdx--;
-                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
-                    viewingIdx = currentIdx;
-                }
+                // Keep viewing focused on the active set
+                viewingIdx = currentIdx;
                 renderSet();
             }
         }
@@ -829,8 +1322,9 @@
                 const oldRecord = calculateStreaks(existingDates).longest;
                 const newRecord = calculateStreaks([...existingDates, todayStr]).longest;
 
-                // Update the workout template with the values used in this session
-                if (currentWorkoutId) {
+                // Update the workout template with the values used in this session only if user opted in
+                const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
+                if (shouldSaveRoutine && currentWorkoutId) {
                     const workout = await db.routines.get(currentWorkoutId);
                     if (workout) {
                         workout.exerciseIds = workout.exerciseIds.map(item => {
@@ -893,7 +1387,47 @@
             }
         }
 
+        // Save only the routine template changes (update sets/reps/weights), do not log session or redirect
+        async function saveRoutineChanges() {
+            try {
+                await ensureDbOpen();
+                if (!currentWorkoutId) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
+                const workout = await db.routines.get(currentWorkoutId);
+                if (!workout) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
+
+                workout.exerciseIds = workout.exerciseIds.map(item => {
+                    const exId = typeof item === 'object' ? item.id : item;
+                    const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                    const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
+                    if (sessionExSets.length > 0) {
+                        return {
+                            id: exId,
+                            isCustom,
+                            sets: sessionExSets.map(s => ({ reps: s.reps, weight: s.weight }))
+                        };
+                    }
+                    return item;
+                });
+                await db.routines.put(workout);
+                localStorage.setItem('has_local_changes', 'true');
+                alert(GN_I18N.t('routine_saved') || 'Routine saved');
+            } catch (err) {
+                console.error('saveRoutineChanges failed', err);
+                alert(GN_I18N.t('debug_error_prefix') + err.message);
+            }
+        }
+
         init();
+
+        // Wire fixed bottom bar buttons to existing handlers
+        (function wireBottomBar(){
+            const bbPrev = document.getElementById('bb-prev');
+            const bbNext = document.getElementById('bb-next');
+            const bbSkip = document.getElementById('bb-skip');
+            if (bbPrev) bbPrev.addEventListener('click', ()=>{ try { prevSet(); } catch(e){} });
+            if (bbNext) bbNext.addEventListener('click', ()=>{ try { nextSet(); } catch(e){} });
+            if (bbSkip) bbSkip.addEventListener('click', ()=>{ try { skipSet(); } catch(e){} });
+        })();
         </script>
         <script>
         // Prevent screen from sleeping using Wake Lock API, with silent-audio fallback for iOS
