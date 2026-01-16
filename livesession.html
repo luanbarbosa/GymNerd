@@ -37,11 +37,17 @@
         .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; }
         .player-img { background: #fff; }
         /* Reorder UI */
-        .reorder-btn { display: none; border: none; background: rgba(255,255,255,0.03); color: var(--text); padding: 6px 8px; border-radius: 8px; cursor: pointer; font-weight: 800; }
-        .reorder-btn:active { transform: scale(0.96); }
-        .exercise-list.reorder-mode .reorder-btn { display: inline-flex; }
+        .reorder-btn { display: inline-flex; align-items: center; gap:8px; border: none; background: rgba(255,255,255,0.02); color: var(--text-dim); padding: 8px 10px; border-radius: 10px; cursor: pointer; font-weight: 800; transition: background 0.12s, box-shadow 0.12s, color 0.12s, transform 0.08s; }
+        .reorder-btn:active { transform: scale(0.98); }
+        .reorder-btn svg { stroke: currentColor; transition: stroke 0.12s, transform 0.12s; }
 
-        .drag-handle { display:inline-flex; border:none; background:transparent; color:var(--text-dim); font-size:1.1rem; padding: 6px 8px; border-radius:8px; }
+        /* Hide drag handle by default; show when reorder mode is active */
+        .drag-handle { display: none; border: none; background: transparent; color: var(--text-dim); font-size: 1.1rem; padding: 6px 8px; border-radius: 8px; }
+        .exercise-list.reorder-mode .drag-handle { display: inline-flex; }
+        .reorder-btn .label { font-weight: 800; color: var(--text-dim); font-size: 0.95rem; }
+        .reorder-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+        .reorder-btn.active .label { color: #fff; }
+        .reorder-btn:focus { outline: 2px solid rgba(59,130,246,0.12); outline-offset: 2px; }
         .exercise-item.placeholder { border: 2px dashed rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
         .dragging { position: fixed; z-index: 1000; pointer-events: none; transform: scale(1.02); box-shadow: 0 10px 30px rgba(0,0,0,0.4); opacity: 0.98; border-radius: 12px; }
         .checkbox-wrapper { margin-left: auto; }
@@ -122,6 +128,8 @@
         .nav-ex-btn:active:not(:disabled) { transform: scale(0.8); color: var(--text); }
 
         .finish-btn { background: var(--success); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .remove-ex-btn { background: transparent; border: none; color: var(--danger); display: inline-flex; align-items: center; padding: 6px; border-radius: 8px; cursor: pointer; }
+        .remove-ex-btn svg { display: block; }
         
         .hidden { display: none !important; }
     </style>
@@ -149,6 +157,13 @@
                 <select id="workoutSelect" onchange="loadExercises()">
                     <option value="" data-i18n="choose_routine_placeholder"></option>
                 </select>
+
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button id="toggleSortBtn" type="button" class="reorder-btn" style="display:none" onclick="toggleSortMode()" title="Ordenar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="14" y2="12"></line><line x1="4" y1="17" x2="10" y2="17"></line></svg>
+                        <span class="label">Ordenar</span>
+                    </button>
+                </div>
 
                 <div id="exerciseContainer" class="exercise-list"></div>
                 <button id="startBtn" class="start-btn" onclick="startSession()" data-i18n="start_session"></button>
@@ -331,6 +346,11 @@
             if (!workoutId) {
                 container.innerHTML = "";
                 startBtn.style.display = "none";
+                const toggleBtn = document.getElementById('toggleSortBtn');
+                if (toggleBtn) {
+                    toggleBtn.style.display = 'none';
+                }
+                container.classList.remove('reorder-mode');
                 return;
             }
 
@@ -366,19 +386,28 @@
                 const displayName = (lang === 'pt' && ex.namePT) ? ex.namePT : ex.name;
                 const div = document.createElement('div');
                 div.className = 'exercise-item';
+                div.dataset.id = id;
+                div.dataset.iscustom = isCustom;
                 div.innerHTML = `
                     <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
                     <div style="flex:1; min-width:0;"><strong>${displayName}</strong>${details}</div>
                         <div style="display:flex; gap:8px; align-items:center;">
-                        <button class="drag-handle" title="${GN_I18N.t('drag_to_reorder')}">☰</button>
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" class="ex-check" value="${id}" data-iscustom="${isCustom}" checked>
-                        </div>
+                        <button type="button" class="remove-ex-btn" title="Remover" onclick="this.closest('.exercise-item').remove()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                        <button class="drag-handle" title="${GN_I18N.t ? GN_I18N.t('drag_to_reorder') : 'Drag to reorder'}">☰</button>
                     </div>
                 `;
                 container.appendChild(div);
             }
             startBtn.style.display = "block";
+            const toggleBtn = document.getElementById('toggleSortBtn');
+            if (toggleBtn) {
+                toggleBtn.style.display = 'inline-flex';
+                // ensure reorder mode is reset when loading a new routine
+                document.getElementById('exerciseContainer').classList.remove('reorder-mode');
+                toggleBtn.classList.remove('active');
+            }
             // translate any newly inserted elements (option/labels inside this container)
             try { GN_I18N.applyTranslations(document.getElementById('workoutSelect').parentNode); } catch(e){}
             attachDragHandlers();
@@ -397,6 +426,56 @@
                 h._dragAttached = true;
             });
         }
+
+                // Toggle sort mode for the exercise list. When turning off, persist order to DB.
+                async function persistExerciseOrder(workoutId) {
+                    const container = document.getElementById('exerciseContainer');
+                    if (!container) return;
+                    const children = [...container.querySelectorAll('.exercise-item')];
+                    const workout = await db.routines.get(workoutId);
+                    if (!workout) return;
+                    const original = workout.exerciseIds || [];
+
+                    const used = new Array(original.length).fill(false);
+                    const newOrder = children.map((el, idx) => {
+                        const id = el.dataset.id ? parseInt(el.dataset.id) : null;
+                        const isCustom = el.dataset.iscustom === 'true';
+                        let matchIndex = -1;
+                        for (let i = 0; i < original.length; i++) {
+                            const item = original[i];
+                            const itemId = typeof item === 'object' ? item.id : item;
+                            const itemIsCustom = typeof item === 'object' ? !!item.isCustom : false;
+                            if (!used[i] && itemId === id && itemIsCustom === isCustom) { matchIndex = i; break; }
+                        }
+                        let newItem;
+                        if (matchIndex >= 0) {
+                            used[matchIndex] = true;
+                            const origItem = original[matchIndex];
+                            if (typeof origItem === 'object') {
+                                newItem = { ...origItem };
+                            } else {
+                                newItem = origItem;
+                            }
+                        } else {
+                            newItem = { id, isCustom };
+                        }
+                        return newItem;
+                    });
+                    await db.routines.update(workoutId, { exerciseIds: newOrder });
+                    localStorage.setItem('has_local_changes', 'true');
+                }
+
+                function toggleSortMode() {
+                    const container = document.getElementById('exerciseContainer');
+                    if (!container) return;
+                    const btn = document.getElementById('toggleSortBtn');
+                    const isActive = container.classList.toggle('reorder-mode');
+                    if (btn) btn.classList.toggle('active', isActive);
+                    if (!isActive) {
+                        const workoutId = parseInt(document.getElementById('workoutSelect').value);
+                        if (workoutId) persistExerciseOrder(workoutId).catch(err => console.warn('persistExerciseOrder failed', err));
+                    }
+                }
 
         function _onHandleTouchStart(e) {
             e.preventDefault();
@@ -504,19 +583,18 @@
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
             ];
             const container = document.getElementById('exerciseContainer');
-            const selectedChecks = Array.from(container.querySelectorAll('.exercise-item')).map(div => div.querySelector('.ex-check')).filter(ch => ch && ch.checked);
-            
-            if (selectedChecks.length === 0) return alert(GN_I18N.t('please_select_exercise'));
+            const visibleItems = Array.from(container.querySelectorAll('.exercise-item'));
+            if (visibleItems.length === 0) return alert(GN_I18N.t('please_select_exercise'));
 
             sessionSets = [];
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             document.getElementById('playerWorkoutTitle').innerText = (lang.startsWith('pt') && workout.namePT) ? workout.namePT : workout.name;
 
             let occurrenceId = 0;
-            for (const check of selectedChecks) {
+            for (const itemDiv of visibleItems) {
                 occurrenceId++;
-                const exId = parseInt(check.value);
-                const isCustom = check.dataset.iscustom === 'true';
+                const exId = parseInt(itemDiv.dataset.id);
+                const isCustom = itemDiv.dataset.iscustom === 'true';
                 const ex = allExercises.find(e => e.id === exId && !!e.isCustom === isCustom);
                 const workoutEx = workout.exerciseIds.find(we => {
                     const weId = typeof we === 'object' ? we.id : we;
