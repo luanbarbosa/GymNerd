@@ -328,7 +328,7 @@
                 const group = groups[type] || [];
                 for (let j = 0; j < group.length; j++) {
                     const ex = group[j];
-                    const ptLine = (!(lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? ('<div class="exercise-name-pt">' + ex.namePT + '</div>') : '';
+                    const ptLine = ((lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? ('<div class="exercise-name-pt">' + ex.namePT + '</div>') : '';
                     const customBadge = ex.isCustom ? '<span class="custom-badge">Personalizado</span>' : '';
                     html += '<div class="exercise-card" onmousedown="startPressTimer(this, ' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', this, event)">' +
                                 '<img src="' + (images[ex.imageId] || defaultImage) + '" class="ex-thumb">' +

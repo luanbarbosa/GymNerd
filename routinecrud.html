@@ -106,7 +106,14 @@
             <input type="text" id="exNamePT" placeholder="ex.: Supino Reto">
             <label>Tipo</label>
             <select id="exType">
-                <option value="chest">Peito</option><option value="leg">Pernas</option><option value="back">Costas</option><option value="shoulder">Ombros</option><option value="arm">Braços</option>
+                <option value="chest">Peito</option>
+                <option value="leg">Pernas</option>
+                <option value="legs">Legs</option>
+                <option value="back">Costas</option>
+                <option value="shoulder">Ombros</option>
+                <option value="arm">Braços</option>
+                <option value="abs">Abdominais</option>
+                <option value="cardio">Cardio</option>
             </select>
             <label>Imagem</label>
             <input type="file" id="exImageInput" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
@@ -214,16 +221,62 @@
         function closeSearchModal() { document.getElementById('searchModal').classList.add('hidden'); }
 
         function updateModalResults() {
-            const query = document.getElementById('modalSearchInput').value.toLowerCase();
+            const rawQuery = (document.getElementById('modalSearchInput').value || '').trim();
             const lang = (GN_I18N && GN_I18N.safeGetLang) ? GN_I18N.safeGetLang() : (navigator.language || 'en');
             const resultsDiv = document.getElementById('modalResults');
-            const filtered = allExercises.filter(ex => ex.name.toLowerCase().includes(query) || (ex.namePT && ex.namePT.toLowerCase().includes(query)));
+
+            // Normalizes strings: lowercase, remove diacritics, remove non-alphanumerics
+            function normalizeForSearch(s) {
+                if (!s) return '';
+                try {
+                        return s.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+                } catch (e) {
+                    return s.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+                }
+            }
+
+            // Subsequence match (characters in order, not necessarily contiguous)
+            function isSubsequence(needle, haystack) {
+                if (!needle) return false;
+                let i = 0, j = 0;
+                while (i < needle.length && j < haystack.length) {
+                    if (needle[i] === haystack[j]) i++;
+                    j++;
+                }
+                return i === needle.length;
+            }
+
+            const qNorm = normalizeForSearch(rawQuery);
+            const tokens = rawQuery.split(/\s+/).filter(Boolean).map(t => normalizeForSearch(t)).filter(Boolean);
+
+            const filtered = allExercises.filter(ex => {
+                // If no query, include all
+                if (!qNorm) return true;
+                const name = normalizeForSearch(ex.name || '');
+                const namePT = normalizeForSearch(ex.namePT || '');
+
+                // direct contains match on normalized strings
+                if (name.includes(qNorm) || namePT.includes(qNorm)) return true;
+
+                // tokens: if any token matches as subsequence in either name, accept (loose match)
+                for (const t of tokens) {
+                    if (!t) continue;
+                    if (isSubsequence(t, name) || isSubsequence(t, namePT)) return true;
+                }
+
+                // initials fallback: e.g., 'tmr' -> 'treadmill running'
+                const initials = (ex.name || '').split(/\s+/).map(w => (w[0] || '')).join('');
+                if (normalizeForSearch(initials).includes(qNorm)) return true;
+
+                return false;
+            });
+
             if (filtered.length === 0) { resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Nenhum exercício encontrado</div>'; return; }
             const groups = filtered.reduce((acc, ex) => { if (!acc[ex.type]) acc[ex.type] = []; acc[ex.type].push(ex); return acc; }, {});
             resultsDiv.innerHTML = Object.keys(groups).sort().map(type => {
                 const displayType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(type) : type;
                 const itemsHtml = groups[type].map(ex => {
-                    const ptLine = (!(lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? `<div style="color:var(--text-dim); font-size:0.85rem">${ex.namePT}</div>` : '';
+                    const ptLine = ((lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? `<div style="color:var(--text-dim); font-size:0.85rem">${ex.namePT}</div>` : '';
                     const editBtn = ex.isCustom ? `<button style="background:none;border:none;color:var(--primary);" onclick="editExercise(${ex.id})">Editar</button>` : '';
                     return `<div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)" oncontextmenu="event.preventDefault()">
                                 <img src="${images[ex.imageId] || ''}" class="ex-thumb">
