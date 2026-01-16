@@ -89,10 +89,17 @@
         .set-label { font-weight: bold; color: var(--text-dim); font-size: 0.8rem; }
 
         .player-controls-icons { display: flex; justify-content: center; gap: 20px; margin-top: 25px; }
+        /* Bottom action bar (fixed) */
+        .BottomActionBar{position:fixed;left:0;right:0;bottom:0;height:84px;background:linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));backdrop-filter:blur(6px);display:flex;align-items:center;padding:12px 16px;gap:12px}
+        .BottomActionBar .ba-left{display:none}
+        .BottomActionBar .ba-center{display:flex;gap:20px;flex:1;align-items:center;justify-content:center;position:relative;left:auto;transform:none}
+        .BottomActionBar .confirm{width:56px;height:56px;border-radius:14px;background:linear-gradient(90deg,var(--primary),#2563eb);border:none;color:white;font-size:22px;display:flex;align-items:center;justify-content:center}
+        /* Play button inside bottom bar: center and wrap to its title */
+        .BottomActionBar #activateExBtn{display:none;box-sizing:border-box;display:inline-flex;padding:12px 56px;border-radius:14px;font-weight:800;background:var(--primary-grad);color:#fff;flex:0 0 auto;width:auto;min-width:140px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;align-items:center;justify-content:center;font-size:16px}
         .icon-btn { 
-            width: 60px; 
-            height: 60px; 
-            border-radius: 50%; 
+            width: 64px; 
+            height: 64px; 
+            border-radius: 14px; 
             border: none; 
             display: flex; 
             align-items: center; 
@@ -105,8 +112,8 @@
             user-select: none;
         }
         .icon-btn:active { transform: scale(0.85); box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
-        .icon-btn.prev { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-dim); }
-        .icon-btn.skip { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .icon-btn.prev { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim); }
+        .icon-btn.skip { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.18); }
         .icon-btn.next { background: var(--primary-grad); }
 
         .nav-ex-btn {
@@ -200,24 +207,50 @@
             <div class="card player-card">
                 <img id="playerImg" src="" class="player-img">
                 <div id="setsContainer"></div>
-                <button id="activateExBtn" class="start-btn" style="margin-top: 20px; display: block;" onclick="activateExercise()" data-i18n="play_exercise"></button>
-                <div class="player-controls-icons">
-                    <button class="icon-btn prev" onclick="prevSet()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    </button>
-                    <button class="icon-btn skip" onclick="skipSet()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                    <button id="nextBtn" class="icon-btn next" onclick="nextSet()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </button>
-                </div>
+                <!-- Player controls moved to fixed bottom bar -->
                 <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()" data-i18n="finish_routine"></button>
             </div>
         </div>
     </div>
 
-    <script>
+    
+        <!-- Fixed bottom action bar for player controls -->
+        <aside id="bottomBar" class="BottomActionBar" role="region" aria-label="Player actions" style="display:none;">
+            <div class="ba-center">
+                <button id="bb-prev" class="icon-btn prev" title="Previous">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button id="bb-skip" class="icon-btn skip" title="Skip">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+                <button id="activateExBtn" class="start-btn" style="display:none;" onclick="activateExercise()" data-i18n="play_exercise">Play</button>
+                <button id="bb-next" class="icon-btn next" title="Complete">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Finished view shown when all exercises are completed -->
+        <div id="finishedView" style="display:none; padding:20px; max-width:500px; margin: 80px auto 120px;">
+            <div class="card" style="text-align:center; padding:30px;">
+                <h2 style="margin-top:0;">Great job!</h2>
+                <p style="color:var(--text-dim); margin:10px 0 20px;">You've completed all exercises for this session.</p>
+                <div style="display:flex; gap:10px; justify-content:center; align-items:center; flex-direction:column;">
+                    <div id="saveRoutineOpt" style="display:none; margin-bottom:12px; width:100%; display:flex; flex-direction:column; align-items:center;">
+                        <div style="color:var(--text-dim); font-size:0.9rem; margin-bottom:8px; text-align:center;">
+                            ⚠️ You updated some values — should we also update the routine or is this a one-time thing? <br><small style="color:var(--text-dim);">(Note: statistics will always be updated)</small>
+                        </div>
+                        <label style="display:flex; gap:10px; align-items:center; color:var(--text);">
+                            <input id="saveRoutineCheckbox" type="checkbox" />
+                            <span>Save changes to routine</span>
+                        </label>
+                    </div>
+                    <button id="finishRoutineBtn" class="finish-btn" style="min-width:140px; width:100%;" onclick="finishSession()">Finish routine</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
 
         let sessionSets = [];
         let currentIdx = 0;
@@ -225,6 +258,7 @@
         let currentWorkoutId = null;
         let timerInterval = null;
         let seconds = 0;
+        let routineModified = false;
 
         function formatTime(s) {
             const minutes = Math.floor(s / 60).toString().padStart(2, '0');
@@ -313,6 +347,10 @@
 
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
+            const bb = document.getElementById('bottomBar'); if (bb) bb.style.display = 'flex';
+            // reset routine modified flag on resume; checkbox hidden until user changes values
+            routineModified = false;
+            const saveOpt = document.getElementById('saveRoutineOpt'); if (saveOpt) saveOpt.style.display = 'none';
                 // Try to keep screen awake: prefer Wake Lock API, otherwise start silent audio (iOS fallback)
                 (async () => {
                     try {
@@ -647,6 +685,10 @@
             viewingIdx = 0;
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
+            const bb = document.getElementById('bottomBar'); if (bb) bb.style.display = 'flex';
+            // reset routineModified state and hide the save option until user edits values
+            routineModified = false;
+            const saveOpt = document.getElementById('saveRoutineOpt'); if (saveOpt) saveOpt.style.display = 'none';
             renderSet();
         }
 
@@ -715,29 +757,83 @@
             }
 
             const allDone = sessionSets.every(s => s.completed || s.skipped);
-            document.getElementById('finishBtn').style.display = allDone ? "block" : "none";
+
+            // If everything is done, show a clean finished page
+            const finishedView = document.getElementById('finishedView');
+            const playerViewEl = document.getElementById('playerView');
+            const bottomBarEl = document.getElementById('bottomBar');
+            if (allDone) {
+                stopTimer();
+                if (playerViewEl) playerViewEl.style.display = 'none';
+                if (bottomBarEl) bottomBarEl.style.display = 'none';
+                if (finishedView) finishedView.style.display = 'block';
+                return;
+            } else {
+                if (finishedView) finishedView.style.display = 'none';
+                if (playerViewEl) playerViewEl.style.display = 'block';
+                if (bottomBarEl) bottomBarEl.style.display = 'flex';
+            }
+
+            // legacy inline finish button hidden when using finished view
+            const finishBtnEl = document.getElementById('finishBtn');
+            if (finishBtnEl) finishBtnEl.style.display = 'none';
 
             const isActiveEx = currentIdx >= start && currentIdx <= end;
             const allSetsDone = sessionSets.slice(start, end + 1).every(s => s.completed || s.skipped);
 
-            document.querySelector('.player-controls-icons').classList.toggle('hidden', !isActiveEx);
-            document.getElementById('activateExBtn').classList.toggle('hidden', isActiveEx || allSetsDone);
+            // Toggle inline player-controls (if present)
+            const pc = document.querySelector('.player-controls-icons'); if (pc) pc.classList.toggle('hidden', !isActiveEx);
+
+            // Bottom bar controls: show prev/skip/next only when the viewed exercise is the active one.
+            const bbPrev = document.getElementById('bb-prev');
+            const bbSkip = document.getElementById('bb-skip');
+            const bbNext = document.getElementById('bb-next');
+            const actBtn = document.getElementById('activateExBtn');
+            if (isActiveEx) {
+                if (bbPrev) bbPrev.style.display = 'inline-flex';
+                if (bbSkip) bbSkip.style.display = 'inline-flex';
+                if (bbNext) bbNext.style.display = 'inline-flex';
+                if (actBtn) actBtn.style.display = 'none';
+            } else {
+                if (bbPrev) bbPrev.style.display = 'none';
+                if (bbSkip) bbSkip.style.display = 'none';
+                if (bbNext) bbNext.style.display = 'none';
+                if (actBtn) actBtn.style.display = (allSetsDone ? 'none' : 'inline-flex');
+            }
+
+            // Disable prev button when at the first set of the current exercise occurrence
+            if (bbPrev) {
+                // compute start index for the current active occurrence (based on currentIdx)
+                let curStart = currentIdx;
+                while (curStart > 0 && sessionSets[curStart - 1].occurrenceId === sessionSets[currentIdx].occurrenceId) curStart--;
+                bbPrev.disabled = !(currentIdx > curStart);
+                // visually indicate disabled state
+                if (bbPrev.disabled) bbPrev.style.opacity = 0.3; else bbPrev.style.opacity = 1;
+            }
         }
 
         function updateSetData(idx, field, value) {
-            sessionSets[idx][field] = field === 'weight' ? parseFloat(value) || 0 : parseInt(value) || 0;
+            const parsed = field === 'weight' ? parseFloat(value) || 0 : parseInt(value) || 0;
+            const prev = sessionSets[idx] ? sessionSets[idx][field] : undefined;
+            sessionSets[idx][field] = parsed;
+            // If user changed reps/weight, mark routine as modified and show the save checkbox
+            if (parsed !== prev) {
+                routineModified = true;
+                const saveOpt = document.getElementById('saveRoutineOpt');
+                if (saveOpt) saveOpt.style.display = 'flex';
+                const cb = document.getElementById('saveRoutineCheckbox'); if (cb) cb.checked = false;
+            }
             saveSessionState();
         }
 
         function nextSet() {
             sessionSets[currentIdx].completed = true;
             sessionSets[currentIdx].skipped = false;
-            if (currentIdx < sessionSets.length - 1) {
-                const oldOcc = sessionSets[currentIdx].occurrenceId;
-                currentIdx++;
-                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
-                    viewingIdx = currentIdx;
-                }
+            // After completing a set, automatically advance to the next unfinished set (wrap around)
+            const next = findNextUnfinishedIndex(currentIdx);
+            if (next !== -1) {
+                currentIdx = next;
+                viewingIdx = currentIdx;
             }
             renderSet();
         }
@@ -745,12 +841,11 @@
         function skipSet() {
             sessionSets[currentIdx].skipped = true;
             sessionSets[currentIdx].completed = false;
-            if (currentIdx < sessionSets.length - 1) {
-                const oldOcc = sessionSets[currentIdx].occurrenceId;
-                currentIdx++;
-                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
-                    viewingIdx = currentIdx;
-                }
+            // After skipping a set, automatically advance to the next unfinished set (wrap around)
+            const next = findNextUnfinishedIndex(currentIdx);
+            if (next !== -1) {
+                currentIdx = next;
+                viewingIdx = currentIdx;
             }
             renderSet();
         }
@@ -771,20 +866,42 @@
                 }
             });
 
-            const nextExIdx = sessionSets.findIndex((s, i) => i > currentIdx && s.exId !== currentExId);
-            if (nextExIdx !== -1) {
-                currentIdx = nextExIdx;
+            // Move to next unfinished set overall (wrap around). If none exist, stay where we are.
+            const next = findNextUnfinishedIndex(currentIdx);
+            if (next !== -1) {
+                currentIdx = next;
+                viewingIdx = currentIdx;
             }
             renderSet();
         }
 
+        // Find the next index of a set that is not completed or skipped, searching forward
+        // from `fromIdx`. If none found after `fromIdx`, search from start up to `fromIdx` (wrap).
+        // Returns -1 when there are no unfinished sets.
+        function findNextUnfinishedIndex(fromIdx) {
+            if (!sessionSets || sessionSets.length === 0) return -1;
+            // search after current index
+            for (let i = fromIdx + 1; i < sessionSets.length; i++) {
+                if (!sessionSets[i].completed && !sessionSets[i].skipped) return i;
+            }
+            // wrap: search from beginning up to fromIdx
+            for (let i = 0; i <= fromIdx; i++) {
+                if (!sessionSets[i].completed && !sessionSets[i].skipped) return i;
+            }
+            return -1;
+        }
+
         function prevSet() {
-            if (currentIdx > 0) {
-                const oldOcc = sessionSets[currentIdx].occurrenceId;
+            if (!sessionSets || sessionSets.length === 0) return;
+            // Only move back within the same exercise occurrence. Do nothing if already at the first set of this exercise.
+            const curOcc = sessionSets[currentIdx].occurrenceId;
+            // find first index of this occurrence
+            let occStart = currentIdx;
+            while (occStart > 0 && sessionSets[occStart - 1].occurrenceId === curOcc) occStart--;
+            if (currentIdx > occStart) {
                 currentIdx--;
-                if (sessionSets[currentIdx].occurrenceId !== oldOcc) {
-                    viewingIdx = currentIdx;
-                }
+                // Keep viewing focused on the active set
+                viewingIdx = currentIdx;
                 renderSet();
             }
         }
@@ -829,8 +946,9 @@
                 const oldRecord = calculateStreaks(existingDates).longest;
                 const newRecord = calculateStreaks([...existingDates, todayStr]).longest;
 
-                // Update the workout template with the values used in this session
-                if (currentWorkoutId) {
+                // Update the workout template with the values used in this session only if user opted in
+                const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
+                if (shouldSaveRoutine && currentWorkoutId) {
                     const workout = await db.routines.get(currentWorkoutId);
                     if (workout) {
                         workout.exerciseIds = workout.exerciseIds.map(item => {
@@ -893,7 +1011,47 @@
             }
         }
 
+        // Save only the routine template changes (update sets/reps/weights), do not log session or redirect
+        async function saveRoutineChanges() {
+            try {
+                await ensureDbOpen();
+                if (!currentWorkoutId) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
+                const workout = await db.routines.get(currentWorkoutId);
+                if (!workout) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
+
+                workout.exerciseIds = workout.exerciseIds.map(item => {
+                    const exId = typeof item === 'object' ? item.id : item;
+                    const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                    const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
+                    if (sessionExSets.length > 0) {
+                        return {
+                            id: exId,
+                            isCustom,
+                            sets: sessionExSets.map(s => ({ reps: s.reps, weight: s.weight }))
+                        };
+                    }
+                    return item;
+                });
+                await db.routines.put(workout);
+                localStorage.setItem('has_local_changes', 'true');
+                alert(GN_I18N.t('routine_saved') || 'Routine saved');
+            } catch (err) {
+                console.error('saveRoutineChanges failed', err);
+                alert(GN_I18N.t('debug_error_prefix') + err.message);
+            }
+        }
+
         init();
+
+        // Wire fixed bottom bar buttons to existing handlers
+        (function wireBottomBar(){
+            const bbPrev = document.getElementById('bb-prev');
+            const bbNext = document.getElementById('bb-next');
+            const bbSkip = document.getElementById('bb-skip');
+            if (bbPrev) bbPrev.addEventListener('click', ()=>{ try { prevSet(); } catch(e){} });
+            if (bbNext) bbNext.addEventListener('click', ()=>{ try { nextSet(); } catch(e){} });
+            if (bbSkip) bbSkip.addEventListener('click', ()=>{ try { skipSet(); } catch(e){} });
+        })();
         </script>
         <script>
         // Prevent screen from sleeping using Wake Lock API, with silent-audio fallback for iOS
