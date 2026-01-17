@@ -497,7 +497,16 @@
             tabsContainer.innerHTML = '';
             if (!workouts || workouts.length === 0) {
                 const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_routines_placeholder') : 'Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.';
-                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">' + msg + '</div>';
+                content.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">'
+                    + '<svg width="180" height="96" viewBox="0 0 180 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">'
+                    + '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">'
+                    + '<rect x="6" y="26" width="24" height="44" rx="4"></rect>'
+                    + '<rect x="150" y="26" width="24" height="44" rx="4"></rect>'
+                    + '<rect x="36" y="36" width="108" height="24" rx="6" fill="currentColor" opacity="0.06"></rect>'
+                    + '<line x1="30" y1="48" x2="36" y2="48"></line>'
+                    + '<line x1="144" y1="48" x2="150" y2="48"></line>'
+                    + '</g></svg>'
+                    + '<div style="margin-top:12px;">' + msg + '</div></div>';
                 return;
             }
             workouts.forEach((w, i) => {
