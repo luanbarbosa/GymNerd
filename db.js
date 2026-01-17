@@ -75,35 +75,89 @@ async function initializeCatalog() {
             db.catalog_exercises.count(),
             db.catalog_images.count()
         ]);
-        
-        // Only fetch if one of the tables is empty
-        if (exCount > 0 && imgCount > 0) return;
-
+        // Fetch remote catalog and only update local catalog tables when content changed
         const [exResp, imgResp] = await Promise.all([
             fetch('https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/main/catalog/exercises.json'),
             fetch('https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/main/catalog/images.json')
         ]);
-        
+
         if (!exResp.ok || !imgResp.ok) return;
-        
+
         const exercises = await exResp.json();
         const fetchedImages = await imgResp.json();
-        // Ensure image data are valid data URIs. Some sources provide raw base64 without the `data:` prefix.
+
+        // Normalize image data URIs
         const images = fetchedImages.map(img => ({
             ...img,
             data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
         }));
-        
-        // Negate IDs for catalog exercises to distinguish them from user-created ones
-        const catalogExercises = exercises.map(ex => ({
-            ...ex,
-            id: -ex.id
-        }));
+
+        // Compute a hash of the fetched catalog (exercises + images) to detect changes.
+        // For images that reference remote URLs (img.url), include a signature (ETag / Last-Modified / content hash)
+        async function sha256HexFromArrayBuffer(buf) {
+            const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+            const arr = Array.from(new Uint8Array(hashBuf));
+            return arr.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function sha256Hex(str) {
+            const enc = new TextEncoder().encode(str);
+            return sha256HexFromArrayBuffer(enc.buffer);
+        }
+
+        async function getImageSignature(img) {
+            // Prefer embedded data if present
+            if (img.data) return img.data;
+            if (!img.url) return JSON.stringify(img);
+
+            try {
+                // Try HEAD first to read ETag or Last-Modified without fetching full body
+                const headResp = await fetch(img.url, { method: 'HEAD' });
+                if (headResp && headResp.ok) {
+                    const etag = headResp.headers.get('ETag');
+                    const lm = headResp.headers.get('Last-Modified');
+                    if (etag) return `url:${img.url}|etag:${etag}`;
+                    if (lm) return `url:${img.url}|lm:${lm}`;
+                }
+
+                // Fallback to GET and hash the bytes
+                const getResp = await fetch(img.url);
+                if (!getResp.ok) return `url:${img.url}|status:${getResp.status}`;
+                const ab = await getResp.arrayBuffer();
+                const h = await sha256HexFromArrayBuffer(ab);
+                return `url:${img.url}|hash:${h}`;
+            } catch (e) {
+                return `url:${img.url}|error:${e.message}`;
+            }
+        }
+
+        const imageSignatures = await Promise.all(fetchedImages.map(getImageSignature));
+
+        const combined = JSON.stringify({ exercises, images: imageSignatures });
+        const newHash = await sha256Hex(combined);
+        const storedHash = localStorage.getItem('catalog_hash');
+
+        // If catalog tables exist and the remote content hasn't changed, skip updating
+        if (exCount > 0 && imgCount > 0 && storedHash === newHash) return;
+
+        // Prepare catalog exercises with negative IDs to avoid clashing with user-created items
+        const catalogExercises = exercises.map(ex => ({ ...ex, id: -ex.id }));
 
         await db.transaction('rw', db.catalog_exercises, db.catalog_images, async () => {
-            if (exCount === 0) await db.catalog_exercises.bulkAdd(catalogExercises);
-            if (imgCount === 0) await db.catalog_images.bulkAdd(images);
+            // Replace catalog tables when remote changed or tables are empty
+            await db.catalog_exercises.clear();
+            await db.catalog_images.clear();
+            if (catalogExercises.length > 0) await db.catalog_exercises.bulkAdd(catalogExercises);
+            if (images.length > 0) await db.catalog_images.bulkAdd(images);
         });
+
+        localStorage.setItem('catalog_hash', newHash);
+        localStorage.setItem('catalog_last_update', new Date().toISOString());
+        try {
+            console.info(`Catalog updated from remote (hash: ${newHash}). ${catalogExercises.length} exercises, ${images.length} images written to DB.`);
+        } catch (e) {
+            // ignore logging errors in very old browsers
+        }
     } catch (err) {
         console.error("Catalog initialization failed:", err);
     }
