@@ -2,6 +2,27 @@
     window.GN_I18N = {
         translations: {
             en: {
+                new_routine_btn: '+ New Routine',
+                no_routines_placeholder: 'No routines yet. Click <strong>New Routine</strong> to create one.',
+                routine_not_found: 'Routine not found.',
+                page_routine_new: 'New Routine',
+                page_routine_edit: 'Edit Routine',
+                routine_name_label: 'Routine Name',
+                routine_name_placeholder: 'e.g.: Upper Push',
+                routine_exercises_label: 'Routine Exercises',
+                add_exercise: '🔍 Add Exercise',
+                save_routine: 'Save Routine',
+                cancel: 'Cancel',
+                add_exercise_modal_title: 'Add Exercise',
+                custom_exercise_title: 'Custom Exercise',
+                exercise_name_label: 'Name',
+                exercise_name_pt_label: 'Name (Portuguese)',
+                exercise_type_label: 'Type',
+                exercise_image_label: 'Image',
+                save_exercise_btn: 'Save Exercise',
+                search_placeholder: 'Search by name...',
+                selected: 'selected',
+                add_selected: 'Add Selected',
                 title_main: 'GymNerd',
                 sync_pending: '☁️ Sync Pending Changes',
                 start_routine: '🚀 Start Routine',
@@ -157,6 +178,27 @@
                 drag_to_reorder: 'Drag to reorder'
             },
             pt: {
+                new_routine_btn: '+ Nova Rotina',
+                no_routines_placeholder: 'Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.',
+                routine_not_found: 'Rotina não encontrada.',
+                page_routine_new: 'Nova Rotina',
+                page_routine_edit: 'Editar Rotina',
+                routine_name_label: 'Nome da Rotina',
+                routine_name_placeholder: 'ex.: Empurrão Superior',
+                routine_exercises_label: 'Exercícios da Rotina',
+                add_exercise: '🔍 Adicionar Exercício',
+                save_routine: 'Salvar Rotina',
+                cancel: 'Cancelar',
+                add_exercise_modal_title: 'Adicionar Exercício',
+                custom_exercise_title: 'Exercício Personalizado',
+                exercise_name_label: 'Nome',
+                exercise_name_pt_label: 'Nome (Português)',
+                exercise_type_label: 'Tipo',
+                exercise_image_label: 'Imagem',
+                save_exercise_btn: 'Salvar Exercício',
+                search_placeholder: 'Pesquisar por nome...',
+                selected: 'selecionados',
+                add_selected: 'Adicionar Selecionados',
                 title_main: 'GymNerd',
                 sync_pending: '☁️ Alterações pendentes',
                 start_routine: '🚀 Iniciar Treino',
@@ -314,10 +356,42 @@
         },
         getLang: function(){
             try {
-                const stored = localStorage.getItem('gn_lang');
-                if (stored) return stored;
+                // URL override (useful for testing): ?lang=en or ?lang=pt
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const q = params.get('lang');
+                    if (q) {
+                        localStorage.setItem('gn_lang', q);
+                        return q;
+                    }
+                } catch(e) {}
+
+                // Prefer explicit localStorage preference (set by UI) over cookies
+                try {
+                    const stored = localStorage.getItem('gn_lang');
+                    if (stored) return stored;
+                } catch(e){}
+
+                // Check cookies for language (some pages store pref in cookies)
+                try {
+                    const cookieStr = (document && document.cookie) ? document.cookie : '';
+                    if (cookieStr) {
+                        const match = cookieStr.split(';').map(c => c.trim()).find(c => c.startsWith('gn_lang=') || c.startsWith('lang='));
+                        if (match) {
+                            const val = match.split('=')[1];
+                            if (val) return decodeURIComponent(val);
+                        }
+                    }
+                } catch(e){}
                 return (navigator.language || navigator.userLanguage || 'en').toLowerCase().startsWith('pt') ? 'pt' : 'en';
             } catch(e){ return 'en'; }
+        },
+        setLang: function(lang){
+            try { localStorage.setItem('gn_lang', lang); } catch(e){}
+            try {
+                const d = new Date(); d.setTime(d.getTime() + (365*24*60*60*1000));
+                document.cookie = `gn_lang=${encodeURIComponent(lang)};expires=${d.toUTCString()};path=/`;
+            } catch(e){}
         },
         t: function(key){
             const lang = this.getLang();

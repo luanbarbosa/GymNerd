@@ -140,7 +140,7 @@
     <div class="header" style="justify-content:space-between; align-items:center;">
         <div style="display:flex; align-items:center; gap:15px;">
             <a href="index.html" class="back-btn">←</a>
-            <h2>Rotinas</h2>
+            <h2 data-i18n="page_routines">Rotinas</h2>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
             <button id="newRoutineBtn" class="primary" style="padding:10px 14px; font-size:0.9rem;" onclick="window.location.href='routinecrud.html'">+ Nova Rotina</button>
@@ -496,7 +496,8 @@
             const content = document.getElementById('routines-content');
             tabsContainer.innerHTML = '';
             if (!workouts || workouts.length === 0) {
-                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.</div>';
+                const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_routines_placeholder') : 'Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.';
+                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">' + msg + '</div>';
                 return;
             }
             workouts.forEach((w, i) => {
@@ -525,7 +526,8 @@
             const workout = await db.routines.get(id);
             const content = document.getElementById('routines-content');
             if (!workout) {
-                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">Rotina não encontrada.</div>';
+                const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('routine_not_found') : 'Rotina não encontrada.';
+                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">' + msg + '</div>';
                 return;
             }
 
@@ -796,6 +798,16 @@
         async function deleteWorkout(id) {
             if(confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('confirm_delete_routine') : "Excluir rotina?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }
         }
+
+        // Apply translations for this page (titles, static buttons)
+        try {
+            if (window.GN_I18N) {
+                GN_I18N.applyTranslations(document);
+                // Localize the New Routine button text (includes a leading plus)
+                const newBtn = document.getElementById('newRoutineBtn');
+                if (newBtn && GN_I18N.t) newBtn.innerHTML = GN_I18N.t('new_routine_btn');
+            }
+        } catch(e){}
 
         init();
     </script>
