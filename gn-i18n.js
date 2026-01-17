@@ -117,13 +117,9 @@
                 exercise_type_back: 'Back',
                 exercise_type_legs: 'Legs',
                 exercise_type_arms: 'Arms',
-                exercise_type_leg: 'Legs',
-                exercise_type_arm: 'Arms',
                 exercise_type_core: 'Core',
                 exercise_type_abs: 'Abs',
                 exercise_type_cardio: 'Cardio',
-                exercise_type_mobility: 'Mobility',
-                exercise_type_strength: 'Strength',
                 exercise_type_other: 'Other'
                 ,
                 /* History page specific keys (unique names) */
@@ -295,13 +291,9 @@
                 exercise_type_back: 'Costas',
                 exercise_type_legs: 'Pernas',
                 exercise_type_arms: 'Braços',
-                exercise_type_leg: 'Pernas',
-                exercise_type_arm: 'Braços',
                 exercise_type_core: 'Core',
                 exercise_type_abs: 'Abdominais',
                 exercise_type_cardio: 'Cardio',
-                exercise_type_mobility: 'Mobilidade',
-                exercise_type_strength: 'Força',
                 exercise_type_other: 'Outro'
                 ,
                 /* History page specific keys (unique names) */
@@ -409,6 +401,39 @@
                 if (translated && translated !== key) return translated;
             } catch(e){}
             return type;
+        },
+        // Returns the localized label for a canonical exercise type key (e.g. 'abs', '"legs"')
+        getLocalizedTypeLabel: function(type){
+            if (!type) return type;
+            try {
+                const normalized = type.toString().toLowerCase().replace(/\s+/g, '');
+                // First try the standard exercise_type_ key
+                const key = 'exercise_type_' + normalized;
+                const translated = this.t(key);
+                if (translated && translated !== key) return translated;
+
+                // Fallback to availableExerciseTypes labels if provided
+                const lang = this.getLang();
+                const translations = this.translations[lang] || this.translations['en'] || {};
+                if (Array.isArray(translations.availableExerciseTypes)){
+                    const found = translations.availableExerciseTypes.find(l => l.toString().toLowerCase().replace(/\s+/g,'') === normalized);
+                    if (found) return found.toString();
+                }
+            } catch(e){}
+            return type;
+        },
+        // Returns an array of { key, label } for available exercise types in the current locale
+        getAvailableExerciseTypes: function(){
+            try {
+                const lang = this.getLang();
+                const translations = this.translations[lang] || this.translations['en'] || {};
+                if (Array.isArray(translations.availableExerciseTypes) && translations.availableExerciseTypes.length > 0) {
+                    return translations.availableExerciseTypes.map(l => ({ key: l.toString().toLowerCase().replace(/\s+/g,''), label: l.toString() }));
+                }
+                // otherwise derive from exercise_type_* keys
+                const keys = Object.keys(translations).filter(k => k.indexOf('exercise_type_') === 0);
+                return keys.map(k => ({ key: k.replace('exercise_type_', ''), label: translations[k] }));
+            } catch(e) { return []; }
         },
         applyTranslations: function(root){
             try{

@@ -120,14 +120,6 @@
             <input type="text" id="exNamePT" placeholder="ex.: Supino Reto">
             <label data-i18n="exercise_type_label">Tipo</label>
             <select id="exType">
-                <option value="chest">Peito</option>
-                <option value="leg">Pernas</option>
-                <option value="legs">Legs</option>
-                <option value="back">Costas</option>
-                <option value="shoulder">Ombros</option>
-                <option value="arm">Braços</option>
-                <option value="abs">Abdominais</option>
-                <option value="cardio">Cardio</option>
             </select>
             <label data-i18n="exercise_image_label">Imagem</label>
             <input type="file" id="exImageInput" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
@@ -208,6 +200,22 @@
         }
         function addSelectedExercisesFromModal() { for (const key of Array.from(selectedExercises)) { const [prefix, idStr] = key.split(':'); const isCustom = prefix === 'c'; const id = parseInt(idStr); addExerciseToRoutine(id, [], isCustom); } exitSelectMode(); closeSearchModal(); }
 
+        function populateExerciseTypeSelect(){
+            try {
+                const sel = document.getElementById('exType');
+                if (!sel) return;
+                // prefer db.availableExerciseTypes, fallback to window constant or i18n list
+                const keys = (db && db.availableExerciseTypes) ? db.availableExerciseTypes : (window.AVAILABLE_EXERCISE_TYPES || []);
+                sel.innerHTML = '';
+                keys.forEach(k => {
+                    const opt = document.createElement('option');
+                    opt.value = k;
+                    opt.textContent = (window.GN_I18N && GN_I18N.getLocalizedTypeLabel) ? GN_I18N.getLocalizedTypeLabel(k) : (window.GN_I18N && GN_I18N.localizeExerciseType ? GN_I18N.localizeExerciseType(k) : k);
+                    sel.appendChild(opt);
+                });
+            } catch(e) { console.warn('populateExerciseTypeSelect failed', e); }
+        }
+
         async function init() {
             await ensureDbOpen();
             const [catalogEx, catalogImgs, customEx, customImgs] = await Promise.all([
@@ -221,6 +229,7 @@
             customImgs.forEach(img => images[img.id] = img.data);
             allExercises = [ ...catalogEx.map(ex => ({ ...ex, isCustom: false })), ...customEx.map(ex => ({ ...ex, isCustom: true })) ];
             updateModalResults();
+            try { populateExerciseTypeSelect(); } catch(e){}
 
             // If editing load routine
             const params = new URLSearchParams(window.location.search);
@@ -299,40 +308,69 @@
             if (filtered.length === 0) { const noneMsg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_exercise_found') : 'No exercise found'; resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">' + noneMsg + '</div>'; return; }
                 // show/hide clear button depending on input content
                 try { const clearBtn = document.getElementById('clearSearchBtn'); if (clearBtn) { if (rawQuery && rawQuery.length > 0) clearBtn.style.display = 'flex'; else clearBtn.style.display = 'none'; } } catch(e){}
-            const groups = filtered.reduce((acc, ex) => { if (!acc[ex.type]) acc[ex.type] = []; acc[ex.type].push(ex); return acc; }, {});
-            resultsDiv.innerHTML = Object.keys(groups).sort().map(type => {
-                const displayType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(type) : type;
-                const itemsHtml = groups[type].map(ex => {
-                    const ptLine = ((lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? `<div style="color:var(--text-dim); font-size:0.85rem">${ex.namePT}</div>` : '';
-                    const editBtn = ex.isCustom ? `<button style="background:none;border:none;color:var(--primary);" onclick="editExercise(${ex.id})">Editar</button>` : '';
-                    return `<div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)" oncontextmenu="event.preventDefault()">
-                                <img src="${images[ex.imageId] || ''}" class="ex-thumb">
-                                <div style="flex-grow:1">
-                                    <div style="font-weight:700">${getDisplayedName(ex)}</div>
-                                    ${ptLine}
-                                </div>
-                                <div style="display:flex; gap:8px; align-items:center;">
-                                    ${editBtn}
-                                </div>
-                                <svg class="tick-icon" viewBox="0 0 32 32" fill="none">
-                                    <circle cx="16" cy="16" r="16" fill="var(--success)"/>
-                                    <path d="M10 17.5l5 5 7-9" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>`;
-                }).join('');
+            // Group by canonical exercise types (preserve order) and use localized labels
+            const canonical = (db && db.availableExerciseTypes) ? db.availableExerciseTypes : (window.AVAILABLE_EXERCISE_TYPES || []);
+            const htmlParts = [];
+            const seen = new Set();
 
-                return `
+            const renderItems = (items) => items.map(ex => {
+                const ptLine = ((lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? `<div style="color:var(--text-dim); font-size:0.85rem">${ex.namePT}</div>` : '';
+                const editBtn = ex.isCustom ? `<button style="background:none;border:none;color:var(--primary);" onclick="editExercise(${ex.id})">Editar</button>` : '';
+                return `<div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)" oncontextmenu="event.preventDefault()">
+                            <img src="${images[ex.imageId] || ''}" class="ex-thumb">
+                            <div style="flex-grow:1">
+                                <div style="font-weight:700">${getDisplayedName(ex)}</div>
+                                ${ptLine}
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                ${editBtn}
+                            </div>
+                            <svg class="tick-icon" viewBox="0 0 32 32" fill="none">
+                                <circle cx="16" cy="16" r="16" fill="var(--success)"/>
+                                <path d="M10 17.5l5 5 7-9" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>`;
+            }).join('');
+
+            // Render canonical groups
+            canonical.forEach(type => {
+                const items = filtered.filter(ex => ex.type === type);
+                if (!items || items.length === 0) return;
+                seen.add(type);
+                const displayType = (window.GN_I18N && GN_I18N.getLocalizedTypeLabel) ? GN_I18N.getLocalizedTypeLabel(type) : ((window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(type) : type);
+                htmlParts.push(`
                 <details class="category-section">
                     <summary class="category-summary">
                         <span>${displayType}</span>
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </summary>
                     <div class="exercise-grid">
-                        ${itemsHtml}
+                        ${renderItems(items)}
                     </div>
                 </details>
-            `;
-            }).join('');
+            `);
+            });
+
+            // Render any extra types present in results but not in canonical list
+            const extraTypes = Array.from(new Set(filtered.map(e => e.type))).filter(t => !seen.has(t)).sort();
+            extraTypes.forEach(type => {
+                const items = filtered.filter(ex => ex.type === type);
+                if (!items || items.length === 0) return;
+                const displayType = (window.GN_I18N && GN_I18N.getLocalizedTypeLabel) ? GN_I18N.getLocalizedTypeLabel(type) : ((window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(type) : type);
+                htmlParts.push(`
+                <details class="category-section">
+                    <summary class="category-summary">
+                        <span>${displayType}</span>
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </summary>
+                    <div class="exercise-grid">
+                        ${renderItems(items)}
+                    </div>
+                </details>
+            `);
+            });
+
+            resultsDiv.innerHTML = htmlParts.join('');
         }
 
         function clearModalSearch() {
