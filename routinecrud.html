@@ -18,14 +18,17 @@
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
-        input, button { padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.02); color: white; }
+        input, button { box-sizing: border-box; max-width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.02); color: white; }
         button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
         .add-set-btn { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; color: var(--text-dim); margin-bottom: 10px; }
         .add-set-btn.prominent { background: var(--primary-grad); color: #fff; border: none; font-weight: 800; box-shadow: 0 8px 20px rgba(37,99,235,0.12); }
+        .top-action-btn { padding: 10px 14px; min-height: 44px; border-radius: 10px; font-weight: 800; display: inline-flex; align-items: center; gap:8px; }
+        .clear-search-btn { width:36px; height:36px; border-radius:8px; display:none; align-items:center; justify-content:center; background:transparent; border:none; color:var(--text-dim); cursor:pointer; }
+        .clear-search-btn svg { width:16px; height:16px; }
         .selected-ex-list { margin: 15px 0; display: flex; flex-direction: column; gap: 10px; }
-        /* Empty state: larger dashed area and hint text; clickable to add exercises */
-        .selected-ex-list:empty { min-height: 160px; border: 2px dashed rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; align-items: center; justify-content: center; display: flex; cursor: pointer; }
-        .selected-ex-list:empty::before { content: 'Nenhum exercício — clique em "Adicionar Exercício" para começar'; color: var(--text-dim); font-size: 0.95rem; text-align: center; }
+        /* Empty state: larger dashed area and hint text; clickable to add exercises (localized via .empty-hint) */
+        .selected-ex-list.empty { min-height: 160px; border: 2px dashed rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; align-items: center; justify-content: center; display: flex; cursor: pointer; }
+        .selected-ex-list .empty-hint { color: var(--text-dim); font-size: 0.95rem; text-align: center; }
         .selected-ex-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; }
         .set-row-input { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
         .set-row-input input { width: 70px; padding: 8px; font-size: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #000; }
@@ -69,7 +72,7 @@
             <input id="routineName" data-i18n-placeholder="routine_name_placeholder" placeholder="ex.: Empurrão Superior" />
             <label style="font-size:0.8rem; font-weight:800; margin-top: 10px;" data-i18n="routine_exercises_label">Exercícios da Rotina</label>
             <button class="add-set-btn prominent" style="width:100%;" onclick="openSearchModal()" data-i18n="add_exercise">🔍 Adicionar Exercício</button>
-            <div id="selectedList" class="selected-ex-list" onclick="if(this.children.length===0) openSearchModal()"></div>
+            <div id="selectedList" class="selected-ex-list" onclick="if(this.querySelectorAll('.selected-ex-card').length===0) openSearchModal()"></div>
             <div style="display:flex; gap:8px;">
                 <button style="flex:1; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="location.href='routines.html'" data-i18n="cancel">Cancelar</button>
                 <button class="primary" id="saveRoutineBtn" onclick="saveRoutine()" data-i18n="save_routine" style="flex:1; width:100%;">Salvar Rotina</button>
@@ -78,10 +81,13 @@
     </div>
 
     <!-- Search Modal (copied from routines.html) -->
-    <div id="searchModal" class="modal hidden">
-            <div class="header" style="gap: 15px; justify-content: flex-start;">
-            <a href="javascript:void(0)" class="back-btn" onclick="closeSearchModal()" style="outline:none; box-shadow:none; border:none; background:none; font-size:1.5rem; color:var(--text); text-decoration:none;">←</a>
-            <h2 style="margin:0; text-align:left; flex:1;" data-i18n="add_exercise_modal_title">Adicionar Exercício</h2>
+        <div id="searchModal" class="modal hidden">
+            <div class="header" style="gap: 15px; justify-content: space-between; align-items: center;">
+            <div style="display:flex; gap:15px; align-items:center; flex:1;">
+                <a href="javascript:void(0)" class="back-btn" onclick="closeSearchModal()" style="outline:none; box-shadow:none; border:none; background:none; font-size:1.5rem; color:var(--text); text-decoration:none;">←</a>
+                <h2 style="margin:0; text-align:left;" data-i18n="add_exercise_modal_title">Adicionar Exercício</h2>
+            </div>
+            <button type="button" class="add-set-btn prominent top-action-btn" onclick="openCreateModal()">➕ <span data-i18n="new">Novo</span></button>
         </div>
         <div id="selectBar" class="hidden" aria-hidden="true">
             <div id="selectCount">0 selecionados</div>
@@ -90,9 +96,13 @@
                 <button id="addSelectedBtn" class="add-btn" onclick="addSelectedExercisesFromModal()" disabled data-i18n="add_selected">Adicionar Selecionados</button>
             </div>
         </div>
-        <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
-            <button type="button" class="add-set-btn" style="border-style: solid; background: var(--card); color: var(--primary); font-weight: 800; margin-bottom: 10px;" onclick="openCreateModal()" data-i18n="custom_exercise_title">➕ Criar Exercício Personalizado</button>
-            <input type="text" id="modalSearchInput" placeholder="Pesquisar por nome..." data-i18n-placeholder="search_placeholder" oninput="updateModalResults()">
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+            <div style="position:relative;">
+                <input type="text" id="modalSearchInput" placeholder="Pesquisar por nome..." data-i18n-placeholder="search_placeholder" oninput="updateModalResults()" style="width:100%; padding-right:40px;">
+                <button id="clearSearchBtn" class="clear-search-btn" onclick="clearModalSearch()" aria-label="Clear search" title="Clear search" style="position:absolute; right:8px; top:50%; transform:translateY(-50%);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
             <div id="modalResults" class="exercise-list" style="margin-top: 10px;"></div>
         </div>
     </div>
@@ -229,6 +239,7 @@
                     }
                 }
             }
+            ensureEmptyHint();
         }
 
         function openSearchModal() { document.getElementById('searchModal').classList.remove('hidden'); updateModalResults(); }
@@ -285,7 +296,9 @@
                 return false;
             });
 
-            if (filtered.length === 0) { resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Nenhum exercício encontrado</div>'; return; }
+            if (filtered.length === 0) { const noneMsg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_exercise_found') : 'No exercise found'; resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">' + noneMsg + '</div>'; return; }
+                // show/hide clear button depending on input content
+                try { const clearBtn = document.getElementById('clearSearchBtn'); if (clearBtn) { if (rawQuery && rawQuery.length > 0) clearBtn.style.display = 'flex'; else clearBtn.style.display = 'none'; } } catch(e){}
             const groups = filtered.reduce((acc, ex) => { if (!acc[ex.type]) acc[ex.type] = []; acc[ex.type].push(ex); return acc; }, {});
             resultsDiv.innerHTML = Object.keys(groups).sort().map(type => {
                 const displayType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(type) : type;
@@ -322,6 +335,15 @@
             }).join('');
         }
 
+        function clearModalSearch() {
+            const input = document.getElementById('modalSearchInput');
+            if (!input) return;
+            input.value = '';
+            updateModalResults();
+            input.focus();
+            try { const clearBtn = document.getElementById('clearSearchBtn'); if (clearBtn) clearBtn.style.display = 'none'; } catch(e){}
+        }
+
         function addExerciseToRoutine(exId, sets = [], isCustom = false) {
             const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom);
             if (!ex) return;
@@ -336,7 +358,7 @@
                         <img src="${images[ex.imageId] || ''}" class="ex-thumb">
                         <strong>${getDisplayedName(ex)}</strong>
                     </div>
-                    <button type="button" class="remove-set-btn" onclick="this.closest('.selected-ex-card').remove()">×</button>
+                    <button type="button" class="remove-set-btn" onclick="removeSelectedCard(this)">×</button>
                 </div>
                 <div class="sets-container"></div>
                 <button type="button" class="add-set-btn" onclick="addSetRowToCard(this)">+ Adicionar Série</button>
@@ -344,10 +366,35 @@
             container.appendChild(card);
             const setsContainer = card.querySelector('.sets-container');
             if (sets.length > 0) sets.forEach((s, i) => addSetRowToContainer(setsContainer, i+1, s.reps, s.weight)); else addSetRowToContainer(setsContainer, 1);
+            ensureEmptyHint();
         }
         function addSetRowToCard(btn) { const container = btn.previousElementSibling; const nextNum = container.children.length + 1; addSetRowToContainer(container, nextNum); }
         function addSetRowToContainer(container, num, reps = '', weight = '') { const div = document.createElement('div'); div.className = 'set-row-input'; div.innerHTML = `<span style="font-size:0.7rem; color:#64748b; width:20px">S${num}</span><input type="number" placeholder="Repetições" class="set-reps" value="${reps}"><input type="number" step="0.5" placeholder="Kg" class="set-weight" value="${weight}"><button type="button" class="remove-set-btn" onclick="removeSetRow(this)">×</button>`; container.appendChild(div); }
         function removeSetRow(btn) { const container = btn.parentElement.parentElement; btn.parentElement.remove(); Array.from(container.children).forEach((row, i) => { row.querySelector('span').innerText = `S${i + 1}`; }); }
+
+        function removeSelectedCard(btn) { const card = btn.closest('.selected-ex-card'); if (card) card.remove(); ensureEmptyHint(); }
+
+        function ensureEmptyHint() {
+            const container = document.getElementById('selectedList');
+            if (!container) return;
+            const cards = container.querySelectorAll('.selected-ex-card');
+            const hint = container.querySelector('.empty-hint');
+            if (cards.length === 0) {
+                if (!hint) {
+                    const d = document.createElement('div');
+                    d.className = 'empty-hint';
+                    d.setAttribute('data-i18n', 'no_exercises_placeholder');
+                    // set a localized fallback text when GN_I18N is available, otherwise leave blank
+                    d.innerText = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_exercises_placeholder') : '';
+                    container.appendChild(d);
+                }
+                container.classList.add('empty');
+            } else {
+                if (hint) hint.remove();
+                container.classList.remove('empty');
+            }
+            try { if (window.GN_I18N) GN_I18N.applyTranslations(container); } catch(e){}
+        }
 
         function getSelectedExercisesData() { return Array.from(document.querySelectorAll('.selected-ex-card')).map(card => { const id = parseInt(card.dataset.id); const isCustom = card.dataset.isCustom === 'true'; const sets = Array.from(card.querySelectorAll('.set-row-input')).map(row => ({ reps: parseInt(row.querySelector('.set-reps').value) || 0, weight: parseFloat(row.querySelector('.set-weight').value) || 0 })); return { id, sets, isCustom }; }); }
 

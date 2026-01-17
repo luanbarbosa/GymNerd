@@ -302,7 +302,8 @@
             );
 
             if (filtered.length === 0) {
-                resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Nenhum exercício encontrado</div>';
+                const noneMsg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_exercise_found') : 'No exercise found';
+                resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">' + noneMsg + '</div>';
                 return;
             }
 
