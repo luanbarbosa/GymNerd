@@ -104,7 +104,7 @@
         .exercise-tag .ex-thumb { width: 100%; height: 110px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
         .exercise-tag .exercise-title { font-weight:700; font-size: 1rem; color: var(--text); margin: 0; }
         /* New card layout: preview square + meta column + sets table */
-        .ex-preview-square { width:64px; height:64px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; }
+        .ex-preview-square { width:72px; height:72px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; }
         .exercise-row { display:flex; gap:12px; align-items:center; }
         .exercise-meta { display:flex; flex-direction:column; gap:4px; }
         .exercise-type { font-size:0.8rem; color:var(--text-dim); font-weight:700; text-transform:capitalize; }
@@ -137,11 +137,12 @@
         .del-btn { color: var(--danger); background: rgba(255,255,255,0.05); border: none; cursor: pointer; display: flex; align-items: center; padding: 10px; border-radius: 10px; transition: background 0.2s; }
 
         .section-title { margin-top: 40px; margin-bottom: 20px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; padding-left: 5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; }
-        /* Tabs */
-        #routines-tabs { display:flex; gap:8px; flex-wrap:nowrap; }
-        .tab-btn { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); color: var(--text-dim); cursor: pointer; font-weight:800; }
-        .tab-btn.active { background: var(--primary); color: #fff; border-color: rgba(255,255,255,0.06); box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-        .tab-card { background: var(--card); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); }
+        /* Tabs - mobile segmented control style */
+        #routines-tabs { display:flex; gap:6px; flex-wrap:nowrap; justify-content:flex-start; align-items:center; padding:8px 12px; background: rgba(255,255,255,0.02); border-radius: 14px; margin: 0 0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .tab-btn { padding: 10px 14px; border-radius: 10px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-weight:800; min-width:72px; text-align:center; font-size:0.95rem; }
+        .tab-btn:focus { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); border-radius:10px; }
+        .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+        .tab-card { background: transparent; padding: 12px; border-radius: 12px; border: none; }
     </style>
 </head>
 <body>
@@ -525,6 +526,8 @@
                 btn.onclick = function() {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
+                    // ensure the active tab is fully visible when the tab row is scrollable
+                    try { this.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' }); } catch (e) {}
                     renderRoutineContent(parseInt(this.dataset.id));
                 };
                 tabsContainer.appendChild(btn);
