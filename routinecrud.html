@@ -58,6 +58,20 @@
             z-index: 2;
             pointer-events: none;
         }
+        /* Image drop / preview styling */
+        .image-preview-box { width: 100%; height: 160px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius: 12px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; border: 2px dashed rgba(255,255,255,0.04); position:relative; }
+        .image-preview-box.dragover { background: linear-gradient(180deg, rgba(59,130,246,0.06), rgba(37,99,235,0.02)); border-color: rgba(37,99,235,0.6); }
+        .image-preview-box img { width:100%; height:100%; object-fit:contain; object-position:center; display:block; }
+        .upload-placeholder { display:flex; flex-direction:column; align-items:center; gap:6px; color:var(--text-dim); font-weight:700 }
+        .upload-sub { font-size:0.85rem; color:var(--text-dim); font-weight:500 }
+        #removeImageBtn { position:absolute; right:8px; top:8px; background:rgba(0,0,0,0.4); color:white; border:none; padding:6px 8px; border-radius:8px; cursor:pointer; display:none; }
+        /* Modern select styling */
+        .select-wrapper { position: relative; }
+        .select-wrapper select { -webkit-appearance: none; appearance: none; width: 100%; padding: 12px 44px 12px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); color: inherit; font-weight:700; cursor: pointer; }
+        .select-wrapper:focus-within { box-shadow: 0 6px 20px rgba(59,130,246,0.12); border-radius:12px; }
+        .select-wrapper .chev { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-dim); font-size: 14px; }
+        /* Make options easier to scan */
+        .select-wrapper select option { padding: 8px 12px; }
     </style>
 </head>
 <body>
@@ -109,25 +123,38 @@
 
     <div id="customExModal" class="modal modal-sub hidden">
         <div class="header" style="gap: 15px; justify-content: flex-start;">
-            <button class="back-btn" onclick="closeCustomModal()" style="outline:none; box-shadow:none; border:none; background:none;">←</button>
+            <a href="javascript:void(0)" class="back-btn" onclick="closeCustomModal()" style="outline:none; box-shadow:none; border:none; background:none; font-size:1.5rem; color:var(--text); text-decoration:none;">←</a>
             <h2 id="customModalTitle" style="margin:0; text-align:left; flex:1;" data-i18n="custom_exercise_title">Exercício Personalizado</h2>
         </div>
-        <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+        <div class="card" style="margin-top:10px;">
+            <div style="display:flex; flex-direction:column; gap:12px;">
             <input type="hidden" id="exId">
             <label data-i18n="exercise_name_label">Nome</label>
             <input type="text" id="exName" placeholder="ex.: Supino Reto">
             <label data-i18n="exercise_name_pt_label">Nome (Português)</label>
             <input type="text" id="exNamePT" placeholder="ex.: Supino Reto">
             <label data-i18n="exercise_type_label">Tipo</label>
-            <select id="exType">
-            </select>
+            <div class="select-wrapper">
+                <select id="exType">
+                </select>
+                <div class="chev">▾</div>
+            </div>
             <label data-i18n="exercise_image_label">Imagem</label>
             <input type="file" id="exImageInput" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
-            <div class="image-preview-box" onclick="document.getElementById('exImageInput').click()">
-                <img id="exImagePreview" src="" class="hidden" style="width: 100%; height: 100%; object-fit: contain; object-position: center;">
-                <div id="uploadPlaceholder">📸 Toque para enviar</div>
+            <div id="imagePreviewBox" class="image-preview-box" onclick="document.getElementById('exImageInput').click()">
+                <img id="exImagePreview" src="" class="hidden">
+                <div id="uploadPlaceholder" class="upload-placeholder">
+                    <div style="font-size:2rem">📸</div>
+                    <div class="upload-main" data-i18n="exercise_image_label">Imagem</div>
+                    <div class="upload-sub">Drag & drop or click to upload</div>
+                </div>
+                <button id="removeImageBtn" type="button" onclick="removeImage()">×</button>
             </div>
-            <button class="save-btn" onclick="saveCustomExercise()" data-i18n="save_exercise_btn">Salvar Exercício</button>
+            <div style="display:flex; gap:8px; margin-top:6px;">
+                <button style="flex:1; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="closeCustomModal()" data-i18n="cancel">Cancelar</button>
+                <button class="primary" style="flex:1;" onclick="saveCustomExercise()" data-i18n="save_exercise_btn">Salvar Exercício</button>
+            </div>
+            </div>
         </div>
     </div>
 
@@ -216,6 +243,21 @@
             } catch(e) { console.warn('populateExerciseTypeSelect failed', e); }
         }
 
+        function updateNamePTVisibility(){
+            try {
+                const lang = (window.GN_I18N && GN_I18N.safeGetLang) ? GN_I18N.safeGetLang() : (navigator.language || 'en');
+                const isPt = lang && lang.toLowerCase().startsWith('pt');
+                const label = document.querySelector('[data-i18n="exercise_name_pt_label"]');
+                const input = document.getElementById('exNamePT');
+                if (label) label.style.display = isPt ? 'none' : '';
+                if (input) input.style.display = isPt ? 'none' : '';
+                if (isPt && input) {
+                    const main = document.getElementById('exName');
+                    if (main) input.value = main.value || '';
+                }
+            } catch(e){}
+        }
+
         async function init() {
             await ensureDbOpen();
             const [catalogEx, catalogImgs, customEx, customImgs] = await Promise.all([
@@ -230,6 +272,21 @@
             allExercises = [ ...catalogEx.map(ex => ({ ...ex, isCustom: false })), ...customEx.map(ex => ({ ...ex, isCustom: true })) ];
             updateModalResults();
             try { populateExerciseTypeSelect(); } catch(e){}
+            try { updateNamePTVisibility(); } catch(e){}
+
+            // keep exName -> exNamePT in sync when PT locale
+            try {
+                const exNameEl = document.getElementById('exName');
+                if (exNameEl) exNameEl.addEventListener('input', () => {
+                    try {
+                        const lang = (window.GN_I18N && GN_I18N.safeGetLang) ? GN_I18N.safeGetLang() : (navigator.language || 'en');
+                        if (lang && lang.toLowerCase().startsWith('pt')) {
+                            const pt = document.getElementById('exNamePT');
+                            if (pt) pt.value = exNameEl.value;
+                        }
+                    } catch(e){}
+                });
+            } catch(e){}
 
             // If editing load routine
             const params = new URLSearchParams(window.location.search);
@@ -248,6 +305,16 @@
                     }
                 }
             }
+            // wire drag/drop on image preview
+            try {
+                const box = document.getElementById('imagePreviewBox');
+                if (box) {
+                    box.addEventListener('dragenter', (e) => { e.preventDefault(); box.classList.add('dragover'); });
+                    box.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('dragover'); });
+                    box.addEventListener('dragleave', (e) => { e.preventDefault(); box.classList.remove('dragover'); });
+                    box.addEventListener('drop', handleDrop);
+                }
+            } catch(e){}
             ensureEmptyHint();
         }
 
@@ -452,13 +519,86 @@
         }
 
         // Minimal custom-exercise handlers (reused)
-        function openCreateModal() { document.getElementById('customModalTitle').innerText = 'Exercício Personalizado'; document.getElementById('exId').value = ''; document.getElementById('exName').value = ''; document.getElementById('exNamePT').value = ''; document.getElementById('exType').selectedIndex = 0; currentImageData = null; document.getElementById('exImagePreview').classList.add('hidden'); document.getElementById('uploadPlaceholder').classList.remove('hidden'); document.getElementById('customExModal').classList.remove('hidden'); }
+        function openCreateModal() { 
+            try { document.getElementById('customModalTitle').innerText = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Custom Exercise'; } catch(e){}
+            document.getElementById('exId').value = ''; document.getElementById('exName').value = ''; document.getElementById('exNamePT').value = ''; document.getElementById('exType').selectedIndex = 0; currentImageData = null; document.getElementById('exImagePreview').classList.add('hidden'); document.getElementById('uploadPlaceholder').classList.remove('hidden'); document.getElementById('customExModal').classList.remove('hidden'); 
+            try { updateNamePTVisibility(); } catch(e){}
+        }
         function closeCustomModal() { document.getElementById('customExModal').classList.add('hidden'); }
-        function handleImageUpload(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const MAX_WIDTH = 400; const scaleSize = MAX_WIDTH / img.width; canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); currentImageData = canvas.toDataURL('image/jpeg', 0.7); document.getElementById('exImagePreview').src = currentImageData; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); }; img.src = e.target.result; }; reader.readAsDataURL(file); }
+        function handleImageUpload(event) {
+            const file = event.target && event.target.files ? event.target.files[0] : null;
+            if (!file) return;
+            handleFile(file);
+        }
+
+        function handleFile(file) {
+            try {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const scaleSize = Math.min(1, MAX_WIDTH / img.width);
+                        canvas.width = img.width * scaleSize;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        try { currentImageData = canvas.toDataURL('image/jpeg', 0.8); } catch(e){ currentImageData = e.target.result; }
+                        const preview = document.getElementById('exImagePreview');
+                        if (preview) {
+                            preview.src = currentImageData;
+                            preview.classList.remove('hidden');
+                        }
+                        const placeholder = document.getElementById('uploadPlaceholder'); if (placeholder) placeholder.classList.add('hidden');
+                        const removeBtn = document.getElementById('removeImageBtn'); if (removeBtn) removeBtn.style.display = 'block';
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } catch (e) { console.error('handleFile error', e); }
+        }
+
+        function handleDrop(e) {
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+                const dt = e.dataTransfer;
+                if (dt && dt.files && dt.files.length > 0) {
+                    handleFile(dt.files[0]);
+                }
+                const box = document.getElementById('imagePreviewBox'); if (box) box.classList.remove('dragover');
+            } catch(e){}
+        }
+
+        function removeImage() {
+            try {
+                currentImageData = null;
+                const preview = document.getElementById('exImagePreview'); if (preview) { preview.src = ''; preview.classList.add('hidden'); }
+                const placeholder = document.getElementById('uploadPlaceholder'); if (placeholder) placeholder.classList.remove('hidden');
+                const removeBtn = document.getElementById('removeImageBtn'); if (removeBtn) removeBtn.style.display = 'none';
+                const input = document.getElementById('exImageInput'); if (input) input.value = '';
+            } catch(e){}
+        }
         async function saveCustomExercise() { const id = document.getElementById('exId').value; const name = document.getElementById('exName').value.trim(); const namePT = document.getElementById('exNamePT').value.trim(); const type = document.getElementById('exType').value; if (!name) { alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('please_enter_exercise_name') : 'Por favor, insira um nome para o exercício.'); return; } try { await ensureDbOpen(); let imageId = 0; if (currentImageData) { imageId = Date.now(); await db.custom_images.put({ id: imageId, data: currentImageData }); } const exerciseData = { name, namePT, type, imageId }; if (id) { await db.custom_exercises.update(parseInt(id), exerciseData); alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('exercise_updated') : 'Exercício atualizado!'); } else { await db.custom_exercises.add(exerciseData); alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('exercise_saved_local') : 'Exercício salvo na sua coleção local!'); } localStorage.setItem('has_local_changes', 'true'); closeCustomModal(); await init(); } catch (err) { console.error('Error saving custom exercise:', err); alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('failed_to_save_exercise_prefix') + err.message) : ('Falha ao salvar exercício: ' + err.message)); } }
 
-        function copyExercise(exId, isCustom = false) { const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom); if (!ex) return; document.getElementById('exId').value = ''; document.getElementById('exName').value = ex.name; document.getElementById('exNamePT').value = ex.namePT || ''; document.getElementById('exType').value = ex.type; const imgData = images[ex.imageId]; if (imgData) { currentImageData = imgData; document.getElementById('exImagePreview').src = imgData; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } else { currentImageData = null; document.getElementById('exImagePreview').src = ''; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } document.getElementById('customModalTitle').innerText = 'Copiar Exercício'; document.getElementById('customExModal').classList.remove('hidden'); }
-        function editExercise(exId) { const ex = allExercises.find(e => e.id === exId && e.isCustom); if (!ex) return; document.getElementById('exId').value = ex.id; document.getElementById('exName').value = ex.name; document.getElementById('exNamePT').value = ex.namePT || ''; document.getElementById('exType').value = ex.type; const imgData = images[ex.imageId]; if (imgData) { currentImageData = imgData; document.getElementById('exImagePreview').src = imgData; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } else { currentImageData = null; document.getElementById('exImagePreview').src = ''; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } document.getElementById('customModalTitle').innerText = 'Editar Exercício'; document.getElementById('customExModal').classList.remove('hidden'); }
+        function copyExercise(exId, isCustom = false) { 
+            const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom); if (!ex) return; 
+            document.getElementById('exId').value = ''; document.getElementById('exName').value = ex.name; document.getElementById('exNamePT').value = ex.namePT || ''; document.getElementById('exType').value = ex.type; 
+            const imgData = images[ex.imageId]; if (imgData) { currentImageData = imgData; document.getElementById('exImagePreview').src = imgData; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } else { currentImageData = null; document.getElementById('exImagePreview').src = ''; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } 
+            try { 
+                const newLabel = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('new') + ' ' + GN_I18N.t('custom_exercise_title')) : 'Copy Custom Exercise'; 
+                document.getElementById('customModalTitle').innerText = newLabel; 
+            } catch(e){}
+            document.getElementById('customExModal').classList.remove('hidden'); 
+        }
+        function editExercise(exId) { 
+            const ex = allExercises.find(e => e.id === exId && e.isCustom); if (!ex) return; 
+            document.getElementById('exId').value = ex.id; document.getElementById('exName').value = ex.name; document.getElementById('exNamePT').value = ex.namePT || ''; document.getElementById('exType').value = ex.type; 
+            const imgData = images[ex.imageId]; if (imgData) { currentImageData = imgData; document.getElementById('exImagePreview').src = imgData; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } else { currentImageData = null; document.getElementById('exImagePreview').src = ''; document.getElementById('exImagePreview').classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); } 
+            try { document.getElementById('customModalTitle').innerText = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Custom Exercise'; } catch(e){}
+            document.getElementById('customExModal').classList.remove('hidden'); 
+        }
 
         // Apply translations and localized title
         try {

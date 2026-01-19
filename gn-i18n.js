@@ -18,7 +18,7 @@
                 add_exercise_modal_title: 'Add Exercise',
                 custom_exercise_title: 'Custom Exercise',
                 exercise_name_label: 'Name',
-                exercise_name_pt_label: 'Name (Portuguese)',
+                exercise_name_pt_label: 'Portuguese name (optional)',
                 exercise_type_label: 'Type',
                 exercise_image_label: 'Image',
                 save_exercise_btn: 'Save Exercise',
