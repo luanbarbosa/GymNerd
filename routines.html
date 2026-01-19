@@ -94,15 +94,23 @@
         .image-preview-box img { background: #fff; }
 
         .hidden { display: none !important; }
-        .workout-card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .workout-card { background: transparent; padding: 10px 0; border-radius: 16px; margin-bottom: 15px; border: none; }
         .workout-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
         .workout-name { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
         /* Stack image, title and sets vertically inside the main area; drag handle sits at the right */
-        .exercise-tag { display: flex; align-items: stretch; gap: 12px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 4px 12px rgba(0,0,0,0.25); transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
+        .exercise-tag { display: flex; align-items: stretch; gap: 12px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); box-shadow: none; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
         .exercise-tag:hover { transform: translateY(-3px); }
         .exercise-tag .main { flex: 1 1 auto; display:flex; flex-direction:column; gap:8px; }
         .exercise-tag .ex-thumb { width: 100%; height: 110px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
         .exercise-tag .exercise-title { font-weight:700; font-size: 1rem; color: var(--text); margin: 0; }
+        /* New card layout: preview square + meta column + sets table */
+        .ex-preview-square { width:64px; height:64px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; }
+        .exercise-row { display:flex; gap:12px; align-items:center; }
+        .exercise-meta { display:flex; flex-direction:column; gap:4px; }
+        .exercise-type { font-size:0.8rem; color:var(--text-dim); font-weight:700; text-transform:capitalize; }
+        .sets-table { width:100%; border-collapse:collapse; margin-top:8px; }
+        .sets-table th, .sets-table td { text-align:left; padding:6px 8px; font-size:0.85rem; color:var(--text-dim); border-bottom:1px solid rgba(255,255,255,0.03); }
+        .sets-table th { color:var(--text-dim); font-weight:800; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; }
         .set-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; justify-content: flex-start; }
         .set-pill { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; color: var(--text-dim); font-weight: 700; }
         /* Drag handle hidden by default; shown when the list is in sorting mode */
@@ -147,11 +155,10 @@
         </div>
     </div>
 
-    <div class="card" style="padding:10px 12px; margin-bottom:20px;">
+    <div style="background:transparent; border:none; padding:0; margin-bottom:20px; border-radius:0; box-shadow:none;">
         <div id="routines-tabs" style="display:flex; gap:8px; overflow:auto; padding-bottom:8px;"></div>
-        <div id="routines-content" style="margin-top:12px;"></div>
+        <div id="routines-content" style="margin-top:0px;"></div>
     </div> 
-
     <script>
 
         let allExercises = [];
@@ -550,28 +557,51 @@
                 return { id: item, isCustom: false, position: 0, __origIndex: idx };
             }).sort((a,b) => (a.position - b.position) || (a.__origIndex - b.__origIndex));
 
+            const labelSets = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('sets') : 'Sets';
+            const labelReps = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('reps') : 'Reps';
+            const labelWeight = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('weight') : 'Weight';
+
             const tags = items.map(it => {
                 const id = it.id;
                 const isCustom = !!it.isCustom;
                 const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
                 if (!ex) return "";
                 let setsHtml = '';
-                if (Array.isArray(it.sets)) {
-                    setsHtml = `<div class="set-pills">` +
-                        it.sets.map(s => `<span class="set-pill">${s.reps} × ${s.weight}kg</span>`).join('') +
-                        `</div>`;
+                if (Array.isArray(it.sets) && it.sets.length > 0) {
+                    // Group identical rep-weight combinations and show counts
+                    const groups = it.sets.reduce((acc, s) => {
+                        const key = `${s.reps}|${s.weight}`;
+                        if (!acc[key]) acc[key] = { reps: s.reps, weight: s.weight, count: 0 };
+                        acc[key].count++;
+                        return acc;
+                    }, {});
+                    setsHtml = `<table class="sets-table"><thead><tr><th>${labelSets}</th><th>${labelReps}</th><th>${labelWeight}</th></tr></thead><tbody>` +
+                        Object.values(groups).map(g => `<tr><td>${g.count}</td><td>${g.reps}</td><td>${g.weight}kg</td></tr>`).join('') +
+                        `</tbody></table>`;
                 } else if (typeof it.sets !== 'undefined') {
-                    setsHtml = `<div class="set-pills"><span class="set-pill">${it.sets} séries × ${it.reps} × ${it.weight}kg</span></div>`;
+                    // Legacy format where `it.sets` is a count and `it.reps`/`it.weight` hold values
+                    const count = it.sets || 1;
+                    setsHtml = `<table class="sets-table"><thead><tr><th>${labelSets}</th><th>${labelReps}</th><th>${labelWeight}</th></tr></thead><tbody>` +
+                        `<tr><td>${count}</td><td>${it.reps}</td><td>${it.weight}kg</td></tr>` +
+                        `</tbody></table>`;
                 }
+                const localizedType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(ex.type) : ex.type || '';
                 return `<div class="exercise-tag draggable" draggable="true" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
                     <div class="main">
-                        <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
-                        <strong class="exercise-title">${getDisplayedName(ex)}</strong>
+                        <div class="exercise-row">
+                            <img src="${images[ex.imageId] || defaultImage}" class="ex-preview-square">
+                            <div class="exercise-meta">
+                                <strong class="exercise-title">${getDisplayedName(ex)}</strong>
+                                <div class="exercise-type">${localizedType}</div>
+                            </div>
+                        </div>
                         ${setsHtml}
                     </div>
                     <span class="drag-handle" title="Arrastar para reordenar">☰</span>
                 </div>`;
             }).join('');
+
+            const labelDeleteRoutine = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('delete_routine') : 'Delete routine';
 
             content.innerHTML = `
                 <div class="workout-card">
@@ -583,12 +613,12 @@
                             <button class="edit-btn" onclick="window.location.href='routinecrud.html?id=${workout.id}'" title="Editar">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                             </button>
-                            <button class="del-btn" onclick="deleteWorkout(${workout.id})" title="Excluir">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
                         </div>
                     </div>
                     <div id="exerciseList">${tags}</div>
+                            <div style="margin-top:12px; display:flex; justify-content:center;">
+                                <button class="del-btn" onclick="showDeleteConfirm(${workout.id})">${labelDeleteRoutine}</button>
+                            </div>
                 </div>
             `;
 
@@ -805,8 +835,14 @@
             }
         }
 
-        async function deleteWorkout(id) {
-            if(confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('confirm_delete_routine') : "Excluir rotina?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }
+        // Use native confirm dialog for deletion (localized)
+        async function showDeleteConfirm(id) {
+            const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('confirm_delete_routine') : 'Delete routine?';
+            if (confirm(msg)) {
+                await db.routines.delete(id);
+                localStorage.setItem('has_local_changes', 'true');
+                renderTabs();
+            }
         }
 
         // Apply translations for this page (titles, static buttons)
