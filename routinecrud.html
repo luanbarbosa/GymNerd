@@ -32,8 +32,18 @@
         .selected-ex-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; }
         .set-row-input { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
         .set-row-input input { width: 70px; padding: 8px; font-size: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #000; }
-        .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; }
+        /* Large thumbnail for modal cards (image on top) */
+        .exercise-card > div > .ex-thumb { display:block; width:100%; height:auto; max-height:150px; border-radius: 12px; object-fit: contain; object-position: center; background: #fff; }
+        /* Larger thumbnail for selected list cards (keeps layout horizontal) */
+        .selected-ex-card { display:flex; gap:12px; align-items:center; }
+        .selected-ex-card .ex-thumb { width:110px; height:80px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; }
         .hidden { display:none !important }
+        .exercise-card { background: var(--card); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
+        .exercise-card .actions { display:flex; gap:8px; align-items:center; position:absolute; right:12px; top:50%; transform:translateY(-50%); flex-direction:row; }
+        .exercise-card .actions .icon-btn { padding:6px; box-shadow: 0 6px 14px rgba(2,6,23,0.12); background: rgba(255,255,255,0.02); border-radius:10px; }
+        .exercise-card .meta { width:50%; }
+        .exercise-card .meta .title { font-weight:700; margin-top:4px; }
+        .exercise-card .meta .badge { margin:0 0 6px 0; }
         .modal { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; height: 100%; background: var(--bg); z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
         body.noselect, .noselect, .noselect * {
             user-select: none !important;
@@ -45,6 +55,14 @@
         .exercise-grid { display: grid; gap: 12px; padding: 0 12px 16px 12px; }
         .exercise-grid .ex-thumb { width: 72px; height: 48px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
         .exercise-card { background: var(--card); border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
+        /* Modal/search: stack image on top, then meta and actions below (scoped to .exercise-grid) */
+        .exercise-grid .exercise-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+        .exercise-grid .exercise-card > div:first-child { width: 100%; }
+        .exercise-grid .meta-actions-row { display:flex; width:100%; align-items:center; justify-content:space-between; gap:12px; }
+        .exercise-grid .meta-actions-row .meta { display:flex; flex-direction:column; gap:4px; }
+        .exercise-grid .meta-actions-row .meta .badge { margin:0 0 4px 0; }
+        .exercise-grid .meta-actions-row .meta .title { font-weight:700; }
+        .exercise-grid .exercise-card .actions { position: static; right: auto; top: auto; transform: none; display: flex; gap: 8px; justify-content: flex-end; width: auto; align-items: center; }
         .exercise-card.selected .tick-icon {
             display: block;
         }
@@ -58,6 +76,9 @@
             z-index: 2;
             pointer-events: none;
         }
+        .icon-btn { background:none; border:none; color:var(--primary); padding:6px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+        .icon-btn:hover { background: rgba(59,130,246,0.06); }
+        .badge { display:inline-block; margin:0 0 6px 0; background:var(--primary); color:white; font-size:0.7rem; padding:4px 8px; border-radius:999px; font-weight:700; vertical-align:middle; }
         /* Image drop / preview styling */
         .image-preview-box { width: 100%; height: 160px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius: 12px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; border: 2px dashed rgba(255,255,255,0.04); position:relative; }
         .image-preview-box.dragover { background: linear-gradient(180deg, rgba(59,130,246,0.06), rgba(37,99,235,0.02)); border-color: rgba(37,99,235,0.6); }
@@ -213,7 +234,6 @@
             window.removeEventListener('contextmenu', preventContextMenu, true);
         }
         function preventContextMenu(e) { e.preventDefault(); }
-        function toggleSelect(exId, isCustom, el) { const key = `${isCustom ? 'c' : 's'}:${exId}`; if (selectedExercises.has(key)) { selectedExercises.delete(key); el.classList.remove('selected'); } else { selectedExercises.add(key); el.classList.add('selected'); } updateSelectBar(); }
         function updateSelectBar() { 
             const count = selectedExercises.size; 
             const selText = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('selected') : 'selecionados';
@@ -381,16 +401,20 @@
             const seen = new Set();
 
             const renderItems = (items) => items.map(ex => {
-                const ptLine = ((lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? `<div style="color:var(--text-dim); font-size:0.85rem">${ex.namePT}</div>` : '';
-                const editBtn = ex.isCustom ? `<button style="background:none;border:none;color:var(--primary);" onclick="editExercise(${ex.id})">Editar</button>` : '';
+                // subtitle removed - no secondary line under exercise title
+                const editBtn = ex.isCustom ? `<button class="icon-btn" onclick="event.stopPropagation(); editExercise(${ex.id})" title="Edit">✎</button>` : '';
+                const copyBtn = `<button class="icon-btn" onclick="event.stopPropagation(); copyExercise(${ex.id}, ${!!ex.isCustom})" title="Copy">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>`;
+                const customTag = ex.isCustom ? `<span class="badge">${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Custom'}</span>` : '';
                 return `<div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)" oncontextmenu="event.preventDefault()">
-                            <img src="${images[ex.imageId] || ''}" class="ex-thumb">
-                            <div style="flex-grow:1">
-                                <div style="font-weight:700">${getDisplayedName(ex)}</div>
-                                ${ptLine}
-                            </div>
-                            <div style="display:flex; gap:8px; align-items:center;">
-                                ${editBtn}
+                            <div style="width:100%"><img src="${images[ex.imageId] || ''}" class="ex-thumb"></div>
+                            <div class="meta-actions-row">
+                                <div class="meta">
+                                    ${customTag ? `<div>${customTag}</div>` : ''}
+                                    <div class="title">${getDisplayedName(ex)}</div>
+                                </div>
+                                <div class="actions">${copyBtn}${editBtn}</div>
                             </div>
                             <svg class="tick-icon" viewBox="0 0 32 32" fill="none">
                                 <circle cx="16" cy="16" r="16" fill="var(--success)"/>
