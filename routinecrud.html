@@ -523,8 +523,41 @@
                 // sets UI (table-like)
                 const setsContainer = document.createElement('div');
                 setsContainer.className = 'sets-container';
+                // Normalize incoming `sets` for backward compatibility:
+                // Older versions stored expanded arrays like [{reps,weight}, {reps,weight}, ...]
+                // Compress runs of identical reps+weight into objects with a `sets` count.
+                const normalizeIncomingSets = (raw) => {
+                    if (!Array.isArray(raw) || raw.length === 0) return null;
+                    // detect expanded format: items have reps/weight but no `sets`
+                    const looksExpanded = raw.every(it => it && (it.reps !== undefined || it.weight !== undefined) && it.sets === undefined);
+                    if (!looksExpanded) return null;
+                    const compressed = [];
+                    let prevKey = null; let prevReps = null; let prevWeight = null; let count = 0;
+                    for (const it of raw) {
+                        const r = (it.reps === null || it.reps === undefined) ? '' : it.reps;
+                        const w = (it.weight === null || it.weight === undefined) ? '' : it.weight;
+                        const key = `${r}:::${w}`;
+                        if (key === prevKey) {
+                            count++;
+                        } else {
+                            if (prevKey !== null) {
+                                compressed.push({ sets: count, reps: prevReps, weight: prevWeight });
+                            }
+                            prevKey = key; prevReps = r; prevWeight = w; count = 1;
+                        }
+                    }
+                    if (prevKey !== null) compressed.push({ sets: count, reps: prevReps, weight: prevWeight });
+                    return compressed;
+                };
+
+                let processedSets = sets;
+                if (Array.isArray(sets) && sets.length) {
+                    const norm = normalizeIncomingSets(sets);
+                    if (norm) processedSets = norm;
+                }
+
                 // populate existing sets or add a default single set (all fields blank by default)
-                const initialSets = Array.isArray(sets) && sets.length ? sets : [{ sets: '', reps: '', weight: '' }];
+                const initialSets = Array.isArray(processedSets) && processedSets.length ? processedSets : [{ sets: '', reps: '', weight: '' }];
                 initialSets.forEach(s => addSetRowToContainer(setsContainer, s));
 
                 const addSetBtn = document.createElement('button');
@@ -627,16 +660,26 @@
                 const id = parseInt(card.dataset.id);
                 const isCustom = card.dataset.isCustom === 'true';
                 const sets = [];
-                const rows = card.querySelectorAll('.set-row');
+                // only iterate data rows (skip header-row)
+                const rows = card.querySelectorAll('.set-row.data-row');
                 rows.forEach(r => {
                     const inputs = r.querySelectorAll('input');
                     if (!inputs || inputs.length < 3) return;
-                    const sVal = inputs[0].value.trim();
-                    const rVal = inputs[1].value.trim();
-                    const wVal = inputs[2].value.trim();
-                    // only include if any field has value
-                    if (sVal !== '' || rVal !== '' || wVal !== '') {
-                        sets.push({ sets: sVal === '' ? null : parseInt(sVal, 10), reps: rVal === '' ? null : parseInt(rVal, 10), weight: wVal === '' ? null : (isNaN(Number(wVal)) ? wVal : Number(wVal)) });
+                    const sRaw = inputs[0].value.trim();
+                    const rRaw = inputs[1].value.trim();
+                    const wRaw = inputs[2].value.trim();
+
+                    // skip completely empty rows
+                    if (sRaw === '' && rRaw === '' && wRaw === '') return;
+
+                    // determine how many repetitions this row represents
+                    const count = (sRaw === '' ? 1 : (isNaN(Number(sRaw)) ? 1 : parseInt(sRaw, 10)));
+
+                    const repsVal = (rRaw === '' ? null : parseInt(rRaw, 10));
+                    const weightVal = (wRaw === '' ? null : (isNaN(Number(wRaw)) ? wRaw : Number(wRaw)));
+
+                    for (let i = 0; i < count; i++) {
+                        sets.push({ reps: repsVal, weight: weightVal });
                     }
                 });
                 return { id, isCustom, sets };
