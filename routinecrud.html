@@ -30,13 +30,18 @@
         .selected-ex-list.empty { min-height: 160px; border: 2px dashed rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; align-items: center; justify-content: center; display: flex; cursor: pointer; }
         .selected-ex-list .empty-hint { color: var(--text-dim); font-size: 0.95rem; text-align: center; }
         .selected-ex-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; }
-        .set-row-input { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
-        .set-row-input input { width: 70px; padding: 8px; font-size: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #000; }
+        /* per-set inputs removed - keeping UI minimal for routine creation */
         /* Large thumbnail for modal cards (image on top) */
         .exercise-card > div > .ex-thumb { display:block; width:100%; height:auto; max-height:150px; border-radius: 12px; object-fit: contain; object-position: center; background: #fff; }
         /* Larger thumbnail for selected list cards (keeps layout horizontal) */
-        .selected-ex-card { display:flex; gap:12px; align-items:center; }
-        .selected-ex-card .ex-thumb { width:110px; height:80px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; }
+        .selected-ex-card { display:flex; flex-direction:column; gap:8px; align-items:flex-start; position:relative; overflow: hidden; }
+        .selected-ex-card .ex-thumb { width:110px; height:72px; max-width:110px; border-radius:8px; object-fit:contain; object-position:center; background:#fff; display:block; align-self:flex-start; }
+        /* place remove button top-right */
+        .selected-ex-card > .remove-set-btn { position:absolute; top:8px; right:8px; z-index:2; outline:none; border:none; background:transparent; padding:4px; }
+        .selected-ex-card > .remove-set-btn:focus { outline:none; box-shadow:none; }
+        .selected-ex-card > div:first-child { display:flex; flex-direction:column; gap:8px; width:100%; margin-bottom:0; }
+        .selected-ex-card > div:first-child > div { display:flex; flex-direction:column; gap:6px; min-width:0; }
+        .selected-ex-card strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .hidden { display:none !important }
         .exercise-card { background: var(--card); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
         .exercise-card .actions { display:flex; gap:8px; align-items:center; position:absolute; right:12px; top:50%; transform:translateY(-50%); flex-direction:row; }
@@ -78,7 +83,8 @@
         }
         .icon-btn { background:none; border:none; color:var(--primary); padding:6px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
         .icon-btn:hover { background: rgba(59,130,246,0.06); }
-        .badge { display:inline-block; margin:0 0 6px 0; background:var(--primary); color:white; font-size:0.7rem; padding:4px 8px; border-radius:999px; font-weight:700; vertical-align:middle; }
+        .badge { display:inline-flex; align-items:center; justify-content:center; margin:0 0 6px 0; background:var(--primary); color:white; font-size:0.7rem; padding:4px 8px; border-radius:999px; font-weight:700; white-space:nowrap; width:auto; height:auto; align-self:flex-start; }
+        .selected-ex-card .badge.small-badge { display:inline-flex; align-items:center; justify-content:center; font-size:0.6rem; padding:2px 6px; font-weight:800; white-space:nowrap; width:auto; height:auto; align-self:flex-start; }
         /* Image drop / preview styling */
         .image-preview-box { width: 100%; height: 160px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius: 12px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; border: 2px dashed rgba(255,255,255,0.04); position:relative; }
         .image-preview-box.dragover { background: linear-gradient(180deg, rgba(59,130,246,0.06), rgba(37,99,235,0.02)); border-color: rgba(37,99,235,0.6); }
@@ -93,6 +99,28 @@
         .select-wrapper .chev { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-dim); font-size: 14px; }
         /* Make options easier to scan */
         .select-wrapper select option { padding: 8px 12px; }
+        /* Sets UI inside selected exercise cards */
+        .sets-container { display:flex; flex-direction:column; gap:8px; width:100%; margin-top:8px; }
+        /* table-like header for set fields */
+        .sets-container .header-row { display:flex; gap:8px; align-items:center; padding-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.03); }
+        .set-row { display:flex; gap:8px; align-items:center; flex-wrap:nowrap; }
+        .set-row .field { display:flex; flex-direction:column; gap:6px; width:64px; min-width:48px; align-items:flex-start; }
+        .set-row .field label { font-size:0.7rem; color:var(--text-dim); font-weight:700; display:block; text-align:left; margin-left:2px; }
+        .set-row.data-row .field label { display:none; }
+        .set-row input[type="number"], .set-row input[type="text"] { width:100%; padding:8px; border-radius:8px; font-size:0.9rem; box-sizing:border-box; text-align:center; }
+        /* hide native number input spinners for a cleaner mobile UI */
+        .set-row input[type="number"]::-webkit-outer-spin-button,
+        .set-row input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .set-row input[type="number"] { -moz-appearance: textfield; }
+        .set-row .remove-set-btn { background:transparent; border:none; padding:6px; cursor:pointer; color:var(--text-dim); display:flex; align-items:center; justify-content:center; align-self:center; }
+        .add-set-inline { margin-top:6px; padding:6px 10px; border-radius:8px; border:1px dashed rgba(255,255,255,0.06); background:transparent; color:var(--text-dim); cursor:pointer; font-weight:800; font-size:0.75rem; }
+        @media (max-width: 380px) {
+            .set-row { gap:6px; }
+            .set-row .field { width:56px; }
+        }
     </style>
 </head>
 <body>
@@ -482,24 +510,93 @@
             card.dataset.id = exId;
             card.dataset.isCustom = isCustom;
             card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <img src="${images[ex.imageId] || ''}" class="ex-thumb">
-                        <strong>${getDisplayedName(ex)}</strong>
-                    </div>
-                    <button type="button" class="remove-set-btn" onclick="removeSelectedCard(this)">×</button>
+                <img src="${images[ex.imageId] || ''}" class="ex-thumb">
+                <button type="button" class="remove-set-btn" onclick="removeSelectedCard(this)" aria-label="Remove">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+                <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+                    ${ex.isCustom ? `<span class="badge small-badge">${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Custom'}</span>` : ''}
+                    <strong>${getDisplayedName(ex)}</strong>
                 </div>
-                <div class="sets-container"></div>
-                <button type="button" class="add-set-btn" onclick="addSetRowToCard(this)">+ Adicionar Série</button>
+                
             `;
-            container.appendChild(card);
-            const setsContainer = card.querySelector('.sets-container');
-            if (sets.length > 0) sets.forEach((s, i) => addSetRowToContainer(setsContainer, i+1, s.reps, s.weight)); else addSetRowToContainer(setsContainer, 1);
-            ensureEmptyHint();
+                // sets UI (table-like)
+                const setsContainer = document.createElement('div');
+                setsContainer.className = 'sets-container';
+                // populate existing sets or add a default single set (all fields blank by default)
+                const initialSets = Array.isArray(sets) && sets.length ? sets : [{ sets: '', reps: '', weight: '' }];
+                initialSets.forEach(s => addSetRowToContainer(setsContainer, s));
+
+                const addSetBtn = document.createElement('button');
+                addSetBtn.type = 'button';
+                addSetBtn.className = 'add-set-inline';
+                addSetBtn.textContent = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('add_set') || 'Add set' : 'Add set';
+                addSetBtn.onclick = (ev) => { ev.stopPropagation(); addSetRowToContainer(setsContainer, { sets: '', reps: '', weight: '' }); };
+
+                card.appendChild(setsContainer);
+                card.appendChild(addSetBtn);
+
+                container.appendChild(card);
+                ensureEmptyHint();
         }
-        function addSetRowToCard(btn) { const container = btn.previousElementSibling; const nextNum = container.children.length + 1; addSetRowToContainer(container, nextNum); }
-        function addSetRowToContainer(container, num, reps = '', weight = '') { const div = document.createElement('div'); div.className = 'set-row-input'; div.innerHTML = `<span style="font-size:0.7rem; color:#64748b; width:20px">S${num}</span><input type="number" placeholder="Repetições" class="set-reps" value="${reps}"><input type="number" step="0.5" placeholder="Kg" class="set-weight" value="${weight}"><button type="button" class="remove-set-btn" onclick="removeSetRow(this)">×</button>`; container.appendChild(div); }
-        function removeSetRow(btn) { const container = btn.parentElement.parentElement; btn.parentElement.remove(); Array.from(container.children).forEach((row, i) => { row.querySelector('span').innerText = `S${i + 1}`; }); }
+        
+
+
+        // per-set helpers removed
+
+        function addSetRowToContainer(container, setData) {
+            // create header row once
+            const labelSets = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('sets') : 'Sets';
+            const labelReps = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('reps') : 'Reps';
+            const labelWeight = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('weight') : 'Weight';
+
+            if (!container.querySelector('.header-row')) {
+                const headerRow = document.createElement('div');
+                headerRow.className = 'set-row header-row';
+                const makeHeaderField = (labelText) => {
+                    const f = document.createElement('div'); f.className = 'field';
+                    const l = document.createElement('label'); l.textContent = labelText; f.appendChild(l); return f;
+                };
+                headerRow.appendChild(makeHeaderField(labelSets));
+                headerRow.appendChild(makeHeaderField(labelReps));
+                headerRow.appendChild(makeHeaderField(labelWeight));
+                // spacer for remove column
+                const spacer = document.createElement('div'); spacer.style.width = '36px'; headerRow.appendChild(spacer);
+                container.appendChild(headerRow);
+            }
+
+            const row = document.createElement('div');
+            row.className = 'set-row data-row';
+
+            const setsInput = document.createElement('input'); setsInput.type = 'number'; setsInput.min = '0';
+            const repsInput = document.createElement('input'); repsInput.type = 'number'; repsInput.min = '0';
+            const weightInput = document.createElement('input'); weightInput.type = 'text';
+
+            const applyDefaultValue = (inputEl, val) => {
+                if (val === undefined || val === null || val === '') inputEl.value = '';
+                else inputEl.value = val;
+            };
+
+            applyDefaultValue(setsInput, setData && setData.sets);
+            applyDefaultValue(repsInput, setData && setData.reps);
+            applyDefaultValue(weightInput, setData && setData.weight);
+
+            const makeField = (inputEl) => {
+                const f = document.createElement('div'); f.className = 'field';
+                f.appendChild(inputEl);
+                return f;
+            };
+
+            const removeBtn = document.createElement('button'); removeBtn.type = 'button'; removeBtn.className = 'remove-set-btn'; removeBtn.setAttribute('aria-label','Remove set');
+            removeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+            removeBtn.onclick = (e) => { e.stopPropagation(); row.remove(); };
+
+            row.appendChild(makeField(setsInput));
+            row.appendChild(makeField(repsInput));
+            row.appendChild(makeField(weightInput));
+            row.appendChild(removeBtn);
+            container.appendChild(row);
+        }
 
         function removeSelectedCard(btn) { const card = btn.closest('.selected-ex-card'); if (card) card.remove(); ensureEmptyHint(); }
 
@@ -525,7 +622,26 @@
             try { if (window.GN_I18N) GN_I18N.applyTranslations(container); } catch(e){}
         }
 
-        function getSelectedExercisesData() { return Array.from(document.querySelectorAll('.selected-ex-card')).map(card => { const id = parseInt(card.dataset.id); const isCustom = card.dataset.isCustom === 'true'; const sets = Array.from(card.querySelectorAll('.set-row-input')).map(row => ({ reps: parseInt(row.querySelector('.set-reps').value) || 0, weight: parseFloat(row.querySelector('.set-weight').value) || 0 })); return { id, sets, isCustom }; }); }
+        function getSelectedExercisesData() {
+            return Array.from(document.querySelectorAll('.selected-ex-card')).map(card => {
+                const id = parseInt(card.dataset.id);
+                const isCustom = card.dataset.isCustom === 'true';
+                const sets = [];
+                const rows = card.querySelectorAll('.set-row');
+                rows.forEach(r => {
+                    const inputs = r.querySelectorAll('input');
+                    if (!inputs || inputs.length < 3) return;
+                    const sVal = inputs[0].value.trim();
+                    const rVal = inputs[1].value.trim();
+                    const wVal = inputs[2].value.trim();
+                    // only include if any field has value
+                    if (sVal !== '' || rVal !== '' || wVal !== '') {
+                        sets.push({ sets: sVal === '' ? null : parseInt(sVal, 10), reps: rVal === '' ? null : parseInt(rVal, 10), weight: wVal === '' ? null : (isNaN(Number(wVal)) ? wVal : Number(wVal)) });
+                    }
+                });
+                return { id, isCustom, sets };
+            });
+        }
 
         async function saveRoutine() {
             const name = document.getElementById('routineName').value.trim();
