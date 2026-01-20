@@ -11,8 +11,12 @@
     var _refreshPromise = window._refreshPromise || null;
 
     window.logout = () => {
-        localStorage.removeItem('google_token');
-        localStorage.removeItem('google_token_expires_at');
+        const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('confirm_logout') : 'Are you sure you want to logout?';
+        if (!confirm(msg)) return;
+        try {
+            localStorage.removeItem('google_token');
+            localStorage.removeItem('google_token_expires_at');
+        } catch(e){}
         location.reload();
     };
 

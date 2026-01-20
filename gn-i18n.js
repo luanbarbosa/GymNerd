@@ -52,7 +52,7 @@
                 restore: 'Restore from local backup',
                     restore_help: 'Select JSON files to restore specific parts of the app.',
                 label_images: 'Custom images (custom_images.json)',
-                label_exercises: 'Custom Exercises (custom_exercises.json)',
+                label_exercises: 'Custom exercises (custom_exercises.json)',
                 label_routines: 'Routines (routines.json)',
                 label_history: 'History (history.json)',
                 process_import: 'Import',
@@ -100,6 +100,7 @@
                 login: 'Login',
 
                 welcome_back_syncing: 'Welcome back!\nSyncing your data...',
+                confirm_logout: 'Are you sure you want to logout?',
                 retry: 'Retry',
                 retrying: 'Retrying...',
                 failed_to_refresh_session: 'Could not refresh your session automatically. Please sign in again.'
@@ -285,6 +286,7 @@
                 login: 'Entrar',
 
                 welcome_back_syncing: 'Bem vindo de volta!\nSincronizando seus dados...',
+                confirm_logout: 'Tem certeza de que deseja sair?',
                 retry: 'Tentar novamente',
                 retrying: 'Tentando...',
                 failed_to_refresh_session: 'Não foi possível atualizar sua sessão automaticamente. Por favor, entre novamente.'
