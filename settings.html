@@ -3,15 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GymNerd | Home</title>
+    <title>GymNerd | Settings</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
-    <!-- Optional: set this to your deployed token-exchange function URL.
-         Example:
-         window.EXCHANGE_TOKEN_URL = 'https://us-central1-PROJECT.cloudfunctions.net/exchangeToken';
-         If empty, the app will first try same-origin `/exchangeToken` (works when deployed
-         to Firebase Hosting with rewrites). GitHub Pages won't accept POSTs at that path.
-    -->
     <script>
         window.EXCHANGE_TOKEN_URL = '';
     </script>
@@ -22,69 +16,71 @@
     <script src="db.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 700px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .main-content { padding: 20px; display: none; }
-        h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
-        
-        .menu-grid { display: grid; gap: 15px; }
-        .nav-card { background: var(--card); padding: 24px; border-radius: 16px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.05); }
-        .nav-card:active { transform: scale(0.97); }
-        
-        details { background: var(--card); border-radius: 16px; margin-top: 40px; border: 1px solid rgba(255,255,255,0.05); }
-        summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
-        summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
-        details[open] summary .chevron { transform: rotate(180deg); }
-        .content-box { padding: 0 20px 20px 20px; border-top: 1px solid rgba(255,255,255,0.05); }
-        
+        .main-content { padding: 20px; }
+        h1 { text-align: center; font-weight: 900; margin-bottom: 20px; margin-top: 20px; letter-spacing: -1px; font-size: 2.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 16px; }
         .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .export-btn { background: var(--success); color: white; }
         .import-btn { background: #6366f1; color: white; }
+        .danger { background: transparent; color: var(--danger); border: 1px solid rgba(239,68,68,0.15); }
         label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
+        .top-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 12px; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
     </style>
 </head>
 <body>
 
-    <script>
-        // Keep the main UI hidden until auth + initial sync complete
-        window.showApp = function() {
-            try { document.querySelector('.main-content').style.display = 'block'; } catch(e){}
-            try { const blocker = document.getElementById('auth-blocker'); if (blocker) blocker.remove(); } catch(e){}
-            try { const loader = document.getElementById('global-loader'); if (loader) loader.style.display = 'none'; } catch(e){}
-        };
-    </script>
-
     <div class="main-content">
-        <div id="auth-status-container"></div>
-
-        <button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
-            <span data-i18n="sync_pending">☁️ Sync Pending Changes</span><span>→</span>
-        </button>
-
-        <h1 data-i18n="title_main">GymNerd</h1>
-        
-        <div class="menu-grid">
-            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span data-i18n="menu_start_routine">🚀 Start Routine</span><span>→</span></a>
-            <a href="routines.html" class="nav-card"><span data-i18n="menu_routines">🏋 Routines</span><span>→</span></a>
-            <a href="history.html" class="nav-card"><span data-i18n="menu_history">📋 History</span><span>→</span></a>
-            <a href="statistics.html" class="nav-card"><span data-i18n="menu_statistics">📊 Statistics</span><span>→</span></a>
+        <div class="top-bar" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <a href="index.html" class="back-btn">←</a>
+            <h1 style="margin:0;font-size:1.6rem;letter-spacing:-1px;" data-i18n="page_settings">Settings</h1>
         </div>
+
+        <div class="card">
+            <h3 data-i18n="language">Language</h3>
+            <div style="margin-top:8px;">
+                <select id="gn-lang-select" style="padding:8px 10px; border-radius:8px; background: rgba(255,255,255,0.02); color: #f8fafc; border:1px solid rgba(255,255,255,0.05); font-weight:700;">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="pt">🇧🇷 Português</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 data-i18n="data_management">⚙️ Data Management</h3>
+            <div style="margin-top:12px;">
+                <h4 data-i18n="cloud_sync">Cloud Sync</h4>
+                <button id="sync-drive-btn" class="sync-btn" style="background: #3b82f6; color: white;" onclick="syncToDrive()" data-i18n="sync_to_drive">☁️ Sync to Google Drive</button>
+                <button id="restore-drive-btn" class="sync-btn" style="background: #6366f1; color: white;" onclick="restoreFromDrive()" data-i18n="restore_from_drive">📥 Restore from Google Drive</button>
+
+                <h4 data-i18n="backup">Backup</h4>
+                <button class="sync-btn export-btn" onclick="exportData()" data-i18n="export_json">📤 Export 4 JSON Files</button>
+
+                <h4 data-i18n="restore">Restore</h4>
+                <label data-i18n="label_images">1. Images Database (.json)</label><input type="file" id="importImg" accept=".json">
+                <label data-i18n="label_exercises">2. Exercises (.json)</label><input type="file" id="importEx" accept=".json">
+                <label data-i18n="label_routines">3. Routines (.json)</label><input type="file" id="importWk" accept=".json">
+                <label data-i18n="label_history">4. History (.json)</label><input type="file" id="importLogs" accept=".json">
+                <button class="sync-btn import-btn" onclick="importData()" data-i18n="process_import">📥 Process Import</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Danger Zone</h3>
+            <div class="top-row">
+                <button onclick="clearAllAppData()" class="sync-btn danger" style="flex:1;" data-i18n="clear_all"></button>
+                <button onclick="logout()" class="sync-btn" style="flex:1; background:#ef4444; color:white; margin-left:10px;" data-i18n="logout"></button>
+            </div>
+        </div>
+
     </div>
 
     <script>
 
-        // Initialize Auth Status UI
-        renderAuthStatus('auth-status-container');
-
-        function checkSyncStatus() {
-            const token = localStorage.getItem('google_token');
-            const isBypass = token === 'local-bypass';
-            const hasChanges = localStorage.getItem('has_local_changes') === 'true';
-            const btn = document.getElementById('sync-pending-btn');
-            if (btn) btn.style.display = (hasChanges && token && !isBypass) ? 'block' : 'none';
-        }
-
+        // Import/export/restore/sync functions copied from home to keep behavior consistent
         async function exportData() {
             await ensureDbOpen();
             const date = new Date().toISOString().slice(0,10);
@@ -129,7 +125,6 @@
                         let parsedData = JSON.parse(text);
                         const table = db[key];
 
-                        // Normalize image tables to ensure stored data are data URIs
                         if (key && key.toLowerCase().includes('image')) {
                             parsedData = parsedData.map(img => ({
                                 ...img,
@@ -141,7 +136,6 @@
                         await table.bulkAdd(parsedData);
                     }
                 }
-                // Import weights if user selects a file named weights.json
                 const weightsFile = Array.from(document.querySelectorAll('input[type="file"]')).find(f => f.files[0] && f.files[0].name.includes('weights'));
                 if (weightsFile && weightsFile.files[0]) {
                     const text = await weightsFile.files[0].text();
@@ -205,24 +199,19 @@
                         if (data.logs) await db.logs.bulkAdd(data.logs);
                     });
 
-                    // Save last sync time if available
                     if (data.lastSync) localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync);
                     localStorage.setItem('has_local_changes', 'false');
 
-                    if (isAuto) {
-                        if (window.showApp) window.showApp();
-                    } else {
-                        location.reload();
-                    }
+                    location.reload();
                 }
             } catch (error) {
                 if (error.message === "AUTH_EXPIRED") {
-                    if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : "Your session has expired. Please login again.");
-                    renderAuthStatus('auth-status-container');
+                    alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : "Your session has expired. Please login again.");
+                    if (document.getElementById('auth-status-container')) renderAuthStatus('auth-status-container');
                     return;
                 }
                 console.error("Restore failed:", error);
-                if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('restore_failed_prefix') + error.message) : ("Restore failed: " + error.message));
+                alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('restore_failed_prefix') + error.message) : ("Restore failed: " + error.message));
             } finally {
                 if (window.hideLoading) window.hideLoading();
             }
@@ -233,25 +222,34 @@
                 await DriveStorage.sync(db);
                 checkSyncStatus();
             } catch (error) {
-                // Error handled in DriveStorage.sync
             }
         }
 
-        // Check for auto-download after login (placed at end to ensure functions are defined)
-        if (localStorage.getItem('needs_initial_download') === 'true') {
-            localStorage.removeItem('needs_initial_download');
-            restoreFromDrive(true);
+        function checkSyncStatus() {
+            const token = localStorage.getItem('google_token');
+            const isBypass = token === 'local-bypass';
+            const hasChanges = localStorage.getItem('has_local_changes') === 'true';
+            const btn = document.getElementById('sync-drive-btn');
+            // show/hide handled differently here; keep simple
         }
 
-        checkSyncStatus();
-        // Apply translations for home screen
         try {
             if (window.GN_I18N) {
                 document.addEventListener('DOMContentLoaded', () => GN_I18N.applyTranslations(document));
-                // Also apply immediately in case DOMContentLoaded already fired
                 GN_I18N.applyTranslations(document);
             }
         } catch(e) {}
-        </script>
+
+        // Initialize language selector on settings page
+        try {
+            const sel = document.getElementById('gn-lang-select');
+            if (sel && window.GN_I18N) {
+                try { sel.value = GN_I18N.getLang(); } catch(e) {}
+                sel.addEventListener('change', (ev) => {
+                    try { GN_I18N.setLang(ev.target.value); location.reload(); } catch(e) {}
+                });
+            }
+        } catch(e) {}
+    </script>
 </body>
 </html>
