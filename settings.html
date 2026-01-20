@@ -21,7 +21,11 @@
 
         .main-content { padding: 20px; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 20px; margin-top: 20px; letter-spacing: -1px; font-size: 2.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 16px; }
+        /* Keep top-bar title visually consistent without changing font-size */
+        .top-title { margin: 0; font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* Reduce vertical spacing for card titles only */
+        .card h3, .card h4 { margin-top: 0; margin-bottom: 8px; }
+        .card { background: var(--card); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 16px; }
         .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .export-btn { background: var(--success); color: white; }
         .import-btn { background: #6366f1; color: white; }
@@ -36,7 +40,7 @@
     <div class="main-content">
         <div class="top-bar" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
             <a href="index.html" class="back-btn">←</a>
-            <h1 style="margin:0;font-size:1.6rem;letter-spacing:-1px;" data-i18n="page_settings">Settings</h1>
+            <h2 class="top-title" data-i18n="page_settings">Settings</h2>
         </div>
 
         <div class="card">
