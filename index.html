@@ -56,7 +56,7 @@
     </script>
 
     <div class="main-content">
-        <div id="auth-status-container"></div>
+        <div id="auth-user-container"></div>
 
         <button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
             <span data-i18n="sync_pending">☁️ Sync Pending Changes</span><span>→</span>
@@ -74,8 +74,8 @@
 
     <script>
 
-        // Initialize Auth Status UI
-        renderAuthStatus('auth-status-container');
+        // Initialize compact user info UI on home page
+        try { if (typeof renderUserInfo === 'function') renderUserInfo('auth-user-container'); } catch(e){}
 
         function checkSyncStatus() {
             const token = localStorage.getItem('google_token');
@@ -216,9 +216,10 @@
                     }
                 }
             } catch (error) {
-                if (error.message === "AUTH_EXPIRED") {
+                    if (error.message === "AUTH_EXPIRED") {
                     if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : "Your session has expired. Please login again.");
-                    renderAuthStatus('auth-status-container');
+                    try { if (document.getElementById('auth-user-container')) { if (typeof renderUserInfo === 'function') renderUserInfo('auth-user-container'); } } catch(e){}
+                    try { if (document.getElementById('auth-status-container')) { if (typeof renderAuthStatus === 'function') renderAuthStatus('auth-status-container'); } } catch(e){}
                     return;
                 }
                 console.error("Restore failed:", error);
