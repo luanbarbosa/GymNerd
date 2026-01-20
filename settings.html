@@ -24,13 +24,13 @@
         /* Keep top-bar title visually consistent without changing font-size */
         .top-title { margin: 0; font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         /* Reduce vertical spacing for card titles only */
-        .card h3, .card h4 { margin-top: 0; margin-bottom: 8px; }
+        .card h3, .card h4 { margin-top: 0; margin-bottom: 6px; }
         .card { background: var(--card); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 16px; }
         .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .export-btn { background: var(--success); color: white; }
         .import-btn { background: #6366f1; color: white; }
         .danger { background: transparent; color: var(--danger); border: 1px solid rgba(239,68,68,0.15); }
-        label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
+        label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 6px; }
         .top-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 12px; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
         /* Data Management card specific styles */
@@ -40,9 +40,9 @@
         .data-card label { margin-bottom:4px; display:block; color:#94a3b8; }
         .data-card input[type="file"] { width:100%; }
         /* Sexy file input styles */
-        .file-row { display:flex; align-items:center; gap:12px; flex-wrap:nowrap; }
+        .file-row { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; }
         .file-desc { flex: 1 1 auto; color: #94a3b8; font-weight:700; min-width:0; }
-        .file-control { display:flex; gap:8px; align-items:center; flex:0 0 auto; }
+        .file-control { display:flex; gap:6px; align-items:center; flex:0 0 auto; }
         .file-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-weight:800; }
         .file-btn:hover { background: rgba(255,255,255,0.05); }
         .file-name { color: #94a3b8; font-size: 0.95rem; max-width: 40vw; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display:inline-block; }
@@ -58,7 +58,7 @@
 <body>
 
     <div class="main-content">
-        <div class="top-bar" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div class="top-bar" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <a href="index.html" class="back-btn">←</a>
             <h2 class="top-title" data-i18n="page_settings">Settings</h2>
         </div>
@@ -86,7 +86,7 @@
         <div class="card data-card">
             <h3 data-i18n="backup">Backup</h3>
             <div style="margin-top:8px;">
-                <h4 data-i18n="backup">Local Backup</h4>
+                <h4 data-i18n="backup_local">Local Backup</h4>
                 <div style="margin-top:6px;">
                     <button class="sync-btn export-btn" onclick="exportData()" data-i18n="export_json">📤 Export 4 JSON Files</button>
                 </div>
@@ -98,8 +98,8 @@
                             <label data-i18n="label_images">1. Images Database (.json)</label>
                         </div>
                         <div class="file-control">
-                            <label class="file-btn" for="importImg">📁 Choose</label>
-                            <span class="file-name" id="importImg-name">No file chosen</span>
+                            <label class="file-btn" for="importImg" data-i18n="choose_file"></label>
+                            <span class="file-name" id="importImg-name" data-i18n="no_file_chosen"></span>
                         </div>
                         <input type="file" id="importImg" accept=".json" class="hidden-file">
                     </div>
@@ -109,8 +109,8 @@
                             <label data-i18n="label_exercises">2. Exercises (.json)</label>
                         </div>
                         <div class="file-control">
-                            <label class="file-btn" for="importEx">📁 Choose</label>
-                            <span class="file-name" id="importEx-name">No file chosen</span>
+                            <label class="file-btn" for="importEx" data-i18n="choose_file"></label>
+                            <span class="file-name" id="importEx-name" data-i18n="no_file_chosen"></span>
                         </div>
                         <input type="file" id="importEx" accept=".json" class="hidden-file">
                     </div>
@@ -120,8 +120,8 @@
                             <label data-i18n="label_routines">3. Routines (.json)</label>
                         </div>
                         <div class="file-control">
-                            <label class="file-btn" for="importWk">📁 Choose</label>
-                            <span class="file-name" id="importWk-name">No file chosen</span>
+                            <label class="file-btn" for="importWk" data-i18n="choose_file"></label>
+                            <span class="file-name" id="importWk-name" data-i18n="no_file_chosen"></span>
                         </div>
                         <input type="file" id="importWk" accept=".json" class="hidden-file">
                     </div>
@@ -131,8 +131,8 @@
                             <label data-i18n="label_history">4. History (.json)</label>
                         </div>
                         <div class="file-control">
-                            <label class="file-btn" for="importLogs">📁 Choose</label>
-                            <span class="file-name" id="importLogs-name">No file chosen</span>
+                            <label class="file-btn" for="importLogs" data-i18n="choose_file"></label>
+                            <span class="file-name" id="importLogs-name" data-i18n="no_file_chosen"></span>
                         </div>
                         <input type="file" id="importLogs" accept=".json" class="hidden-file">
                     </div>
@@ -144,7 +144,7 @@
         </div>
 
         <div class="card">
-            <h3>Danger Zone</h3>
+            <h3 data-i18n="danger_zone">Danger Zone</h3>
             <div class="top-row">
                 <button onclick="clearAllAppData()" class="sync-btn danger" style="flex:1;" data-i18n="clear_all"></button>
                 <button onclick="logout()" class="sync-btn" style="flex:1; background:#ef4444; color:white; margin-left:10px;" data-i18n="logout"></button>
