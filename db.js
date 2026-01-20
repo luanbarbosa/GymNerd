@@ -11,6 +11,12 @@ db.version(11).stores({
     weights: 'date, weight'
 });
 
+// Canonical list of available exercise types used across the app
+const AVAILABLE_EXERCISE_TYPES = ['abs','arms','back','cardio','chest','legs','shoulder','other'];
+// Expose on db and window for easy access
+db.availableExerciseTypes = AVAILABLE_EXERCISE_TYPES;
+window.AVAILABLE_EXERCISE_TYPES = AVAILABLE_EXERCISE_TYPES;
+
 async function ensureDbOpen() {
     if (!db.isOpen()) await db.open();
 }

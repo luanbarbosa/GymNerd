@@ -12,10 +12,10 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; --header-height: 56px; --tabs-height: 64px; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 6px; position: sticky; top: 0; z-index: 1200; height: var(--header-height); padding: 8px 12px; backdrop-filter: blur(6px); background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(15,23,42,0.88)); }
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
@@ -77,6 +77,9 @@
             letter-spacing: 0.05em;
             border: 1px solid rgba(59, 130, 246, 0.3);
             display: inline-block;
+            white-space: nowrap;
+            width: auto;
+            max-width: none;
             margin-top: 4px;
         }
 
@@ -94,31 +97,45 @@
         .image-preview-box img { background: #fff; }
 
         .hidden { display: none !important; }
-        .workout-card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        /* Image preview modal */
+        .image-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); z-index: 2200; }
+        .image-modal .modal-inner { position: relative; max-width: 92vw; max-height: 92vh; padding: 12px; box-sizing: border-box; background: #fff; border-radius: 12px; }
+        .image-modal img { max-width: 100%; max-height: 84vh; border-radius: 8px; display: block; background: #fff; }
+        .image-modal .close-btn { position: absolute; top: 8px; right: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: var(--primary); border: none; color: #fff; border-radius: 50%; cursor: pointer; font-weight: 800; box-shadow: 0 6px 18px rgba(37,99,235,0.22); }
+        .image-modal .close-btn:hover { filter: brightness(0.95); }
+        .image-modal .close-btn:focus { outline: 3px solid rgba(59,130,246,0.18); }
+        .workout-card { background: transparent; padding: 10px 0; border-radius: 16px; margin-bottom: 15px; border: none; }
         .workout-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
         .workout-name { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
         /* Stack image, title and sets vertically inside the main area; drag handle sits at the right */
-        .exercise-tag { display: flex; align-items: stretch; gap: 12px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 4px 12px rgba(0,0,0,0.25); transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
+        .exercise-tag { display: flex; align-items: stretch; gap: 12px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); box-shadow: none; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
         .exercise-tag:hover { transform: translateY(-3px); }
         .exercise-tag .main { flex: 1 1 auto; display:flex; flex-direction:column; gap:8px; }
         .exercise-tag .ex-thumb { width: 100%; height: 110px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
         .exercise-tag .exercise-title { font-weight:700; font-size: 1rem; color: var(--text); margin: 0; }
+        /* New card layout: preview square + meta column + sets table */
+        .ex-preview-square { width:72px; height:72px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; align-self:flex-start; }
+        .exercise-row { display:flex; gap:12px; align-items:flex-start; }
+        .exercise-meta { display:flex; flex-direction:column; gap:4px; align-items: flex-start; }
+        .exercise-type { font-size:0.8rem; color:var(--text-dim); font-weight:700; text-transform:capitalize; }
+        .sets-table { width:100%; border-collapse:collapse; margin-top:8px; }
+        .sets-table th, .sets-table td { text-align:left; padding:6px 8px; font-size:0.85rem; color:var(--text-dim); border-bottom:1px solid rgba(255,255,255,0.03); }
+        .sets-table th { color:var(--text-dim); font-weight:800; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; }
         .set-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; justify-content: flex-start; }
         .set-pill { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; color: var(--text-dim); font-weight: 700; }
-        /* Drag handle hidden by default; shown when the list is in sorting mode */
-        .exercise-tag .drag-handle { display: none; pointer-events: none; font-size: 1.1rem; color: rgba(148,163,184,0.9); padding: 8px; border-radius: 8px; cursor: grab; user-select: none; touch-action: none; background: rgba(255,255,255,0.02); align-self: center; }
-        #exerciseList.sorting .exercise-tag .drag-handle { display: inline-flex; pointer-events: auto; }
+        .sets-compact { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .reorder-btn { display: inline-flex; align-items: center; gap:8px; border: none; background: rgba(255,255,255,0.02); color: var(--text-dim); padding: 8px 10px; border-radius: 10px; cursor: pointer; font-weight: 800; transition: background 0.12s, box-shadow 0.12s, color 0.12s, transform 0.08s; }
+        .reorder-btn svg { stroke: currentColor; transition: stroke 0.12s, transform 0.12s; }
+        .reorder-btn:active { transform: scale(0.98); }
+        .reorder-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+        .exercise-list.reorder-mode .drag-handle { display: inline-flex; }
+        .exercise-list.reorder-mode .sets-compact,
+        .exercise-list.reorder-mode .set-pill,
+        .exercise-list.reorder-mode .sets-table { display: none !important; }
+        .exercise-tag .drag-handle { display: none; border: none; background: transparent; color: var(--text-dim); font-size: 1.1rem; padding: 6px 8px; border-radius: 8px; cursor: grab; margin-left: auto; align-self: center; }
         .exercise-tag .drag-handle:active { cursor: grabbing; }
-
         .sort-btn { color: var(--text-dim); background: rgba(255,255,255,0.02); border: none; cursor: pointer; display: flex; align-items: center; padding: 8px; border-radius: 10px; transition: background 0.12s; }
         .sort-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-        .draggable.dragging { opacity: 0.85; transform: scale(0.98); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .draggable { user-select: none; }
-        .drop-placeholder { border: 2px dashed rgba(148,163,184,0.25); margin: 6px 0; border-radius: 12px; background: rgba(255,255,255,0.01); }
-        .drag-ghost { position: fixed; z-index: 9999; pointer-events: none; transform: translate(-50%,-50%) scale(0.98); opacity: 0.95; transition: transform 0.08s ease; width: auto; max-width: 90%; box-shadow: 0 12px 30px rgba(0,0,0,0.5); border-radius: 12px; }
-        /* Drop indicator */
-        .exercise-tag.drop-target { border-top: 3px solid rgba(59,130,246,0.9); box-shadow: none; }
-        .exercise-list-drop-bottom { box-shadow: inset 0 -3px 0 rgba(59,130,246,0.9); border-radius: 12px; }
 
 
         .set-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; justify-content: flex-start; }
@@ -129,11 +146,15 @@
         .del-btn { color: var(--danger); background: rgba(255,255,255,0.05); border: none; cursor: pointer; display: flex; align-items: center; padding: 10px; border-radius: 10px; transition: background 0.2s; }
 
         .section-title { margin-top: 40px; margin-bottom: 20px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; padding-left: 5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; }
-        /* Tabs */
-        #routines-tabs { display:flex; gap:8px; flex-wrap:nowrap; }
-        .tab-btn { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); color: var(--text-dim); cursor: pointer; font-weight:800; }
-        .tab-btn.active { background: var(--primary); color: #fff; border-color: rgba(255,255,255,0.06); box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-        .tab-card { background: var(--card); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); }
+        /* Tabs - mobile segmented control style */
+        #tabsWrapper { position: sticky; top: var(--header-height); z-index: 1150; }
+        #routines-tabs { display:flex; gap:6px; flex-wrap:nowrap; justify-content:flex-start; align-items:center; padding:8px 12px; background: rgba(255,255,255,0.02); border-radius: 14px; margin: 0 0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .tab-btn { padding: 10px 14px; border-radius: 10px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-weight:800; text-align:center; font-size:0.95rem; white-space:nowrap; word-break:keep-all; flex:0 0 auto; }
+        .tab-btn:focus { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); border-radius:10px; }
+        .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+        .tab-card { background: transparent; padding: 12px; border-radius: 12px; border: none; }
+        /* Make routines content the scrollable area so header and tabs stay fixed */
+        #routines-content { height: calc(100vh - var(--header-height) - var(--tabs-height)); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px 12px 24px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -147,11 +168,15 @@
         </div>
     </div>
 
-    <div class="card" style="padding:10px 12px; margin-bottom:20px;">
+    <div id="tabsWrapper" style="background:transparent; border:none; padding:0; margin-bottom:20px; border-radius:0; box-shadow:none;">
         <div id="routines-tabs" style="display:flex; gap:8px; overflow:auto; padding-bottom:8px;"></div>
-        <div id="routines-content" style="margin-top:12px;"></div>
+        <div id="routines-content" style="margin-top:6px;"></div>
     </div> 
+    <script>
 
+    // Include SortableJS for touch-friendly drag & drop
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
 
         let allExercises = [];
@@ -302,7 +327,8 @@
             );
 
             if (filtered.length === 0) {
-                resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">Nenhum exercício encontrado</div>';
+                const noneMsg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_exercise_found') : 'No exercise found';
+                resultsDiv.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim)">' + noneMsg + '</div>';
                 return;
             }
 
@@ -329,7 +355,7 @@
                 for (let j = 0; j < group.length; j++) {
                     const ex = group[j];
                     const ptLine = ((lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? ('<div class="exercise-name-pt">' + ex.namePT + '</div>') : '';
-                    const customBadge = ex.isCustom ? '<span class="custom-badge">Personalizado</span>' : '';
+                    const customBadge = ex.isCustom ? ('<span class="custom-badge">' + ((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Personalizado') + '</span>') : '';
                     html += '<div class="exercise-card" onmousedown="startPressTimer(this, ' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', this, event)">' +
                                 '<img src="' + (images[ex.imageId] || defaultImage) + '" class="ex-thumb">' +
                                 '<div class="exercise-info">' +
@@ -497,7 +523,16 @@
             tabsContainer.innerHTML = '';
             if (!workouts || workouts.length === 0) {
                 const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_routines_placeholder') : 'Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.';
-                content.innerHTML = '<div style="color:var(--text-dim); padding:20px;">' + msg + '</div>';
+                content.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">'
+                    + '<svg width="180" height="96" viewBox="0 0 180 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">'
+                    + '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">'
+                    + '<rect x="6" y="26" width="24" height="44" rx="4"></rect>'
+                    + '<rect x="150" y="26" width="24" height="44" rx="4"></rect>'
+                    + '<rect x="36" y="36" width="108" height="24" rx="6" fill="currentColor" opacity="0.06"></rect>'
+                    + '<line x1="30" y1="48" x2="36" y2="48"></line>'
+                    + '<line x1="144" y1="48" x2="150" y2="48"></line>'
+                    + '</g></svg>'
+                    + '<div style="margin-top:12px;">' + msg + '</div></div>';
                 return;
             }
             workouts.forEach((w, i) => {
@@ -508,6 +543,8 @@
                 btn.onclick = function() {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
+                    // ensure the active tab is fully visible when the tab row is scrollable
+                    try { this.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' }); } catch (e) {}
                     renderRoutineContent(parseInt(this.dataset.id));
                 };
                 tabsContainer.appendChild(btn);
@@ -540,263 +577,99 @@
                 return { id: item, isCustom: false, position: 0, __origIndex: idx };
             }).sort((a,b) => (a.position - b.position) || (a.__origIndex - b.__origIndex));
 
-            const tags = items.map(it => {
+            const labelSets = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('sets') : 'Sets';
+            const labelReps = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('reps') : 'Reps';
+            const labelWeight = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('weight') : 'Weight';
+
+                const tags = items.map(it => {
                 const id = it.id;
                 const isCustom = !!it.isCustom;
                 const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
                 if (!ex) return "";
                 let setsHtml = '';
-                if (Array.isArray(it.sets)) {
-                    setsHtml = `<div class="set-pills">` +
-                        it.sets.map(s => `<span class="set-pill">${s.reps} × ${s.weight}kg</span>`).join('') +
-                        `</div>`;
+                if (Array.isArray(it.sets) && it.sets.length > 0) {
+                    // Group identical rep-weight combinations and show counts
+                    const groups = it.sets.reduce((acc, s) => {
+                        const key = `${s.reps}|${s.weight}`;
+                        if (!acc[key]) acc[key] = { reps: s.reps, weight: s.weight, count: 0 };
+                        acc[key].count++;
+                        return acc;
+                    }, {});
+                    // Filter out groups with missing/invalid reps or weight
+                    const groupArr = Object.values(groups).filter(g => {
+                        const repsValid = (g.reps !== undefined && g.reps !== null && g.reps !== '' && !isNaN(Number(g.reps)));
+                        const weightValid = (g.weight !== undefined && g.weight !== null && g.weight !== '' && !isNaN(Number(g.weight)));
+                        return repsValid && weightValid;
+                    });
+                    if (groupArr.length > 0) {
+                        // Compact pills summary: show reps/weight for single sets, otherwise show count×reps/weight
+                        const pills = groupArr.map(g => (g.count === 1) ? `<span class="set-pill">${g.reps}reps - ${g.weight}kg</span>` : `<span class="set-pill">${g.count}x ${g.reps}reps - ${g.weight}kg</span>`).join('');
+                        setsHtml = `<div class="sets-compact">${pills}</div>`;
+                    } else {
+                        setsHtml = '';
+                    }
                 } else if (typeof it.sets !== 'undefined') {
-                    setsHtml = `<div class="set-pills"><span class="set-pill">${it.sets} séries × ${it.reps} × ${it.weight}kg</span></div>`;
+                    // Legacy format where `it.sets` is a count and `it.reps`/`it.weight` hold values
+                    const count = it.sets || 1;
+                    const repsValid = (it.reps !== undefined && it.reps !== null && it.reps !== '' && !isNaN(Number(it.reps)));
+                    const weightValid = (it.weight !== undefined && it.weight !== null && it.weight !== '' && !isNaN(Number(it.weight)));
+                    if (repsValid && weightValid) {
+                        const pill = (count === 1) ? `<span class="set-pill">${it.reps}reps - ${it.weight}kg</span>` : `<span class="set-pill">${count}x ${it.reps}reps - ${it.weight}kg</span>`;
+                        setsHtml = `<div class="sets-compact">${pill}</div>`;
+                    } else {
+                        setsHtml = '';
+                    }
                 }
-                return `<div class="exercise-tag draggable" draggable="true" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
+                const localizedType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(ex.type) : ex.type || '';
+                const isCustomEx = !!it.isCustom || !!ex.isCustom;
+                const customBadgeHtml = isCustomEx ? ('<span class="custom-badge">' + ((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Personalizado') + '</span>') : '';
+                return `<div class="exercise-tag" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
                     <div class="main">
-                        <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
-                        <strong class="exercise-title">${getDisplayedName(ex)}</strong>
-                        ${setsHtml}
+                        <div class="exercise-row">
+                            <img src="${images[ex.imageId] || defaultImage}" class="ex-preview-square" style="cursor:pointer" onclick='event.stopPropagation(); showImagePreview(${JSON.stringify(images[ex.imageId] || defaultImage)})'>
+                            <div class="exercise-meta">
+                                ${customBadgeHtml}
+                                <strong class="exercise-title">${getDisplayedName(ex)}</strong>
+                                <div class="exercise-type">${localizedType}</div>
+                                ${setsHtml}
+                            </div>
+                        </div>
                     </div>
-                    <span class="drag-handle" title="Arrastar para reordenar">☰</span>
+                    <button class="drag-handle" title="${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('drag_to_reorder') : 'Drag to reorder'}">☰</button>
                 </div>`;
             }).join('');
+
+            const labelDeleteRoutine = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('delete_routine') : 'Delete routine';
 
             content.innerHTML = `
                 <div class="workout-card">
                     <div class="workout-header">
                         <div class="actions">
-                            <button class="sort-btn" onclick="toggleSortMode(${workout.id}, this)" title="Ordenar">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="14" y2="12"></line><line x1="4" y1="17" x2="10" y2="17"></line></svg>
+                            <button id="toggleSortBtn" class="reorder-btn" onclick="toggleSortMode(${workout.id})" title="${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('drag_to_reorder') : 'Sort'}">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"></path></svg>
                             </button>
                             <button class="edit-btn" onclick="window.location.href='routinecrud.html?id=${workout.id}'" title="Editar">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                             </button>
-                            <button class="del-btn" onclick="deleteWorkout(${workout.id})" title="Excluir">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            <button class="del-btn" onclick="showDeleteConfirm(${workout.id})" title="${labelDeleteRoutine}">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
                         </div>
                     </div>
-                    <div id="exerciseList">${tags}</div>
-                </div>
-            `;
-
-            // Enable drag sorting (persist order on drop)
-            enableDragSorting(document.getElementById('exerciseList'), workout.id);
+                    <div id="exerciseList" class="exercise-list">${tags}</div>
+                        </div>
+                    `;
         }
-        // Drag & drop helpers for reordering exercises
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
+        
 
-        function clearDropIndicators(container) {
-            container.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-            container.classList.remove('exercise-list-drop-bottom');
-            // remove any leftover placeholders
-            container.querySelectorAll('.drop-placeholder').forEach(p => p.parentElement && p.parentElement.removeChild(p));
-        }
-
-        function enableDragSorting(container, workoutId) {
-            if (!container) return;
-            let draggingEl = null;
-            let isPointerDragging = false;
-            let placeholder = null;
-            function updateGhostPosition(ghost, x, y) {
-                if (!ghost) return;
-                const offset = 18;
-                ghost.style.left = (x + offset) + 'px';
-                ghost.style.top = (y + offset) + 'px';
+        // Use native confirm dialog for deletion (localized)
+        async function showDeleteConfirm(id) {
+            const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('confirm_delete_routine') : 'Delete routine?';
+            if (confirm(msg)) {
+                await db.routines.delete(id);
+                localStorage.setItem('has_local_changes', 'true');
+                renderTabs();
             }
-
-            container.querySelectorAll('.draggable').forEach(item => {
-                // HTML5 drag (desktop)
-                item.addEventListener('dragstart', e => {
-                    // Only allow HTML5 drag when sorting mode is active
-                    if (!container.classList.contains('sorting')) { e.preventDefault(); return; }
-                    draggingEl = item;
-                    item.classList.add('dragging');
-                    // create placeholder to show empty space
-                    placeholder = document.createElement('div');
-                    placeholder.className = 'drop-placeholder';
-                    placeholder.style.height = item.getBoundingClientRect().height + 'px';
-                    item.parentElement.insertBefore(placeholder, item);
-                    // create floating ghost for better visibility
-                    const ghost = item.cloneNode(true);
-                    ghost.classList.add('drag-ghost');
-                    ghost.style.width = item.getBoundingClientRect().width + 'px';
-                    document.body.appendChild(ghost);
-                    updateGhostPosition(ghost, e.clientX, e.clientY);
-                    // keep layout but hide original visually
-                    item.style.visibility = 'hidden';
-                    // suppress default drag image
-                    try { e.dataTransfer.setDragImage(new Image(), 0, 0); } catch (err) {}
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', '');
-                    draggingEl._ghost = ghost;
-                });
-                item.addEventListener('dragend', e => {
-                    if (draggingEl) {
-                        draggingEl.classList.remove('dragging');
-                        draggingEl.style.visibility = '';
-                        if (draggingEl._ghost && draggingEl._ghost.parentElement) draggingEl._ghost.parentElement.removeChild(draggingEl._ghost);
-                        draggingEl._ghost = null;
-                    }
-                    if (placeholder && placeholder.parentElement) {
-                        placeholder.parentElement.insertBefore(draggingEl, placeholder);
-                        placeholder.parentElement.removeChild(placeholder);
-                    }
-                    draggingEl = null;
-                    placeholder = null;
-                    clearDropIndicators(container);
-                    persistOrder(workoutId);
-                });
-                item.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    if (!placeholder) return;
-                    const after = getDragAfterElement(container, e.clientY);
-                    clearDropIndicators(container);
-                    if (after == null) {
-                        container.appendChild(placeholder);
-                        container.classList.add('exercise-list-drop-bottom');
-                    } else {
-                        container.insertBefore(placeholder, after);
-                        after.classList.add('drop-target');
-                    }
-                    if (draggingEl && draggingEl._ghost) updateGhostPosition(draggingEl._ghost, e.clientX, e.clientY);
-                });
-
-                // Pointer-based drag (touch / stylus / pointer)
-                const handle = item.querySelector('.drag-handle');
-                if (handle) {
-                    handle.addEventListener('pointerdown', e => {
-                        // Only start pointer drag on primary button
-                        if (e.button && e.button !== 0) return;
-                        e.preventDefault();
-                        // create placeholder
-                        placeholder = document.createElement('div');
-                        placeholder.className = 'drop-placeholder';
-                        placeholder.style.height = item.getBoundingClientRect().height + 'px';
-                        item.parentElement.insertBefore(placeholder, item);
-
-                        draggingEl = item;
-                        isPointerDragging = true;
-                        item.classList.add('dragging');
-                        // create floating ghost
-                        const ghost = item.cloneNode(true);
-                        ghost.classList.add('drag-ghost');
-                        ghost.style.width = item.getBoundingClientRect().width + 'px';
-                        document.body.appendChild(ghost);
-                        updateGhostPosition(ghost, e.clientX, e.clientY);
-                        item.style.visibility = 'hidden';
-                        try { item.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-                        draggingEl._ghost = ghost;
-                    });
-                }
-            });
-
-            // Global pointer move/up handlers to track pointer drags
-            function onPointerMove(e) {
-                if (!isPointerDragging || !draggingEl || !placeholder) return;
-                const after = getDragAfterElement(container, e.clientY);
-                clearDropIndicators(container);
-                if (after == null) {
-                    container.appendChild(placeholder);
-                    container.classList.add('exercise-list-drop-bottom');
-                } else {
-                    container.insertBefore(placeholder, after);
-                    after.classList.add('drop-target');
-                }
-                if (draggingEl && draggingEl._ghost) updateGhostPosition(draggingEl._ghost, e.clientX, e.clientY);
-            }
-            function onPointerUp(e) {
-                if (!isPointerDragging) return;
-                if (draggingEl) {
-                    draggingEl.classList.remove('dragging');
-                    draggingEl.style.visibility = '';
-                }
-                if (draggingEl && draggingEl._ghost && draggingEl._ghost.parentElement) draggingEl._ghost.parentElement.removeChild(draggingEl._ghost);
-                if (placeholder && placeholder.parentElement) {
-                    placeholder.parentElement.insertBefore(draggingEl, placeholder);
-                    placeholder.parentElement.removeChild(placeholder);
-                }
-                isPointerDragging = false;
-                draggingEl = null;
-                placeholder = null;
-                clearDropIndicators(container);
-                persistOrder(workoutId);
-            }
-
-            document.addEventListener('pointermove', onPointerMove);
-            document.addEventListener('pointerup', onPointerUp);
-        }
-
-        async function persistOrder(workoutId) {
-            const list = document.getElementById('exerciseList');
-            if (!list) return;
-            const children = [...list.querySelectorAll('.draggable')];
-            const workout = await db.routines.get(workoutId);
-            if (!workout) return;
-            const original = workout.exerciseIds || [];
-
-
-            const used = new Array(original.length).fill(false);
-            const newOrder = children.map((el, idx) => {
-                const id = parseInt(el.dataset.id);
-                const isCustom = el.dataset.isCustom === 'true';
-                let matchIndex = -1;
-                for (let i=0;i<original.length;i++){
-                    const item = original[i];
-                    const itemId = typeof item === 'object' ? item.id : item;
-                    const itemIsCustom = typeof item === 'object' ? !!item.isCustom : false;
-                    if (!used[i] && itemId === id && itemIsCustom === isCustom) {
-                        matchIndex = i; break;
-                    }
-                }
-                let newItem;
-                if (matchIndex >=0) {
-                    used[matchIndex] = true;
-                    const origItem = original[matchIndex];
-                    if (typeof origItem === 'object') {
-                        newItem = { ...origItem, position: idx };
-                    } else {
-                        newItem = { id: origItem, position: idx };
-                    }
-                } else {
-                    newItem = { id, isCustom, position: idx };
-                }
-                return newItem;
-            });
-            await db.routines.update(workoutId, { exerciseIds: newOrder });
-            localStorage.setItem('has_local_changes', 'true');
-
-
-        }
-
-        function toggleSortMode(workoutId, btn) {
-            const list = document.getElementById('exerciseList');
-            if (!list) return;
-            const isActive = list.classList.toggle('sorting');
-            if (btn) {
-                if (isActive) btn.classList.add('active'); else btn.classList.remove('active');
-            }
-            if (!isActive) {
-                // when turning off, persist any changed order
-                persistOrder(workoutId);
-            }
-        }
-
-        async function deleteWorkout(id) {
-            if(confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('confirm_delete_routine') : "Excluir rotina?")) { await db.routines.delete(id); localStorage.setItem('has_local_changes', 'true'); renderTabs(); }
         }
 
         // Apply translations for this page (titles, static buttons)
@@ -809,7 +682,266 @@
             }
         } catch(e){}
 
+        function showImagePreview(src) {
+            try {
+                const modal = document.getElementById('imagePreviewModal');
+                const img = document.getElementById('imagePreviewImg');
+                if (!modal || !img) return;
+                img.src = src || '';
+                modal.classList.remove('hidden');
+            } catch (e) { console.error(e); }
+        }
+
+        function hideImagePreview() {
+            try {
+                const modal = document.getElementById('imagePreviewModal');
+                const img = document.getElementById('imagePreviewImg');
+                if (!modal || !img) return;
+                modal.classList.add('hidden');
+                img.src = '';
+            } catch (e) { console.error(e); }
+        }
+
+        // Sorting support using SortableJS
+        let _routinesSortable = null;
+
+        // Custom toggle for sort mode: uses livesession-like drag handlers
+        let _currentSortWorkoutId = null;
+        let _routinesDragState = null;
+        let _routinesDragListeners = [];
+
+        function toggleSortMode(workoutId) {
+            const list = document.getElementById('exerciseList');
+            const btn = document.getElementById('toggleSortBtn');
+            if (!list || !btn) return;
+            const isActive = list.classList.toggle('reorder-mode');
+            btn.classList.toggle('active', isActive);
+            _currentSortWorkoutId = isActive ? workoutId : null;
+
+            if (isActive) {
+                // enable custom drag handlers
+                try { attachDragHandlers(); } catch (e) { console.warn('attachDragHandlers failed', e); }
+            } else {
+                // disable handlers and persist order
+                try { detachDragHandlers(); } catch (e) { console.warn('detachDragHandlers failed', e); }
+                persistRoutineOrder(workoutId);
+            }
+        }
+
+        // Attach/detach handlers (adapted from livesession.html)
+        function attachDragHandlers() {
+            const container = document.getElementById('exerciseList');
+            if (!container) return;
+            container.querySelectorAll('.drag-handle').forEach(h => {
+                if (h._dragAttached) return;
+                h.addEventListener('touchstart', _onHandleTouchStart, { passive: false });
+                h.addEventListener('pointerdown', _onHandlePointerDown);
+                h._dragAttached = true;
+            });
+        }
+
+        function detachDragHandlers() {
+            const container = document.getElementById('exerciseList');
+            if (!container) return;
+            container.querySelectorAll('.drag-handle').forEach(h => {
+                if (!h._dragAttached) return;
+                try { h.removeEventListener('touchstart', _onHandleTouchStart); } catch (e) {}
+                try { h.removeEventListener('pointerdown', _onHandlePointerDown); } catch (e) {}
+                h._dragAttached = false;
+            });
+        }
+
+        function _onHandleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            _onHandlePointerDown(touch);
+        }
+
+        function _onHandlePointerDown(e) {
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) return;
+            const item = handle.closest('.exercise-tag');
+            if (!item) return;
+            _startDrag(e, item);
+        }
+
+        function _startDrag(e, item) {
+            if (_routinesDragState) return;
+            const container = document.getElementById('exerciseList');
+            const rect = item.getBoundingClientRect();
+            const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0;
+            const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0;
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'exercise-tag placeholder';
+            placeholder.style.height = rect.height + 'px';
+            placeholder.style.width = rect.width + 'px';
+            placeholder.style.boxSizing = 'border-box';
+
+            const ghost = item.cloneNode(true);
+            const ghostRem = ghost.querySelectorAll('.del-btn, .edit-btn');
+            ghostRem.forEach(el => el.remove());
+            ghost.classList.add('dragging');
+            ghost.style.width = rect.width + 'px';
+            ghost.style.position = 'fixed';
+            ghost.style.left = '0px';
+            ghost.style.top = '0px';
+            ghost.style.margin = '0';
+            ghost.style.pointerEvents = 'none';
+            // initialize transform so the ghost starts under the pointer (avoid jump)
+            ghost.style.transform = `translate3d(${clientX - (clientX - rect.left)}px, ${clientY - (clientY - rect.top)}px, 0)`;
+            ghost.style.willChange = 'transform';
+            document.body.appendChild(ghost);
+
+            item.style.display = 'none';
+            const originalParent = item.parentNode;
+            const originalNextSibling = item.nextSibling;
+            originalParent.insertBefore(placeholder, originalNextSibling);
+
+            const preventScroll = (ev) => { ev.preventDefault(); };
+            document.addEventListener('touchmove', preventScroll, { passive: false });
+
+            _routinesDragState = {
+                draggingEl: item,
+                container,
+                placeholder,
+                ghost,
+                offsetY: clientY - rect.top,
+                offsetX: clientX - rect.left,
+                raf: null,
+                lastY: clientY,
+                lastX: clientX,
+                preventScroll,
+                originalParent,
+                originalNextSibling
+            };
+
+            function moveHandler(ev) {
+                const y = ev.clientY || (ev.touches && ev.touches[0] && ev.touches[0].clientY) || 0;
+                const x = ev.clientX || (ev.touches && ev.touches[0] && ev.touches[0].clientX) || 0;
+                _routinesDragState.lastY = y; _routinesDragState.lastX = x;
+                if (!_routinesDragState.raf) {
+                    _routinesDragState.raf = requestAnimationFrame(() => {
+                        _routinesDragState.raf = null;
+                        const g = _routinesDragState.ghost;
+                        const placeholder = _routinesDragState.placeholder;
+                        const container = _routinesDragState.container;
+                        if (g) {
+                            g.style.transform = `translate3d(${_routinesDragState.lastX - _routinesDragState.offsetX}px, ${_routinesDragState.lastY - _routinesDragState.offsetY}px, 0)`;
+                        }
+                        // find first child whose midpoint is below pointer and insert placeholder before it
+                        const children = Array.from(container.querySelectorAll('.exercise-tag:not(.placeholder)'));
+                        let inserted = false;
+                        for (const ch of children) {
+                            const r = ch.getBoundingClientRect();
+                            const mid = r.top + r.height / 2;
+                            if (_routinesDragState.lastY < mid) {
+                                if (placeholder.parentNode !== ch.parentNode || placeholder.nextSibling !== ch) ch.parentNode.insertBefore(placeholder, ch);
+                                inserted = true;
+                                break;
+                            }
+                        }
+                        if (!inserted) container.appendChild(placeholder);
+                    });
+                }
+            }
+
+            function upHandler() { _endDrag(); }
+
+            window.addEventListener('touchmove', moveHandler, { passive: false });
+            window.addEventListener('pointermove', moveHandler);
+            window.addEventListener('touchend', upHandler);
+            window.addEventListener('pointerup', upHandler);
+            window.addEventListener('touchcancel', upHandler);
+
+            _routinesDragListeners.push({ moveHandler, upHandler });
+        }
+
+        function _endDrag() {
+            if (!_routinesDragState) return;
+            const { draggingEl, placeholder, ghost, preventScroll } = _routinesDragState;
+            try { if (placeholder && placeholder.parentNode) placeholder.parentNode.insertBefore(draggingEl, placeholder); } catch (e) { console.warn('insert before failed', e); }
+            draggingEl.style.display = '';
+            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+
+            try { document.removeEventListener('touchmove', preventScroll, { passive: false }); } catch (e) { try { document.removeEventListener('touchmove', preventScroll); } catch(e){} }
+
+            for (const L of _routinesDragListeners) {
+                try { window.removeEventListener('touchmove', L.moveHandler); } catch (e) {}
+                try { window.removeEventListener('pointermove', L.moveHandler); } catch (e) {}
+                try { window.removeEventListener('touchend', L.upHandler); } catch (e) {}
+                try { window.removeEventListener('pointerup', L.upHandler); } catch (e) {}
+                try { window.removeEventListener('touchcancel', L.upHandler); } catch (e) {}
+            }
+            _routinesDragListeners = [];
+
+            // persist order after dropping
+            const wid = _currentSortWorkoutId;
+            _routinesDragState = null;
+            if (wid) persistRoutineOrder(wid);
+        }
+
+        function _cancelDrag() {
+            if (!_routinesDragState) return;
+            const { draggingEl, placeholder, ghost, preventScroll, originalParent, originalNextSibling } = _routinesDragState;
+            try { if (originalParent) originalParent.insertBefore(draggingEl, originalNextSibling); } catch (e) { console.warn('revert insert failed', e); }
+            draggingEl.style.display = '';
+            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+            try { document.removeEventListener('touchmove', preventScroll, { passive: false }); } catch (e) { try { document.removeEventListener('touchmove', preventScroll); } catch(e){} }
+            for (const L of _routinesDragListeners) {
+                try { window.removeEventListener('touchmove', L.moveHandler); } catch (e) {}
+                try { window.removeEventListener('pointermove', L.moveHandler); } catch (e) {}
+                try { window.removeEventListener('touchend', L.upHandler); } catch (e) {}
+                try { window.removeEventListener('pointerup', L.upHandler); } catch (e) {}
+                try { window.removeEventListener('touchcancel', L.upHandler); } catch (e) {}
+            }
+            _routinesDragListeners = [];
+            _routinesDragState = null;
+        }
+
+        async function persistRoutineOrder(workoutId) {
+            try {
+                const list = document.getElementById('exerciseList');
+                if (!list) return;
+                const children = Array.from(list.querySelectorAll('.exercise-tag'));
+                const workout = await db.routines.get(workoutId);
+                if (!workout) return;
+
+                // Build map from key -> original item (preserve sets/other fields if items were objects)
+                const original = workout.exerciseIds || [];
+                const map = {};
+                original.forEach(it => {
+                    const id = (typeof it === 'object') ? it.id : it;
+                    const isCustom = (typeof it === 'object') ? !!it.isCustom : false;
+                    map[`${isCustom ? 'c' : 's'}:${id}`] = it;
+                });
+
+                const newOrder = children.map(ch => {
+                    const id = parseInt(ch.dataset.id);
+                    const isCustom = ch.dataset.isCustom === 'true' || ch.dataset.isCustom === '1';
+                    const key = `${isCustom ? 'c' : 's'}:${id}`;
+                    return map[key] || (isCustom ? { id, isCustom: true } : id);
+                });
+
+                // Persist new order to DB but do NOT re-render the routine here.
+                // Re-rendering was causing the UI to lose reorder-mode; keep the DOM as-is so the user
+                // can continue sorting multiple items without toggling again.
+                await db.routines.update(workoutId, { exerciseIds: newOrder });
+                localStorage.setItem('has_local_changes', 'true');
+            } catch (err) {
+                console.error('Failed to persist routine order', err);
+            }
+        }
+
         init();
     </script>
+        <div id="imagePreviewModal" class="image-modal hidden" onclick="hideImagePreview()">
+            <div class="modal-inner" onclick="event.stopPropagation()">
+                <button class="close-btn" onclick="hideImagePreview()">×</button>
+                <img id="imagePreviewImg" src="" alt="Preview">
+            </div>
+        </div>
 </body>
 </html>
