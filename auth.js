@@ -548,8 +548,8 @@
             // Mock user
             const mockUser = {
                 sub: 'local-12345',
-                name: 'Local Tester',
-                given_name: 'Local',
+                name: 'Tester',
+                given_name: 'Tester',
                 family_name: 'Tester',
                 picture: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="100%" height="100%" fill="#2563eb"/><text x="50%" y="54%" font-size="56" fill="#fff" dominant-baseline="middle" text-anchor="middle">LT</text></svg>`),
                 email: 'local@example.com',

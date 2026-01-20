@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>GymNerd | Home</title>
     <link rel="icon" type="image/svg+xml" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
@@ -25,11 +27,35 @@
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .main-content { padding: 20px; display: none; }
+        .main-content { padding: 20px; display: none; margin-top: 12px; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
-        .app-title-compact { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 12px rgba(59,130,246,0.35)); font-style: italic; }
+        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 8px rgba(59,130,246,0.25)); font-style: italic; white-space:nowrap; overflow:visible; }
         
-        .menu-grid { display: grid; gap: 15px; margin-top: 64px; }
+        .menu-grid { display: grid; gap: 15px; margin-top: 0px; }
+        /* Top card that holds the topbar + user info (scrolls with page) */
+        /* Use safe-area insets so on edge-to-edge devices the status bar area stays white */
+        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 20px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+
+        /* Full-width safe-area overlay so mobile Safari shows white behind status bar */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: constant(safe-area-inset-top);
+            height: env(safe-area-inset-top);
+            background: #ffffff;
+            z-index: 1100;
+            pointer-events: none;
+        }
+        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; }
+        .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; }
+        /* Ensure title can grow without being clipped */
+        #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
+        /* Remove bounds for the settings action and make the icon a bit smaller/lighter */
+        .top-card a#topbar-settings { color: rgba(15,23,42,0.8) !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
+        .top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:0.85; display:block; }
         .user-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin:12px 0 26px; }
         .user-avatar { width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.06); }
         .user-line { display:flex; align-items:center; justify-content:center; gap:10px; }
@@ -63,14 +89,19 @@
         };
     </script>
 
-    <div class="topbar" style="position:sticky;top:0;z-index:1200;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;">
-        <div id="topbar-title">
-            <div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+    <div class="top-card">
+        <div class="topbar">
+            <div id="topbar-title">
+                <div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+            </div>
+            <div id="topbar-actions">
+                <a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:inherit;text-decoration:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="3"/> <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 10.91 3H11a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/> </svg>
+                </a>
+            </div>
         </div>
-        <div id="topbar-actions">
-            <a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;color:#94a3b8;border:1px solid rgba(255,255,255,0.04);border-radius:10px;text-decoration:none;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 2.28 18.9l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09c.7 0 1.27-.4 1.51-1a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 5.1 2.28l.06.06a1.65 1.65 0 0 0 1.82.33H7a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .6.4 1.17 1 1.51h.02c.7 0 1.27.4 1.51 1a1.65 1.65 0 0 0 .33 1.82l.06.06A2 2 0 1 1 19.4 6.1l-.06-.06a1.65 1.65 0 0 0-.33 1.82c.2.6.8 1 1.5 1H21a2 2 0 1 1 0 4h-.09c-.7 0-1.27.4-1.51 1z"></path></svg>
-            </a>
+        <div class="top-card-inner">
+            <div id="home-user-main"></div>
         </div>
     </div>
 
@@ -80,8 +111,6 @@
             <span data-i18n="sync_pending">☁️ Sync Pending Changes</span><span>→</span>
         </button>
 
-        <div id="home-user-main"></div>
-        
         <div class="menu-grid">
             <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span data-i18n="menu_start_routine">🚀 Start Routine</span><span>→</span></a>
             <a href="routines.html" class="nav-card"><span data-i18n="menu_routines">🏋 Routines</span><span>→</span></a>
@@ -121,6 +150,15 @@
             } catch (e) { user = null; }
 
             const name = user ? (user.name || user.email || '') : '';
+            // Prefer first name only. If we only have an email, use its local-part before punctuation.
+            let firstName = '';
+            if (name) {
+                if (name.includes('@')) {
+                    firstName = name.split('@')[0].split(/[.\-_+]/)[0];
+                } else {
+                    firstName = name.trim().split(/\s+/)[0];
+                }
+            }
             const avatar = user ? (user.picture || '') : '';
 
             // Simple greeting abbreviation: always show "Hi" or "Olá" next to the name
@@ -134,7 +172,7 @@
                         <img src="${avatar || 'favicon.png'}" alt="avatar" class="user-avatar" />
                         <div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
                             <div class="user-greeting">${greeting}</div>
-                            <div class="user-name">${name || 'GymNerd'}</div>
+                            <div class="user-name">${firstName || 'GymNerd'}</div>
                         </div>
                     </div>
                     <div class="motivational-text">${motivational}</div>
