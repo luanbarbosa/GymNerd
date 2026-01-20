@@ -109,7 +109,7 @@
         let currentViewDate = new Date();
 
         async function init() {
-            const logs = await db.logs.toArray();
+            const logs = await db.history.toArray();
             renderCalendar(logs);
             renderCharts(logs);
             updateStreakBadge();
@@ -319,7 +319,7 @@
 
         let frequencyChart = null;
         async function updateFrequencyChart(logs) {
-            if (!logs) logs = await db.logs.toArray();
+            if (!logs) logs = await db.history.toArray();
             const period = document.getElementById('frequencyFilter').value;
             const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             const locale = lang === 'pt' ? 'pt' : 'en';
@@ -398,7 +398,7 @@
             // Ensure DB is open (iOS fix)
             await ensureDbOpen();
             
-            const allLogs = await db.logs.toArray();
+            const allLogs = await db.history.toArray();
             const workoutDates = [...new Set(allLogs.map(l => l.date))].sort();
             
             if (workoutDates.length === 0) {

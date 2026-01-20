@@ -94,7 +94,7 @@
                 custom_exercises: await db.custom_exercises.toArray(),
                 custom_images: await db.custom_images.toArray(),
                 routines: await db.routines.toArray(),
-                logs: await db.logs.toArray(),
+                history: await db.history.toArray(),
                 weights: await db.weights.toArray()
             };
             
@@ -117,7 +117,7 @@
                 custom_images: null,
                 custom_exercises: null,
                 routines: document.getElementById('importWk').files[0],
-                logs: document.getElementById('importLogs').files[0],
+                history: document.getElementById('importLogs').files[0],
                 weights: null
             };
 
@@ -173,7 +173,7 @@
                         }
                 const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.logs], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history], async () => {
                         await db.catalog_images.clear();
                         if (data.catalog_images) {
                             const normalizedCatalogImages = data.catalog_images.map(img => ({
@@ -201,8 +201,8 @@
                         await db.routines.clear();
                         if (data.routines) await db.routines.bulkAdd(data.routines);
                         
-                        await db.logs.clear();
-                        if (data.logs) await db.logs.bulkAdd(data.logs);
+                        await db.history.clear();
+                        if (data.history) await db.history.bulkAdd(data.history);
                     });
 
                     // Save last sync time if available

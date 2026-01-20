@@ -223,7 +223,7 @@
                     });
                 }
             });
-            await db.logs.bulkAdd(logs);
+            await db.history.bulkAdd(logs);
             localStorage.setItem('has_local_changes', 'true');
             location.reload();
         }
@@ -233,13 +233,13 @@
             if (window.GN_I18N && typeof GN_I18N.t === 'function') {
                 const tmpl = GN_I18N.t('history_confirm_delete');
                 if (confirm(tmpl.replace('{date}', fmt))) {
-                    await db.logs.where('date').equals(date).delete();
+                    await db.history.where('date').equals(date).delete();
                     localStorage.setItem('has_local_changes', 'true');
                     renderHistory();
                 }
             } else {
                 if(confirm(`Delete all entries for ${fmt}?`)) {
-                    await db.logs.where('date').equals(date).delete();
+                    await db.history.where('date').equals(date).delete();
                     localStorage.setItem('has_local_changes', 'true');
                     renderHistory();
                 }
@@ -255,7 +255,7 @@
                 if (!confirm('Delete this exercise?')) return;
             }
             try {
-                await db.logs.delete(id);
+                await db.history.delete(id);
                 localStorage.setItem('has_local_changes', 'true');
                 renderHistory();
             } catch (e) {
@@ -264,7 +264,7 @@
         }
 
         async function renderHistory() {
-            const logs = await db.logs.orderBy('date').reverse().toArray();
+            const logs = await db.history.orderBy('date').reverse().toArray();
             if (!logs || logs.length === 0) {
                 const container = document.getElementById('history');
                 const msg = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_no_history') : 'No history data';
