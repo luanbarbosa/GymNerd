@@ -359,6 +359,7 @@
         let timerInterval = null;
         let seconds = 0;
         let routineModified = false;
+        let _finishingSession = false;
 
         function formatTime(s) {
             const minutes = Math.floor(s / 60).toString().padStart(2, '0');
@@ -1310,6 +1311,15 @@
 
         async function finishSession() {
             try {
+                if (_finishingSession) return; // avoid re-entrancy
+                _finishingSession = true;
+                // disable finish buttons to prevent double-clicks
+                const finishBtnMain = document.getElementById('finishRoutineBtn');
+                const finishBtnInline = document.getElementById('finishBtn');
+                if (finishBtnMain) { finishBtnMain.disabled = true; finishBtnMain.style.opacity = 0.6; }
+                if (finishBtnInline) { finishBtnInline.disabled = true; finishBtnInline.style.opacity = 0.6; }
+
+                // (no persistent session id used) ensure DB is open
                 // Ensure DB is open (iOS fix for stale connections)
                 await ensureDbOpen();
 
@@ -1361,20 +1371,50 @@
                     logs.push({ exerciseId: g.exId, isCustom: g.isCustom, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
                 }
 
-                await db.logs.bulkAdd(logs);
+                // Persist logs (no deduplication)
+                if (logs.length > 0) {
+                    await db.logs.bulkAdd(logs);
+                }
+
+                // Clear in-memory/active session state now that session was recorded locally
                 clearSessionState();
-                
-                // Sync with Drive if available (with timeout to prevent hanging on iOS)
+
+                // Attempt to sync with Drive (with timeout). Wait for a successful sync before completing navigation.
+                let syncOk = false;
+                let lastSyncError = null;
                 if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
                     try {
-                        await Promise.race([
+                        try {
+                            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...');
+                        } catch (e) {}
+
+                        syncOk = await Promise.race([
                             DriveStorage.sync(db, ['logs', 'routines']),
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 8000))
-                        ]);
+                        ]).then(res => !!res).catch(e => { throw e; });
                     } catch (syncErr) {
                         console.warn("Drive sync failed or timed out:", syncErr);
+                        syncOk = false;
+                        lastSyncError = syncErr;
+                    } finally {
+                        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
                     }
                 }
+
+                if (!syncOk) {
+                    // Mark that local changes are pending and navigate home so
+                    // the existing sync-warning button is shown there. Keep the
+                    // alert so the user sees the failure first.
+                    try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
+                    const alertMsg = (typeof GN_I18N !== 'undefined')
+                        ? GN_I18N.t('sync_failed_try_home')
+                        : (lastSyncError && lastSyncError.message ? lastSyncError.message : 'Sync failed - please try again.');
+                    alert(alertMsg);
+                    location.href = 'index.html';
+                    return;
+                }
+
+                // Sync succeeded
 
                 if (newRecord > oldRecord && newRecord > 1) {
                     const tpl = GN_I18N.t('new_streak_record');

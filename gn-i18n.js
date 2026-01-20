@@ -64,6 +64,7 @@
                 deleting_backup_drive: 'Deleting backup from Google Drive...',
                 google_session_expired: 'Your Google session expired. Please login again to keep syncing.',
                 auto_sync_failed_prefix: 'Auto-sync failed: ',
+                sync_failed_try_home: 'Something went wrong with the synchronization with Google Drive. Try again from the home screen.',
                 danger_clear_confirm: 'DANGER: This will permanently delete all local data and your backup on Google Drive. Continue?',
                 all_data_cleared: 'All data cleared successfully.',
                 failed_to_clear_data: 'Failed to clear some data. Check console.',
@@ -91,7 +92,7 @@
                 clear_local: 'Clear Local',
                 login: 'Login',
 
-                welcome_back_syncing: 'Welcome back! Syncing your data...',
+                welcome_back_syncing: 'Welcome back!\nSyncing your data...',
                 retry: 'Retry',
                 retrying: 'Retrying...',
                 failed_to_refresh_session: 'Could not refresh your session automatically. Please sign in again.'
@@ -241,6 +242,7 @@
                 deleting_backup_drive: 'Excluindo backup do Google Drive...',
                 google_session_expired: 'Sua sessão do Google expirou. Por favor, entre novamente para continuar sincronizando.',
                 auto_sync_failed_prefix: 'Falha na sincronização automática: ',
+                sync_failed_try_home: 'Algo deu errado na sincronização com o Google Drive. Tente novamente a partir da tela inicial.',
                 danger_clear_confirm: 'PERIGO: Isto irá excluir permanentemente todos os dados locais e seu backup no Google Drive. Continuar?',
                 all_data_cleared: 'Todos os dados foram removidos com sucesso.',
                 failed_to_clear_data: 'Falha ao limpar alguns dados. Verifique o console.',
@@ -268,7 +270,7 @@
                 clear_local: 'Limpar Local',
                 login: 'Entrar',
 
-                welcome_back_syncing: 'Bem vindo de volta! Sincronizando seus dados...',
+                welcome_back_syncing: 'Bem vindo de volta!\nSincronizando seus dados...',
                 retry: 'Tentar novamente',
                 retrying: 'Tentando...',
                 failed_to_refresh_session: 'Não foi possível atualizar sua sessão automaticamente. Por favor, entre novamente.'
