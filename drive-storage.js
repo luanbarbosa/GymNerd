@@ -125,7 +125,7 @@ const DriveStorage = {
             const result = {};
             for (const file of data.files) {
                 const key = file.name.replace('.json', '');
-                console.debug('[DriveStorage] loading file', { id: file.id, name: file.name });
+                console.debug('[DriveStorage] loading file', { id: file.id, name: file.name, mappedKey: key });
                 const contentResponse = await this._authFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`);
                 if (contentResponse.ok) {
                     result[key] = await contentResponse.json();
@@ -148,9 +148,7 @@ const DriveStorage = {
                 const fileName = `${key}.json`;
                 const fileId = await this.findFileId(fileName, folderId);
                 
-                const metadata = {
-                    name: fileName
-                };
+                const metadata = { name: fileName };
                 
                 // Only include parents array when creating a new file (POST)
                 if (!fileId) metadata.parents = [folderId];

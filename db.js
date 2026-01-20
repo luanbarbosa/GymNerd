@@ -7,7 +7,7 @@ db.version(11).stores({
     custom_exercises: '++id, name, namePT, type, imageId', 
     custom_images: '++id',
     routines: '++id, name, exerciseIds',
-    logs: '++id, exerciseId, weight, reps, date',
+    history: '++id, exerciseId, weight, reps, date',
     weights: 'date, weight'
 });
 

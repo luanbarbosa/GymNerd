@@ -1327,7 +1327,7 @@
                 const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
                 // Calculate streak record before saving (Avoid uniqueKeys on iOS)
-                const allLogs = await db.logs.toArray();
+                const allLogs = await db.history.toArray();
                 const existingDates = [...new Set(allLogs.map(l => l.date))].sort();
                 const oldRecord = calculateStreaks(existingDates).longest;
                 const newRecord = calculateStreaks([...existingDates, todayStr]).longest;
@@ -1373,7 +1373,7 @@
 
                 // Persist logs (no deduplication)
                 if (logs.length > 0) {
-                    await db.logs.bulkAdd(logs);
+                    await db.history.bulkAdd(logs);
                 }
 
                 // Clear in-memory/active session state now that session was recorded locally

@@ -70,25 +70,6 @@
             <a href="history.html" class="nav-card"><span data-i18n="menu_history">📋 History</span><span>→</span></a>
             <a href="statistics.html" class="nav-card"><span data-i18n="menu_statistics">📊 Statistics</span><span>→</span></a>
         </div>
-
-        <details>
-            <summary><span data-i18n="data_management">⚙️ Data Management</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
-            <div class="content-box">
-                <h4 data-i18n="cloud_sync">Cloud Sync</h4>
-                <button id="sync-drive-btn" class="sync-btn" style="background: #3b82f6; color: white;" onclick="syncToDrive()" data-i18n="sync_to_drive">☁️ Sync to Google Drive</button>
-                <button id="restore-drive-btn" class="sync-btn" style="background: #6366f1; color: white;" onclick="restoreFromDrive()" data-i18n="restore_from_drive">📥 Restore from Google Drive</button>
-
-                <h4 data-i18n="backup">Backup</h4>
-                <button class="sync-btn export-btn" onclick="exportData()" data-i18n="export_json">📤 Export 4 JSON Files</button>
-                
-                <h4 data-i18n="restore">Restore</h4>
-                <label data-i18n="label_images">1. Images Database (.json)</label><input type="file" id="importImg" accept=".json">
-                <label data-i18n="label_exercises">2. Exercises (.json)</label><input type="file" id="importEx" accept=".json">
-                <label data-i18n="label_routines">3. Routines (.json)</label><input type="file" id="importWk" accept=".json">
-                <label data-i18n="label_history">4. History (.json)</label><input type="file" id="importLogs" accept=".json">
-                <button class="sync-btn import-btn" onclick="importData()" data-i18n="process_import">📥 Process Import</button>
-            </div>
-        </details>
     </div>
 
     <script>
@@ -113,7 +94,7 @@
                 custom_exercises: await db.custom_exercises.toArray(),
                 custom_images: await db.custom_images.toArray(),
                 routines: await db.routines.toArray(),
-                logs: await db.logs.toArray(),
+                history: await db.history.toArray(),
                 weights: await db.weights.toArray()
             };
             
@@ -136,7 +117,7 @@
                 custom_images: null,
                 custom_exercises: null,
                 routines: document.getElementById('importWk').files[0],
-                logs: document.getElementById('importLogs').files[0],
+                history: document.getElementById('importLogs').files[0],
                 weights: null
             };
 
@@ -192,7 +173,7 @@
                         }
                 const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.logs], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history], async () => {
                         await db.catalog_images.clear();
                         if (data.catalog_images) {
                             const normalizedCatalogImages = data.catalog_images.map(img => ({
@@ -220,8 +201,8 @@
                         await db.routines.clear();
                         if (data.routines) await db.routines.bulkAdd(data.routines);
                         
-                        await db.logs.clear();
-                        if (data.logs) await db.logs.bulkAdd(data.logs);
+                        await db.history.clear();
+                        if (data.history) await db.history.bulkAdd(data.history);
                     });
 
                     // Save last sync time if available
