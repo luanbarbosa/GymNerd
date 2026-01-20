@@ -352,6 +352,9 @@
             }
         } catch(e) {}
 
+        // Render connection/status in settings
+        try { if (typeof renderAuthStatus === 'function') renderAuthStatus('auth-status-container'); } catch(e) {}
+
         // File input UI: show selected filename in the UI
         (function(){
             const fileIds = ['importImg','importEx','importWk','importLogs','importWeights'];

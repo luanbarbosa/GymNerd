@@ -1,7 +1,8 @@
 (async function() {
     console.log('auth.js initializing');
     let CLIENT_ID = "__GOOGLE_CLIENT_ID__";
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    // Include OpenID scopes so we can fetch user's profile (name + picture)
+    const SCOPES = 'openid profile email https://www.googleapis.com/auth/drive.file';
     const REDIRECT_PATH = '/oauth2callback.html';
 
     // Internal: promise used to dedupe concurrent refresh attempts
@@ -142,24 +143,54 @@
         } catch(e){}
         const isExpired = expiresAt && Date.now() > parseInt(expiresAt);
 
+        const isSettingsContainer = containerId === 'auth-status-container';
+
         if (token && !isExpired) {
             const isBypass = token === 'local-bypass';
+            let user = null;
+            try { const u = localStorage.getItem('google_user'); if (u) user = JSON.parse(u); } catch(e){}
+            const userHTML = user ? `<div style="display:flex; align-items:center; gap:10px; margin-right:8px;"><img src="${user.picture || ''}" alt="avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,0.04);"/><div style="min-width:0;"><div style="font-weight:700; color:#e2e8f0; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.name || ''}</div>${/* show connected text only when not using local bypass */''} ${(!isBypass) ? `<div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;"><span style=\"color: #10b981;\">●</span> ${typeof GN_I18N !== 'undefined' ? GN_I18N.t('connected_to_drive') : 'Connected to Drive'}</div>` : ''}</div></div>` : '';
+            const wrapperStyle = isSettingsContainer
+                ? 'display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#94a3b8; padding:8px 0; background: transparent; border-radius: 0; margin-bottom: 12px; border: none;'
+                : 'display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#94a3b8; padding:12px; background:#1e293b; border-radius:12px; margin-bottom:20px; border:1px solid #334155;';
+
+            const settingsLink = isSettingsContainer ? '' : `
+                <a href="settings.html" aria-label="${typeof GN_I18N !== 'undefined' ? GN_I18N.t('menu_settings') : 'Settings'}" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;color:#94a3b8;border:1px solid rgba(255,255,255,0.04);border-radius:8px;text-decoration:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 2.28 18.9l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09c.7 0 1.27-.4 1.51-1a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 5.1 2.28l.06.06a1.65 1.65 0 0 0 1.82.33H7a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .6.4 1.17 1 1.51h.02c.7 0 1.27.4 1.51 1a1.65 1.65 0 0 0 .33 1.82l.06.06A2 2 0 1 1 19.4 6.1l-.06-.06a1.65 1.65 0 0 0-.33 1.82c.2.6.8 1 1.5 1H21a2 2 0 1 1 0 4h-.09c-.7 0-1.27.4-1.51 1z"></path></svg>
+                </a>`;
+
             container.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #94a3b8; padding: 12px; background: #1e293b; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155;">
-                    <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;"><span style="color: ${isBypass ? '#f59e0b' : '#10b981'};">●</span> ${typeof GN_I18N !== 'undefined' ? (isBypass ? GN_I18N.t('local_mode') : GN_I18N.t('connected_to_drive')) : (isBypass ? 'Local Mode' : 'Connected to Drive')}</span>
-                    <a href="settings.html" style="background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.04); border-radius:8px; padding:6px 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem; text-decoration: none;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('menu_settings') : 'Settings'}</a>
+                <div style="${wrapperStyle}">
+                    ${userHTML}
+                    <div style="flex:1"></div>
+                    ${settingsLink}
                 </div>
             `;
         } else {
+            const wrapperStyle = isSettingsContainer
+                ? 'display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#94a3b8; padding:8px 0; background: transparent; border-radius:0; margin-bottom:12px; border:none;'
+                : 'display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#94a3b8; padding:12px; background:#1e293b; border-radius:12px; margin-bottom:20px; border:1px solid #334155;';
+
+            const settingsLink = isSettingsContainer ? '' : `<a href="settings.html" style="background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.04); border-radius:8px; padding:6px 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem; text-decoration: none;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('menu_settings') : 'Settings'}</a>`;
+
             container.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #94a3b8; padding: 12px; background: #1e293b; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155;">
-                    <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;"><span style="color: #f59e0b;">●</span> ${typeof GN_I18N !== 'undefined' ? (isLocal ? GN_I18N.t('local_mode') : GN_I18N.t('not_connected')) : (isLocal ? 'Local Mode' : 'Not Connected')}</span>
-                    <a href="settings.html" style="background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.04); border-radius:8px; padding:6px 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem; text-decoration: none;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('menu_settings') : 'Settings'}</a>
+                <div style="${wrapperStyle}">
+                    <span style="flex-grow:1; display:flex; align-items:center; gap:6px;"><span style="color:#f59e0b;">●</span> ${typeof GN_I18N !== 'undefined' ? GN_I18N.t('not_connected') : 'Not Connected'}</span>
+                    ${settingsLink}
                     <button onclick="handleAuth()" style="background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('login') : 'Login'}</button>
                 </div>
             `;
         }
         
+    };
+
+    // Provide a simple getter so UI code in HTML files can obtain the
+    // current user without embedding markup inside this module.
+    window.getGoogleUser = () => {
+        try {
+            const u = localStorage.getItem('google_user');
+            return u ? JSON.parse(u) : null;
+        } catch (e) { return null; }
     };
 
     // Show explicit UI when a refresh attempt fails but a refresh token existed.
@@ -438,6 +469,12 @@
                     localStorage.setItem('google_token_expires_at', Date.now() + (data.expires_in * 1000));
                     // Google may or may not return a new refresh_token. If it does, store it.
                     if (data.refresh_token) localStorage.setItem('google_refresh_token', data.refresh_token);
+                                try {
+                                    // Update stored user profile after refresh
+                                    if (typeof window.fetchGoogleUserProfile === 'function') {
+                                        await window.fetchGoogleUserProfile();
+                                    }
+                                } catch (e) { console.warn('profile fetch after refresh failed', e); }
                     return true;
                 }
 
@@ -480,6 +517,123 @@
         return false;
     };
 
+    // Fetch basic user profile (name, picture, email) and store in localStorage
+    window.fetchGoogleUserProfile = async () => {
+        try {
+            const ok = await window.ensureGoogleAccessToken();
+            if (!ok) return null;
+            const token = localStorage.getItem('google_token');
+            if (!token) return null;
+            const resp = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+                headers: { Authorization: 'Bearer ' + token }
+            });
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            try {
+                localStorage.setItem('google_user', JSON.stringify(data));
+                try { window.dispatchEvent(new CustomEvent('userchange', { detail: data })); } catch(e){}
+            } catch(e){}
+            return data;
+        } catch (e) {
+            console.warn('fetchGoogleUserProfile error', e);
+            return null;
+        }
+    };
+
+    // Create local mock data for offline / file:// development mode.
+    // Seeds a mock `google_user` and, if Dexie is available, populates
+    // the catalog tables from local `catalog/*.json` and adds sample routines/history.
+    window.createLocalMockData = async () => {
+        try {
+            // Mock user
+            const mockUser = {
+                sub: 'local-12345',
+                name: 'Local Tester',
+                given_name: 'Local',
+                family_name: 'Tester',
+                picture: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="100%" height="100%" fill="#2563eb"/><text x="50%" y="54%" font-size="56" fill="#fff" dominant-baseline="middle" text-anchor="middle">LT</text></svg>`),
+                email: 'local@example.com',
+                email_verified: true
+            };
+            try {
+                localStorage.setItem('google_user', JSON.stringify(mockUser));
+                try { window.dispatchEvent(new CustomEvent('userchange', { detail: mockUser })); } catch(e){}
+            } catch(e){}
+            try { localStorage.setItem('last_sync_time', new Date().toISOString()); } catch(e){}
+            try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+
+            // If Dexie and db are available, seed catalog and a few sample items
+            if (typeof Dexie !== 'undefined' && typeof db !== 'undefined') {
+                try {
+                    await ensureDbOpen();
+                    const [exCount, imgCount] = await Promise.all([
+                        db.catalog_exercises.count(),
+                        db.catalog_images.count()
+                    ]);
+
+                    if (exCount === 0 || imgCount === 0) {
+                        // Try to load local catalog files shipped with the project
+                        const [exResp, imgResp] = await Promise.allSettled([
+                            fetch('catalog/exercises.json'),
+                            fetch('catalog/images.json')
+                        ]);
+
+                        let exercises = [];
+                        let images = [];
+
+                        if (exResp.status === 'fulfilled' && exResp.value.ok) {
+                            try { exercises = await exResp.value.json(); } catch(e){}
+                        }
+                        if (imgResp.status === 'fulfilled' && imgResp.value.ok) {
+                            try { images = await imgResp.value.json(); } catch(e){}
+                        }
+
+                        // Normalize images' data URIs
+                        images = images.map(img => ({ ...img, data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data }));
+
+                        // Write to DB (use negative ids for catalog)
+                        const catalogExercises = exercises.map(ex => ({ ...ex, id: -Math.abs(ex.id || Date.now()) }));
+
+                        await db.transaction('rw', db.catalog_exercises, db.catalog_images, async () => {
+                            if (catalogExercises.length) {
+                                await db.catalog_exercises.clear();
+                                await db.catalog_exercises.bulkAdd(catalogExercises);
+                            }
+                            if (images.length) {
+                                await db.catalog_images.clear();
+                                await db.catalog_images.bulkAdd(images);
+                            }
+                        });
+                    }
+
+                    // If no routines exist, add a sample routine and history
+                    const routinesCount = await db.routines.count();
+                    if (routinesCount === 0) {
+                        const sampleExercises = await db.catalog_exercises.limit(3).toArray();
+                        const exIds = sampleExercises.map(e => e.id);
+                        const routine = { name: 'Full Body (Local)', exerciseIds: exIds };
+                        await db.routines.add(routine);
+                    }
+
+                    const historyCount = await db.history.count();
+                    if (historyCount === 0) {
+                        const today = new Date();
+                        const sample = await db.catalog_exercises.limit(2).toArray();
+                        const entries = sample.map((ex, i) => ({ exerciseId: ex.id, weight: 50 + i * 5, reps: 8 + i, date: new Date(today.getTime() - i * 86400000).toISOString().slice(0,10) }));
+                        if (entries.length) await db.history.bulkAdd(entries);
+                    }
+                } catch (e) {
+                    console.warn('Seeding local Dexie DB failed', e);
+                }
+            }
+
+            return true;
+        } catch (e) {
+            console.warn('createLocalMockData error', e);
+            return false;
+        }
+    };
+
     
 
     window.handleAuth = async () => {
@@ -496,6 +650,11 @@
                 localStorage.setItem('google_token', token);
                 localStorage.setItem('google_token_expires_at', expires);
             } catch(e){}
+            try {
+                if (typeof window.createLocalMockData === 'function') {
+                    await window.createLocalMockData();
+                }
+            } catch(e) { console.warn('createLocalMockData failed', e); }
             try { callShowApp(); } catch(e){}
             return;
         }
@@ -552,6 +711,11 @@
                 localStorage.setItem('google_token', tokenData.access_token);
                 localStorage.setItem('google_token_expires_at', Date.now() + (tokenData.expires_in * 1000));
                 if (tokenData.refresh_token) localStorage.setItem('google_refresh_token', tokenData.refresh_token);
+                try {
+                    if (typeof window.fetchGoogleUserProfile === 'function') {
+                        await window.fetchGoogleUserProfile();
+                    }
+                } catch(e) { console.warn('profile fetch after exchange failed', e); }
                 localStorage.setItem('needs_initial_download', 'true');
                 location.reload();
             } else {
@@ -590,7 +754,7 @@
         blocker.innerHTML = `
             <div style="max-width: 420px; width: 100%;">
                 <h1 style="font-size: 3.5rem; font-weight: 900; margin-bottom: 10px; font-style: italic; background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));">GymNerd</h1>
-                <p style="color: #94a3b8; margin-bottom: 18px; font-size: 1.05rem;">${isLocal ? (typeof GN_I18N !== 'undefined' ? GN_I18N.t('running_local_mode_msg') : 'Running in Local Mode.') : (typeof GN_I18N !== 'undefined' ? GN_I18N.t('sync_workout_msg') : 'Sync your workout data with Google Drive.')}</p>
+                <p style="color: #94a3b8; margin-bottom: 18px; font-size: 1.05rem;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('sync_workout_msg') : 'Sync your workout data with Google Drive.'}</p>
 
                 <div style="position:absolute; top:20px; right:20px; display:flex; align-items:center; gap:8px;">
                     <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('language') : 'Language'}</label>

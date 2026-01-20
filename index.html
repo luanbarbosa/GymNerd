@@ -27,8 +27,16 @@
 
         .main-content { padding: 20px; display: none; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
+        .app-title-compact { font-weight: 900; font-size: 1.4rem; letter-spacing: -1px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 12px rgba(59,130,246,0.35)); font-style: italic; }
         
-        .menu-grid { display: grid; gap: 15px; }
+        .menu-grid { display: grid; gap: 15px; margin-top: 64px; }
+        .user-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin:12px 0 26px; }
+        .user-avatar { width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.06); }
+        .user-line { display:flex; align-items:center; justify-content:center; gap:10px; }
+        /* Same (larger) font-size for both greeting and name, styles differ */
+        .user-greeting { font-weight:600; font-size:2.2rem; color: var(--text-dim); }
+        .user-name { font-weight:900; font-size:2.2rem; letter-spacing:-0.6px; text-align:center; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(37,99,235,0.32)); }
+        .motivational-text { font-weight:500; font-size:0.95rem; color: #9aa6bd; text-align:center; margin-top:4px; font-style:italic; }
         .nav-card { background: var(--card); padding: 24px; border-radius: 16px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.05); }
         .nav-card:active { transform: scale(0.97); }
         
@@ -55,14 +63,24 @@
         };
     </script>
 
+    <div class="topbar" style="position:sticky;top:0;z-index:1200;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:transparent;">
+        <div id="topbar-title">
+            <div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+        </div>
+        <div id="topbar-actions">
+            <a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;color:#94a3b8;border:1px solid rgba(255,255,255,0.04);border-radius:10px;text-decoration:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 2.28 18.9l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09c.7 0 1.27-.4 1.51-1a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 5.1 2.28l.06.06a1.65 1.65 0 0 0 1.82.33H7a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .6.4 1.17 1 1.51h.02c.7 0 1.27.4 1.51 1a1.65 1.65 0 0 0 .33 1.82l.06.06A2 2 0 1 1 19.4 6.1l-.06-.06a1.65 1.65 0 0 0-.33 1.82c.2.6.8 1 1.5 1H21a2 2 0 1 1 0 4h-.09c-.7 0-1.27.4-1.51 1z"></path></svg>
+            </a>
+        </div>
+    </div>
+
     <div class="main-content">
-        <div id="auth-status-container"></div>
 
         <button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
             <span data-i18n="sync_pending">☁️ Sync Pending Changes</span><span>→</span>
         </button>
 
-        <h1 data-i18n="title_main">GymNerd</h1>
+        <div id="home-user-main"></div>
         
         <div class="menu-grid">
             <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span data-i18n="menu_start_routine">🚀 Start Routine</span><span>→</span></a>
@@ -74,184 +92,114 @@
 
     <script>
 
-        // Initialize Auth Status UI
-        renderAuthStatus('auth-status-container');
+        // Render compact app title into the sticky topbar
+        function renderCompactApp() {
+            const container = document.getElementById('topbar-title');
+            if (!container) return;
+            container.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="flex:1; min-width:0;">
+                        <div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+                    </div>
+                </div>
+            `;
+            // ensure settings aria label is localized
+            try {
+                const s = document.getElementById('topbar-settings');
+                if (s) s.setAttribute('aria-label', (typeof GN_I18N !== 'undefined') ? GN_I18N.t('menu_settings') : 'Settings');
+            } catch(e){}
+        }
+        function renderMainUser() {
+            const container = document.getElementById('home-user-main');
+            if (!container) return;
+            let user = null;
+            try {
+                if (typeof getGoogleUser === 'function') user = getGoogleUser();
+                else {
+                    const u = localStorage.getItem('google_user'); if (u) user = JSON.parse(u);
+                }
+            } catch (e) { user = null; }
 
-        function checkSyncStatus() {
-            const token = localStorage.getItem('google_token');
-            const isBypass = token === 'local-bypass';
-            const hasChanges = localStorage.getItem('has_local_changes') === 'true';
-            const btn = document.getElementById('sync-pending-btn');
-            if (btn) btn.style.display = (hasChanges && token && !isBypass) ? 'block' : 'none';
+            const name = user ? (user.name || user.email || '') : '';
+            const avatar = user ? (user.picture || '') : '';
+
+            // Simple greeting abbreviation: always show "Hi" or "Olá" next to the name
+            const greeting = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('greeting_hi') : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'Olá' : 'Hi');
+
+            const motivational = '';
+
+            container.innerHTML = `
+                <div class="user-card">
+                    <div class="user-line" style="flex-direction:column; gap:8px;">
+                        <img src="${avatar || 'favicon.png'}" alt="avatar" class="user-avatar" />
+                        <div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
+                            <div class="user-greeting">${greeting}</div>
+                            <div class="user-name">${name || 'GymNerd'}</div>
+                        </div>
+                    </div>
+                    <div class="motivational-text">${motivational}</div>
+                </div>
+            `;
+            // After rendering the DOM, attempt to load a motivational quote
+            // and replace the placeholder text. This uses a remote raw GitHub
+            // URL and falls back to a local file under `catalog/` if needed.
+            try { loadMotivationalText(); } catch (e) { /* ignore */ }
         }
 
-        async function exportData() {
-            await ensureDbOpen();
-            const date = new Date().toISOString().slice(0,10);
-            const data = {
-                catalog_exercises: await db.catalog_exercises.toArray(),
-                catalog_images: await db.catalog_images.toArray(),
-                custom_exercises: await db.custom_exercises.toArray(),
-                custom_images: await db.custom_images.toArray(),
-                routines: await db.routines.toArray(),
-                history: await db.history.toArray(),
-                weights: await db.weights.toArray()
+        async function loadMotivationalText() {
+            const elem = document.querySelector('.motivational-text');
+            if (!elem) return;
+
+            const urls = {
+                en: 'https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/main/catalog/motivational-quotes-en.json',
+                pt: 'https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/main/catalog/motivational-quotes-pt.json'
             };
-            
-            Object.keys(data).forEach((key, i) => {
-                setTimeout(() => {
-                    const blob = new Blob([JSON.stringify(data[key], null, 2)], {type: "application/json"});
-                    const a = document.createElement('a'); 
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `GymNerd_${key}_${date}.json`; 
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                }, i * 500);
-            });
-        }
 
-        async function importData() {
-            const files = {
-                catalog_images: document.getElementById('importImg').files[0],
-                catalog_exercises: document.getElementById('importEx').files[0],
-                custom_images: null,
-                custom_exercises: null,
-                routines: document.getElementById('importWk').files[0],
-                history: document.getElementById('importLogs').files[0],
-                weights: null
-            };
+            function getLang() {
+                try {
+                    if (typeof GN_I18N !== 'undefined' && GN_I18N.safeGetLang) return GN_I18N.safeGetLang().slice(0,2).toLowerCase();
+                    return (navigator.language || navigator.userLanguage || 'en').slice(0,2).toLowerCase();
+                } catch (e) { return 'en'; }
+            }
 
-            await ensureDbOpen();
-            try {
-                for (const key in files) {
-                    if (files[key]) {
-                        const text = await files[key].text();
-                        let parsedData = JSON.parse(text);
-                        const table = db[key];
+            const lang = getLang();
+            const remote = urls[lang] || urls.en;
 
-                        // Normalize image tables to ensure stored data are data URIs
-                        if (key && key.toLowerCase().includes('image')) {
-                            parsedData = parsedData.map(img => ({
-                                ...img,
-                                data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
-                            }));
-                        }
-
-                        await table.clear();
-                        await table.bulkAdd(parsedData);
-                    }
+            async function tryFetch(u) {
+                try {
+                    const res = await fetch(u, { cache: 'no-cache' });
+                    if (!res.ok) throw new Error('bad status ' + res.status);
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) return data;
+                } catch (e) {
+                    return null;
                 }
-                // Import weights if user selects a file named weights.json
-                const weightsFile = Array.from(document.querySelectorAll('input[type="file"]')).find(f => f.files[0] && f.files[0].name.includes('weights'));
-                if (weightsFile && weightsFile.files[0]) {
-                    const text = await weightsFile.files[0].text();
-                    let parsedData = JSON.parse(text);
-                    await db.weights.clear();
-                    await db.weights.bulkAdd(parsedData);
+                return null;
+            }
+
+            let quotes = await tryFetch(remote);
+            if (!quotes) {
+                // local fallback to packaged file
+                quotes = await tryFetch(`catalog/motivational-quotes-${lang}.json`) || await tryFetch('catalog/motivational-quotes-en.json');
+            }
+
+            if (quotes && quotes.length > 0) {
+                const pick = quotes[Math.floor(Math.random() * quotes.length)];
+                if (pick && String(pick).trim()) {
+                    elem.textContent = pick;
+                } else {
+                    try { elem.remove(); } catch (e) { elem.style.display = 'none'; }
                 }
-                await DriveStorage.sync(db);
-                alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!"); 
-                location.reload();
-            } catch (err) {
-                console.error("Import error:", err);
-                alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_error') : "Error importing data. Check console for details.");
+            } else {
+                // If no quotes available, remove the motivational element entirely
+                try { elem.remove(); } catch (e) { elem.style.display = 'none'; }
             }
         }
 
-        async function restoreFromDrive(isAuto = false) {
-            try {
-                await ensureDbOpen();
-                if (window.showLoading) {
-                    window.showLoading((typeof GN_I18N !== 'undefined') ? (isAuto ? GN_I18N.t('welcome_back_syncing') : GN_I18N.t('restoring_from_drive')) : (isAuto ? "Welcome back! Syncing your data..." : "Restoring from Google Drive..."));
-                }
-                
-                const data = await DriveStorage.load();
-                        if (!data) {
-                            if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('no_backup') : "No backup found on Google Drive.");
-                            if (isAuto && window.showApp) window.showApp();
-                            return;
-                        }
-                const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
-                if (proceed) {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history], async () => {
-                        await db.catalog_images.clear();
-                        if (data.catalog_images) {
-                            const normalizedCatalogImages = data.catalog_images.map(img => ({
-                                ...img,
-                                data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
-                            }));
-                            await db.catalog_images.bulkAdd(normalizedCatalogImages);
-                        }
-                        
-                        await db.catalog_exercises.clear();
-                        if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
-
-                        await db.custom_images.clear();
-                        if (data.custom_images) {
-                            const normalizedCustomImages = data.custom_images.map(img => ({
-                                ...img,
-                                data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
-                            }));
-                            await db.custom_images.bulkAdd(normalizedCustomImages);
-                        }
-                        
-                        await db.custom_exercises.clear();
-                        if (data.custom_exercises) await db.custom_exercises.bulkAdd(data.custom_exercises);
-                        
-                        await db.routines.clear();
-                        if (data.routines) await db.routines.bulkAdd(data.routines);
-                        
-                        await db.history.clear();
-                        if (data.history) await db.history.bulkAdd(data.history);
-                    });
-
-                    // Save last sync time if available
-                    if (data.lastSync) localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync);
-                    localStorage.setItem('has_local_changes', 'false');
-
-                    if (isAuto) {
-                        if (window.showApp) window.showApp();
-                    } else {
-                        location.reload();
-                    }
-                }
-            } catch (error) {
-                if (error.message === "AUTH_EXPIRED") {
-                    if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : "Your session has expired. Please login again.");
-                    renderAuthStatus('auth-status-container');
-                    return;
-                }
-                console.error("Restore failed:", error);
-                if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('restore_failed_prefix') + error.message) : ("Restore failed: " + error.message));
-            } finally {
-                if (window.hideLoading) window.hideLoading();
-            }
-        }
-
-        async function syncToDrive() {
-            try {
-                await DriveStorage.sync(db);
-                checkSyncStatus();
-            } catch (error) {
-                // Error handled in DriveStorage.sync
-            }
-        }
-
-        // Check for auto-download after login (placed at end to ensure functions are defined)
-        if (localStorage.getItem('needs_initial_download') === 'true') {
-            localStorage.removeItem('needs_initial_download');
-            restoreFromDrive(true);
-        }
-
-        checkSyncStatus();
-        // Apply translations for home screen
-        try {
-            if (window.GN_I18N) {
-                document.addEventListener('DOMContentLoaded', () => GN_I18N.applyTranslations(document));
-                // Also apply immediately in case DOMContentLoaded already fired
-                GN_I18N.applyTranslations(document);
-            }
-        } catch(e) {}
-        </script>
+        // Initial render
+        try { renderCompactApp(); } catch (e) {}
+        try { renderMainUser(); } catch (e) {}
+        try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
+    </script>
 </body>
 </html>
