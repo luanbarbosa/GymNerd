@@ -31,27 +31,30 @@
         .import-btn { background: #6366f1; color: white; }
         .danger { background: transparent; color: var(--danger); border: 1px solid rgba(239,68,68,0.15); }
         label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 6px; }
-        .top-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 12px; }
+        .top-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:24px; margin-bottom: 12px; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
         /* Data Management card specific styles */
         .data-card .btn-row { display:flex; gap:8px; }
         .data-card .btn-row .sync-btn { flex:1; }
-        .data-card .restore-grid { display:grid; gap:8px; grid-template-columns: 1fr; }
+        .data-card .restore-grid { display:grid; gap:6px; grid-template-columns: 1fr; }
         .data-card label { margin-bottom:4px; display:block; color:#94a3b8; }
         .data-card input[type="file"] { width:100%; }
-        /* Sexy file input styles */
-        .file-row { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; }
-        .file-desc { flex: 1 1 auto; color: #94a3b8; font-weight:700; min-width:0; }
-        .file-control { display:flex; gap:6px; align-items:center; flex:0 0 auto; }
-        .file-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-weight:800; }
-        .file-btn:hover { background: rgba(255,255,255,0.05); }
-        .file-name { color: #94a3b8; font-size: 0.95rem; max-width: 40vw; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display:inline-block; }
+        /* Cleaner, denser file input styles */
+        .file-row { display:grid; grid-template-columns: 160px 1fr; gap:12px; align-items:center; padding:8px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .file-desc { color: #9aa6b8; font-weight:600; min-width:0; }
+        .file-desc label { margin:0; font-weight:600; color:#9aa6b8; font-size:0.88rem; }
+        .file-control { display:flex; gap:8px; align-items:center; justify-content:flex-start; }
+        .file-btn { background: transparent; border: 1px solid rgba(255,255,255,0.06); color: var(--text); padding: 6px 8px; border-radius: 6px; cursor: pointer; font-weight:700; font-size:0.9rem; }
+        .file-btn:hover { background: rgba(255,255,255,0.02); }
+        .file-name { color: #7b8794; font-size: 0.85rem; max-width: 40vw; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display:inline-block; }
+        .file-row:last-child { border-bottom: none; }
         .hidden-file { display:none; }
 
         @media (max-width: 420px) {
-            .file-row { flex-direction: column; align-items: stretch; gap:6px; }
-            .file-control { justify-content: flex-start; }
-            .file-name { max-width: 100%; }
+            .file-row { display: block; padding:8px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+            .file-desc { display:block; margin-bottom:6px; }
+            .file-control { display:flex; gap:8px; align-items:center; justify-content:flex-start; }
+            .file-name { display:block; max-width: 100%; overflow-wrap: anywhere; font-size:0.92rem; color:#7b8794; }
         }
     </style>
 </head>
@@ -92,14 +95,17 @@
                 </div>
 
                 <h4 data-i18n="restore" style="margin-top:12px;">Restore</h4>
+                <p class="restore-help" data-i18n="restore_help" style="margin:6px 0 8px 0;color:#94a3b8;font-size:0.85rem;">Select files to restore specific parts of the app.</p>
                 <div class="restore-grid" style="margin-top:6px;">
                     <div class="file-row">
                         <div class="file-desc">
                             <label data-i18n="label_images">1. Images Database (.json)</label>
                         </div>
                         <div class="file-control">
-                            <label class="file-btn" for="importImg" data-i18n="choose_file"></label>
-                            <span class="file-name" id="importImg-name" data-i18n="no_file_chosen"></span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <label class="file-btn" for="importImg" data-i18n="choose_file"></label>
+                                <span class="file-name" id="importImg-name" data-i18n="no_file_chosen"></span>
+                            </div>
                         </div>
                         <input type="file" id="importImg" accept=".json" class="hidden-file">
                     </div>
@@ -109,8 +115,10 @@
                             <label data-i18n="label_exercises">2. Exercises (.json)</label>
                         </div>
                         <div class="file-control">
-                            <label class="file-btn" for="importEx" data-i18n="choose_file"></label>
-                            <span class="file-name" id="importEx-name" data-i18n="no_file_chosen"></span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <label class="file-btn" for="importEx" data-i18n="choose_file"></label>
+                                <span class="file-name" id="importEx-name" data-i18n="no_file_chosen"></span>
+                            </div>
                         </div>
                         <input type="file" id="importEx" accept=".json" class="hidden-file">
                     </div>
@@ -120,8 +128,10 @@
                             <label data-i18n="label_routines">3. Routines (.json)</label>
                         </div>
                         <div class="file-control">
-                            <label class="file-btn" for="importWk" data-i18n="choose_file"></label>
-                            <span class="file-name" id="importWk-name" data-i18n="no_file_chosen"></span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <label class="file-btn" for="importWk" data-i18n="choose_file"></label>
+                                <span class="file-name" id="importWk-name" data-i18n="no_file_chosen"></span>
+                            </div>
                         </div>
                         <input type="file" id="importWk" accept=".json" class="hidden-file">
                     </div>
@@ -131,8 +141,10 @@
                             <label data-i18n="label_history">4. History (.json)</label>
                         </div>
                         <div class="file-control">
-                            <label class="file-btn" for="importLogs" data-i18n="choose_file"></label>
-                            <span class="file-name" id="importLogs-name" data-i18n="no_file_chosen"></span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <label class="file-btn" for="importLogs" data-i18n="choose_file"></label>
+                                <span class="file-name" id="importLogs-name" data-i18n="no_file_chosen"></span>
+                            </div>
                         </div>
                         <input type="file" id="importLogs" accept=".json" class="hidden-file">
                     </div>
