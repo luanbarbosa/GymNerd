@@ -77,6 +77,9 @@
             letter-spacing: 0.05em;
             border: 1px solid rgba(59, 130, 246, 0.3);
             display: inline-block;
+            white-space: nowrap;
+            width: auto;
+            max-width: none;
             margin-top: 4px;
         }
 
@@ -104,15 +107,16 @@
         .exercise-tag .ex-thumb { width: 100%; height: 110px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
         .exercise-tag .exercise-title { font-weight:700; font-size: 1rem; color: var(--text); margin: 0; }
         /* New card layout: preview square + meta column + sets table */
-        .ex-preview-square { width:72px; height:72px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; }
-        .exercise-row { display:flex; gap:12px; align-items:center; }
-        .exercise-meta { display:flex; flex-direction:column; gap:4px; }
+        .ex-preview-square { width:72px; height:72px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; align-self:flex-start; }
+        .exercise-row { display:flex; gap:12px; align-items:flex-start; }
+        .exercise-meta { display:flex; flex-direction:column; gap:4px; align-items: flex-start; }
         .exercise-type { font-size:0.8rem; color:var(--text-dim); font-weight:700; text-transform:capitalize; }
         .sets-table { width:100%; border-collapse:collapse; margin-top:8px; }
         .sets-table th, .sets-table td { text-align:left; padding:6px 8px; font-size:0.85rem; color:var(--text-dim); border-bottom:1px solid rgba(255,255,255,0.03); }
         .sets-table th { color:var(--text-dim); font-weight:800; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; }
         .set-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; justify-content: flex-start; }
         .set-pill { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; color: var(--text-dim); font-weight: 700; }
+        .sets-compact { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
         .sort-btn { color: var(--text-dim); background: rgba(255,255,255,0.02); border: none; cursor: pointer; display: flex; align-items: center; padding: 8px; border-radius: 10px; transition: background 0.12s; }
         .sort-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
 
@@ -329,7 +333,7 @@
                 for (let j = 0; j < group.length; j++) {
                     const ex = group[j];
                     const ptLine = ((lang && lang.toLowerCase().startsWith('pt')) && ex.namePT) ? ('<div class="exercise-name-pt">' + ex.namePT + '</div>') : '';
-                    const customBadge = ex.isCustom ? '<span class="custom-badge">Personalizado</span>' : '';
+                    const customBadge = ex.isCustom ? ('<span class="custom-badge">' + ((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Personalizado') + '</span>') : '';
                     html += '<div class="exercise-card" onmousedown="startPressTimer(this, ' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(' + ex.id + ', ' + (ex.isCustom ? 'true' : 'false') + ', this, event)">' +
                                 '<img src="' + (images[ex.imageId] || defaultImage) + '" class="ex-thumb">' +
                                 '<div class="exercise-info">' +
@@ -569,27 +573,30 @@
                         acc[key].count++;
                         return acc;
                     }, {});
-                    setsHtml = `<table class="sets-table"><thead><tr><th>${labelSets}</th><th>${labelReps}</th><th>${labelWeight}</th></tr></thead><tbody>` +
-                        Object.values(groups).map(g => `<tr><td>${g.count}</td><td>${g.reps}</td><td>${g.weight}kg</td></tr>`).join('') +
-                        `</tbody></table>`;
+                    const groupArr = Object.values(groups);
+                    // Compact pills summary: show reps/weight for single sets, otherwise show count×reps/weight
+                    const pills = groupArr.map(g => (g.count === 1) ? `<span class="set-pill">${g.reps}reps - ${g.weight}kg</span>` : `<span class="set-pill">${g.count}x ${g.reps}reps - ${g.weight}kg</span>`).join('');
+                    setsHtml = `<div class="sets-compact">${pills}</div>`;
                 } else if (typeof it.sets !== 'undefined') {
                     // Legacy format where `it.sets` is a count and `it.reps`/`it.weight` hold values
                     const count = it.sets || 1;
-                    setsHtml = `<table class="sets-table"><thead><tr><th>${labelSets}</th><th>${labelReps}</th><th>${labelWeight}</th></tr></thead><tbody>` +
-                        `<tr><td>${count}</td><td>${it.reps}</td><td>${it.weight}kg</td></tr>` +
-                        `</tbody></table>`;
+                    const pill = (count === 1) ? `<span class="set-pill">${it.reps}reps - ${it.weight}kg</span>` : `<span class="set-pill">${count}x ${it.reps}reps - ${it.weight}kg</span>`;
+                    setsHtml = `<div class="sets-compact">${pill}</div>`;
                 }
                 const localizedType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(ex.type) : ex.type || '';
+                const isCustomEx = !!it.isCustom || !!ex.isCustom;
+                const customBadgeHtml = isCustomEx ? ('<span class="custom-badge">' + ((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Personalizado') + '</span>') : '';
                 return `<div class="exercise-tag" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
                     <div class="main">
                         <div class="exercise-row">
                             <img src="${images[ex.imageId] || defaultImage}" class="ex-preview-square">
                             <div class="exercise-meta">
+                                ${customBadgeHtml}
                                 <strong class="exercise-title">${getDisplayedName(ex)}</strong>
                                 <div class="exercise-type">${localizedType}</div>
+                                ${setsHtml}
                             </div>
                         </div>
-                        ${setsHtml}
                     </div>
                 </div>`;
             }).join('');
