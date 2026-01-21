@@ -18,11 +18,18 @@
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; margin-bottom: 20px; }
+        /* Top-card (same style used on index.html / settings) */
+        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
+        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
+        .page-content { padding: 16px; padding-top: 12px; }
+        .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
+        .top-card .back-btn { color: inherit; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
-        .view-content { padding: 0 15px 20px 15px; }
+        .view-content { padding: 12px 15px 20px 15px; }
         select, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         
         .exercise-list { margin-top: 10px; }
@@ -98,8 +105,8 @@
         .ex-title-group { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         /* exercise title removed per request */
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .header-timer { display: flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.1); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2); cursor: pointer; }
-        .timer-val { font-size: 1.2rem; font-weight: 800; color: white; font-variant-numeric: tabular-nums; }
+        .header-timer { display: flex; align-items: center; gap: 8px; background: linear-gradient(90deg, rgba(96,165,250,0.12), rgba(37,99,235,0.06)); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(59,130,246,0.12); cursor: pointer; color: #0f172a; }
+        .timer-val { font-size: 1.2rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
         .progress-bar { height: 100%; background: var(--primary-grad); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         /* Exercise progress graph (balls and connectors) */
@@ -111,7 +118,7 @@
         .exercise-connector { width:26px; height:4px; background: rgba(255,255,255,0.06); border-radius:2px; flex-shrink:0; }
         .exercise-connector.completed { background: linear-gradient(90deg, #10b981, #34d399); }
         .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
-        .timer-reset { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0; display: flex; align-items: center; transition: color 0.2s; width: auto !important; }
+        .timer-reset { background: none; border: none; color: inherit; cursor: pointer; padding: 0; display: flex; align-items: center; transition: color 0.2s; width: auto !important; }
         .timer-reset:active { color: var(--primary); }
 
         .resume-card { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 16px; margin-bottom: 20px; }
@@ -221,10 +228,16 @@
 </head>
 <body>
     <div id="setupView">
-        <div class="header">
-            <div class="header-left">
-                <a href="index.html" class="back-btn">←</a>
-                <h2 data-i18n="page_start_routine"></h2>
+        <div class="top-card">
+            <div class="top-card-inner">
+                <div class="topbar">
+                    <div style="display:flex;align-items:center;width:100%;gap:12px;">
+                        <a href="index.html" class="back-btn">←</a>
+                        <div style="flex:1;min-width:0;">
+                            <h2 data-i18n="page_start_routine"></h2>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -257,16 +270,22 @@
     </div>
 
     <div id="playerView" style="display: none;">
-        <div class="header">
-            <div class="header-left">
-                <a href="livesession.html" class="back-btn">←</a>
-                <h2 id="playerWorkoutTitle"></h2>
-            </div>
-            <div class="header-timer" onclick="startTimer()">
-                <div id="setTimer" class="timer-val">00:00</div>
-                <button class="timer-reset">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-                </button>
+        <div class="top-card">
+            <div class="top-card-inner">
+                <div class="topbar">
+                    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                        <a href="livesession.html" class="back-btn">←</a>
+                        <div style="flex:1;min-width:0;">
+                            <h2 id="playerWorkoutTitle"></h2>
+                        </div>
+                    </div>
+                    <div class="header-timer" onclick="startTimer()">
+                        <div id="setTimer" class="timer-val">00:00</div>
+                        <button class="timer-reset">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="view-content">

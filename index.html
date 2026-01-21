@@ -29,7 +29,7 @@
 
         .main-content { padding: 20px; display: none; margin-top: 12px; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
-        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 8px rgba(59,130,246,0.25)); font-style: italic; white-space:nowrap; overflow:visible; }
+        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: #0f172a; font-style: italic; white-space:nowrap; overflow:visible; }
         
         .menu-grid { display: grid; gap: 15px; margin-top: 0px; }
         /* Top card that holds the topbar + user info (scrolls with page) */
@@ -54,8 +54,9 @@
         /* Ensure title can grow without being clipped */
         #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
         /* Remove bounds for the settings action and make the icon a bit smaller/lighter */
-        .top-card a#topbar-settings { color: rgba(15,23,42,0.8) !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
-        .top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:0.85; display:block; }
+        .top-card a#topbar-settings { color: #0f172a !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
+        .top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:1 !important; display:block; stroke: #0f172a !important; fill: none !important; filter: none !important; }
+        .top-card a#topbar-settings svg * { stroke: #0f172a !important; fill: none !important; stroke-opacity:1 !important; fill-opacity:0 !important; }
         .user-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin:12px 0 26px; }
         .user-avatar { width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.06); }
         .user-line { display:flex; align-items:center; justify-content:center; gap:10px; }
@@ -95,8 +96,8 @@
                 <div class="app-title-compact" data-i18n="title_main">GymNerd</div>
             </div>
             <div id="topbar-actions">
-                <a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:inherit;text-decoration:none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="3"/> <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 10.91 3H11a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/> </svg>
+                <a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:#0f172a;text-decoration:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="3" stroke="#0f172a"/> <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 1.65 0 0 0 10.91 3H11a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="#0f172a"/> </svg>
                 </a>
             </div>
         </div>

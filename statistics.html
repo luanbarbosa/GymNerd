@@ -23,12 +23,18 @@
             --danger: #ef4444;
             --card-border: rgba(255, 255, 255, 0.08);
         }
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 20px; animation: fadeIn 0.3s ease-out; line-height: 1.5; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; line-height: 1.5; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        .header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
-        .header h2 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.025em; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
-        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
+        /* Top-card (same as history) */
+        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
+        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
+        .page-content { padding: 16px; padding-top: 12px; }
+        .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
+        #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
+        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 8px rgba(59,130,246,0.25)); font-style: italic; white-space:nowrap; overflow:visible; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: inherit; }
         
         /* Dashboard Grid */
         .stats-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
@@ -64,8 +70,17 @@
     </style>
 </head>
 <body>
-    <div class="header"><a href="index.html" class="back-btn">←</a><h2 data-i18n="page_statistics"></h2></div>
-
+    <div class="top-card">
+        <div class="top-card-inner">
+            <div style="display:flex;align-items:center;width:100%;gap:12px;">
+                <a href="index.html" class="back-btn">←</a>
+                <div style="flex:1;min-width:0;">
+                    <h2 data-i18n="page_statistics"></h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="page-content">
     <div id="stats-overview" class="stats-overview"></div>
 
 
@@ -443,6 +458,7 @@
         }
 
         init();
-    </script>
-</body>
-</html>
+        </script>
+        </div>
+    </body>
+    </html>

@@ -16,15 +16,25 @@
     <script src="db.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 700px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Top-card (same style used on index.html) */
+        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
+        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
+        .page-content { padding: 16px; padding-top: 12px; }
+        .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
+        #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
+        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 8px rgba(59,130,246,0.25)); font-style: italic; white-space:nowrap; overflow:visible; }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: inherit; }
         .main-content { padding: 20px; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 20px; margin-top: 20px; letter-spacing: -1px; font-size: 2.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         /* Keep top-bar title visually consistent without changing font-size */
         .top-title { margin: 0; font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         /* Reduce vertical spacing for card titles only */
         .card h3, .card h4 { margin-top: 0; margin-bottom: 6px; }
+        /* Section titles placed outside cards */
+        .section-title { margin: 14px 0 8px 0; font-weight: 900; letter-spacing: -0.5px; font-size: 1.2rem; }
         .card { background: var(--card); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 16px; }
         .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .export-btn { background: var(--success); color: white; }
@@ -32,7 +42,7 @@
         .danger { background: transparent; color: var(--danger); border: 1px solid rgba(239,68,68,0.15); }
         label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 6px; }
         .top-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:24px; margin-bottom: 12px; }
-        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text); }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: inherit; }
         /* Data Management card specific styles */
         .data-card .btn-row { display:flex; gap:8px; }
         .data-card .btn-row .sync-btn { flex:1; }
@@ -60,14 +70,21 @@
 </head>
 <body>
 
-    <div class="main-content">
-        <div class="top-bar" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <a href="index.html" class="back-btn">←</a>
-            <h2 class="top-title" data-i18n="page_settings">Settings</h2>
+    <div class="top-card">
+        <div class="top-card-inner">
+            <div style="display:flex;align-items:center;width:100%;gap:12px;">
+                <a href="index.html" class="back-btn">←</a>
+                <div style="flex:1;min-width:0;">
+                    <h2 data-i18n="page_settings">Settings</h2>
+                </div>
+            </div>
         </div>
+    </div>
+    <div class="page-content">
+        <div class="main-content">
 
+        <h3 class="section-title" data-i18n="language">Language</h3>
         <div class="card">
-            <h3 data-i18n="language">Language</h3>
             <div style="margin-top:8px;">
                 <select id="gn-lang-select" style="padding:8px 10px; border-radius:8px; background: rgba(255,255,255,0.02); color: #f8fafc; border:1px solid rgba(255,255,255,0.05); font-weight:700;">
                     <option value="en">🇬🇧 English</option>
@@ -76,8 +93,8 @@
             </div>
         </div>
 
+        <h3 class="section-title" data-i18n="cloud_sync">⚙️ Cloud Sync</h3>
         <div class="card data-card">
-            <h3 data-i18n="cloud_sync">⚙️ Cloud Sync</h3>
             <div style="margin-top:8px;">
                 <div class="btn-row">
                     <button id="sync-drive-btn" class="sync-btn" style="background: #3b82f6; color: white;" onclick="syncToDrive()" data-i18n="sync_to_drive">☁️ Sync to Google Drive</button>
@@ -86,8 +103,8 @@
             </div>
         </div>
 
+        <h3 class="section-title" data-i18n="backup">Backup</h3>
         <div class="card data-card">
-            <h3 data-i18n="backup">Backup</h3>
             <div style="margin-top:8px;">
                 <h4 data-i18n="backup_local">Local Backup</h4>
                 <div style="margin-top:6px;">
@@ -168,14 +185,15 @@
             </div>
         </div>
 
+        <h3 class="section-title" data-i18n="danger_zone">Danger Zone</h3>
         <div class="card">
-            <h3 data-i18n="danger_zone">Danger Zone</h3>
             <div class="top-row">
                 <button onclick="clearAllAppData()" class="sync-btn danger" style="flex:1;" data-i18n="clear_all"></button>
                 <button onclick="logout()" class="sync-btn" style="flex:1; background:#ef4444; color:white; margin-left:10px;" data-i18n="logout"></button>
             </div>
         </div>
 
+        </div>
     </div>
 
     <script>
