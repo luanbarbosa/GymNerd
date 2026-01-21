@@ -227,7 +227,7 @@
                         const kgSuffix = GN_I18N.safeT ? GN_I18N.safeT('history_fmt_kg_suffix') : 'kg';
                         const displayName = (exRec ? ((lang === 'pt' && exRec.namePT) ? exRec.namePT : exRec.name) : (l.exerciseName || (l.exerciseId ? `#${l.exerciseId}` : 'Unknown')));
 
-                        dateDet.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${displayName}</div><div class="data-row">${l.sets || 3} ${setsText} x ${l.weight}${kgSuffix} x ${l.reps}</div></div><button class="delete-btn" aria-label="Delete exercise" title="Delete exercise" onclick="event.stopPropagation(); deleteLog(${l.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`;
+                        dateDet.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${displayName}</div><div class="data-row">${l.sets || 3} ${setsText} x ${l.weight}${kgSuffix} x ${l.reps}</div></div></div>`;
                     }
                     // add date-level text delete button at the bottom of the date box
                     const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
@@ -252,7 +252,27 @@
             const kgSuffix = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_fmt_kg_suffix') : 'kg';
             for (const w of weights) {
                 const formatted = formatDateDisplay(w.date);
-                container.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row">${formatted}</div><div class="data-row">${w.weight} ${kgSuffix}</div></div></div>`;
+                const delTitle = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_delete_weight') : 'Delete weight';
+                container.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row">${formatted}</div><div class="data-row">${w.weight} ${kgSuffix}</div></div><button class="delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteWeight('${w.date}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`;
+            }
+        }
+
+        async function deleteWeight(date) {
+            const fmt = formatDateDisplay(date);
+            if (window.GN_I18N && typeof GN_I18N.t === 'function') {
+                const tmpl = GN_I18N.t('history_confirm_delete_weight') || GN_I18N.t('history_confirm_delete') || 'Delete this weight entry?';
+                if (!confirm(tmpl.replace ? tmpl.replace('{date}', fmt) : tmpl)) return;
+            } else {
+                if (!confirm(`Delete weight entry for ${fmt}?`)) return;
+            }
+            try {
+                // try delete by primary key first, fallback to where
+                try { await db.weights.delete(date); }
+                catch (e) { await db.weights.where('date').equals(date).delete(); }
+                localStorage.setItem('has_local_changes', 'true');
+                renderWeightHistory();
+            } catch (e) {
+                console.error('Failed to delete weight', e);
             }
         }
         if (window.GN_I18N) {

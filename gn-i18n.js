@@ -167,6 +167,9 @@
                 add_set: 'Add new set',
                 history_delete_session: 'Delete Session',
                 history_confirm_delete: 'Delete all entries for {date}?',
+                history_confirm_delete_weight: 'Delete weight entry for {date}?',
+                history_edit_routine: 'Editing routine',
+                history_edit_weight: 'Editing weight',
                 history_fmt_sets_short: 'sets',
                 history_fmt_kg_suffix: 'kg'
                 ,
@@ -367,6 +370,9 @@
                 add_set: 'Adicionar nova série',
                 history_delete_session: 'Excluir Sessão',
                 history_confirm_delete: 'Excluir todas as entradas para {date}?',
+                history_confirm_delete_weight: 'Excluir entrada de peso para {date}?',
+                history_edit_routine: 'Editando rotina',
+                history_edit_weight: 'Editando peso',
                 history_fmt_sets_short: 'sér',
                 history_fmt_kg_suffix: 'kg'
                 ,
