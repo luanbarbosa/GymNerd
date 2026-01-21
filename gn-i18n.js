@@ -156,8 +156,8 @@
                 history_section_log_routine: 'Log Routine',
                 history_section_log_weight: 'Log Weight',
                 history_placeholder_choose_routine: '-- Choose Routine --',
-                history_save_session: '💾 Save Session',
-                history_save_weight: '💾 Save Weight',
+                history_save_session: 'Save',
+                history_save_weight: 'Save',
                 history_cancel: 'Cancel',
                 history_weight_kg: 'Weight (kg)',
                 history_weight_saved: 'Weight saved!',
@@ -169,6 +169,8 @@
                 history_confirm_delete: 'Delete all entries for {date}?',
                 history_fmt_sets_short: 'sets',
                 history_fmt_kg_suffix: 'kg'
+                ,
+                history_disclaimer_stats_only: 'The values changed here will not be applied to the routines. Only to the statistics.'
                 ,
                 /* Livesession specific */
                 resume_unfinished: '🏃 Unfinished session found',
@@ -354,8 +356,8 @@
                 history_section_log_routine: 'Registrar Rotina',
                 history_section_log_weight: 'Registrar Peso',
                 history_placeholder_choose_routine: '-- Escolha a Rotina --',
-                history_save_session: '💾 Salvar Sessão',
-                history_save_weight: '💾 Salvar Peso',
+                history_save_session: 'Salvar',
+                history_save_weight: 'Salvar',
                 history_cancel: 'Cancelar',
                 history_weight_kg: 'Peso (kg)',
                 history_weight_saved: 'Peso salvo!',
@@ -367,6 +369,8 @@
                 history_confirm_delete: 'Excluir todas as entradas para {date}?',
                 history_fmt_sets_short: 'sér',
                 history_fmt_kg_suffix: 'kg'
+                ,
+                history_disclaimer_stats_only: 'Os valores alterados aqui não serão aplicados às rotinas. Somente às estatísticas.'
                 ,
                 /* Livesession specific */
                 resume_unfinished: '🏃 Sessão incompleta encontrada',

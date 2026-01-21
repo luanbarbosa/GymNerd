@@ -63,6 +63,8 @@
         .save-session { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
         .save-session.success { background: var(--success); }
         button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
+        /* Fixed localized disclaimer shown below the app content (not part of page-content) */
+        .disclaimer-fixed { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); max-width: 500px; width: calc(100% - 32px); text-align: center; color: var(--text-dim); font-size: 0.85rem; padding: 6px 8px; pointer-events: none; z-index: 1200; font-style: italic; }
     </style>
 </head>
 <body>
@@ -98,6 +100,9 @@
                 </form>
                 <div id="weightSaveMsg" style="color:var(--success);margin-top:8px;display:none" data-i18n="history_weight_saved">Weight saved!</div>
         </div>
+
+    <!-- Localized disclaimer: will be translated by GN_I18N -->
+    <div class="disclaimer-fixed" data-i18n="history_disclaimer_stats_only">The values changed here will not be applied to the routines. Only to the statistics.</div>
 
     <script>
         function showForm(id) {
