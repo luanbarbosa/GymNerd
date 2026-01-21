@@ -109,7 +109,7 @@
     <div class="main-content">
 
         <button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
-            <span data-i18n="sync_pending">☁️ Sync Pending Changes</span><span>→</span>
+            <span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
         </button>
 
         <div class="menu-grid">
@@ -239,6 +239,30 @@
         try { renderCompactApp(); } catch (e) {}
         try { renderMainUser(); } catch (e) {}
         try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
+        
+        // Show 'Sync Pending Changes' button when local changes exist
+        function updatePendingButtonVisibility() {
+            const btn = document.getElementById('sync-pending-btn');
+            if (!btn) return;
+            try {
+                const hasChanges = localStorage.getItem('has_local_changes') === 'true';
+                btn.style.display = hasChanges ? 'block' : 'none';
+            } catch (e) { console.error('Error reading has_local_changes', e); }
+        }
+
+        // Expose a global sync handler so the button can trigger a manual sync.
+        window.syncToDrive = async function() {
+            try {
+                if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+                const ok = await DriveStorage.sync(db);
+                if (ok) updatePendingButtonVisibility();
+            } catch (e) {
+                console.error('Sync to Drive failed:', e);
+            }
+        };
+
+        // Ensure visibility is correct on load
+        try { updatePendingButtonVisibility(); } catch(e){}
     </script>
 </body>
 </html>

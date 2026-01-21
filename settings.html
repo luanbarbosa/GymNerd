@@ -262,9 +262,13 @@
                     await db.weights.clear();
                     await db.weights.bulkAdd(parsedData);
                 }
-                await DriveStorage.sync(db);
+                // After importing local backup, do not automatically sync to Google Drive.
+                // Mark that there are pending local changes and navigate to home so
+                // the user can review and manually sync from the home screen.
+                try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!"); 
-                location.reload();
+                // Navigate to home where the "pending changes" button will be visible
+                location.href = 'index.html';
             } catch (err) {
                 console.error("Import error:", err);
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_error') : "Error importing data. Check console for details.");
