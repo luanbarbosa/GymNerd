@@ -78,28 +78,8 @@
     </div>
     <div class="page-content">
         <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-                <button id="toggleRoutineForm" class="save-session" style="flex:1" data-i18n="history_btn_new_routine">New Routine Entry</button>
-                <button id="toggleWeightForm" class="save-session" style="flex:1" data-i18n="history_btn_new_weight">New Weight Entry</button>
-        </div>
-
-        <div id="routineFormSection" class="card" style="display:none; margin-bottom: 20px;">
-                <div class="section-header"><h2 data-i18n="history_section_log_routine">Log Routine</h2></div>
-                <input type="date" id="logDate" style="margin-bottom:10px">
-                <select id="routinePicker" onchange="generateSheet()"><option value="" data-i18n="history_placeholder_choose_routine">-- Choose Routine --</option></select>
-                <div id="workoutSheet"></div>
-                <button id="saveBtn" class="save-session" style="display:none" onclick="saveSession()" data-i18n="history_save_session">💾 Save Session</button>
-                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('routineFormSection')" data-i18n="history_cancel">Cancel</button>
-        </div>
-
-        <div id="weightFormSection" class="card" style="display:none; margin-bottom: 20px;">
-                <div class="section-header"><h2 data-i18n="history_section_log_weight">Log Weight</h2></div>
-                <form id="weightForm" onsubmit="event.preventDefault(); saveWeightEntry();">
-                        <input type="date" id="weightDate" required style="margin-bottom:10px">
-                    <input type="number" id="weightKg" step="0.1" min="0" data-i18n-placeholder="history_weight_kg" placeholder="Weight (kg)" required>
-                    <button type="submit" class="save-session" style="margin-top:10px" data-i18n="history_save_weight">💾 Save Weight</button>
-                </form>
-                <div id="weightSaveMsg" style="color:var(--success);margin-top:8px;display:none" data-i18n="history_weight_saved">Weight saved!</div>
-                <button type="button" class="save-session" style="background:var(--danger);margin-top:10px" onclick="hideForm('weightFormSection')" data-i18n="history_cancel">Cancel</button>
+            <button id="toggleRoutineForm" type="button" class="save-session" style="flex:1" data-i18n="history_btn_new_routine" onclick="location.href='historycrud.html?mode=routine'">New Routine Entry</button>
+            <button id="toggleWeightForm" type="button" class="save-session" style="flex:1" data-i18n="history_btn_new_weight" onclick="location.href='historycrud.html?mode=weight'">New Weight Entry</button>
         </div>
     <details class="history-section">
     <summary class="section-header"><span data-i18n="history_weight_header">Weight History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
@@ -112,57 +92,11 @@
     </details>
 
         <script>
-                function showForm(id) {
-                    document.getElementById(id).style.display = 'block';
-                }
-                function hideForm(id) {
-                    document.getElementById(id).style.display = 'none';
-                }
                 function formatDateDisplay(dateStr){
                     if (!dateStr) return dateStr;
                     const parts = dateStr.split('-');
                     if (parts.length !== 3) return dateStr;
                     return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                }
-                document.getElementById('toggleRoutineForm').onclick = () => {
-                    const r = document.getElementById('routineFormSection');
-                    const w = document.getElementById('weightFormSection');
-                    const isOpen = r.style.display === 'block';
-                    if (isOpen) {
-                        r.style.display = 'none';
-                    } else {
-                        r.style.display = 'block';
-                        w.style.display = 'none';
-                        document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
-                    }
-                };
-                document.getElementById('toggleWeightForm').onclick = () => {
-                    const r = document.getElementById('routineFormSection');
-                    const w = document.getElementById('weightFormSection');
-                    const isOpen = w.style.display === 'block';
-                    if (isOpen) {
-                        w.style.display = 'none';
-                    } else {
-                        w.style.display = 'block';
-                        r.style.display = 'none';
-                        document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
-                    }
-                };
-                // Set default dates on page load
-                document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
-                document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
-
-                async function saveWeightEntry() {
-                        const date = document.getElementById('weightDate').value;
-                        const weight = parseFloat(document.getElementById('weightKg').value);
-                        if (!date || isNaN(weight)) return;
-                        await ensureDbOpen();
-                        await db.weights.put({ date, weight });
-                        localStorage.setItem('has_local_changes', 'true');
-                        document.getElementById('weightSaveMsg').style.display = 'block';
-                        setTimeout(() => { document.getElementById('weightSaveMsg').style.display = 'none'; }, 1500);
-                        hideForm('weightFormSection');
-                        try { renderWeightHistory(); } catch(e){}
                 }
         let allEx = [];
 
@@ -177,81 +111,9 @@
                 ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
             ];
-            const wks = await db.routines.toArray();
-            const p = document.getElementById('routinePicker');
-            wks.forEach(w => p.innerHTML += `<option value="${w.id}">${w.name}</option>`);
             renderHistory();
         }
-
-        async function generateSheet() {
-            const id = parseInt(document.getElementById('routinePicker').value);
-            const sheet = document.getElementById('workoutSheet');
-            if(!id) { sheet.innerHTML=""; return; }
-            const wk = await db.routines.get(id);
-            sheet.innerHTML = "";
-            const phSets = GN_I18N.safeT ? GN_I18N.safeT('history_sets') : 'Sets';
-            const phKg = GN_I18N.safeT ? GN_I18N.safeT('history_kg') : 'Kg';
-            const phReps = GN_I18N.safeT ? GN_I18N.safeT('history_reps') : 'Reps';
-            for (const item of wk.exerciseIds) {
-                const id = typeof item === 'object' ? item.id : item;
-                const isCustom = typeof item === 'object' ? !!item.isCustom : false;
-                const ex = allEx.find(e => e.id === id && !!e.isCustom === isCustom);
-                if (!ex) continue;
-                const imgTable = isCustom ? db.custom_images : db.catalog_images;
-                let imgSrc = defaultImage;
-                if (ex.imageId) {
-                    const imgRec = await imgTable.get(ex.imageId);
-                    if (imgRec && imgRec.data) imgSrc = imgRec.data;
-                }
-                
-                let sets, weight, reps;
-                if (typeof item === 'object') {
-                    if (Array.isArray(item.sets)) {
-                        sets = item.sets.length;
-                        weight = item.sets[0]?.weight || '';
-                        reps = item.sets[0]?.reps || '';
-                    } else {
-                        sets = item.sets || 3;
-                        weight = item.weight || '';
-                        reps = item.reps || '';
-                    }
-                } else {
-                    sets = 3; weight = ''; reps = '';
-                }
-
-                sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-name-pt="${ex.namePT || ''}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}">
-                    <img src="${imgSrc}" class="ex-thumb"><strong>${ex.name}</strong><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                    <div class="input-pair"><input type="number" placeholder="${phSets}" class="s" value="${sets}"><input type="number" step="0.5" placeholder="${phKg}" class="w" value="${weight}"><input type="number" placeholder="${phReps}" class="r" value="${reps}"></div></div>`;
-            }
-            document.getElementById('saveBtn').style.display = "block";
-        }
-
-        async function saveSession() {
-            const date = document.getElementById('logDate').value;
-            const logs = [];
-            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-            document.querySelectorAll('.exercise-row').forEach(r => {
-                const sets = r.querySelector('.s').value;
-                const weight = r.querySelector('.w').value;
-                const reps = r.querySelector('.r').value;
-                if(weight && reps) {
-                    const name = (lang === 'pt' && r.dataset.namePt) ? r.dataset.namePt : (r.dataset.name || null);
-                    logs.push({ 
-                        exerciseId: parseInt(r.dataset.id), 
-                        isCustom: r.dataset.iscustom === 'true',
-                        exerciseName: name, 
-                        imageId: parseInt(r.dataset.imgid) || null, 
-                        sets: parseInt(sets) || 3, 
-                        weight: parseFloat(weight), 
-                        reps: parseInt(reps), 
-                        date 
-                    });
-                }
-            });
-            await db.history.bulkAdd(logs);
-            localStorage.setItem('has_local_changes', 'true');
-            location.reload();
-        }
+        
 
         async function deleteDateLogs(date) {
             const fmt = formatDateDisplay(date);
