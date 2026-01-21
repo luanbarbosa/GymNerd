@@ -11,13 +11,40 @@
     // throw a redeclare SyntaxError.
     var _refreshPromise = window._refreshPromise || null;
 
-    window.logout = () => {
+    window.logout = async () => {
         const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('confirm_logout') : 'Are you sure you want to logout?';
         if (!confirm(msg)) return;
         try {
             localStorage.removeItem('google_token');
             localStorage.removeItem('google_token_expires_at');
+            // Remove other auth/sync state so we don't leave UI in a blocked state
+            try { localStorage.removeItem('google_refresh_token'); } catch(e){}
+            try { localStorage.removeItem('google_user'); } catch(e){}
+            try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+            try { localStorage.removeItem('last_sync_time'); } catch(e){}
+            try { localStorage.removeItem('has_local_changes'); } catch(e){}
+            try { sessionStorage.removeItem('oauth2_code'); } catch(e){}
+            try { sessionStorage.removeItem('pkce_code_verifier'); } catch(e){}
+            // Delete local Dexie DB if present so logout fully clears app state
+            try {
+                if (typeof Dexie !== 'undefined') {
+                    try {
+                        const _db = (typeof db !== 'undefined') ? db : new Dexie('GymAppDB');
+                        if (_db) await _db.delete();
+                    } catch(e) {
+                        console.warn('Failed to delete Dexie DB on logout', e);
+                        try { const _alt = new Dexie('GymAppDB'); await _alt.delete(); } catch(e2){}
+                    }
+                }
+            } catch(e){}
+            // Clear any auth cookies if present
+            try {
+                document.cookie = 'google_token=; path=/; max-age=0;';
+                document.cookie = 'google_token_expires_at=; path=/; max-age=0;';
+                document.cookie = 'google_refresh_token=; path=/; max-age=0;';
+            } catch(e){}
         } catch(e){}
+        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
         location.reload();
     };
 
