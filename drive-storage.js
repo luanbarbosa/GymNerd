@@ -22,7 +22,6 @@ const DriveStorage = {
     // to refresh the access token. This avoids immediately clearing
     // credentials when the token has just expired.
     async _authFetch(url, options = {}) {
-        console.debug('[DriveStorage] _authFetch start', { url });
         try {
             try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
 
@@ -30,10 +29,9 @@ const DriveStorage = {
             options.headers = { ...(options.headers || {}), ...headers };
 
             let resp = await fetch(url, options);
-            console.debug('[DriveStorage] _authFetch first response', { url, status: resp.status });
 
             if (resp.status === 401) {
-                console.debug('[DriveStorage] _authFetch received 401, attempting refresh');
+                // received 401, attempting refresh
                 // Try to refresh the token once
                 try {
                     if (window.ensureGoogleAccessToken) {
@@ -43,7 +41,6 @@ const DriveStorage = {
                             const token = localStorage.getItem('google_token');
                             options.headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
                             resp = await fetch(url, options);
-                            console.debug('[DriveStorage] _authFetch retry response', { url, status: resp.status });
                         } else {
                             // explicit expired flow
                             console.warn('[DriveStorage] refresh failed during _authFetch');
@@ -71,7 +68,6 @@ const DriveStorage = {
     },
 
     async _handleResponse(response) {
-        console.debug('[DriveStorage] _handleResponse', { status: response.status, url: response.url });
         if (response.status === 401) {
             localStorage.removeItem('google_token');
             throw new Error("AUTH_EXPIRED");
@@ -87,7 +83,6 @@ const DriveStorage = {
     async getFolderId(createIfMissing = true) {
         const headers = await this._getHeaders();
         const q = `name='${this.FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-        console.debug('[DriveStorage] getFolderId', { q });
         const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`);
         const data = await this._handleResponse(response);
         
@@ -106,7 +101,6 @@ const DriveStorage = {
     async findFileId(name, folderId) {
         const headers = await this._getHeaders();
         const q = `name='${name}' and '${folderId}' in parents and trashed=false`;
-        console.debug('[DriveStorage] findFileId', { name, folderId });
         const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`);
         const data = await this._handleResponse(response);
         return data.files && data.files.length > 0 ? data.files[0].id : null;
@@ -115,8 +109,9 @@ const DriveStorage = {
     async load() {
         try {
             const folderId = await this.getFolderId(false);
-            if (!folderId) return null;
-            console.debug('[DriveStorage] load listing files for folder', { folderId });
+            if (!folderId) {
+                return null;
+            }
             const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false`);
             const data = await this._handleResponse(response);
             
@@ -125,15 +120,13 @@ const DriveStorage = {
             const result = {};
             for (const file of data.files) {
                 const key = file.name.replace('.json', '');
-                console.debug('[DriveStorage] loading file', { id: file.id, name: file.name, mappedKey: key });
+                // loading file
                 const contentResponse = await this._authFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`);
                 if (contentResponse.ok) {
                     result[key] = await contentResponse.json();
                 }
             }
-            const keys = Object.keys(result);
-            console.info('[DriveStorage] load complete', { filesLoaded: keys.length, keys });
-            return keys.length > 0 ? result : null;
+            return Object.keys(result).length > 0 ? result : null;
         } catch (error) {
             if (error.message === "AUTH_EXPIRED") throw error;
             console.error("Error loading from Drive:", error);
@@ -145,7 +138,6 @@ const DriveStorage = {
         try {
             const folderId = await this.getFolderId();
             const tables = Object.keys(data || {});
-            console.info('[DriveStorage] save start', { tables, folderId });
             
             for (const [key, content] of Object.entries(data)) {
                 const fileName = `${key}.json`;
@@ -169,7 +161,7 @@ const DriveStorage = {
                 
                 const method = fileId ? 'PATCH' : 'POST';
 
-                console.info('[DriveStorage] uploading', { fileName, fileId, url, method, size: JSON.stringify(content).length });
+                // uploading file
                 const response = await this._authFetch(url, {
                     method,
                     headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
@@ -177,7 +169,7 @@ const DriveStorage = {
                 });
 
                 await this._handleResponse(response);
-                console.info('[DriveStorage] uploaded', { fileName, fileId, method });
+                // uploaded file
             }
         } catch (error) {
             console.error("Error saving to Drive:", error);
@@ -231,7 +223,7 @@ const DriveStorage = {
             await this.save(data);
             localStorage.setItem('last_sync_time', data.lastSync.time);
             localStorage.setItem('has_local_changes', 'false');
-            console.info('[DriveStorage] sync complete', { lastSync: data.lastSync.time, tablesSynced: Object.keys(data).length });
+            // sync complete
             return true;
         } catch (error) {
             console.error("Auto-sync failed:", error);

@@ -345,6 +345,10 @@
     let validSession = false;
 
     try {
+        const _needs = localStorage.getItem && localStorage.getItem('needs_initial_download');
+    } catch(e) { }
+
+    try {
         if (token && expiresAt) {
             if (Date.now() < parseInt(expiresAt)) {
                 validSession = true;
@@ -409,6 +413,123 @@
             }, { once: true });
         } catch(e){}
     }
+
+    // Attempt automatic restore from Drive after login when flagged.
+    // Waits for DriveStorage and DB to be available (up to a timeout) then runs restore.
+    window.autoRestoreFromDrive = async (isAuto = true) => {
+        console.info('[AutoRestore] requested', { isAuto });
+        try {
+            // Poll for DriveStorage and DB readiness
+            const start = Date.now();
+            while ((typeof DriveStorage === 'undefined' || (typeof ensureDbOpen === 'undefined' && typeof db === 'undefined')) && (Date.now() - start) < 10000) {
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            if (typeof DriveStorage === 'undefined') {
+                console.warn('[AutoRestore] DriveStorage not available, aborting auto-restore');
+                try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+                return;
+            }
+
+            try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') || 'Welcome back! Syncing your data...' : 'Welcome back! Syncing your data...'); } catch(e){}
+
+            if (typeof ensureDbOpen === 'function') {
+                try { await ensureDbOpen(); } catch(e){ console.warn('[AutoRestore] ensureDbOpen failed', e); }
+            }
+
+            console.info('[AutoRestore] calling DriveStorage.load');
+            const data = await DriveStorage.load();
+            console.info('[AutoRestore] DriveStorage.load returned', { hasData: !!data, keys: data ? Object.keys(data) : [] });
+
+            if (!data) {
+                try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+                try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                if (isAuto && window.showApp) window.showApp();
+                return;
+            }
+
+            // Apply into DB if available
+            if (typeof db !== 'undefined') {
+                try {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+                        if (db.catalog_images) {
+                            await db.catalog_images.clear();
+                            if (data.catalog_images) {
+                                const normalizedCatalogImages = data.catalog_images.map(img => ({
+                                    ...img,
+                                    data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+                                }));
+                                await db.catalog_images.bulkAdd(normalizedCatalogImages);
+                            }
+                        }
+
+                        if (db.catalog_exercises) {
+                            await db.catalog_exercises.clear();
+                            if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
+                        }
+
+                        if (db.custom_images) {
+                            await db.custom_images.clear();
+                            if (data.custom_images) {
+                                const normalizedCustomImages = data.custom_images.map(img => ({
+                                    ...img,
+                                    data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+                                }));
+                                await db.custom_images.bulkAdd(normalizedCustomImages);
+                            }
+                        }
+
+                        if (db.custom_exercises) {
+                            await db.custom_exercises.clear();
+                            if (data.custom_exercises) await db.custom_exercises.bulkAdd(data.custom_exercises);
+                        }
+
+                        if (db.routines) {
+                            await db.routines.clear();
+                            if (data.routines) await db.routines.bulkAdd(data.routines);
+                        }
+
+                        if (db.history) {
+                            await db.history.clear();
+                            if (data.history) await db.history.bulkAdd(data.history);
+                        }
+
+                        // Weights table
+                        if (db.weights) {
+                            console.info('[AutoRestore] writing weights to DB', { count: Array.isArray(data.weights) ? data.weights.length : 0, sample: Array.isArray(data.weights) && data.weights.length ? data.weights[0] : null });
+                            await db.weights.clear();
+                            if (data.weights) await db.weights.bulkPut(data.weights);
+                            let newCount = await db.weights.count();
+                            if (newCount === 0 && Array.isArray(data.weights) && data.weights.length) {
+                                console.warn('[AutoRestore] bulkPut wrote 0 items, falling back to per-item put()');
+                                for (const w of data.weights) {
+                                    try { await db.weights.put(w); } catch (e) { console.error('[AutoRestore] failed to put weight item', { item: w, error: e }); }
+                                }
+                                newCount = await db.weights.count();
+                            }
+                            console.info('[AutoRestore] weights write complete', { newCount });
+                        }
+                    });
+                } catch (e) {
+                    console.error('[AutoRestore] applying data to DB failed', e);
+                }
+            } else {
+                console.warn('[AutoRestore] db not available; skipping DB write');
+            }
+
+            if (data.lastSync) try { localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync); } catch(e){}
+            try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+            try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+
+            console.info('[AutoRestore] completed — reloading');
+            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+            try { location.reload(); } catch(e){}
+        } catch (err) {
+            console.error('[AutoRestore] failed', err);
+            try { if (err && err.message === 'AUTH_EXPIRED') { renderRefreshError(); } } catch(e){}
+            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+        }
+    };
 
     // Helper to read a cookie value by name
     function getCookie(name) {
@@ -759,6 +880,23 @@
         if (window.location.protocol !== 'file:' && token !== 'local-bypass') {
             await loadScript;
         }
+
+        // If we need to perform an initial download from Drive, don't reveal
+        // the app home screen yet — run the auto-restore and keep showing
+        // the global loader until it completes (or fails).
+        try {
+            const needsFlag = (localStorage.getItem && localStorage.getItem('needs_initial_download')) || null;
+            if (needsFlag === 'true') {
+                try {
+                    if (typeof window.autoRestoreFromDrive === 'function') {
+                        await window.autoRestoreFromDrive(true);
+                        // autoRestoreFromDrive will reload when done; ensure we stop further startup
+                        return;
+                    }
+                } catch(e) {}
+            }
+        } catch(e){}
+
         callShowApp();
     }
 

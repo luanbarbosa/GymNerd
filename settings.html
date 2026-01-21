@@ -292,7 +292,7 @@
                         }
                 const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
                         await db.catalog_images.clear();
                         if (data.catalog_images) {
                             const normalizedCatalogImages = data.catalog_images.map(img => ({
@@ -322,6 +322,22 @@
                         
                         await db.history.clear();
                         if (data.history) await db.history.bulkAdd(data.history);
+
+                        // Weights table
+                        if (db.weights) {
+                            console.info('[Restore UI] writing weights to DB', { count: Array.isArray(data.weights) ? data.weights.length : 0, sample: Array.isArray(data.weights) && data.weights.length ? data.weights[0] : null });
+                            await db.weights.clear();
+                            if (data.weights) await db.weights.bulkPut(data.weights);
+                            let newCount = await db.weights.count();
+                            if (newCount === 0 && Array.isArray(data.weights) && data.weights.length) {
+                                console.warn('[Restore UI] bulkPut wrote 0 items, falling back to per-item put()');
+                                for (const w of data.weights) {
+                                    try { await db.weights.put(w); } catch (e) { console.error('[Restore UI] failed to put weight item', { item: w, error: e }); }
+                                }
+                                newCount = await db.weights.count();
+                            }
+                            console.info('[Restore UI] weights write complete', { newCount });
+                        }
                     });
 
                     if (data.lastSync) localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync);
