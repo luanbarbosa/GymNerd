@@ -131,7 +131,9 @@ const DriveStorage = {
                     result[key] = await contentResponse.json();
                 }
             }
-            return Object.keys(result).length > 0 ? result : null;
+            const keys = Object.keys(result);
+            console.info('[DriveStorage] load complete', { filesLoaded: keys.length, keys });
+            return keys.length > 0 ? result : null;
         } catch (error) {
             if (error.message === "AUTH_EXPIRED") throw error;
             console.error("Error loading from Drive:", error);
@@ -142,7 +144,8 @@ const DriveStorage = {
     async save(data) {
         try {
             const folderId = await this.getFolderId();
-            console.debug('[DriveStorage] save start', { tables: Object.keys(data), folderId });
+            const tables = Object.keys(data || {});
+            console.info('[DriveStorage] save start', { tables, folderId });
             
             for (const [key, content] of Object.entries(data)) {
                 const fileName = `${key}.json`;
@@ -166,7 +169,7 @@ const DriveStorage = {
                 
                 const method = fileId ? 'PATCH' : 'POST';
 
-                console.debug('[DriveStorage] uploading', { fileName, fileId, url, method });
+                console.info('[DriveStorage] uploading', { fileName, fileId, url, method, size: JSON.stringify(content).length });
                 const response = await this._authFetch(url, {
                     method,
                     headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
@@ -174,6 +177,7 @@ const DriveStorage = {
                 });
 
                 await this._handleResponse(response);
+                console.info('[DriveStorage] uploaded', { fileName, fileId, method });
             }
         } catch (error) {
             console.error("Error saving to Drive:", error);
@@ -209,7 +213,7 @@ const DriveStorage = {
         if (!token || token === 'local-bypass') return false;
 
         try {
-            console.debug('[DriveStorage] sync start');
+            console.info('[DriveStorage] sync start');
             if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...');
             
             const data = {};
@@ -227,7 +231,7 @@ const DriveStorage = {
             await this.save(data);
             localStorage.setItem('last_sync_time', data.lastSync.time);
             localStorage.setItem('has_local_changes', 'false');
-            console.debug('[DriveStorage] sync complete', { lastSync: data.lastSync.time });
+            console.info('[DriveStorage] sync complete', { lastSync: data.lastSync.time, tablesSynced: Object.keys(data).length });
             return true;
         } catch (error) {
             console.error("Auto-sync failed:", error);

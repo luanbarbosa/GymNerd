@@ -278,11 +278,13 @@
         async function restoreFromDrive(isAuto = false) {
             try {
                 await ensureDbOpen();
+                console.info('[UI] restoreFromDrive start', { isAuto });
                 if (window.showLoading) {
                     window.showLoading((typeof GN_I18N !== 'undefined') ? (isAuto ? GN_I18N.t('welcome_back_syncing') : GN_I18N.t('restoring_from_drive')) : (isAuto ? "Welcome back! Syncing your data..." : "Restoring from Google Drive..."));
                 }
-                
+
                 const data = await DriveStorage.load();
+                console.info('[UI] restoreFromDrive loaded data', { hasData: !!data, keys: data ? Object.keys(data) : [] });
                         if (!data) {
                             if (!isAuto) alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('no_backup') : "No backup found on Google Drive.");
                             if (isAuto && window.showApp) window.showApp();
@@ -342,9 +344,12 @@
 
         async function syncToDrive() {
             try {
-                await DriveStorage.sync(db);
+                console.info('[UI] syncToDrive start');
+                const ok = await DriveStorage.sync(db);
+                console.info('[UI] syncToDrive finished', { ok });
                 checkSyncStatus();
             } catch (error) {
+                console.error('[UI] syncToDrive error', error);
             }
         }
 

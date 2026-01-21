@@ -253,8 +253,10 @@
         // Expose a global sync handler so the button can trigger a manual sync.
         window.syncToDrive = async function() {
             try {
+                console.info('[UI] index.syncToDrive start');
                 if (typeof ensureDbOpen === 'function') await ensureDbOpen();
                 const ok = await DriveStorage.sync(db);
+                console.info('[UI] index.syncToDrive finished', { ok });
                 if (ok) updatePendingButtonVisibility();
             } catch (e) {
                 console.error('Sync to Drive failed:', e);
