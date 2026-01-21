@@ -60,6 +60,9 @@
         .log-entry .data-row { font-size:0.85rem; color:var(--text-dim); }
         .delete-btn { background:none; border:none; color:var(--danger); cursor:pointer; padding:8px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; width:40px; height:40px; touch-action:manipulation; opacity:0.9 }
         .delete-btn svg { width:18px; height:18px; }
+        .edit-btn { background:none; border:none; color:var(--primary); cursor:pointer; padding:8px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; width:40px; height:40px; touch-action:manipulation; opacity:0.95 }
+        .edit-btn svg { width:18px; height:18px; }
+        .date-edit-btn { background:none; border:1px solid rgba(255,255,255,0.06); color:var(--primary); padding:8px 12px; border-radius:10px; cursor:pointer; }
         .date-header .delete-btn { margin-left:12px; margin-right:6px; opacity:0.8 }
         .log-entry { gap: 8px; }
         .date-delete-btn { background:none; border:1px solid rgba(255,255,255,0.06); color:var(--danger); padding:8px 12px; border-radius:10px; cursor:pointer; }
@@ -150,6 +153,16 @@
             }
         }
 
+        function openEdit(id) {
+            if (!id) return;
+            location.href = 'historycrud.html?mode=routine&edit=' + encodeURIComponent(id);
+        }
+
+        function openEditDate(date) {
+            if (!date) return;
+            location.href = 'historycrud.html?mode=routine&editDate=' + encodeURIComponent(date);
+        }
+
         async function renderHistory() {
             const logs = await db.history.orderBy('date').reverse().toArray();
             if (!logs || logs.length === 0) {
@@ -219,7 +232,8 @@
                     // add date-level text delete button at the bottom of the date box
                     const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
                     const delText = (pageLang === 'pt') ? 'Deletar' : 'Exclude';
-                    dateDet.innerHTML += `<div style="padding:10px 12px;display:flex;justify-content:flex-end"><button class="date-delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteDateLogs('${date}')">${delText}</button></div>`;
+                    // Add Edit Session button next to the date-level delete button
+                    dateDet.innerHTML += `<div style="padding:10px 12px;display:flex;justify-content:flex-end;gap:8px"><button class="date-edit-btn" aria-label="Edit session" title="Edit session" onclick="event.stopPropagation(); openEditDate('${date}')">Edit</button><button class="date-delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteDateLogs('${date}')">${delText}</button></div>`;
                     monthDet.appendChild(dateDet);
                 }
                 container.appendChild(monthDet);

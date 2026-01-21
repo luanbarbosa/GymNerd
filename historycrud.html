@@ -126,6 +126,9 @@
         }
 
     let allEx = [];
+    let isEditMode = false;
+    let editLogId = null;
+    let editDate = null;
 
     async function init() {
         await ensureDbOpen();
@@ -147,10 +150,40 @@
             const params = new URLSearchParams(window.location.search);
             const mode = params.get('mode');
             const titleEl = document.querySelector('[data-i18n="history_header"]');
+            const editParam = params.get('edit');
+            const editDateParam = params.get('editDate');
             if (mode === 'routine') {
                 document.getElementById('routineFormSection').style.display = 'block';
                 document.getElementById('weightFormSection').style.display = 'none';
                 document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+                // if an edit param is present for a single log, prefill sheet with that log
+                if (editParam) {
+                    const id = parseInt(editParam, 10);
+                    if (!isNaN(id)) {
+                        isEditMode = true;
+                        editLogId = id;
+                        try {
+                            const log = await db.history.get(id);
+                            if (log) {
+                                document.getElementById('logDate').value = log.date || document.getElementById('logDate').value;
+                                document.getElementById('routinePicker').style.display = 'none';
+                                await buildSheetFromLog(log);
+                            }
+                        } catch(e) { console.error('Failed to load log for edit', e); }
+                    }
+                }
+                // if an editDate param is present, enter session-edit mode and prefill with all logs for the date
+                if (editDateParam) {
+                    const d = editDateParam;
+                    isEditMode = true;
+                    editDate = d;
+                    try {
+                        const logs = await db.history.where('date').equals(d).toArray();
+                        document.getElementById('logDate').value = d;
+                        document.getElementById('routinePicker').style.display = 'none';
+                        await buildSheetFromLogs(logs || []);
+                    } catch (e) { console.error('Failed to load logs for editDate', e); }
+                }
                 if (titleEl) {
                     if (window.GN_I18N && GN_I18N.t) titleEl.innerText = GN_I18N.t('history_section_log_routine');
                     else titleEl.innerText = 'Log routine';
@@ -260,6 +293,125 @@
         document.getElementById('saveBtn').style.display = "block";
     }
 
+    // Build the sheet for a single existing log (edit mode)
+    async function buildSheetFromLog(log) {
+        if (!log) return;
+        const sheet = document.getElementById('workoutSheet');
+        sheet.innerHTML = '';
+        const exId = log.exerciseId;
+        const isCustom = (typeof log.isCustom === 'boolean') ? log.isCustom : false;
+        // find exercise record
+        let ex = allEx.find(e => e.id === exId && !!e.isCustom === isCustom);
+        if (!ex) {
+            // try DB lookup fallback
+            ex = await (isCustom ? db.custom_exercises.get(exId) : db.catalog_exercises.get(exId));
+            if (ex) ex = { ...ex, isCustom };
+        }
+        const imgTable = isCustom ? db.custom_images : db.catalog_images;
+        let imgSrc = defaultImage;
+        if (ex && ex.imageId) {
+            const imgRec = await imgTable.get(ex.imageId);
+            if (imgRec && imgRec.data) imgSrc = imgRec.data;
+        } else if (log.imageId) {
+            const imgRec = await imgTable.get(log.imageId);
+            if (imgRec && imgRec.data) imgSrc = imgRec.data;
+        }
+
+        const phSets = GN_I18N.safeT ? GN_I18N.safeT('history_sets') : 'Sets';
+        const phKg = GN_I18N.safeT ? GN_I18N.safeT('history_kg') : 'Kg';
+        const phReps = GN_I18N.safeT ? GN_I18N.safeT('history_reps') : 'Reps';
+
+        const initialSets = [{ sets: (log.sets || ''), reps: (log.reps || ''), weight: (log.weight || '') }];
+        const rowsHtml = initialSets.map(s => `
+                <div class="set-row data-row">
+                    <div class="field"><input type="number" min="0" class="s" value="${s.sets}"></div>
+                    <div class="field"><input type="number" class="r" value="${s.reps}"></div>
+                    <div class="field"><input type="number" step="0.5" class="w" value="${s.weight}"></div>
+                    <div><button type="button" class="remove-set-btn" onclick="this.closest('.set-row').remove()" aria-label="Remove set"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>
+                </div>
+        `).join('');
+
+        const name = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
+        sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${name}" data-name-pt="${ex && ex.namePT || ''}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}">
+            <div class="exercise-header">
+                <div class="exercise-left">
+                    <img src="${imgSrc}" class="ex-thumb">
+                    <strong>${name}</strong>
+                </div>
+            </div>
+            <div class="sets-container">
+                <div class="set-row header-row">
+                    <div class="field"><label>${phSets}</label></div>
+                    <div class="field"><label>${phReps}</label></div>
+                    <div class="field"><label>${phKg}</label></div>
+                    <div></div>
+                </div>
+                ${rowsHtml}
+                <button type="button" class="add-set-inline" onclick="(function(btn){ const container = btn.parentElement; addSetRowToContainer(container, { sets: '', reps: '', weight: '' }, btn); })(this)">+ Add set</button>
+            </div>
+        </div>`;
+        document.getElementById('saveBtn').style.display = 'block';
+    }
+
+    // Build the sheet for multiple logs (session edit)
+    async function buildSheetFromLogs(logs) {
+        const sheet = document.getElementById('workoutSheet');
+        sheet.innerHTML = '';
+        const phSets = GN_I18N.safeT ? GN_I18N.safeT('history_sets') : 'Sets';
+        const phKg = GN_I18N.safeT ? GN_I18N.safeT('history_kg') : 'Kg';
+        const phReps = GN_I18N.safeT ? GN_I18N.safeT('history_reps') : 'Reps';
+        for (const log of logs) {
+            if (!log) continue;
+            const exId = log.exerciseId;
+            const isCustom = (typeof log.isCustom === 'boolean') ? log.isCustom : false;
+            let ex = allEx.find(e => e.id === exId && !!e.isCustom === isCustom);
+            if (!ex) {
+                ex = await (isCustom ? db.custom_exercises.get(exId) : db.catalog_exercises.get(exId));
+                if (ex) ex = { ...ex, isCustom };
+            }
+            const imgTable = isCustom ? db.custom_images : db.catalog_images;
+            let imgSrc = defaultImage;
+            if (ex && ex.imageId) {
+                const imgRec = await imgTable.get(ex.imageId);
+                if (imgRec && imgRec.data) imgSrc = imgRec.data;
+            } else if (log.imageId) {
+                const imgRec = await imgTable.get(log.imageId);
+                if (imgRec && imgRec.data) imgSrc = imgRec.data;
+            }
+
+            const initialSets = [{ sets: (log.sets || ''), reps: (log.reps || ''), weight: (log.weight || '') }];
+            const rowsHtml = initialSets.map(s => `
+                    <div class="set-row data-row">
+                        <div class="field"><input type="number" min="0" class="s" value="${s.sets}"></div>
+                        <div class="field"><input type="number" class="r" value="${s.reps}"></div>
+                        <div class="field"><input type="number" step="0.5" class="w" value="${s.weight}"></div>
+                        <div><button type="button" class="remove-set-btn" onclick="this.closest('.set-row').remove()" aria-label="Remove set"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>
+                    </div>
+            `).join('');
+
+            const name = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
+            sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${name}" data-name-pt="${ex && ex.namePT || ''}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}">
+                <div class="exercise-header">
+                    <div class="exercise-left">
+                        <img src="${imgSrc}" class="ex-thumb">
+                        <strong>${name}</strong>
+                    </div>
+                </div>
+                <div class="sets-container">
+                    <div class="set-row header-row">
+                        <div class="field"><label>${phSets}</label></div>
+                        <div class="field"><label>${phReps}</label></div>
+                        <div class="field"><label>${phKg}</label></div>
+                        <div></div>
+                    </div>
+                    ${rowsHtml}
+                    <button type="button" class="add-set-inline" onclick="(function(btn){ const container = btn.parentElement; addSetRowToContainer(container, { sets: '', reps: '', weight: '' }, btn); })(this)">+ Add set</button>
+                </div>
+            </div>`;
+        }
+        document.getElementById('saveBtn').style.display = 'block';
+    }
+
     // helper to add a set row into an existing sets-container (used by the add button)
     function addSetRowToContainer(container, setData, beforeNode) {
         if (!container) return;
@@ -329,7 +481,31 @@
                 date 
             });
         });
-        await db.history.bulkAdd(logs);
+        if (isEditMode) {
+            try {
+                if (editDate) {
+                    // Replace all logs for the edited date with the new ones
+                    await db.history.where('date').equals(editDate).delete();
+                    if (logs.length > 0) await db.history.bulkAdd(logs);
+                } else if (editLogId) {
+                    if (logs.length === 1) {
+                        const updated = logs[0];
+                        updated.id = editLogId;
+                        await db.history.put(updated);
+                    } else if (logs.length === 0) {
+                        await db.history.delete(editLogId);
+                    } else {
+                        await db.history.delete(editLogId);
+                        await db.history.bulkAdd(logs);
+                    }
+                } else {
+                    // fallback: just add
+                    if (logs.length > 0) await db.history.bulkAdd(logs);
+                }
+            } catch (e) { console.error('Failed to update log in edit mode', e); }
+        } else {
+            await db.history.bulkAdd(logs);
+        }
         localStorage.setItem('has_local_changes', 'true');
         location.href = 'history.html';
     }
