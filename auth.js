@@ -215,7 +215,7 @@
                     <button id="refresh-retry-btn" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:#1e293b; color:white; font-weight:700;">${retryText}</button>
                     <button id="refresh-signin-btn" style="flex:1; padding:12px; border-radius:10px; border:none; background:#3b82f6; color:white; font-weight:700;">${signInText}</button>
                 </div>
-                <div style="margin-top:12px; color:#94a3b8; font-size:0.85rem;">" + ((typeof GN_I18N !== 'undefined') ? GN_I18N.t('you_can_also_clear_local_data') : 'You can also clear local data from the settings if you prefer.') + "</div>
+                <div style="margin-top:12px; color:#94a3b8; font-size:0.85rem;">${(typeof GN_I18N !== 'undefined') ? GN_I18N.t('you_can_also_clear_local_data') : 'You can also clear local data from the settings if you prefer.'}</div>
             </div>
         `;
 

@@ -7,11 +7,12 @@
 </head>
 <body style="background:#0f172a;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;">
   <div style="text-align:center;max-width:420px;padding:20px;">
-    <h2 style="margin-bottom:8px;">Signing you in…</h2>
-    <p style="color:#94a3b8;margin-bottom:12px;">If this page does not close automatically, copy the code shown below and return to the app.</p>
-    <pre id="code" style="background:#071024;padding:12px;border-radius:8px;overflow-x:auto;">Waiting for code...</pre>
+    <h2 id="oauth-title" style="margin-bottom:8px;">Signing you in…</h2>
+    <p id="oauth-help" style="color:#94a3b8;margin-bottom:12px;">Please do not leave or refresh this page.</p>
+    <!-- no visible code shown to the user -->
   </div>
 
+  <script src="gn-i18n.js"></script>
   <script>
     (function(){
       function parseQuery(qs) {
@@ -27,16 +28,20 @@
       const params = parseQuery(window.location.search);
       const code = params.code;
       const error = params.error;
-      const display = document.getElementById('code');
+
+      function showMessage(msg) {
+        // intentionally do not display the auth code; log for debugging only
+        try { console.log('[oauth2callback] ' + msg); } catch(e) {}
+      }
 
       if (code && window.opener) {
         try {
           window.opener.postMessage({ type: 'oauth2callback', code }, window.location.origin);
-          display.innerText = code;
+          showMessage((typeof GN_I18N !== 'undefined') ? GN_I18N.t('oauth_success_close') : 'Authentication successful. This window will close.');
           // Give opener a moment to receive message then close
           setTimeout(() => window.close(), 800);
         } catch (e) {
-          display.innerText = 'Could not send code to opener.\n' + code;
+          showMessage((typeof GN_I18N !== 'undefined') ? GN_I18N.t('oauth_notify_fail') : 'Could not notify the app. Please return to the application and try again.');
         }
       } else if (code) {
         // No opener (standalone / iOS home-screen webapp). Persist the code
@@ -47,7 +52,7 @@
           localStorage.setItem('oauth2_code', code);
         }
 
-        display.innerText = code + '\n\nReturning to app...';
+        showMessage((typeof GN_I18N !== 'undefined') ? GN_I18N.t('oauth_returning') : 'Authentication successful. Returning to app...');
 
         // Compute base path e.g. '/GymNerd/' from current pathname and
         // navigate back so the main page can detect the stored code.
@@ -56,10 +61,22 @@
           window.location.href = window.location.origin + base;
         }, 700);
       } else if (error) {
-        display.innerText = 'Error: ' + error;
+        const prefix = (typeof GN_I18N !== 'undefined' && GN_I18N.t('oauth_error_prefix')) ? GN_I18N.t('oauth_error_prefix') : 'Error: ';
+        showMessage(prefix + error);
       } else {
-        display.innerText = 'No code found in URL.';
+        showMessage((typeof GN_I18N !== 'undefined') ? GN_I18N.t('oauth_no_code') : 'No code found in URL.');
       }
+
+      // Apply localized static strings for title/help when available
+      try {
+        if (typeof GN_I18N !== 'undefined') {
+          const t = GN_I18N.t.bind(GN_I18N);
+          const titleEl = document.getElementById('oauth-title');
+          const helpEl = document.getElementById('oauth-help');
+          if (titleEl) titleEl.innerText = t('oauth_signing_in') || titleEl.innerText;
+          if (helpEl) helpEl.innerText = t('oauth_callback_help') || helpEl.innerText;
+        }
+      } catch(e) {}
     })();
   </script>
 </body>
