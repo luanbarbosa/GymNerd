@@ -172,7 +172,7 @@
         /* Same (larger) font-size for both greeting and name, styles differ */
         .user-greeting { font-weight:600; font-size:2.2rem; color: var(--text-dim); }
         .user-name { font-weight:900; font-size:2.2rem; letter-spacing:-0.6px; text-align:center; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(37,99,235,0.32)); }
-        .motivational-text { font-weight:500; font-size:0.95rem; color: #9aa6bd; text-align:center; margin-top:4px; font-style:italic; }
+        /* motivational-text removed */
         .nav-card { background: var(--card); padding: 24px; border-radius: 16px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.05); }
         .nav-card:active { transform: scale(0.97); }
         
@@ -274,8 +274,6 @@
             // Simple greeting abbreviation: always show "Hi" or "Olá" next to the name
             const greeting = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('greeting_hi') : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'Olá' : 'Hi');
 
-            const motivational = '';
-
             container.innerHTML = `
                 <div class="user-card">
                     <div class="user-line" style="flex-direction:column; gap:8px;">
@@ -285,64 +283,12 @@
                             <div class="user-name">${firstName || 'GymNerd'}</div>
                         </div>
                     </div>
-                    <div class="motivational-text">${motivational}</div>
                 </div>
             `;
-            // After rendering the DOM, attempt to load a motivational quote
-            // and replace the placeholder text. This uses a remote raw GitHub
-            // URL and falls back to a local file under `catalog/` if needed.
-            try { loadMotivationalText(); } catch (e) { /* ignore */ }
+            // After rendering the DOM
         }
 
-        async function loadMotivationalText() {
-            const elem = document.querySelector('.motivational-text');
-            if (!elem) return;
-
-            const urls = {
-                en: 'https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/main/catalog/motivational-quotes-en.json',
-                pt: 'https://raw.githubusercontent.com/luanbarbosa/GymNerd/refs/heads/main/catalog/motivational-quotes-pt.json'
-            };
-
-            function getLang() {
-                try {
-                    if (typeof GN_I18N !== 'undefined' && GN_I18N.safeGetLang) return GN_I18N.safeGetLang().slice(0,2).toLowerCase();
-                    return (navigator.language || navigator.userLanguage || 'en').slice(0,2).toLowerCase();
-                } catch (e) { return 'en'; }
-            }
-
-            const lang = getLang();
-            const remote = urls[lang] || urls.en;
-
-            async function tryFetch(u) {
-                try {
-                    const res = await fetch(u, { cache: 'no-cache' });
-                    if (!res.ok) throw new Error('bad status ' + res.status);
-                    const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) return data;
-                } catch (e) {
-                    return null;
-                }
-                return null;
-            }
-
-            let quotes = await tryFetch(remote);
-            if (!quotes) {
-                // local fallback to packaged file
-                quotes = await tryFetch(`catalog/motivational-quotes-${lang}.json`) || await tryFetch('catalog/motivational-quotes-en.json');
-            }
-
-            if (quotes && quotes.length > 0) {
-                const pick = quotes[Math.floor(Math.random() * quotes.length)];
-                if (pick && String(pick).trim()) {
-                    elem.textContent = pick;
-                } else {
-                    try { elem.remove(); } catch (e) { elem.style.display = 'none'; }
-                }
-            } else {
-                // If no quotes available, remove the motivational element entirely
-                try { elem.remove(); } catch (e) { elem.style.display = 'none'; }
-            }
-        }
+        // motivational quotes loader removed
 
         // Initial render
         try { renderCompactApp(); } catch (e) {}
