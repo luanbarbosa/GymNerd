@@ -253,9 +253,6 @@
         let images = {};
         let selectMode = false;
         let selectedExercises = new Set();
-        let pressTimer = null;
-        let longPressTriggered = false;
-        const PRESS_DURATION = 500;
         let currentImageData = null;
         let editingId = null;
 
@@ -267,21 +264,10 @@
             } catch (e) { return ex.name; }
         }
 
-        function startPressTimer(el, exId, isCustom, e) {
-            pressTimer = setTimeout(() => {
-                longPressTriggered = true;
-                enterSelectMode();
-                toggleSelect(exId, isCustom, el);
-            }, PRESS_DURATION);
-        }
-        function cancelPressTimer() {
-            if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-            setTimeout(() => { longPressTriggered = false; }, 50);
-        }
+        // long-press selection removed — selection is handled via explicit buttons/clicks
         function handleCardClick(exId, isCustom, el, e) {
-            if (longPressTriggered) { longPressTriggered = false; return; }
-            if (selectMode) { toggleSelect(exId, isCustom, el); }
-            else { addExerciseToRoutine(exId, [], isCustom); closeSearchModal(); }
+            if (selectMode) { if (typeof toggleSelect === 'function') toggleSelect(exId, isCustom, el); return; }
+            addExerciseToRoutine(exId, [], isCustom); closeSearchModal();
         }
         function enterSelectMode() {
             selectMode = true;
@@ -472,18 +458,16 @@
             const renderItems = (items) => items.map(ex => {
                 // subtitle removed - no secondary line under exercise title
                 const editBtn = ex.isCustom ? `<button class="icon-btn" onclick="event.stopPropagation(); editExercise(${ex.id})" title="Edit">✎</button>` : '';
-                const copyBtn = `<button class="icon-btn" onclick="event.stopPropagation(); copyExercise(${ex.id}, ${!!ex.isCustom})" title="Copy">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>`;
+                const selectBtn = `<button class="icon-btn" onclick="event.stopPropagation(); addExerciseToRoutine(${ex.id}, [], ${!!ex.isCustom}); closeSearchModal();" title="${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('select') : 'Select'}">${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('select') : 'Select'}</button>`;
                 const customTag = ex.isCustom ? `<span class="badge">${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Custom'}</span>` : '';
-                return `<div class="exercise-card" onmousedown="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" onmouseup="cancelPressTimer()" onmouseleave="cancelPressTimer()" ontouchstart="startPressTimer(this, ${ex.id}, ${!!ex.isCustom}, event)" ontouchmove="cancelPressTimer()" ontouchcancel="cancelPressTimer()" ontouchend="cancelPressTimer()" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)" oncontextmenu="event.preventDefault()">
+                return `<div class="exercise-card" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)" oncontextmenu="event.preventDefault()">
                             <div style="width:100%"><img src="${images[ex.imageId] || defaultImage}" class="ex-thumb"></div>
                             <div class="meta-actions-row">
                                 <div class="meta">
                                     ${customTag ? `<div>${customTag}</div>` : ''}
                                     <div class="title">${getDisplayedName(ex)}</div>
                                 </div>
-                                <div class="actions">${copyBtn}${editBtn}</div>
+                                <div class="actions">${selectBtn}${editBtn}</div>
                             </div>
                             <svg class="tick-icon" viewBox="0 0 32 32" fill="none">
                                 <circle cx="16" cy="16" r="16" fill="var(--success)"/>
