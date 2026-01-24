@@ -620,9 +620,9 @@
 
         function addSetRowToContainer(container, setData) {
             // create header row once
-            const labelSets = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('sets') : 'Sets';
-            const labelReps = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('reps') : 'Reps';
-            const labelWeight = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('weight') : 'Weight';
+            const labelSets = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('history_sets') : 'Sets';
+            const labelReps = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('history_reps') : 'Reps';
+            const labelWeight = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('weight_kg') : 'Weight';
 
             if (!container.querySelector('.header-row')) {
                 const headerRow = document.createElement('div');
