@@ -478,8 +478,12 @@
 
             // Render canonical groups
             canonical.forEach(type => {
-                const items = filtered.filter(ex => ex.type === type);
+                let items = filtered.filter(ex => ex.type === type);
                 if (!items || items.length === 0) return;
+                // sort items alphabetically by displayed/localized name
+                try {
+                    items.sort((a, b) => (getDisplayedName(a) || '').localeCompare(getDisplayedName(b) || '', lang, { sensitivity: 'base' }));
+                } catch (e) {}
                 seen.add(type);
                 const displayType = (window.GN_I18N && GN_I18N.getLocalizedTypeLabel) ? GN_I18N.getLocalizedTypeLabel(type) : ((window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(type) : type);
                 htmlParts.push(`
@@ -498,8 +502,12 @@
             // Render any extra types present in results but not in canonical list
             const extraTypes = Array.from(new Set(filtered.map(e => e.type))).filter(t => !seen.has(t)).sort();
             extraTypes.forEach(type => {
-                const items = filtered.filter(ex => ex.type === type);
+                let items = filtered.filter(ex => ex.type === type);
                 if (!items || items.length === 0) return;
+                // sort items alphabetically by displayed/localized name
+                try {
+                    items.sort((a, b) => (getDisplayedName(a) || '').localeCompare(getDisplayedName(b) || '', lang, { sensitivity: 'base' }));
+                } catch (e) {}
                 const displayType = (window.GN_I18N && GN_I18N.getLocalizedTypeLabel) ? GN_I18N.getLocalizedTypeLabel(type) : ((window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(type) : type);
                 htmlParts.push(`
                 <details class="category-section">
