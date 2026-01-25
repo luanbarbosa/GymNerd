@@ -336,7 +336,7 @@
                 best_record: 'Melhor Recorde',
                 no_records_yet: 'Nenhum registro ainda',
                 keep_it_up: 'Mantenha assim!',
-                days_since_last: 'dias desde o último',
+                days_since_last: 'dias desde o último treino',
                 personal_best: 'Recorde Pessoal'
                 ,
                 /* Exercise types */

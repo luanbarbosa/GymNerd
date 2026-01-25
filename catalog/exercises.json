@@ -94,7 +94,7 @@
     "id": 14,
     "imageId": 14,
     "name": "EZ barbell curl",
-    "namePT": "Rosca direta com barra EZ",
+    "namePT": "Bíceps barra w",
     "type": "arms"
   },
   {
@@ -199,7 +199,7 @@
     "id": 29,
     "imageId": 29,
     "name": "Close grip bar lat pulldown",
-    "namePT": "Pulldown com pegada fechada",
+    "namePT": "Remada cavalinho fechado",
     "type": "back"
   },
   {
@@ -348,5 +348,67 @@
     "name": "Standing calf raise",
     "namePT": "Panturrilha articulada em pé",
     "type": "legs"
+  },
+  {
+    "id": 51,
+    "imageId": 51,
+    "name": "Bulgarian split squat",
+    "namePT": "Agachamento búlgaro",
+    "type": "legs"
+  },
+  {
+    "id": 52,
+    "imageId": 52,
+    "name": "Barbell back squat",
+    "namePT": "Agachamento livre",
+    "type": "legs"
+  },
+  {
+    "id": 53,
+    "imageId": 53,
+    "name": "Horizontal leg press",
+    "namePT": "Leg horizontal",
+    "type": "legs"
+  },
+  {
+    "id": 54,
+    "imageId": 54,
+    "name": "Barbell deadlift",
+    "namePT": "Levantamento terra",
+    "type": "legs"
+  },
+  {
+    "id": 55,
+    "imageId": 55,
+    "name": "Wide grip pronated row",
+    "namePT": "Remada aberta pronada"
+  },
+  {
+    "id": 56,
+    "imageId": 56,
+    "name": "Close grip T-bar row",
+    "namePT": "Remada cavalinho fechado",
+    "type": "back"
+  },
+  {
+    "id": 57,
+    "imageId": 57,
+    "name": "Face pull",
+    "namePT": "Face pull",
+    "type": "back"
+  },
+  {
+    "id": 58,
+    "imageId": 58,
+    "name": "Lower abs crunch",
+    "namePT": "Abdominal infra",
+    "type": "abs"
+  },
+  {
+    "id": 59,
+    "imageId": 59,
+    "name": "Plank",
+    "namePT": "Prancha",
+    "type": "abs"
   }
 ]
