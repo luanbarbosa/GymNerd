@@ -36,10 +36,33 @@
           .modal > .top-card, .modal .top-card { margin: -20px -20px 0 -20px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: calc(14px + env(safe-area-inset-top)) 16px 12px; padding-top: calc(14px + constant(safe-area-inset-top)); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         input, button { box-sizing: border-box; max-width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.02); color: white; }
+        /* Make the modal search input visually pop when unfocused (not selected) */
+        #modalSearchInput {
+            background: rgba(59,130,246,0.14); /* brighter blue tint for stronger pop */
+            border: 1px solid rgba(59,130,246,0.30);
+            box-shadow: 0 8px 22px rgba(59,130,246,0.08);
+            transition: box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+            color: var(--text);
+            outline: none;
+            width: 100%;
+            padding-right: 44px; /* make room for clear button */
+        }
+        /* Focused state (keeps stronger accent) */
+        #modalSearchInput:focus {
+            background: rgba(255,255,255,0.02);
+            border-color: rgba(59,130,246,0.95);
+            box-shadow: 0 14px 40px rgba(37,99,235,0.18);
+        }
+        /* Slightly adjust clear button color to match new accent */
+        .clear-search-btn { color: rgba(255,255,255,0.9); }
         button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
         .add-set-btn { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; color: var(--text-dim); margin-bottom: 10px; }
         .add-set-btn.prominent { background: var(--primary-grad); color: #fff; border: none; font-weight: 800; box-shadow: 0 8px 20px rgba(37,99,235,0.12); }
+        /* Make the main "Search Exercise" button taller for better tap targets */
+        #openSearchBtn { min-height: 56px; padding: 14px 16px; font-size: 1.05rem; display: inline-flex; align-items: center; justify-content: center; }
         .top-action-btn { padding: 10px 14px; min-height: 44px; border-radius: 10px; font-weight: 800; display: inline-flex; align-items: center; gap:8px; }
+        /* Ensure the modal "new/custom" button label is uppercase */
+        #newCustomBtn { text-transform: uppercase; letter-spacing: 0.02em; }
         /* Ensure action buttons in top-cards (modal or main) are vertically centered */
         .top-card .top-card-inner > div { align-items: center !important; }
         .top-card .top-action-wrapper { display:flex; align-items:center; }
@@ -162,7 +185,7 @@
             <label style="font-size:0.8rem; font-weight:800" data-i18n="routine_name_label">Nome da Rotina</label>
             <input id="routineName" data-i18n-placeholder="routine_name_placeholder" placeholder="ex.: Empurrão Superior" />
             <label style="font-size:0.8rem; font-weight:800; margin-top: 10px;" data-i18n="routine_exercises_label">Exercícios da Rotina</label>
-            <button class="add-set-btn prominent" style="width:100%;" onclick="openSearchModal()" data-i18n="add_exercise">🔍 Adicionar Exercício</button>
+            <button id="openSearchBtn" class="add-set-btn prominent" style="width:100%;" onclick="openSearchModal()" data-i18n="add_exercise">🔍 Adicionar Exercício</button>
             <div id="selectedList" class="selected-ex-list" onclick="if(this.querySelectorAll('.selected-ex-card').length===0) openSearchModal()"></div>
             <div style="display:flex; gap:8px;">
                 <button style="flex:1; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="location.href='routines.html'" data-i18n="cancel">Cancelar</button>
@@ -182,7 +205,7 @@
                             <h2 style="margin:0; text-align:left;" data-i18n="add_exercise_modal_title">Adicionar Exercício</h2>
                         </div>
                         <div class="top-action-wrapper" style="display:flex; gap:8px; align-items:center;">
-                            <button type="button" class="add-set-btn prominent top-action-btn" onclick="openCreateModal()">➕ <span data-i18n="new">Novo</span></button>
+                            <button id="newCustomBtn" type="button" class="add-set-btn prominent top-action-btn" onclick="openCreateModal()"><span data-i18n="new_custom">custom</span></button>
                         </div>
                     </div>
                 </div>
@@ -348,6 +371,8 @@
             updateModalResults();
             try { populateExerciseTypeSelect(); } catch(e){}
             try { updateNamePTVisibility(); } catch(e){}
+
+            
 
             // keep exName -> exNamePT in sync when PT locale
             try {
