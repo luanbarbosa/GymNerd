@@ -242,6 +242,8 @@
 
             await ensureDbOpen();
             try {
+                // Keep imported catalog images available to validate exercises that reference them
+                let importedCatalogImages = null;
                 for (const key in files) {
                     if (files[key]) {
                         const text = await files[key].text();
@@ -253,6 +255,15 @@
                                 ...img,
                                 data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
                             }));
+                            if (typeof db.sanitizeCatalogImages === 'function') parsedData = db.sanitizeCatalogImages(parsedData);
+                            importedCatalogImages = parsedData;
+                        }
+
+                        // If importing catalog exercises, sanitize against required fields and available images
+                        if (key && key.toLowerCase().includes('exerc')) {
+                            if (typeof db.sanitizeCatalogExercises === 'function') {
+                                parsedData = db.sanitizeCatalogExercises(parsedData, importedCatalogImages);
+                            }
                         }
 
                         await table.clear();
@@ -298,16 +309,22 @@
                 if (proceed) {
                     await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
                         await db.catalog_images.clear();
+                        let normalizedCatalogImages = null;
                         if (data.catalog_images) {
-                            const normalizedCatalogImages = data.catalog_images.map(img => ({
+                            normalizedCatalogImages = data.catalog_images.map(img => ({
                                 ...img,
                                 data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
                             }));
+                            if (typeof db.sanitizeCatalogImages === 'function') normalizedCatalogImages = db.sanitizeCatalogImages(normalizedCatalogImages);
                             await db.catalog_images.bulkAdd(normalizedCatalogImages);
                         }
-                        
+
                         await db.catalog_exercises.clear();
-                        if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
+                        if (data.catalog_exercises) {
+                            let toWrite = data.catalog_exercises;
+                            if (typeof db.sanitizeCatalogExercises === 'function') toWrite = db.sanitizeCatalogExercises(toWrite, normalizedCatalogImages);
+                            await db.catalog_exercises.bulkAdd(toWrite);
+                        }
 
                         await db.custom_images.clear();
                         if (data.custom_images) {

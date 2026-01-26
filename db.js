@@ -17,6 +17,96 @@ const AVAILABLE_EXERCISE_TYPES = ['abs','arms','back','cardio','chest','legs','s
 db.availableExerciseTypes = AVAILABLE_EXERCISE_TYPES;
 window.AVAILABLE_EXERCISE_TYPES = AVAILABLE_EXERCISE_TYPES;
 
+// Validate a catalog/custom exercise has required fields.
+function isExerciseValid(ex, imagesMap = null) {
+    if (!ex || typeof ex !== 'object') return false;
+    // id must be present (0 allowed)
+    if (ex.id === undefined || ex.id === null) return false;
+    // name(s)
+    if (!ex.name || typeof ex.name !== 'string' || ex.name.trim() === '') return false;
+    if (!ex.namePT || typeof ex.namePT !== 'string' || ex.namePT.trim() === '') return false;
+    // type must be one of the available types
+    if (!ex.type || typeof ex.type !== 'string') return false;
+    if (ex.type === 'undefined' || !AVAILABLE_EXERCISE_TYPES.includes(ex.type)) return false;
+    // imageId must reference an image if imagesMap provided
+    if (ex.imageId === undefined || ex.imageId === null) return false;
+    if (imagesMap && !imagesMap.has(ex.imageId)) return false;
+    return true;
+}
+
+/**
+ * Filter and normalize a list of catalog exercises, removing any entries
+ * missing required fields (id, name, namePT, type, imageId) or with invalid type.
+ * images is optional and when provided is used to validate imageId references.
+ */
+function sanitizeCatalogExercises(exercises, images) {
+    if (!Array.isArray(exercises)) return [];
+    const imagesMap = new Map((images || []).map(i => [i && i.id, true]));
+    const filtered = exercises.filter(ex => isExerciseValid(ex, imagesMap));
+    const dropped = exercises.length - filtered.length;
+    if (dropped > 0) console.warn(`[DB] sanitizeCatalogExercises: dropped ${dropped} invalid exercises`);
+    return filtered;
+}
+
+// Expose helpers on the `db` object so other modules can use them.
+db.isExerciseValid = isExerciseValid;
+db.sanitizeCatalogExercises = sanitizeCatalogExercises;
+
+// Validate a catalog image has required fields.
+function isImageValid(img) {
+    if (!img || typeof img !== 'object') return false;
+    if (img.id === undefined || img.id === null) return false;
+    // must have either embedded data or a URL
+    const hasData = typeof img.data === 'string' && img.data.trim() !== '';
+    const hasUrl = typeof img.url === 'string' && img.url.trim() !== '';
+    return hasData || hasUrl;
+}
+
+function sanitizeCatalogImages(images) {
+    if (!Array.isArray(images)) return [];
+    const filtered = images.filter(isImageValid);
+    const dropped = images.length - filtered.length;
+    if (dropped > 0) console.warn(`[DB] sanitizeCatalogImages: dropped ${dropped} invalid images`);
+    return filtered;
+}
+
+db.isImageValid = isImageValid;
+db.sanitizeCatalogImages = sanitizeCatalogImages;
+
+// Migration: remove exercises with invalid/undefined types or missing required fields
+async function cleanInvalidExerciseTypes() {
+    try {
+        await ensureDbOpen();
+        // catalog_exercises
+        if (db.catalog_exercises) {
+            const all = await db.catalog_exercises.toArray();
+            const invalid = all.filter(e => !isExerciseValid(e));
+            if (invalid.length) {
+                const ids = invalid.map(i => i.id).filter(id => id !== undefined && id !== null);
+                console.info(`[DB Migration] removing ${ids.length} invalid catalog_exercises`);
+                try { await db.catalog_exercises.bulkDelete(ids); } catch(e){
+                    for (const id of ids) { try { await db.catalog_exercises.delete(id); } catch(_){} }
+                }
+            }
+        }
+
+        // custom_exercises
+        if (db.custom_exercises) {
+            const all = await db.custom_exercises.toArray();
+            const invalid = all.filter(e => !isExerciseValid(e));
+            if (invalid.length) {
+                const ids = invalid.map(i => i.id).filter(id => id !== undefined && id !== null);
+                console.info(`[DB Migration] removing ${ids.length} invalid custom_exercises`);
+                try { await db.custom_exercises.bulkDelete(ids); } catch(e){
+                    for (const id of ids) { try { await db.custom_exercises.delete(id); } catch(_){} }
+                }
+            }
+        }
+    } catch (err) {
+        console.error('[DB Migration] cleanInvalidExerciseTypes failed', err);
+    }
+}
+
 async function ensureDbOpen() {
     if (!db.isOpen()) await db.open();
 }
@@ -93,10 +183,13 @@ async function initializeCatalog() {
         const fetchedImages = await imgResp.json();
 
         // Normalize image data URIs
-        const images = fetchedImages.map(img => ({
+        const normalizedImages = fetchedImages.map(img => ({
             ...img,
             data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
         }));
+
+        // Sanitize images before using them and before writing to DB
+        const images = sanitizeCatalogImages(normalizedImages);
 
         // Compute a hash of the fetched catalog (exercises + images) to detect changes.
         // For images that reference remote URLs (img.url), include a signature (ETag / Last-Modified / content hash)
@@ -146,8 +239,9 @@ async function initializeCatalog() {
         // If catalog tables exist and the remote content hasn't changed, skip updating
         if (exCount > 0 && imgCount > 0 && storedHash === newHash) return;
 
-        // Prepare catalog exercises with negative IDs to avoid clashing with user-created items
-        const catalogExercises = exercises.map(ex => ({ ...ex, id: -ex.id }));
+        // Sanitize fetched exercises and prepare with negative IDs to avoid clashing with user-created items
+        const validExercises = sanitizeCatalogExercises(exercises, images);
+        const catalogExercises = validExercises.map(ex => ({ ...ex, id: -ex.id }));
 
         await db.transaction('rw', db.catalog_exercises, db.catalog_images, async () => {
             // Replace catalog tables when remote changed or tables are empty
@@ -169,5 +263,8 @@ async function initializeCatalog() {
     }
 }
 
-// Run initialization on load
-initializeCatalog();
+// Run migrations then initialize catalog on load
+(async function runStartup() {
+    try { await cleanInvalidExerciseTypes(); } catch (e) { console.error('Migration error', e); }
+    try { await initializeCatalog(); } catch (e) { console.error('Catalog init error', e); }
+})();

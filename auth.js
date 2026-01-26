@@ -452,20 +452,27 @@
             if (typeof db !== 'undefined') {
                 try {
                     await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+                        let sanitizedCatalogImages = null;
                         if (db.catalog_images) {
                             await db.catalog_images.clear();
                             if (data.catalog_images) {
-                                const normalizedCatalogImages = data.catalog_images.map(img => ({
+                                let normalizedCatalogImages = data.catalog_images.map(img => ({
                                     ...img,
                                     data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
                                 }));
+                                if (typeof db.sanitizeCatalogImages === 'function') normalizedCatalogImages = db.sanitizeCatalogImages(normalizedCatalogImages);
+                                sanitizedCatalogImages = normalizedCatalogImages;
                                 await db.catalog_images.bulkAdd(normalizedCatalogImages);
                             }
                         }
 
                         if (db.catalog_exercises) {
                             await db.catalog_exercises.clear();
-                            if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
+                            if (data.catalog_exercises) {
+                                let toWrite = data.catalog_exercises;
+                                if (typeof db.sanitizeCatalogExercises === 'function') toWrite = db.sanitizeCatalogExercises(toWrite, sanitizedCatalogImages);
+                                await db.catalog_exercises.bulkAdd(toWrite);
+                            }
                         }
 
                         if (db.custom_images) {
