@@ -199,7 +199,7 @@
     "id": 29,
     "imageId": 29,
     "name": "Close grip bar lat pulldown",
-    "namePT": "Remada cavalinho fechado",
+    "namePT": "Puxada com triângulo pegada fechada",
     "type": "back"
   },
   {
@@ -381,7 +381,8 @@
     "id": 55,
     "imageId": 55,
     "name": "Wide grip pronated row",
-    "namePT": "Remada aberta pronada"
+    "namePT": "Remada aberta pronada",
+    "type": "back"
   },
   {
     "id": 56,
@@ -410,5 +411,12 @@
     "name": "Plank",
     "namePT": "Prancha",
     "type": "abs"
+  },
+  {
+    "id": 60,
+    "imageId": 60,
+    "name": "Elliptical",
+    "namePT": "Elíptico",
+    "type": "cardio"
   }
 ]
