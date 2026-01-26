@@ -134,7 +134,7 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #00e676; --danger: #ff5252; }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -190,6 +190,18 @@
         .export-btn { background: var(--success); color: white; }
         .import-btn { background: #6366f1; color: white; }
         label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
+        /* Week dots (GitHub-style) */
+        .week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); max-width: 460px; }
+        .week-dots .days { display:grid; grid-template-columns: repeat(7, 1fr); gap: clamp(6px, 1.6vw, 12px); align-items:center; width:100%; }
+        .week-dots .day { display:flex; flex-direction:column; align-items:center; gap:6px; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); }
+        .week-dots .dot { width: clamp(10px, 4.5vw, 22px); height: clamp(10px, 4.5vw, 22px); border-radius:50%; box-shadow: none; border: none; }
+        .week-dots .dot.fill-0 { background: rgba(255,255,255,0.04); }
+        .week-dots .dot.fill-1 { background: rgba(0,230,118,0.36); }
+        .week-dots .dot.fill-2 { background: rgba(0,230,118,0.64); }
+        .week-dots .dot.fill-3 { background: rgba(0,230,118,0.92); }
+        .week-dots .dot.fill-4 { background: var(--success); }
+        .week-dots .dot.no-workout { background: var(--danger); }
+        .week-dots .dot.future { background: rgba(148,163,184,0.92); }
     </style>
 </head>
 <body>
@@ -217,6 +229,10 @@
         <div class="top-card-inner">
             <div id="home-user-main"></div>
         </div>
+    </div>
+
+    <div style="padding: 0 20px;">
+        <div id="week-dots" class="week-dots" aria-hidden="false"></div>
     </div>
 
     <div class="main-content">
@@ -298,6 +314,7 @@
         try { renderCompactApp(); } catch (e) {}
         try { renderMainUser(); } catch (e) {}
         try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
+        try { renderWeekDots && renderWeekDots(); } catch(e){}
         
         // Show 'Sync Pending Changes' button when local changes exist
         function updatePendingButtonVisibility() {
@@ -322,6 +339,61 @@
 
         // Ensure visibility is correct on load
         try { updatePendingButtonVisibility(); } catch(e){}
+
+                // Render the current week's dots (SUN - SAT). Localized by GN_I18N.getLang()
+                async function renderWeekDots(){
+                    try{
+                        if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+                        const container = document.getElementById('week-dots');
+                        if (!container) return;
+                        container.innerHTML = `<div class="days" role="list"></div>`;
+                        const daysContainer = container.querySelector('.days');
+                        const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
+                        const locale = (lang === 'pt') ? 'pt' : 'en';
+                        const today = new Date();
+                        const start = new Date(today);
+                        start.setHours(0,0,0,0);
+                        // find Sunday (0) of current week
+                        start.setDate(start.getDate() - start.getDay());
+
+                        for (let i = 0; i < 7; i++) {
+                            const d = new Date(start);
+                            d.setDate(start.getDate() + i);
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const dateStr = `${y}-${m}-${day}`; // YYYY-MM-DD (matches history.date format)
+
+                            let count = 0;
+                            try { count = await db.history.where('date').equals(dateStr).count(); } catch (e) { count = 0; }
+
+                            // Map counts to 0..4 intensity
+                            const level = (count === 0) ? 0 : Math.min(4, 1 + Math.floor(Math.log2(count)));
+                            const weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' });
+                            const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
+
+                            const el = document.createElement('div');
+                            el.className = 'day';
+                            const titleCount = (window.GN_I18N && GN_I18N.safeT) ? `${weekdayFull}: ${count}` : `${weekdayFull}: ${count}`;
+                            el.title = titleCount;
+                            // Determine state: future / no-workout (red) / workout levels (green)
+                            const dateObj = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                            const todayMid = new Date(); todayMid.setHours(0,0,0,0);
+                            let dotClass = '';
+                            // If the day is in the future, or it's today with no workout, show as 'future' (gray)
+                            if (dateObj.getTime() > todayMid.getTime() || (dateObj.getTime() === todayMid.getTime() && count === 0)) {
+                                dotClass = 'future';
+                            } else if (count === 0) {
+                                dotClass = 'no-workout';
+                            } else {
+                                dotClass = `fill-${level}`;
+                            }
+
+                            el.innerHTML = `<div class="dot ${dotClass}" data-count="${count}"></div><div class="label">${weekdayShort}</div>`;
+                            daysContainer.appendChild(el);
+                        }
+                    } catch (err) { console.error('renderWeekDots failed', err); }
+                }
     </script>
 </body>
 </html>

@@ -121,6 +121,7 @@
                 ,
                 /* Statistics page */
                 workout_frequency: 'Workout Frequency',
+                this_week: 'This week',
                 monthly: 'Monthly',
                 yearly: 'Yearly',
                 weight_progress: 'Weight Progress',
@@ -326,6 +327,7 @@
                 ,
                 /* Statistics page */
                 workout_frequency: 'Frequência de Treinos',
+                this_week: 'Esta semana',
                 monthly: 'Mensal',
                 yearly: 'Anual',
                 weight_progress: 'Progresso de Peso',
