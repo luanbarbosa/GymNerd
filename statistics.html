@@ -71,6 +71,23 @@
         .chart-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .chart-thumb { width: 64px; height: 52px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; }
         .canvas-wrapper { height: 180px; }
+        .exercise-group .group-header { display:flex; align-items:center; gap:8px; cursor:pointer; padding: 8px 10px; justify-content: space-between; border-radius: 8px; }
+        .exercise-group .group-header:hover { background: rgba(255,255,255,0.02); }
+        .exercise-group .group-header .chevron { font-size: 20px; color: var(--text-dim); margin-left: 8px; }
+        .exercise-group .group-header .section-title-inline { font-weight: 800; font-size: 0.95rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; flex: 1; }
+        .exercise-group .group-body { display: none; margin-top: 12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .exercise-group .group-body.open { display: grid; }
+        /* Radar types edit drawer */
+        .radar-edit summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.04); transition: background 120ms ease, transform 120ms ease; }
+        .radar-edit summary:hover { background: rgba(255,255,255,0.05); transform: translateY(-1px); }
+        .radar-edit[open] summary { background: rgba(255,255,255,0.04); box-shadow: 0 6px 18px rgba(2,6,23,0.12); }
+        .radar-edit summary::-webkit-details-marker { display: none; }
+        .radar-edit .edit-icon { font-size: 16px; color: var(--text-dim); display:inline-flex; align-items:center; }
+        .radar-edit .summary-label { font-weight: 700; color: var(--text); }
+        .radar-edit #radarTypesContainer label { background: transparent; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); }
+        .radar-edit #radarTypesContainer label:hover { background: rgba(255,255,255,0.02); }
+        .radar-edit .radar-refresh-btn { margin-left: 8px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color: var(--text); cursor: pointer; font-weight: 700; font-size: 0.85rem; display: none; }
+        .radar-edit .radar-refresh-btn:hover { background: rgba(255,255,255,0.035); transform: translateY(-1px); }
     </style>
 </head>
 <body>
@@ -118,6 +135,29 @@
                 <canvas id="weightChart"></canvas>
             </div>
         </div>
+        <div class="card" id="radarCard">
+            <div class="calendar-header">
+                <h3 data-i18n="exercise_frequency"></h3>
+                <select id="radarFilter" onchange="updateRadarChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
+                    <option value="all" selected data-i18n="all_time">All time</option>
+                    <option value="ytd" data-i18n="year_to_date">Year to date</option>
+                    <option value="6m" data-i18n="last_6_months">Last 6 months</option>
+                    <option value="month" data-i18n="this_month">This month</option>
+                </select>
+                <!-- type selector moved below the chart to a checkbox list -->
+            </div>
+            <div class="canvas-wrapper" style="height: 240px;">
+                <canvas id="radarChart"></canvas>
+            </div>
+            <details class="radar-edit" style="margin-top:12px;">
+                <summary data-i18n="edit">
+                    <span class="material-symbols-outlined edit-icon" aria-hidden="true">edit</span>
+                    <span class="summary-label">Edit</span>
+                    <button type="button" class="radar-refresh-btn" aria-label="Refresh">Refresh</button>
+                </summary>
+                <div id="radarTypesContainer" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:8px;"></div>
+            </details>
+        </div>
     </div>
 
     <div class="stats-grid" id="chartsWrapper"></div>
@@ -134,6 +174,7 @@
             updateStreakBadge();
             updateFrequencyChart(logs);
             renderWeightChart();
+            updateRadarChart(logs);
         }
 
         async function renderWeightChart() {
@@ -255,9 +296,14 @@
                     ctx.fillStyle = '#94a3b8';
                     ctx.textAlign = 'center';
                     const unit = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg';
-                    chart.getDatasetMeta(0).data.forEach((point, index) => {
+                    const meta = chart.getDatasetMeta(0);
+                    const area = chart.chartArea || { left: 6, right: chart.width - 6 };
+                    const minX = (area.left || 6) + 12;
+                    const maxX = (area.right || (chart.width - 6)) - 12;
+                    meta.data.forEach((point, index) => {
                         const value = data.datasets[0].data[index];
-                        ctx.fillText(value + ' ' + unit, point.x, point.y - 10);
+                        const x = Math.min(Math.max(point.x, minX), maxX);
+                        ctx.fillText(value + ' ' + unit, x, point.y - 10);
                     });
                     ctx.restore();
                 }
@@ -275,13 +321,24 @@
 
             wrapper.innerHTML = "";
 
+            let typeIndex = 0;
             for (const type of Object.keys(groupedByType).sort()) {
-                const sectionTitle = document.createElement('h3');
-                sectionTitle.className = 'section-title';
-                sectionTitle.innerText = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? GN_I18N.localizeExerciseType(type) : type;
-                wrapper.appendChild(sectionTitle);
+                const groupId = 'grp_' + (typeIndex++);
+                const localizedType = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? GN_I18N.localizeExerciseType(type) : type;
+
+                const groupContainer = document.createElement('div');
+                groupContainer.className = 'exercise-group';
+                groupContainer.innerHTML = `
+                    <div class="group-header" data-group="${groupId}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${groupId}')" onkeydown="if(event.key==='Enter' || event.key===' ') toggleGroup('${groupId}');">
+                        <div class="section-title-inline">${localizedType}</div>
+                        <span class="material-symbols-outlined chevron" aria-hidden="true">expand_more</span>
+                    </div>
+                    <div class="group-body" id="${groupId}"></div>
+                `;
+                wrapper.appendChild(groupContainer);
 
                 const exercisesInType = groupedByType[type];
+                const body = groupContainer.querySelector('.group-body');
                 for (const exId of Object.keys(exercisesInType)) {
                     const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
                     const lastEntry = entries[entries.length - 1];
@@ -289,18 +346,18 @@
                     const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
                     const displayName = currentEx ? ((lang === 'pt' && currentEx.namePT) ? currentEx.namePT : currentEx.name) : GN_I18N.t('unknown_exercise');
                     const imgSrc = await getImg(currentEx?.imageId, currentEx?.isCustom);
-                    
+
                     const box = document.createElement('div'); 
                     box.className = 'chart-box';
                     const canvasId = `c-${lastEntry.exerciseId}-${!!lastEntry.isCustom}`.replace(/-/g, '_');
-                    
+
                     box.innerHTML = `
                         <div class="chart-header">
                             <img src="${imgSrc}" class="chart-thumb">
                             <strong>${displayName}</strong>
                         </div>
                         <div class="canvas-wrapper"><canvas id="${canvasId}"></canvas></div>`;
-                    wrapper.appendChild(box);
+                    body.appendChild(box);
 
                     new Chart(document.getElementById(canvasId), {
                         type: 'line', 
@@ -327,7 +384,7 @@
                         options: { 
                             responsive: true, 
                             maintainAspectRatio: false, 
-                            layout: { padding: { left: 0, right: 0 } },
+                            layout: { padding: { left: 18, right: 18 } },
                             plugins: { 
                                 legend: { display: false },
                                 tooltip: {
@@ -341,7 +398,7 @@
                                 }
                             },
                             scales: {
-                                x: { display: true, offset: false, ticks: { display: false }, grid: { drawBorder: false }, title: { display: true, text: GN_I18N ? GN_I18N.t('weight_per_rep') : 'Weight per rep' } },
+                                x: { display: true, offset: true, ticks: { display: false }, grid: { drawBorder: false }, title: { display: true, text: GN_I18N ? GN_I18N.t('weight_per_rep') : 'Weight per rep' } },
                                 y: { 
                                     grace: '15%',
                                     grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, 
@@ -355,7 +412,214 @@
             }
         }
 
+        // Toggle function for collapsible exercise groups
+        function toggleGroup(id) {
+            const body = document.getElementById(id);
+            const header = document.querySelector(`[data-group="${id}"]`);
+            const icon = header ? header.querySelector('.chevron') : null;
+            if (!body) return;
+            const isOpen = body.classList.contains('open');
+            if (isOpen) {
+                body.classList.remove('open');
+                body.style.display = 'none';
+                if (icon) icon.textContent = 'expand_more';
+                if (header) header.setAttribute('aria-expanded', 'false');
+            } else {
+                body.classList.add('open');
+                body.style.display = 'grid';
+                if (icon) icon.textContent = 'expand_less';
+                if (header) header.setAttribute('aria-expanded', 'true');
+            }
+        }
+
         let frequencyChart = null;
+        let radarChart = null;
+
+        function getPeriodStart(period) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            if (period === 'all') return null;
+            if (period === 'ytd') return new Date(today.getFullYear(), 0, 1);
+            if (period === '6m') {
+                const d = new Date(today);
+                d.setMonth(d.getMonth() - 6);
+                return d;
+            }
+            if (period === 'month') return new Date(today.getFullYear(), today.getMonth(), 1);
+            return null;
+        }
+
+        // Cookie helpers for persisting radar type selection
+        function setCookie(name, value, days) {
+            let expires = '';
+            if (days) {
+                const d = new Date(); d.setTime(d.getTime() + (days*24*60*60*1000));
+                expires = '; expires=' + d.toUTCString();
+            }
+            document.cookie = name + '=' + encodeURIComponent(value || '') + expires + '; path=/';
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+            return null;
+        }
+
+        function saveRadarTypesToCookie(typesArray) {
+            const raw = typesArray.join('|');
+            setCookie('radar_types', raw, 365);
+            try { localStorage.setItem('radar_types', raw); } catch (e) {}
+        }
+
+        function getSavedRadarTypes() {
+            let raw = getCookie('radar_types');
+            if (!raw) {
+                try { raw = localStorage.getItem('radar_types'); } catch (e) { raw = null; }
+            }
+            if (raw === null || raw === undefined) return null;
+            const arr = raw.split('|').filter(Boolean);
+            return arr;
+        }
+
+        function populateRadarTypeSelector(types) {
+            const container = document.getElementById('radarTypesContainer');
+            if (!container) return;
+            // Avoid repopulating if already filled
+            if (container.childElementCount > 0) return;
+            const saved = getSavedRadarTypes();
+            const refreshBtn = document.querySelector('.radar-edit .radar-refresh-btn');
+            if (refreshBtn) {
+                try {
+                    const txt = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('refresh') : null;
+                    if (txt) refreshBtn.innerText = txt;
+                } catch (e) {}
+                refreshBtn.style.display = 'none';
+                refreshBtn.addEventListener('click', () => { location.reload(); });
+            }
+            // Sort types by their localized label so the checkboxes appear alphabetically by title
+            const items = types.map(t => ({
+                key: t,
+                label: (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? GN_I18N.localizeExerciseType(t) : t
+            }));
+            items.sort((a, b) => (a.label || '').localeCompare(b.label || ''));
+            items.forEach(item => {
+                const t = item.key;
+                const labelText = item.label;
+                const id = 'rt_' + t.replace(/[^a-z0-9]+/ig, '_');
+                const label = document.createElement('label');
+                label.setAttribute('for', id);
+                label.style.display = 'inline-flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '6px';
+                label.style.padding = '6px 8px';
+                label.style.borderRadius = '8px';
+                label.style.background = 'rgba(255,255,255,0.02)';
+                label.style.cursor = 'pointer';
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.id = id;
+                input.value = t;
+                // If saved is null => no preference saved => default to checked (show all).
+                // If saved is an empty array => user explicitly saved "no types" => none checked.
+                input.checked = (saved === null) ? true : (saved.length === 0 ? false : saved.includes(t));
+                input.style.transform = 'scale(0.9)';
+                input.addEventListener('change', () => {
+                    const checked = Array.from(container.querySelectorAll('input[type=checkbox]:checked')).map(i => i.value);
+                    saveRadarTypesToCookie(checked);
+                    updateRadarChart();
+                    if (refreshBtn) refreshBtn.style.display = 'inline-flex';
+                });
+                const span = document.createElement('span');
+                span.innerText = labelText;
+                label.appendChild(input);
+                label.appendChild(span);
+                container.appendChild(label);
+            });
+        }
+
+        async function updateRadarChart(logs) {
+            if (!logs) logs = await db.history.toArray();
+            const period = document.getElementById('radarFilter').value;
+            const start = getPeriodStart(period);
+
+            const [catalogEx, customEx] = await Promise.all([
+                db.catalog_exercises.toArray(),
+                db.custom_exercises.toArray()
+            ]);
+            const allExercises = [
+                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                ...customEx.map(ex => ({ ...ex, isCustom: true }))
+            ];
+            const exMap = allExercises.reduce((acc, ex) => { acc[`${ex.id}-${!!ex.isCustom}`] = ex; return acc; }, {});
+
+            const typeSet = new Set(allExercises.map(e => e.type || 'Other'));
+            typeSet.add('Other');
+            const types = Array.from(typeSet).sort();
+            const counts = {};
+            types.forEach(t => counts[t] = 0);
+
+            logs.forEach(l => {
+                if (start) {
+                    const d = new Date(l.date); d.setHours(0,0,0,0);
+                    if (d < start) return;
+                }
+                const exKey = `${l.exerciseId}-${l.isCustom !== undefined ? !!l.isCustom : l.exerciseId > 0}`;
+                const ex = exMap[exKey];
+                const type = ex ? ex.type : 'Other';
+                counts[type] = (counts[type] || 0) + 1;
+            });
+
+            // Populate selector if needed
+            populateRadarTypeSelector(types);
+            // Prefer current UI checkbox state (immediate feedback) when available
+            const container = document.getElementById('radarTypesContainer');
+            const checkedFromUI = container ? Array.from(container.querySelectorAll('input[type=checkbox]:checked')).map(i => i.value) : null;
+            const saved = getSavedRadarTypes();
+            let visibleTypes = types;
+            if (checkedFromUI && checkedFromUI.length > 0) {
+                visibleTypes = types.filter(t => checkedFromUI.includes(t));
+            } else if (saved && saved.length > 0) {
+                // Fallback to cookie selection
+                visibleTypes = types.filter(t => saved.includes(t));
+                if (visibleTypes.length === 0) visibleTypes = types;
+            }
+
+            const labels = visibleTypes.map(t => (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? GN_I18N.localizeExerciseType(t) : t);
+            const data = visibleTypes.map(t => counts[t] || 0);
+
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if (radarChart) radarChart.destroy();
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: 'rgba(59,130,246,0.15)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { display: false }
+                        }
+                    }
+                }
+            });
+        }
         async function updateFrequencyChart(logs) {
             if (!logs) logs = await db.history.toArray();
             const period = document.getElementById('frequencyFilter').value;
@@ -478,6 +742,13 @@
         if (window.GN_I18N) {
             try { GN_I18N.applyTranslations(document); } catch(e){}
             try { document.title = GN_I18N.t('title_main') + ' | ' + GN_I18N.t('page_statistics'); } catch(e){}
+            try {
+                const s = document.querySelector('.radar-edit .summary-label');
+                if (s && typeof GN_I18N.t === 'function') {
+                    const txt = GN_I18N.t('edit');
+                    if (txt) s.innerText = txt;
+                }
+            } catch(e){}
         }
 
         init();
