@@ -6,6 +6,9 @@
     <title></title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="favicon.svg">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2563eb">
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
     <script src="auth.js"></script>
@@ -1680,6 +1683,11 @@
         // Clean up when page is hidden or unloaded
         window.addEventListener('pagehide', () => { try { releaseWakeResources(); } catch(e){} });
         window.addEventListener('beforeunload', () => { try { releaseWakeResources(); } catch(e){} });
+        </script>
+        <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
+        }
         </script>
 </body>
 </html>
