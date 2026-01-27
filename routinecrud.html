@@ -74,6 +74,9 @@
         .selected-ex-list.empty { min-height: 160px; border: 2px dashed rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; align-items: center; justify-content: center; display: flex; cursor: pointer; }
         .selected-ex-list .empty-hint { color: var(--text-dim); font-size: 0.95rem; text-align: center; }
         .selected-ex-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; }
+        .selected-ex-card.invalid { border-color: rgba(239,68,68,0.9); box-shadow: 0 8px 24px rgba(239,68,68,0.06); }
+        .form-errors { background: rgba(239,68,68,0.04); border-left: 4px solid var(--danger); color: var(--danger); padding: 10px 12px; border-radius: 8px; margin-top: 8px; font-weight:700; }
+        .card-error { color: var(--danger); background: rgba(239,68,68,0.03); padding: 6px 8px; border-radius: 6px; margin-top: 8px; font-size:0.85rem; }
         /* per-set inputs removed - keeping UI minimal for routine creation */
         /* Large thumbnail for modal cards (image on top) */
         .exercise-card > div > .ex-thumb { display:block; width:100%; height:auto; max-height:150px; border-radius: 12px; object-fit: contain; object-position: center; background: #fff; }
@@ -184,6 +187,7 @@
         <div style="display:flex; flex-direction:column; gap:12px;">
             <label style="font-size:0.8rem; font-weight:800" data-i18n="routine_name_label">Nome da Rotina</label>
             <input id="routineName" data-i18n-placeholder="routine_name_placeholder" placeholder="ex.: Empurrão Superior" />
+            <div id="formErrors" class="form-errors hidden" aria-live="polite"></div>
             <label style="font-size:0.8rem; font-weight:800; margin-top: 10px;" data-i18n="routine_exercises_label">Exercícios da Rotina</label>
             <button id="openSearchBtn" class="add-set-btn prominent" style="width:100%;" onclick="openSearchModal()" data-i18n="add_exercise">🔍 Adicionar Exercício</button>
             <div id="selectedList" class="selected-ex-list" onclick="if(this.querySelectorAll('.selected-ex-card').length===0) openSearchModal()"></div>
@@ -747,7 +751,49 @@
         async function saveRoutine() {
             const name = document.getElementById('routineName').value.trim();
             const exerciseIds = getSelectedExercisesData();
-            if (!name || exerciseIds.length === 0) return alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('missing_routine_name') : 'Falta nome ou exercícios na rotina');
+
+            // clear previous invalid markers and messages
+            document.querySelectorAll('.selected-ex-card.invalid').forEach(c => c.classList.remove('invalid'));
+            document.querySelectorAll('.selected-ex-card .card-error').forEach(e => e.remove());
+            const formErrorsEl = document.getElementById('formErrors');
+            if (formErrorsEl) { formErrorsEl.classList.add('hidden'); formErrorsEl.innerHTML = ''; }
+
+            if (!name || exerciseIds.length === 0) {
+                const msg = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? GN_I18N.t('missing_routine_name') : 'Falta nome ou exercícios na rotina';
+                if (formErrorsEl) { formErrorsEl.innerText = msg; formErrorsEl.classList.remove('hidden'); formErrorsEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                return;
+            }
+
+            // Validate that every exercise has at least one set with both reps and weight
+            const invalidExerciseIds = [];
+            exerciseIds.forEach(ex => {
+                const sets = Array.isArray(ex.sets) ? ex.sets : [];
+                const hasValid = sets.some(s => s && s.reps !== null && s.reps !== undefined && s.weight !== null && s.weight !== undefined);
+                if (!hasValid) invalidExerciseIds.push(ex.id);
+            });
+
+            if (invalidExerciseIds.length > 0) {
+                // mark the cards visually and show per-card messages
+                const cards = document.querySelectorAll('.selected-ex-card');
+                cards.forEach(card => {
+                    const id = parseInt(card.dataset.id);
+                    if (invalidExerciseIds.includes(id)) {
+                        card.classList.add('invalid');
+                        // avoid duplicate message
+                        if (!card.querySelector('.card-error')) {
+                            const ce = document.createElement('div');
+                            ce.className = 'card-error';
+                            ce.innerText = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('exercise_missing_set') || 'Requires at least one set with reps and weight') : 'Requires at least one set with reps and weight';
+                            card.appendChild(ce);
+                        }
+                    }
+                });
+                // Only show per-card inline messages for missing sets; do not duplicate at the top
+                const first = document.querySelector('.selected-ex-card.invalid');
+                if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
             if (editingId) {
                 await db.routines.update(editingId, { name, exerciseIds });
                 localStorage.setItem('has_local_changes', 'true');
