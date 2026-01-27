@@ -205,8 +205,37 @@
             gap: 8px;
         }
         .save-warning-box .warning-note { color: var(--text); opacity: 0.95; font-size: 0.92rem; text-align: center; }
-        .finished-illustration { display:flex; justify-content:center; margin-top:12px; }
-        .finished-illustration svg { width:160px; height:auto; display:block; }
+          /* Finished view: full-bleed illustration while keeping content constrained
+              Ensure the finished view fits the viewport without scrolling. */
+        /* Let the finished view fill the viewport; image should grow to available space above content */
+        /* Fix finished view to the viewport so it always fills available space */
+        #finishedView { display: flex; flex-direction: column; position: fixed; inset: 0; padding: 0; margin: 0; box-sizing: border-box; overflow: hidden; z-index: 1200; }
+          /* Fullscreen illustration: position absolutely to fill viewport but stop above content
+              The bottom offset is controlled by the CSS variable --finished-content-height set by JS. */
+          .finished-illustration { position: absolute; top: 0; left: 0; right: 0; bottom: var(--finished-content-height, 96px); width: 100%; height: auto; margin: 0; display:block; box-sizing: border-box; }
+        /* Image covers the full-bleed area */
+        .finished-illustration img, .finished-illustration-img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display:block; opacity: 0.7; }
+        /* Content constrained and pinned to bottom above safe area
+           Add extra bottom spacing so the finish button isn't flush to the screen edge. */
+        .finished-content { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 12px) + 12px); width: min(500px, calc(100% - 32px)); padding: 8px 12px; box-sizing: border-box; text-align:center; z-index: 3; }
+
+        /* More impactful finished title */
+        .finished-content h2 {
+            font-size: 1.9rem;
+            line-height: 1.02;
+            font-weight: 900;
+            margin: 0 0 8px;
+            background: var(--primary-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.4px;
+            text-align: center;
+        }
+
+        .finished-content p { margin: 0 0 12px; color: var(--text-dim); font-weight: 700; }
+
+        /* Extra spacing below the finish button */
+        .finished-content .finish-btn { margin-bottom: 8px; }
         /* Exercise progress graph styles */
         .exercise-graph { padding:8px 18px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; overflow:visible; }
         /* Player card title overlay (title removed) */
@@ -335,30 +364,13 @@
         </aside>
 
         <!-- Finished view shown when all exercises are completed -->
-        <div id="finishedView" style="display:none; padding:20px; max-width:500px; margin: 80px auto 120px;">
-            <div class="card" style="text-align:center; padding:30px;">
+        <div id="finishedView" style="display:none;">
+            <div class="finished-illustration" aria-hidden="true">
+                <img src="illustration-livesession-end.svg" alt="Success illustration" class="finished-illustration-img">
+            </div>
+            <div class="finished-content">
                 <h2 data-i18n="finished_title" style="margin-top:0;"></h2>
                 <p data-i18n="finished_subtitle" style="color:var(--text-dim); margin:10px 0 20px;"></p>
-                <div class="finished-illustration" aria-hidden="true">
-                    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Success illustration">
-                        <defs>
-                            <linearGradient id="g1" x1="0" x2="1">
-                                <stop offset="0" stop-color="#60a5fa"/>
-                                <stop offset="1" stop-color="#2563eb"/>
-                            </linearGradient>
-                        </defs>
-                        <circle cx="60" cy="60" r="56" fill="#0b1220" stroke="url(#g1)" stroke-width="2" />
-                        <g transform="translate(30,30)">
-                            <path d="M10 35 L20 45 L40 15" stroke="#10b981" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                            <rect x="0" y="50" width="40" height="8" rx="4" fill="#f59e0b" opacity="0.15"/>
-                            <g>
-                                <circle cx="8" cy="8" r="2" fill="#f59e0b"/>
-                                <circle cx="32" cy="8" r="2" fill="#f97316"/>
-                                <circle cx="20" cy="28" r="2" fill="#fde68a"/>
-                            </g>
-                        </g>
-                    </svg>
-                </div>
                 <div style="display:flex; gap:10px; justify-content:center; align-items:center; flex-direction:column;">
                     <div id="saveRoutineOpt" class="save-warning-box" style="display:none; margin-bottom:12px;">
                         <div class="warning-note" data-i18n="save_routine_warning"></div>
@@ -409,6 +421,30 @@
                 if (timerEl) timerEl.innerText = formatTime(seconds);
             }, 1000);
         }
+
+        // Ensure the fullscreen illustration doesn't extend under the constrained content
+        function updateFinishedIllustration() {
+            const finishedView = document.getElementById('finishedView');
+            if (!finishedView) return;
+            const ill = finishedView.querySelector('.finished-illustration');
+            const content = finishedView.querySelector('.finished-content');
+            if (!ill || !content) return;
+
+            // measure content height including margins
+            const contentRect = content.getBoundingClientRect();
+            const bottomGap = 12; // spacing between image and content
+            // safe-area-inset-bottom can't be read directly; use env() fallback of 0
+            const reserved = Math.ceil(contentRect.height + bottomGap);
+
+            // Set CSS variable on finishedView so CSS positions the illustration above content
+            finishedView.style.setProperty('--finished-content-height', reserved + 'px');
+            // ensure content is above the illustration
+            ill.style.zIndex = 1;
+            content.style.zIndex = 3;
+        }
+
+        window.addEventListener('resize', () => requestAnimationFrame(updateFinishedIllustration));
+        window.addEventListener('orientationchange', () => requestAnimationFrame(updateFinishedIllustration));
 
         async function init() {
             await ensureDbOpen();
@@ -1166,7 +1202,11 @@
                 stopTimer();
                 if (playerViewEl) playerViewEl.style.display = 'none';
                 if (bottomBarEl) bottomBarEl.style.display = 'none';
-                if (finishedView) finishedView.style.display = 'block';
+                if (finishedView) {
+                    finishedView.style.display = 'block';
+                    // ensure illustration doesn't extend under the content
+                    requestAnimationFrame(() => updateFinishedIllustration());
+                }
                 return;
             } else {
                 if (finishedView) finishedView.style.display = 'none';

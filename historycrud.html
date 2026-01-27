@@ -80,7 +80,8 @@
     </div>
     <div class="page-content">
         <div id="routineFormSection" class="card" style="margin-bottom: 20px;">
-                <input type="date" id="logDate" style="margin-bottom:10px">
+            <img src="illustration-history-workout.svg" alt="" style="display:block; margin:0 auto 36px; width:240px; max-width:80%; opacity:0.95;">
+            <input type="date" id="logDate" style="margin-bottom:10px">
                 <select id="routinePicker" onchange="generateSheet()"><option value="" data-i18n="history_placeholder_choose_routine">-- Choose Routine --</option></select>
                 <div id="workoutSheet"></div>
                 <div class="form-actions">
@@ -90,8 +91,9 @@
         </div>
 
         <div id="weightFormSection" class="card" style="margin-bottom: 20px;">
-                <form id="weightForm" onsubmit="event.preventDefault(); saveWeightEntry();">
-                        <input type="date" id="weightDate" required style="margin-bottom:10px">
+            <form id="weightForm" onsubmit="event.preventDefault(); saveWeightEntry();">
+                        <img src="illustration-history-weight.svg" alt="" style="display:block; margin:0 auto 36px; width:240px; max-width:80%; opacity:0.95;">
+                <input type="date" id="weightDate" required style="margin-bottom:10px">
                     <input type="number" id="weightKg" step="0.1" min="0" data-i18n-placeholder="history_weight_kg" placeholder="Weight (kg)" required>
                     <div class="form-actions">
                         <button type="button" style="flex:1; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="location.href='history.html'" data-i18n="history_cancel">Cancel</button>

@@ -942,6 +942,8 @@
 
                 <p style="color: #94a3b8; font-size: 0.85rem; margin:6px 0 0; font-style: italic; text-align:center; max-width:360px;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('sync_workout_msg') : 'Sync your workout data with Google Drive.'}</p>
             </div>
+
+            <img src="illustration-login.svg" alt="" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:320px; max-width:90%; height:auto; opacity:0.95; pointer-events:none;" />
         `;
 
         // Attach language selector handlers and persist selection to localStorage
