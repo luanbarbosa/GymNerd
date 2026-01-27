@@ -999,7 +999,19 @@
             // reset routineModified state and hide the save option until user edits values
             routineModified = false;
             const saveOpt = document.getElementById('saveRoutineOpt'); if (saveOpt) saveOpt.style.display = 'none';
-            renderSet();
+            // Try to keep screen awake: prefer Wake Lock API, otherwise start silent audio
+            (async () => {
+                try {
+                    if ('wakeLock' in navigator) {
+                        await requestWakeLock();
+                    } else {
+                        await startSilentAudio();
+                    }
+                } catch (err) {
+                    console.warn('Could not acquire wake resources:', err);
+                }
+                renderSet();
+            })();
         }
 
         // Render horizontal graph of exercise occurrences (balls + connectors)
@@ -1516,6 +1528,8 @@
             } catch (err) {
                 alert(GN_I18N.t('debug_error_prefix') + err.message + "\n" + err.stack);
                 console.error(err);
+            } finally {
+                try { await releaseWakeResources(); } catch(e) { console.warn('releaseWakeResources failed in finishSession', e); }
             }
         }
 
