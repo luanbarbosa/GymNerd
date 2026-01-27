@@ -1204,8 +1204,37 @@
                 if (bottomBarEl) bottomBarEl.style.display = 'none';
                 if (finishedView) {
                     finishedView.style.display = 'block';
-                    // ensure illustration doesn't extend under the content
-                    requestAnimationFrame(() => updateFinishedIllustration());
+                    // wait a frame to allow layout, then adjust illustration and show save option if needed
+                    await new Promise(r => requestAnimationFrame(r));
+                    updateFinishedIllustration();
+                    // Show save option when session differs from the workout template or user edited values
+                    try {
+                        const saveOpt = document.getElementById('saveRoutineOpt');
+                        const cb = document.getElementById('saveRoutineCheckbox');
+                        let shouldShow = !!routineModified;
+                        if (!shouldShow && currentWorkoutId) {
+                            // detect differences between sessionSets and stored workout's sets
+                            const workout = await db.routines.get(currentWorkoutId);
+                            if (workout && Array.isArray(workout.exerciseIds)) {
+                                const map = {};
+                                workout.exerciseIds.forEach(it => {
+                                    const id = (typeof it === 'object') ? it.id : it;
+                                    if (typeof it === 'object' && Array.isArray(it.sets)) map[id] = it.sets;
+                                });
+                                for (const s of sessionSets) {
+                                    const sets = map[s.exId];
+                                    if (!sets) continue;
+                                    const w = sets[s.setNum - 1];
+                                    if (!w) continue;
+                                    const wr = (w.reps || 0);
+                                    const ww = (w.weight || 0);
+                                    if ((s.reps || 0) !== wr || (s.weight || 0) !== ww) { shouldShow = true; break; }
+                                }
+                            }
+                        }
+                        if (saveOpt) saveOpt.style.display = shouldShow ? 'flex' : 'none';
+                        if (cb) cb.checked = false;
+                    } catch (e) { console.warn('save option detection failed', e); }
                 }
                 return;
             } else {
