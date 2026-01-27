@@ -65,6 +65,24 @@
         .file-row:last-child { border-bottom: none; }
         .hidden-file { display:none; }
 
+        /* Divider used inside cards (e.g., between rows in General) */
+        .card-divider { height: 1px; margin: 12px 0; background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04)); border-radius:1px; }
+
+        /* Refined toggle switch styles */
+        .switch { position: relative; display: inline-block; width:54px; height:30px; }
+        .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .switch .slider { position: absolute; inset: 0; background: rgba(255,255,255,0.03); transition: background .18s, box-shadow .18s; border-radius: 999px; border: 1px solid rgba(255,255,255,0.06); box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); cursor: pointer; }
+        .switch .slider:before { content: ""; position: absolute; width: 24px; height: 24px; left: 3px; top: 50%; transform: translateY(-50%); background: #ffffff; border-radius: 50%; transition: transform .18s, width .12s, box-shadow .18s; box-shadow: 0 4px 10px rgba(2,6,23,0.45); }
+        .switch input:checked + .slider { background: linear-gradient(90deg, #60a5fa 0%, #2563eb 100%); border-color: rgba(37,99,235,0.9); box-shadow: 0 6px 18px rgba(37,99,235,0.12); }
+        .switch input:checked + .slider:before { transform: translate(22px, -50%); box-shadow: 0 6px 12px rgba(37,99,235,0.22); }
+        .switch .slider:active:before { width: 28px; }
+        .switch input:focus + .slider { box-shadow: 0 0 0 4px rgba(59,130,246,0.10); }
+        @media (max-width:420px) {
+            .switch { width:46px; height:26px; }
+            .switch .slider:before { width:20px; height:20px; left:3px; }
+            .switch input:checked + .slider:before { transform: translate(18px, -50%); }
+        }
+
         @media (max-width: 420px) {
             .file-row { display: block; padding:8px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
             .file-desc { display:block; margin-bottom:6px; }
@@ -88,13 +106,29 @@
     <div class="page-content">
         <div class="main-content">
 
-        <h3 class="section-title" data-i18n="language">Language</h3>
+        <h3 class="section-title" data-i18n="general">General</h3>
         <div class="card">
-            <div style="margin-top:8px;">
-                <select id="gn-lang-select" style="padding:8px 10px; border-radius:8px; background: rgba(255,255,255,0.02); color: #f8fafc; border:1px solid rgba(255,255,255,0.05); font-weight:700;">
-                    <option value="en">🇬🇧 English</option>
-                    <option value="pt">🇧🇷 Português</option>
-                </select>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+                <div>
+                    <h4 data-i18n="language">Language</h4>
+                    <select id="gn-lang-select" aria-label="Language" style="padding:8px 10px; border-radius:8px; background: rgba(255,255,255,0.02); color: #f8fafc; border:1px solid rgba(255,255,255,0.05); font-weight:700;">
+                        <option value="en">🇬🇧 English</option>
+                        <option value="pt">🇧🇷 Português</option>
+                    </select>
+                </div>
+
+                <div class="card-divider" aria-hidden="true"></div>
+
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <div style="display:flex;flex-direction:column;">
+                        <h4 data-i18n="keep_device_awake">Keep device awake on workouts</h4>
+                        <div style="font-size:0.85rem;color:#94a3b8;" data-i18n="keep_device_awake_help">Prevent the device from sleeping during sessions.</div>
+                    </div>
+                    <label class="switch" aria-label="Keep device awake">
+                        <input type="checkbox" id="keep-awake-checkbox" aria-label="Keep device awake">
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -452,6 +486,21 @@
                 try { sel.value = GN_I18N.getLang(); } catch(e) {}
                 sel.addEventListener('change', (ev) => {
                     try { GN_I18N.setLang(ev.target.value); location.reload(); } catch(e) {}
+                });
+            }
+        } catch(e) {}
+
+        // Initialize keep-awake checkbox from cookie and save changes to cookie
+        try {
+            const cb = document.getElementById('keep-awake-checkbox');
+            if (cb) {
+                try { cb.checked = (typeof getCookie === 'function' && getCookie('gn_keep_awake') === '1'); } catch(e) {}
+                cb.addEventListener('change', (ev) => {
+                    try {
+                        const v = ev.target.checked ? '1' : '0';
+                        const d = new Date(); d.setTime(d.getTime() + 365*24*60*60*1000);
+                        document.cookie = `gn_keep_awake=${v};expires=${d.toUTCString()};path=/`;
+                    } catch(e) { console.warn('Could not save keep-awake cookie', e); }
                 });
             }
         } catch(e) {}

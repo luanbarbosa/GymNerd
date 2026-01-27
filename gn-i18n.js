@@ -214,7 +214,12 @@
                 new_streak_record: '🎉 NEW STREAK RECORD: {n} DAYS!',
                 debug_error_prefix: 'DEBUG ERROR: '
                 ,
-                drag_to_reorder: 'Drag to reorder'
+                drag_to_reorder: 'Drag to reorder',
+                /* Device settings */
+                keep_device_awake: 'Keep device awake on workouts',
+                keep_device_awake_help: 'Prevent the device from sleeping during workouts.',
+                device: 'Device',
+                general: 'General'
             },
             pt: {
                 new_routine_btn: '+ Novo treino',
@@ -429,7 +434,12 @@
                 new_streak_record: '🎉 NOVO RECORDE DE SEQUÊNCIA: {n} DIAS!',
                 debug_error_prefix: 'ERRO DE DEBUG: '
                 ,
-                drag_to_reorder: 'Arraste para reordenar'
+                drag_to_reorder: 'Arraste para reordenar',
+                /* Device settings */
+                keep_device_awake: 'Manter dispositivo acordado durante treinos',
+                keep_device_awake_help: 'Evita que o dispositivo desligue a tela durante o treino.',
+                device: 'Dispositivo',
+                general: 'Geral'
             }
         },
         getLang: function(){

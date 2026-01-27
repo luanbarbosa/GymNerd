@@ -514,17 +514,20 @@
             // reset routine modified flag on resume; checkbox hidden until user changes values
             routineModified = false;
             const saveOpt = document.getElementById('saveRoutineOpt'); if (saveOpt) saveOpt.style.display = 'none';
-                // Try to keep screen awake: prefer Wake Lock API, otherwise start silent audio (iOS fallback)
+                // Try to keep screen awake if user enabled the setting: prefer Wake Lock API, otherwise start silent audio (iOS fallback)
                 (async () => {
                     try {
-                        if ('wakeLock' in navigator) {
-                            await requestWakeLock();
-                        } else {
-                            // start silent audio on user gesture (startSession is a user gesture)
-                            await startSilentAudio();
+                        const keep = (typeof getCookie === 'function' && getCookie('gn_keep_awake') === '1');
+                        if (keep) {
+                            if ('wakeLock' in navigator) {
+                                await requestWakeLock();
+                            } else {
+                                // start silent audio on user gesture (startSession is a user gesture)
+                                await startSilentAudio();
+                            }
                         }
                     } catch (err) {
-                        console.warn('Could not acquire wake lock or start silent audio:', err);
+                        console.warn('Could not acquire wake resources or start silent audio:', err);
                     }
                     renderSet();
                 })();
@@ -1002,13 +1005,16 @@
             // reset routineModified state and hide the save option until user edits values
             routineModified = false;
             const saveOpt = document.getElementById('saveRoutineOpt'); if (saveOpt) saveOpt.style.display = 'none';
-            // Try to keep screen awake: prefer Wake Lock API, otherwise start silent audio
+            // Try to keep screen awake if user enabled the setting: prefer Wake Lock API, otherwise start silent audio
             (async () => {
                 try {
-                    if ('wakeLock' in navigator) {
-                        await requestWakeLock();
-                    } else {
-                        await startSilentAudio();
+                    const keep = (typeof getCookie === 'function' && getCookie('gn_keep_awake') === '1');
+                    if (keep) {
+                        if ('wakeLock' in navigator) {
+                            await requestWakeLock();
+                        } else {
+                            await startSilentAudio();
+                        }
                     }
                 } catch (err) {
                     console.warn('Could not acquire wake resources:', err);
