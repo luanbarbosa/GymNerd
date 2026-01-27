@@ -16,6 +16,7 @@
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
@@ -112,75 +113,23 @@
             <div style="margin-top:8px;">
                 <h4 data-i18n="backup_local">Local Backup</h4>
                 <div style="margin-top:6px;">
-                    <button class="sync-btn export-btn" onclick="exportData()" data-i18n="export_json">📤 Export 4 JSON Files</button>
+                    <button class="sync-btn export-btn" onclick="exportData()" data-i18n="export_json">📤 Export ZIP Backup</button>
                 </div>
 
                 <h4 data-i18n="restore" style="margin-top:12px;">Restore</h4>
-                <p class="restore-help" data-i18n="restore_help" style="margin:6px 0 8px 0;color:#94a3b8;font-size:0.85rem;">Select files to restore specific parts of the app.</p>
+                <p class="restore-help" data-i18n="restore_help" style="margin:6px 0 8px 0;color:#94a3b8;font-size:0.85rem;">Upload a ZIP backup to restore the app.</p>
                 <div class="restore-grid" style="margin-top:6px;">
                     <div class="file-row">
                         <div class="file-desc">
-                            <label data-i18n="label_images">1. Images Database (.json)</label>
+                            <label data-i18n="label_zip">Import ZIP Backup (.zip)</label>
                         </div>
                         <div class="file-control">
                             <div style="display:flex;align-items:center;gap:8px;">
-                                <label class="file-btn" for="importImg" data-i18n="choose_file"></label>
-                                <span class="file-name" id="importImg-name" data-i18n="no_file_chosen"></span>
+                                <label class="file-btn" for="importZip">Choose ZIP</label>
+                                <span class="file-name" id="importZip-name" data-i18n="no_file_chosen">No file chosen</span>
                             </div>
                         </div>
-                        <input type="file" id="importImg" accept=".json" class="hidden-file">
-                    </div>
-
-                    <div class="file-row">
-                        <div class="file-desc">
-                            <label data-i18n="label_exercises">2. Exercises (.json)</label>
-                        </div>
-                        <div class="file-control">
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <label class="file-btn" for="importEx" data-i18n="choose_file"></label>
-                                <span class="file-name" id="importEx-name" data-i18n="no_file_chosen"></span>
-                            </div>
-                        </div>
-                        <input type="file" id="importEx" accept=".json" class="hidden-file">
-                    </div>
-
-                    <div class="file-row">
-                        <div class="file-desc">
-                            <label data-i18n="label_routines">3. Routines (.json)</label>
-                        </div>
-                        <div class="file-control">
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <label class="file-btn" for="importWk" data-i18n="choose_file"></label>
-                                <span class="file-name" id="importWk-name" data-i18n="no_file_chosen"></span>
-                            </div>
-                        </div>
-                        <input type="file" id="importWk" accept=".json" class="hidden-file">
-                    </div>
-
-                    <div class="file-row">
-                        <div class="file-desc">
-                            <label data-i18n="label_history">4. History (.json)</label>
-                        </div>
-                        <div class="file-control">
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <label class="file-btn" for="importLogs" data-i18n="choose_file"></label>
-                                <span class="file-name" id="importLogs-name" data-i18n="no_file_chosen"></span>
-                            </div>
-                        </div>
-                        <input type="file" id="importLogs" accept=".json" class="hidden-file">
-                    </div>
-
-                    <div class="file-row">
-                        <div class="file-desc">
-                            <label data-i18n="label_weights">5. Weights (.json)</label>
-                        </div>
-                        <div class="file-control">
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <label class="file-btn" for="importWeights" data-i18n="choose_file"></label>
-                                <span class="file-name" id="importWeights-name" data-i18n="no_file_chosen"></span>
-                            </div>
-                        </div>
-                        <input type="file" id="importWeights" accept=".json" class="hidden-file">
+                        <input type="file" id="importZip" accept=".zip" class="hidden-file">
                     </div>
                 </div>
                 <div style="margin-top:8px;">
@@ -214,34 +163,129 @@
                 history: await db.history.toArray(),
                 weights: await db.weights.toArray()
             };
-            
-            Object.keys(data).forEach((key, i) => {
-                setTimeout(() => {
-                    const blob = new Blob([JSON.stringify(data[key], null, 2)], {type: "application/json"});
-                    const a = document.createElement('a'); 
-                    a.href = URL.createObjectURL(blob);
-                    // Map local 'logs' key to Drive filename 'history.json'
-                    const driveName = (key === 'logs') ? 'history' : key;
-                    a.download = `${driveName}.json`;
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                }, i * 500);
-            });
+
+            try {
+                const zip = new JSZip();
+                Object.keys(data).forEach(key => {
+                    const name = (key === 'logs') ? 'history' : key;
+                    zip.file(`${name}.json`, JSON.stringify(data[key], null, 2));
+                });
+                const content = await zip.generateAsync({ type: 'blob' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(content);
+                a.download = `gymnerd-backup-${date}.zip`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (err) {
+                console.error('ZIP export failed:', err);
+                alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('export_error') : 'Failed to create ZIP backup.');
+            }
         }
 
         async function importData() {
-            const files = {
-                catalog_images: document.getElementById('importImg').files[0],
-                catalog_exercises: document.getElementById('importEx').files[0],
-                custom_images: null,
-                custom_exercises: null,
-                routines: document.getElementById('importWk').files[0],
-                history: document.getElementById('importLogs').files[0],
-                weights: null
-            };
-
             await ensureDbOpen();
+            const zipFile = document.getElementById('importZip') && document.getElementById('importZip').files[0];
             try {
+                // If a ZIP was provided, prefer it and extract JSON files from it
+                if (zipFile && typeof JSZip !== 'undefined') {
+                    const zip = await JSZip.loadAsync(zipFile);
+                    const mappings = {
+                        catalog_images: ['catalog_images.json', 'images.json'],
+                        catalog_exercises: ['catalog_exercises.json', 'exercises.json'],
+                        custom_images: ['custom_images.json'],
+                        custom_exercises: ['custom_exercises.json'],
+                        routines: ['routines.json'],
+                        history: ['history.json'],
+                        weights: ['weights.json']
+                    };
+
+                    // Read files found in ZIP
+                    const extracted = {};
+                    for (const key of Object.keys(mappings)) {
+                        for (const name of mappings[key]) {
+                            if (zip.file(name)) {
+                                const txt = await zip.file(name).async('string');
+                                try { extracted[key] = JSON.parse(txt); } catch(e) { extracted[key] = null; }
+                                break;
+                            }
+                        }
+                    }
+
+                    // Now write to DB similar to restoreFromDrive behavior
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+                        let normalizedCatalogImages = null;
+                        if (Array.isArray(extracted.catalog_images)) {
+                            normalizedCatalogImages = extracted.catalog_images.map(img => ({
+                                ...img,
+                                data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+                            }));
+                            if (typeof db.sanitizeCatalogImages === 'function') normalizedCatalogImages = db.sanitizeCatalogImages(normalizedCatalogImages);
+                            await db.catalog_images.clear();
+                            await db.catalog_images.bulkAdd(normalizedCatalogImages);
+                        }
+
+                        if (Array.isArray(extracted.catalog_exercises)) {
+                            let toWrite = extracted.catalog_exercises;
+                            if (typeof db.sanitizeCatalogExercises === 'function') toWrite = db.sanitizeCatalogExercises(toWrite, normalizedCatalogImages);
+                            await db.catalog_exercises.clear();
+                            await db.catalog_exercises.bulkAdd(toWrite);
+                        }
+
+                        if (Array.isArray(extracted.custom_images)) {
+                            const normalizedCustomImages = extracted.custom_images.map(img => ({
+                                ...img,
+                                data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+                            }));
+                            await db.custom_images.clear();
+                            await db.custom_images.bulkAdd(normalizedCustomImages);
+                        }
+
+                        if (Array.isArray(extracted.custom_exercises)) {
+                            await db.custom_exercises.clear();
+                            await db.custom_exercises.bulkAdd(extracted.custom_exercises);
+                        }
+
+                        if (Array.isArray(extracted.routines)) {
+                            await db.routines.clear();
+                            await db.routines.bulkAdd(extracted.routines);
+                        }
+
+                        if (Array.isArray(extracted.history)) {
+                            await db.history.clear();
+                            await db.history.bulkAdd(extracted.history);
+                        }
+
+                        if (Array.isArray(extracted.weights)) {
+                            if (db.weights) {
+                                await db.weights.clear();
+                                try {
+                                    await db.weights.bulkPut(extracted.weights);
+                                } catch (e) {
+                                    for (const w of extracted.weights) {
+                                        try { await db.weights.put(w); } catch (ee) { console.error('weight put failed', ee); }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
+                    alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!");
+                    location.href = 'index.html';
+                    return;
+                }
+
+                // Fallback: existing per-file JSON import behavior
+                const files = {
+                    catalog_images: (document.getElementById('importImg') && document.getElementById('importImg').files[0]) || null,
+                    catalog_exercises: (document.getElementById('importEx') && document.getElementById('importEx').files[0]) || null,
+                    custom_images: null,
+                    custom_exercises: null,
+                    routines: (document.getElementById('importWk') && document.getElementById('importWk').files[0]) || null,
+                    history: (document.getElementById('importLogs') && document.getElementById('importLogs').files[0]) || null,
+                    weights: null
+                };
+
                 // Keep imported catalog images available to validate exercises that reference them
                 let importedCatalogImages = null;
                 for (const key in files) {
@@ -259,7 +303,6 @@
                             importedCatalogImages = parsedData;
                         }
 
-                        // If importing catalog exercises, sanitize against required fields and available images
                         if (key && key.toLowerCase().includes('exerc')) {
                             if (typeof db.sanitizeCatalogExercises === 'function') {
                                 parsedData = db.sanitizeCatalogExercises(parsedData, importedCatalogImages);
@@ -277,12 +320,9 @@
                     await db.weights.clear();
                     await db.weights.bulkAdd(parsedData);
                 }
-                // After importing local backup, do not automatically sync to Google Drive.
-                // Mark that there are pending local changes and navigate to home so
-                // the user can review and manually sync from the home screen.
+
                 try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!"); 
-                // Navigate to home where the "pending changes" button will be visible
                 location.href = 'index.html';
             } catch (err) {
                 console.error("Import error:", err);
@@ -421,7 +461,7 @@
 
         // File input UI: show selected filename in the UI
         (function(){
-            const fileIds = ['importImg','importEx','importWk','importLogs','importWeights'];
+            const fileIds = ['importZip'];
             fileIds.forEach(id => {
                 const input = document.getElementById(id);
                 const nameEl = document.getElementById(id + '-name');
