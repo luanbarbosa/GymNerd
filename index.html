@@ -140,7 +140,7 @@
 
         .main-content { padding: 20px; display: none; margin-top: 12px; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
-        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: #0f172a; font-style: italic; white-space:nowrap; overflow:visible; }
+        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: var(--bg); font-style: italic; white-space:nowrap; overflow:visible; }
         
         .menu-grid { display: grid; gap: 15px; margin-top: 0px; }
         /* Top card that holds the topbar + user info (scrolls with page) */
@@ -167,9 +167,9 @@
         /* Ensure title can grow without being clipped */
         #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
         /* Remove bounds for the settings action and make the icon a bit smaller/lighter */
-        .top-card a#topbar-settings { color: #0f172a !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
-        .top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:1 !important; display:block; stroke: #0f172a !important; fill: none !important; filter: none !important; }
-        .top-card a#topbar-settings svg * { stroke: #0f172a !important; fill: none !important; stroke-opacity:1 !important; fill-opacity:0 !important; }
+        .top-card a#topbar-settings { color: var(--bg) !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
+        .top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:1 !important; display:block; stroke: var(--bg) !important; fill: none !important; filter: none !important; }
+        .top-card a#topbar-settings svg * { stroke: var(--bg) !important; fill: none !important; stroke-opacity:1 !important; fill-opacity:0 !important; }
         .user-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin:12px 0 26px; }
         .user-avatar { width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.06); }
         .user-line { display:flex; align-items:center; justify-content:center; gap:10px; }
@@ -221,7 +221,7 @@
                 <div class="app-title-compact" data-i18n="title_main">GymNerd</div>
             </div>
             <div id="topbar-actions">
-                <a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:#0f172a;text-decoration:none;">
+                <a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
                     <span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300; font-size:20px; line-height:1;">settings</span>
                 </a>
             </div>

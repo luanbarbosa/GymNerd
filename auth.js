@@ -924,21 +924,23 @@
         blocker.id = 'auth-blocker';
         blocker.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 999999; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; color: white; font-family: sans-serif;";
         blocker.innerHTML = `
-            <div style="max-width: 420px; width: 100%;">
-                <h1 style="font-size: 3.5rem; font-weight: 900; margin-bottom: 10px; font-style: italic; background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));">GymNerd</h1>
-                <p style="color: #94a3b8; margin-bottom: 18px; font-size: 1.05rem;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('sync_workout_msg') : 'Sync your workout data with Google Drive.'}</p>
+            <div style="position:absolute; top:20px; right:20px; display:flex; align-items:center; gap:8px;">
+                <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('language') : 'Language'}</label>
+                <select id="gn-lang-select" style="padding:8px 10px; border-radius:10px; background: rgba(255,255,255,0.02); color: white; border:1px solid rgba(255,255,255,0.06); font-weight:700; cursor:pointer;">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="pt">🇧🇷 Português</option>
+                </select>
+            </div>
 
-                <div style="position:absolute; top:20px; right:20px; display:flex; align-items:center; gap:8px;">
-                    <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('language') : 'Language'}</label>
-                    <select id="gn-lang-select" style="padding:8px 10px; border-radius:10px; background: rgba(255,255,255,0.02); color: white; border:1px solid rgba(255,255,255,0.06); font-weight:700; cursor:pointer;">
-                        <option value="en">🇬🇧 English</option>
-                        <option value="pt">🇧🇷 Português</option>
-                    </select>
-                </div>
+            <div style="max-width: 420px; width: 100%; display:flex; flex-direction:column; align-items:center; gap:20px;">
+                <img src="favicon.svg" alt="App icon" style="width:96px; height:96px; object-fit:contain; border-radius:16px;" />
+                <h1 style="font-size: 2.6rem; font-weight: 900; margin:0; font-style: normal; background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(59, 130, 246, 0.45));">GymNerd</h1>
 
-                <button onclick="handleAuth()" style="width: 100%; padding: 16px; background: #3b82f6; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);">
+                <button onclick="handleAuth()" style="width: 100%; max-width:320px; padding: 14px; margin-top:36px; background: #3b82f6; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.05rem; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);">
                     ${isLocal ? (typeof GN_I18N !== 'undefined' ? GN_I18N.t('enter_app') : 'Enter App') : (typeof GN_I18N !== 'undefined' ? GN_I18N.t('sign_in_with_google') : 'Sign in with Google')}
                 </button>
+
+                <p style="color: #94a3b8; font-size: 0.85rem; margin:6px 0 0; font-style: italic; text-align:center; max-width:360px;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('sync_workout_msg') : 'Sync your workout data with Google Drive.'}</p>
             </div>
         `;
 
