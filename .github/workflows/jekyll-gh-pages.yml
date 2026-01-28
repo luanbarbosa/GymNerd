@@ -28,11 +28,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Inject Secrets
-        env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-        run: |
-          sed -i "s|__GOOGLE_CLIENT_ID__|$GOOGLE_CLIENT_ID|g" auth.js
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll

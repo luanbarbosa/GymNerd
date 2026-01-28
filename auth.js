@@ -1,6 +1,7 @@
 (async function() {
     console.log('auth.js initializing');
-    let CLIENT_ID = "__GOOGLE_CLIENT_ID__";
+    // OAuth client identifier (safe to include in client-side code)
+    const CLIENT_ID = "142998365114-p596rt046mijepo1cu9fhpdcboejqup2.apps.googleusercontent.com";
     // Include OpenID scopes so we can fetch user's profile (name + picture)
     const SCOPES = 'openid profile email https://www.googleapis.com/auth/drive.file';
     const REDIRECT_PATH = '/oauth2callback.html';
@@ -11,13 +12,11 @@
     // throw a redeclare SyntaxError.
     var _refreshPromise = window._refreshPromise || null;
 
+    // Non-UI logout: perform cleanup silently and redirect to login.
     window.logout = async () => {
-        const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('confirm_logout') : 'Are you sure you want to logout?';
-        if (!confirm(msg)) return;
         try {
             localStorage.removeItem('google_token');
             localStorage.removeItem('google_token_expires_at');
-            // Remove other auth/sync state so we don't leave UI in a blocked state
             try { localStorage.removeItem('google_refresh_token'); } catch(e){}
             try { localStorage.removeItem('google_user'); } catch(e){}
             try { localStorage.removeItem('needs_initial_download'); } catch(e){}
@@ -25,19 +24,16 @@
             try { localStorage.removeItem('has_local_changes'); } catch(e){}
             try { sessionStorage.removeItem('oauth2_code'); } catch(e){}
             try { sessionStorage.removeItem('pkce_code_verifier'); } catch(e){}
-            // Delete local Dexie DB if present so logout fully clears app state
             try {
                 if (typeof Dexie !== 'undefined') {
                     try {
                         const _db = (typeof db !== 'undefined') ? db : new Dexie('GymAppDB');
                         if (_db) await _db.delete();
                     } catch(e) {
-                        console.warn('Failed to delete Dexie DB on logout', e);
                         try { const _alt = new Dexie('GymAppDB'); await _alt.delete(); } catch(e2){}
                     }
                 }
             } catch(e){}
-            // Clear any auth cookies if present
             try {
                 document.cookie = 'google_token=; path=/; max-age=0;';
                 document.cookie = 'google_token_expires_at=; path=/; max-age=0;';
@@ -45,37 +41,57 @@
             } catch(e){}
         } catch(e){}
         try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-        location.reload();
+        try { window.location.href = 'index.html'; } catch(e) { location.reload(); }
     };
 
-    window.showLoading = (message = (typeof GN_I18N !== 'undefined' ? GN_I18N.t('syncing_with_drive') : "Syncing with Google Drive...")) => {
-        let loader = document.getElementById('global-loader');
-        const createAndAttach = () => {
-            if (document.getElementById('global-loader')) return;
-            loader = document.createElement('div');
-            loader.id = 'global-loader';
-            loader.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.92); z-index: 2000000; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; font-family: sans-serif; backdrop-filter: blur(4px); pointer-events: all;";
-            loader.innerHTML = `
-                <div style="width: 40px; height: 40px; border: 4px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
-                <div id="loader-message" style="font-weight: 600; font-size: 0.9rem;">${message}</div>
-                <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-            `;
-            if (document.body) {
-                document.body.appendChild(loader);
-            } else {
-                document.addEventListener('DOMContentLoaded', () => {
-                    document.body.appendChild(loader);
-                }, { once: true });
+    // Full-screen loading indicator (creates an overlay element)
+    window.showLoading = (message) => {
+        try {
+            let el = document.getElementById('gn-global-loader');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'gn-global-loader';
+                // Compute the page background variable and apply it directly to avoid
+                // var() resolution issues in some browsers. Use a very large z-index
+                // and explicit viewport sizing so the overlay fully covers everything.
+                let bgColor = '#0f172a';
+                try {
+                    const docEl = document.documentElement;
+                    const v = getComputedStyle(docEl).getPropertyValue('--bg');
+                    if (v && v.trim()) bgColor = v.trim();
+                } catch (e) {}
+                el.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:' + bgColor + ';color:white;z-index:2147483647;padding:20px;opacity:1;pointer-events:auto;';
+                el.innerHTML = `
+                    <div style="max-width:520px;width:100%;text-align:center">
+                        <div id="gn-global-loader-message" style="font-weight:800;font-size:1.1rem;margin-bottom:16px">Loading...</div>
+                        <div style="display:flex;align-items:center;justify-content:center">
+                            <div style="width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.12);border-top-color:#3b82f6;animation:gn-spin 1s linear infinite"></div>
+                        </div>
+                    </div>
+                `;
+                const style = document.createElement('style');
+                style.id = 'gn-global-loader-style';
+                style.textContent = `@keyframes gn-spin { to { transform: rotate(360deg); } }`;
+                document.head.appendChild(style);
+                // Hide all existing body children while loader is visible so
+                // nothing underneath can be seen (Chrome rendering issues).
+                try {
+                    if (!document.body.dataset.gnHidden) {
+                        const children = Array.from(document.body.children);
+                        for (const c of children) {
+                            if (c.id === 'gn-global-loader') continue;
+                            c.dataset.gnPrevDisplay = c.style.display || '';
+                            c.style.display = 'none';
+                        }
+                        document.body.dataset.gnHidden = '1';
+                    }
+                } catch (e) {}
+                document.body.appendChild(el);
             }
-        };
-
-        if (!loader) {
-            createAndAttach();
-        } else {
-            const msgEl = document.getElementById('loader-message');
-            if (msgEl) msgEl.innerText = message;
-            loader.style.display = 'flex';
-        }
+            const msgEl = document.getElementById('gn-global-loader-message');
+            if (msgEl) msgEl.textContent = message || 'Loading...';
+            el.style.display = 'flex';
+        } catch (e) { try { console.log('[showLoading]', message); } catch(_){} }
     };
 
     // Log unhandled promise rejections to help diagnose silent failures
@@ -100,115 +116,55 @@
     });
 
     window.hideLoading = () => {
-        const loader = document.getElementById('global-loader');
-        if (loader) {
-            loader.style.display = 'none';
-        }
-        // If a refresh error was deferred while loading, show it now
         try {
-            const deferred = sessionStorage.getItem('deferred_refresh_error');
-            if (deferred) {
-                sessionStorage.removeItem('deferred_refresh_error');
-                try { renderRefreshError(); } catch(e){}
+            const el = document.getElementById('gn-global-loader');
+            if (el) el.style.display = 'none';
+        } catch(e) { try { console.log('[hideLoading]'); } catch(_){} }
+        try {
+            if (document.body.dataset.gnHidden) {
+                const children = Array.from(document.body.children);
+                for (const c of children) {
+                    if (c.id === 'gn-global-loader') continue;
+                    try {
+                        c.style.display = c.dataset.gnPrevDisplay || '';
+                        delete c.dataset.gnPrevDisplay;
+                    } catch(e) {}
+                }
+                delete document.body.dataset.gnHidden;
             }
-        } catch(e){}
+        } catch(e) {}
     };
 
+    // Non-UI clear of all app data (silent)
     window.clearAllAppData = async () => {
-        if (!confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('danger_clear_confirm') : "DANGER: This will permanently delete all local data and your backup on Google Drive. Continue?")) return;
-
         try {
-            // 1. Delete from Drive if logged in
             if (localStorage.getItem('google_token')) {
-                try {
-                    if (typeof DriveStorage !== 'undefined') {
-                        await DriveStorage.deleteFile();
-                    }
-                } catch (e) {
-                    console.warn("Could not delete Drive file:", e);
-                }
+                try { if (typeof DriveStorage !== 'undefined') await DriveStorage.deleteFile(); } catch(e) { console.warn('Could not delete Drive file:', e); }
             }
-
-            // 2. Delete Local DB
-            if (typeof Dexie !== 'undefined') {
-                const db = new Dexie("GymAppDB");
-                await db.delete();
-            }
-
-            // 3. Clear Local Storage
-            localStorage.clear();
-
-            alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('all_data_cleared') : "All data cleared successfully.");
-            location.reload();
+            if (typeof Dexie !== 'undefined') { try { const _db = new Dexie('GymAppDB'); await _db.delete(); } catch(e){} }
+            try { localStorage.clear(); } catch(e){}
+            try { location.reload(); } catch(e){}
         } catch (err) {
-            console.error("Clear failed:", err);
-            alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_clear_data') : "Failed to clear some data. Check console.");
+            console.error('Clear failed:', err);
         }
     };
 
     window.renderAuthStatus = (containerId) => {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        
-        const token = localStorage.getItem('google_token');
-        const expiresAt = localStorage.getItem('google_token_expires_at');
-        const isLocal = window.location.protocol === 'file:';
-
-        // If a valid token is present in cookies, treat the user as logged-in
-        // and reveal the app immediately (copy into localStorage for runtime).
+        // Return lightweight auth state so UI can be rendered by the page.
         try {
-            const cookieToken = getCookie('google_token');
-            const cookieExpires = getCookie('google_token_expires_at');
-            if (cookieToken && cookieExpires && Date.now() < parseInt(cookieExpires)) {
-                try {
-                    localStorage.setItem('google_token', cookieToken);
-                    localStorage.setItem('google_token_expires_at', cookieExpires);
-                } catch(e){}
-                callShowApp();
-                return;
-            }
-        } catch(e){}
-        const isExpired = expiresAt && Date.now() > parseInt(expiresAt);
-
-        const isSettingsContainer = containerId === 'auth-status-container';
-
-        if (token && !isExpired) {
-            const isBypass = token === 'local-bypass';
+            const token = localStorage.getItem('google_token');
+            const expiresAt = localStorage.getItem('google_token_expires_at');
+            const isExpired = expiresAt && Date.now() > parseInt(expiresAt);
             let user = null;
             try { const u = localStorage.getItem('google_user'); if (u) user = JSON.parse(u); } catch(e){}
-            const userHTML = user ? `<div style="display:flex; align-items:center; gap:10px; margin-right:8px;"><img src="${user.picture || ''}" alt="avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,0.04);"/><div style="min-width:0;"><div style="font-weight:700; color:#e2e8f0; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.name || ''}</div>${/* show connected text only when not using local bypass */''} ${(!isBypass) ? `<div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;"><span style=\"color: #10b981;\">●</span> ${typeof GN_I18N !== 'undefined' ? GN_I18N.t('connected_to_drive') : 'Connected to Drive'}</div>` : ''}</div></div>` : '';
-            const wrapperStyle = isSettingsContainer
-                ? 'display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#94a3b8; padding:8px 0; background: transparent; border-radius: 0; margin-bottom: 12px; border: none;'
-                : 'display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#94a3b8; padding:12px; background:#1e293b; border-radius:12px; margin-bottom:20px; border:1px solid #334155;';
-
-            const settingsLink = isSettingsContainer ? '' : `
-                <a href="settings.html" aria-label="${typeof GN_I18N !== 'undefined' ? GN_I18N.t('menu_settings') : 'Settings'}" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;color:#94a3b8;border:1px solid rgba(255,255,255,0.04);border-radius:8px;text-decoration:none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 2.28 18.9l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09c.7 0 1.27-.4 1.51-1a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 5.1 2.28l.06.06a1.65 1.65 0 0 0 1.82.33H7a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .6.4 1.17 1 1.51h.02c.7 0 1.27.4 1.51 1a1.65 1.65 0 0 0 .33 1.82l.06.06A2 2 0 1 1 19.4 6.1l-.06-.06a1.65 1.65 0 0 0-.33 1.82c.2.6.8 1 1.5 1H21a2 2 0 1 1 0 4h-.09c-.7 0-1.27.4-1.51 1z"></path></svg>
-                </a>`;
-
-            container.innerHTML = `
-                <div style="${wrapperStyle}">
-                    ${userHTML}
-                    <div style="flex:1"></div>
-                    ${settingsLink}
-                </div>
-            `;
-        } else {
-            const wrapperStyle = isSettingsContainer
-                ? 'display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#94a3b8; padding:8px 0; background: transparent; border-radius:0; margin-bottom:12px; border:none;'
-                : 'display:flex; align-items:center; gap:8px; font-size:0.9rem; color:#94a3b8; padding:12px; background:#1e293b; border-radius:12px; margin-bottom:20px; border:1px solid #334155;';
-
-            const settingsLink = isSettingsContainer ? '' : `<a href="settings.html" style="background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.04); border-radius:8px; padding:6px 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem; text-decoration: none;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('menu_settings') : 'Settings'}</a>`;
-
-            container.innerHTML = `
-                <div style="${wrapperStyle}">
-                    <span style="flex-grow:1; display:flex; align-items:center; gap:6px;"><span style="color:#f59e0b;">●</span> ${typeof GN_I18N !== 'undefined' ? GN_I18N.t('not_connected') : 'Not Connected'}</span>
-                    ${settingsLink}
-                    <button onclick="handleAuth()" style="background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('login') : 'Login'}</button>
-                </div>
-            `;
-        }
-        
+            return {
+                token,
+                expiresAt,
+                isExpired,
+                user,
+                isBypass: token === 'local-bypass'
+            };
+        } catch (e) { return null; }
     };
 
     // Provide a simple getter so UI code in HTML files can obtain the
@@ -222,101 +178,36 @@
 
     // Show explicit UI when a refresh attempt fails but a refresh token existed.
     function renderRefreshError() {
-        // Ensure any global loader is hidden so the error UI is interactive
+        // Previously this function injected UI into the page. To keep
+        // UI responsibility inside the app pages, dispatch an event with
+        // useful text so the page can show its own modal.
         try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-
-        const blocker = document.createElement('div');
-        blocker.id = 'refresh-error-blocker';
-        blocker.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,17,26,0.98); z-index: 1000000; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; color: white; font-family: sans-serif;";
-
-        const title = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : 'Session Expired';
-        const message = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_refresh_session') : 'Could not refresh your session automatically. Please sign in again.';
-        const retryText = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('retry') : 'Retry';
-        const signInText = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('sign_in_with_google') : 'Sign in with Google';
-
-        blocker.innerHTML = `
-            <div style="max-width:420px; width:100%;">
-                <h2 style="margin-bottom:8px; font-size:1.6rem;">${title}</h2>
-                <p style="color:#94a3b8; margin-bottom:20px;">${message}</p>
-                <div style="display:flex; gap:10px;">
-                    <button id="refresh-retry-btn" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:#1e293b; color:white; font-weight:700;">${retryText}</button>
-                    <button id="refresh-signin-btn" style="flex:1; padding:12px; border-radius:10px; border:none; background:#3b82f6; color:white; font-weight:700;">${signInText}</button>
-                </div>
-                <div style="margin-top:12px; color:#94a3b8; font-size:0.85rem;">${(typeof GN_I18N !== 'undefined') ? GN_I18N.t('you_can_also_clear_local_data') : 'You can also clear local data from the settings if you prefer.'}</div>
-            </div>
-        `;
-
-        // Hook buttons synchronously so they are immediately responsive
-        const attachHandlers = () => {
-            const retry = document.getElementById('refresh-retry-btn');
-            const signin = document.getElementById('refresh-signin-btn');
-
-            if (retry) retry.addEventListener('click', async () => {
-                try {
-                    showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...');
-                    const ok = await refreshAccessToken();
-                    hideLoading();
-                    if (ok) {
-                        location.reload();
-                    } else {
-                        alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_refresh_session') : 'Refresh failed. Please sign in.');
-                    }
-                } catch (e) {
-                    hideLoading();
-                    alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_refresh_session') : 'Refresh failed. Please sign in.');
-                }
-            });
-
-            if (signin) signin.addEventListener('click', () => {
-                try { document.body.removeChild(blocker); } catch(e){}
-                handleAuth();
-            });
-
-            try { GN_I18N.applyTranslations(blocker); } catch(e){}
+        const detail = {
+            title: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : 'Session Expired',
+            message: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_refresh_session') : 'Could not refresh your session automatically. Please sign in again.',
+            retryText: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('retry') : 'Retry',
+            signInText: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('sign_in_with_google') : 'Sign in with Google'
         };
 
-        if (document.body) {
-            document.body.appendChild(blocker);
-            attachHandlers();
-            // Attempt a one-time automatic refresh to ensure the function is invoked
-            try {
-                const attempted = sessionStorage.getItem('auto_refresh_attempted');
-                if (!attempted) {
-                    sessionStorage.setItem('auto_refresh_attempted', '1');
-                    (async () => {
-                        try {
-                            showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...');
-                            const ok = await refreshAccessToken();
-                            hideLoading();
-                            if (ok) location.reload();
-                        } catch (e) {
-                            hideLoading();
-                        }
-                    })();
-                }
-            } catch(e){}
-        } else {
-            document.addEventListener('DOMContentLoaded', () => {
-                document.body.appendChild(blocker);
-                attachHandlers();
-                try {
-                    const attempted = sessionStorage.getItem('auto_refresh_attempted');
-                    if (!attempted) {
-                        sessionStorage.setItem('auto_refresh_attempted', '1');
-                        (async () => {
-                            try {
-                                showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...');
-                                const ok = await refreshAccessToken();
-                                hideLoading();
-                                if (ok) location.reload();
-                            } catch (e) {
-                                hideLoading();
-                            }
-                        })();
+        try { window.dispatchEvent(new CustomEvent('auth-refresh-error', { detail })); } catch(e) { console.warn('auth: failed to dispatch auth-refresh-error', e); }
+
+        // Attempt a one-time automatic refresh similar to previous behavior
+        try {
+            const attempted = sessionStorage.getItem('auto_refresh_attempted');
+            if (!attempted) {
+                sessionStorage.setItem('auto_refresh_attempted', '1');
+                (async () => {
+                    try {
+                        try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...'); } catch(e){}
+                        const ok = await refreshAccessToken();
+                        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                        if (ok) location.reload();
+                    } catch (e) {
+                        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
                     }
-                } catch(e){}
-            });
-        }
+                })();
+            }
+        } catch(e){}
     }
 
     // Check if already authenticated
@@ -365,9 +256,8 @@
                         validSession = true;
                         token = localStorage.getItem('google_token');
                         expiresAt = localStorage.getItem('google_token_expires_at');
-                        // Reload so the rest of the UI (rendered earlier) updates
-                        // to reflect the newly refreshed credentials.
-                        try { location.reload(); } catch(e) {}
+                        // If running on the login page, navigate to the app home
+                        try { if (window.location && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) { window.location.href = 'home.html'; } else { try { location.reload(); } catch(e){} } } catch(e) {}
                     } else {
                         if (hadRefresh) {
                             renderRefreshError();
@@ -630,6 +520,12 @@
                                         await window.fetchGoogleUserProfile();
                                     }
                                 } catch (e) { console.warn('profile fetch after refresh failed', e); }
+                    // If we're on the login page, navigate to home so the app proceeds.
+                    try {
+                        if (window && window.location && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
+                            try { window.location.href = 'home.html'; } catch(e) { /* ignore */ }
+                        }
+                    } catch (e) {}
                     return true;
                 }
 
@@ -695,130 +591,18 @@
         }
     };
 
-    // Create local mock data for offline / file:// development mode.
-    // Seeds a mock `google_user` and, if Dexie is available, populates
-    // the catalog tables from local `catalog/*.json` and adds sample routines/history.
-    window.createLocalMockData = async () => {
-        try {
-            // Mock user
-            const mockUser = {
-                sub: 'local-12345',
-                name: 'Tester',
-                given_name: 'Tester',
-                family_name: 'Tester',
-                picture: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="100%" height="100%" fill="#2563eb"/><text x="50%" y="54%" font-size="56" fill="#fff" dominant-baseline="middle" text-anchor="middle">LT</text></svg>`),
-                email: 'local@example.com',
-                email_verified: true
-            };
-            try {
-                localStorage.setItem('google_user', JSON.stringify(mockUser));
-                try { window.dispatchEvent(new CustomEvent('userchange', { detail: mockUser })); } catch(e){}
-            } catch(e){}
-            try { localStorage.setItem('last_sync_time', new Date().toISOString()); } catch(e){}
-            try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
-
-            // If Dexie and db are available, seed catalog and a few sample items
-            if (typeof Dexie !== 'undefined' && typeof db !== 'undefined') {
-                try {
-                    await ensureDbOpen();
-                    const [exCount, imgCount] = await Promise.all([
-                        db.catalog_exercises.count(),
-                        db.catalog_images.count()
-                    ]);
-
-                    if (exCount === 0 || imgCount === 0) {
-                        // Try to load local catalog files shipped with the project
-                        const [exResp, imgResp] = await Promise.allSettled([
-                            fetch('catalog/exercises.json'),
-                            fetch('catalog/images.json')
-                        ]);
-
-                        let exercises = [];
-                        let images = [];
-
-                        if (exResp.status === 'fulfilled' && exResp.value.ok) {
-                            try { exercises = await exResp.value.json(); } catch(e){}
-                        }
-                        if (imgResp.status === 'fulfilled' && imgResp.value.ok) {
-                            try { images = await imgResp.value.json(); } catch(e){}
-                        }
-
-                        // Normalize images' data URIs
-                        images = images.map(img => ({ ...img, data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data }));
-
-                        // Write to DB (use negative ids for catalog)
-                        const catalogExercises = exercises.map(ex => ({ ...ex, id: -Math.abs(ex.id || Date.now()) }));
-
-                        await db.transaction('rw', db.catalog_exercises, db.catalog_images, async () => {
-                            if (catalogExercises.length) {
-                                await db.catalog_exercises.clear();
-                                await db.catalog_exercises.bulkAdd(catalogExercises);
-                            }
-                            if (images.length) {
-                                await db.catalog_images.clear();
-                                await db.catalog_images.bulkAdd(images);
-                            }
-                        });
-                    }
-
-                    // If no routines exist, add a sample routine and history
-                    const routinesCount = await db.routines.count();
-                    if (routinesCount === 0) {
-                        const sampleExercises = await db.catalog_exercises.limit(3).toArray();
-                        const exIds = sampleExercises.map(e => e.id);
-                        const routine = { name: 'Full Body (Local)', exerciseIds: exIds };
-                        await db.routines.add(routine);
-                    }
-
-                    const historyCount = await db.history.count();
-                    if (historyCount === 0) {
-                        const today = new Date();
-                        const sample = await db.catalog_exercises.limit(2).toArray();
-                        const entries = sample.map((ex, i) => ({ exerciseId: ex.id, weight: 50 + i * 5, reps: 8 + i, date: new Date(today.getTime() - i * 86400000).toISOString().slice(0,10) }));
-                        if (entries.length) await db.history.bulkAdd(entries);
-                    }
-                } catch (e) {
-                    console.warn('Seeding local Dexie DB failed', e);
-                }
-            }
-
-            return true;
-        } catch (e) {
-            console.warn('createLocalMockData error', e);
-            return false;
-        }
-    };
+    // Local mock data helper removed — local "Enter App" mode disabled.
+    window.createLocalMockData = async () => { return false; };
 
     
 
     window.handleAuth = async () => {
-        if (window.location.protocol === 'file:') {
-            // Local mode: create a fake token stored in cookies and localStorage
-            const token = 'local-bypass';
-            const expires = Date.now() + 365 * 24 * 60 * 60 * 1000;
-            try {
-                // Set cookies (max-age 1 year) so cookie-based detection works
-                document.cookie = 'google_token=' + encodeURIComponent(token) + '; path=/; max-age=' + (365*24*60*60) + ';';
-                document.cookie = 'google_token_expires_at=' + encodeURIComponent(expires) + '; path=/; max-age=' + (365*24*60*60) + ';';
-            } catch(e){}
-            try {
-                localStorage.setItem('google_token', token);
-                localStorage.setItem('google_token_expires_at', expires);
-            } catch(e){}
-            try {
-                if (typeof window.createLocalMockData === 'function') {
-                    await window.createLocalMockData();
-                }
-            } catch(e) { console.warn('createLocalMockData failed', e); }
-            try { callShowApp(); } catch(e){}
-            return;
-        }
         // Start PKCE flow in a popup so we can receive a refresh token
         const code_verifier = base64UrlEncode(crypto.getRandomValues(new Uint8Array(96)));
         const code_challenge = await createCodeChallenge(code_verifier);
-        // Force the hosted GitHub Pages project redirect path so it matches
-        // the registered Authorized Redirect URI in Google Cloud Console.
-        const redirect_uri = window.location.origin + '/GymNerd/oauth2callback.html';
+        // Use the configured REDIRECT_PATH so local origins and hosted origins
+        // both work (ensure this path is registered in Cloud Console).
+        const redirect_uri = window.location.origin + REDIRECT_PATH;
 
         // store verifier in session for later exchange
         sessionStorage.setItem('pkce_code_verifier', code_verifier);
@@ -854,15 +638,20 @@
     if (storedCode) {
         try {
             // Use the same redirect URI used when initiating auth
-            const redirect_uri = window.location.origin + '/GymNerd/oauth2callback.html';
+            const redirect_uri = window.location.origin + REDIRECT_PATH;
             const verifier = sessionStorage.getItem('pkce_code_verifier');
             // Clean up stored code immediately
             sessionStorage.removeItem('oauth2_code');
             localStorage.removeItem('oauth2_code');
 
+            // Show full-screen loading while exchanging the code
+            try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('finalizing_signin') || 'Finalizing sign-in...' : 'Finalizing sign-in...'); } catch(e){}
+
             // Exchange code for tokens
             const tokenData = await exchangeCodeForTokens(storedCode, verifier, redirect_uri);
-            if (tokenData.access_token) {
+            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+
+            if (tokenData && tokenData.access_token) {
                 localStorage.setItem('google_token', tokenData.access_token);
                 localStorage.setItem('google_token_expires_at', Date.now() + (tokenData.expires_in * 1000));
                 if (tokenData.refresh_token) localStorage.setItem('google_refresh_token', tokenData.refresh_token);
@@ -874,15 +663,35 @@
                 localStorage.setItem('needs_initial_download', 'true');
                 location.reload();
             } else {
-                console.error('Token exchange failed', tokenData);
+                try { console.error('Token exchange failed', tokenData); } catch(e){}
+                try {
+                    const detail = {
+                        title: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('signin_failed') || 'Sign-in Failed' : 'Sign-in Failed',
+                        message: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_complete_signin') || 'Could not complete sign-in. Please try again.' : 'Could not complete sign-in. Please try again.',
+                        retryText: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('retry') || 'Retry' : 'Retry',
+                        signInText: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('sign_in_with_google') || 'Sign in with Google' : 'Sign in with Google'
+                    };
+                    try { window.dispatchEvent(new CustomEvent('auth-refresh-error', { detail })); } catch(e){}
+                } catch(e){}
             }
         } catch (err) {
+            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
             console.error('Exchange error', err);
+            try {
+                const detail = {
+                    title: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('signin_failed') || 'Sign-in Failed' : 'Sign-in Failed',
+                    message: err && err.message ? err.message : ((typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_complete_signin') || 'Could not complete sign-in. Please try again.' : 'Could not complete sign-in. Please try again.'),
+                    retryText: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('retry') || 'Retry' : 'Retry',
+                    signInText: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('sign_in_with_google') || 'Sign in with Google' : 'Sign in with Google'
+                };
+                try { window.dispatchEvent(new CustomEvent('auth-refresh-error', { detail })); } catch(e){}
+            } catch(e){}
         }
     }
 
     if (!validSession) {
-        renderLogin();
+        // The login UI is provided by index.html; avoid creating DOM here.
+        try { window.authNeedsLogin = true; } catch(e){}
     } else {
         if (window.location.protocol !== 'file:' && token !== 'local-bypass') {
             await loadScript;
@@ -908,75 +717,7 @@
     }
 
     function renderLogin() {
-        // Hide any loading indicator before showing login UI
-        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-
-        const isLocal = window.location.protocol === 'file:';
-        // If an initial download is pending, show the blocking loader instead
-        // of the login overlay so the user can't interact with the app.
-        try {
-            if (localStorage.getItem('needs_initial_download') === 'true') {
-                if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') || 'Welcome back! Syncing your data...' : 'Welcome back! Syncing your data...');
-                return;
-            }
-        } catch(e){}
-        const blocker = document.createElement('div');
-        blocker.id = 'auth-blocker';
-        blocker.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 999999; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; color: white; font-family: sans-serif;";
-        blocker.innerHTML = `
-            <div style="position:absolute; top:20px; right:20px; display:flex; align-items:center; gap:8px;">
-                <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('language') : 'Language'}</label>
-                <select id="gn-lang-select" style="padding:8px 10px; border-radius:10px; background: rgba(255,255,255,0.02); color: white; border:1px solid rgba(255,255,255,0.06); font-weight:700; cursor:pointer;">
-                    <option value="en">🇬🇧 English</option>
-                    <option value="pt">🇧🇷 Português</option>
-                </select>
-            </div>
-
-            <div style="max-width: 420px; width: 100%; display:flex; flex-direction:column; align-items:center; gap:20px;">
-                <img src="favicon.svg" alt="App icon" style="width:96px; height:96px; object-fit:contain; border-radius:16px;" />
-                <h1 style="font-size: 2.6rem; font-weight: 900; margin:0; font-style: normal; background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(59, 130, 246, 0.45));">GymNerd</h1>
-
-                <button onclick="handleAuth()" style="width: 100%; max-width:320px; padding: 14px; margin-top:36px; background: #3b82f6; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.05rem; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);">
-                    ${isLocal ? (typeof GN_I18N !== 'undefined' ? GN_I18N.t('enter_app') : 'Enter App') : (typeof GN_I18N !== 'undefined' ? GN_I18N.t('sign_in_with_google') : 'Sign in with Google')}
-                </button>
-
-                <p style="color: #94a3b8; font-size: 0.85rem; margin:6px 0 0; font-style: italic; text-align:center; max-width:360px;">${typeof GN_I18N !== 'undefined' ? GN_I18N.t('sync_workout_msg') : 'Sync your workout data with Google Drive.'}</p>
-            </div>
-
-            <img src="illustration-login.svg" alt="" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:320px; max-width:90%; height:auto; opacity:0.95; pointer-events:none;" />
-        `;
-
-        // Attach language selector handlers and persist selection to localStorage
-        const attachLangHandlers = () => {
-            try {
-                const sel = blocker.querySelector('#gn-lang-select');
-                const key = 'gn_lang';
-                const detectBrowser = () => {
-                    try {
-                        const nl = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
-                        return nl.startsWith('pt') ? 'pt' : 'en';
-                    } catch(e) { return 'en'; }
-                };
-
-                const initial = localStorage.getItem(key) || getCookie(key) || detectBrowser();
-                if (sel) sel.value = initial;
-                try { localStorage.setItem(key, initial); } catch(e){}
-
-                if (sel) sel.addEventListener('change', (ev) => {
-                    try { localStorage.setItem(key, ev.target.value); location.reload(); } catch(e){}
-                });
-            } catch(e) { console.warn('lang selector init failed', e); }
-        };
-
-        // Ensure we append to body even if script runs in head, and call handlers
-        if (document.body) {
-            document.body.appendChild(blocker);
-            attachLangHandlers();
-        } else {
-            document.addEventListener('DOMContentLoaded', () => {
-                document.body.appendChild(blocker);
-                attachLangHandlers();
-            });
-        }
+        // Login UI is provided by index.html; auth.js must not manipulate DOM for login.
+        try { window.authNeedsLogin = true; } catch(e){}
     }
 })();
