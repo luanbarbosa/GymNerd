@@ -399,12 +399,13 @@
 				}
 			}
 			const avatar = user ? (user.picture || '') : '';
+			const fallbackAvatar = (window && window.location) ? (window.location.origin + '/icons/icon-512.svg') : '/icons/icon-512.svg';
 			const greeting = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('greeting_hi') : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'Olá' : 'Hi');
 
 			container.innerHTML = `
 				<div class="user-card">
 					<div class="user-line" style="flex-direction:column; gap:8px;">
-						<img src="${avatar || 'favicon.svg'}" alt="avatar" class="user-avatar" />
+						<img src="${avatar || fallbackAvatar}" alt="avatar" class="user-avatar" onerror="this.onerror=null;this.src='${fallbackAvatar}'" />
 						<div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
 							<div class="user-greeting">${greeting}</div>
 							<div class="user-name">${firstName || 'GymNerd'}</div>

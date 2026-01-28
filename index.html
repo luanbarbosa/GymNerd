@@ -88,7 +88,7 @@
                 const isExpired = expires ? (Date.now() > parseInt(expires)) : true;
                 if (token && !isExpired) {
                     // valid session — redirect to app without rendering login UI
-                    try { window.location.href = 'home.html'; return; } catch(e){}
+                    try { window.location.replace('home.html'); return; } catch(e){}
                 }
             } catch(e) {}
             // no valid session — reveal the page
@@ -151,17 +151,17 @@
 
         document.getElementById('signin-google').addEventListener('click', function () {
             if (typeof handleAuth === 'function') return handleAuth();
-            window.location.href = 'home.html';
+            try { window.location.replace('home.html'); } catch(e) { window.location.href = 'home.html'; }
         });
         const demoBtn = document.getElementById('demo-mode');
         if (demoBtn) {
             try { if (typeof GN_I18N !== 'undefined') demoBtn.textContent = GN_I18N.t('demo_mode'); } catch(e){}
             demoBtn.addEventListener('click', function(e){
-                try { e.preventDefault(); } catch(e){}
-                const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('demo_mode_warning') : 'The data will be stored locally and might be cleared by the system.';
-                try { alert(msg); } catch(e) { console.warn('alert failed', e); }
-                window.location.href = 'home.html';
-            });
+                    try { e.preventDefault(); } catch(e){}
+                    const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('demo_mode_warning') : 'The data will be stored locally and might be cleared by the system.';
+                    try { alert(msg); } catch(e) { console.warn('alert failed', e); }
+                    try { window.location.replace('home.html'); } catch(e) { window.location.href = 'home.html'; }
+                });
         }
     </script>
     <script>
@@ -175,19 +175,20 @@
                 // If running on the login page and we have a valid session, navigate to home
                 try {
                     if (state && state.token && !state.isExpired && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
-                        try { window.location.href = 'home.html'; return; } catch(e) { /* ignore */ }
+                        try { window.location.replace('home.html'); return; } catch(e) { try { window.location.href = 'home.html'; } catch(e2){} }
                     }
                 } catch(e) {}
                 try {
                     if (state && state.token && !state.isExpired) {
                         if (signinBtn) signinBtn.style.display = 'none';
                         const user = state.user || {};
-                        const pic = safeText(user.picture) || 'favicon.svg';
+                        const fallbackAvatar = (window && window.location) ? (window.location.origin + '/icons/icon-512.svg') : '/icons/icon-512.svg';
+                        const pic = safeText(user.picture) || fallbackAvatar;
                         const name = safeText(user.name) || '';
                         const connected = state.isBypass ? '' : '<div style="font-size:0.8rem;color:#94a3b8;margin-top:6px;"><span style="color:#10b981">●</span> Connected to Drive</div>';
                         status.innerHTML = `
                             <div style="display:flex;align-items:center;gap:12px">
-                                <img src="${pic}" alt="avatar" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.04);"/>
+                                <img src="${pic}" alt="avatar" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.04);" onerror="this.onerror=null;this.src='${fallbackAvatar}'"/>
                                 <div style="text-align:left">
                                     <div style="font-weight:800;color:#e2e8f0">${name}</div>
                                     ${connected}

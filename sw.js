@@ -38,7 +38,14 @@ self.addEventListener('fetch', event => {
         try {
           if (!response || response.status !== 200 || response.type !== 'basic') return response;
           const resClone = response.clone();
-          caches.open(CACHE).then(cache => cache.put(event.request, resClone));
+          try {
+            const reqUrl = new URL(event.request.url);
+            if (reqUrl.protocol === 'http:' || reqUrl.protocol === 'https:') {
+              caches.open(CACHE).then(cache => cache.put(event.request, resClone));
+            }
+          } catch (e) {
+            // If URL parsing fails or protocol is unsupported, skip caching
+          }
         } catch (e) { /* ignore caching errors */ }
         return response;
       }).catch(() => caches.match('./home.html'));
