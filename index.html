@@ -183,7 +183,8 @@
                         if (signinBtn) signinBtn.style.display = 'none';
                         const user = state.user || {};
                         const origin = (window && window.location && window.location.origin && window.location.origin !== 'null' && !String(window.location.origin).startsWith('file:')) ? window.location.origin : '';
-                        const fallbackAvatar = origin ? (origin + '/icons/icon-512.svg') : 'icons/icon-512.svg';
+                        const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                        const fallbackAvatar = origin ? (origin + basePath + 'icons/icon-512.svg') : 'icons/icon-512.svg';
                         const pic = (window && window.DEMO_MODE) ? fallbackAvatar : (safeText(user.picture) || fallbackAvatar);
                         const name = safeText(user.name) || '';
                         const connected = state.isBypass ? '' : '<div style="font-size:0.8rem;color:#94a3b8;margin-top:6px;"><span style="color:#10b981">●</span> Connected to Drive</div>';

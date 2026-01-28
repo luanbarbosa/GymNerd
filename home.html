@@ -398,7 +398,8 @@
 			}
 			const avatar = user ? (user.picture || '') : '';
 			const origin = (window && window.location && window.location.origin && window.location.origin !== 'null' && !String(window.location.origin).startsWith('file:')) ? window.location.origin : '';
-			const fallbackAvatar = origin ? (origin + '/icons/icon-512.svg') : 'icons/icon-512.svg';
+			const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+			const fallbackAvatar = origin ? (origin + basePath + 'icons/icon-512.svg') : 'icons/icon-512.svg';
 			const effectiveAvatar = (window && window.DEMO_MODE) ? fallbackAvatar : (avatar || fallbackAvatar);
 			if (window && window.DEMO_MODE) try { console.info('[DemoMode] using demo avatar', fallbackAvatar); } catch(e){}
 			const greeting = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('greeting_hi') : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'Olá' : 'Hi');
