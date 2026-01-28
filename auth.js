@@ -600,9 +600,12 @@
         // Start PKCE flow in a popup so we can receive a refresh token
         const code_verifier = base64UrlEncode(crypto.getRandomValues(new Uint8Array(96)));
         const code_challenge = await createCodeChallenge(code_verifier);
-        // Use the configured REDIRECT_PATH so local origins and hosted origins
-        // both work (ensure this path is registered in Cloud Console).
-        const redirect_uri = window.location.origin + REDIRECT_PATH;
+        // Use the configured REDIRECT_PATH but include any base path
+        // (e.g. GitHub Pages project sites like /GymNerd/) so the final
+        // redirect URI exactly matches what is registered in Cloud Console.
+        const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+        const redirect_uri = window.location.origin + basePath + REDIRECT_PATH.replace(/^[\/]*/, '');
+        try { console.log('OAuth redirect_uri:', redirect_uri); } catch(e){}
 
         // store verifier in session for later exchange
         sessionStorage.setItem('pkce_code_verifier', code_verifier);
@@ -637,8 +640,10 @@
     const storedCode = sessionStorage.getItem('oauth2_code') || localStorage.getItem('oauth2_code');
     if (storedCode) {
         try {
-            // Use the same redirect URI used when initiating auth
-            const redirect_uri = window.location.origin + REDIRECT_PATH;
+            // Use the same redirect URI used when initiating auth (include base path)
+            const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+            const redirect_uri = window.location.origin + basePath + REDIRECT_PATH.replace(/^[\/]*/, '');
+            try { console.log('OAuth redirect_uri (exchange):', redirect_uri); } catch(e){}
             const verifier = sessionStorage.getItem('pkce_code_verifier');
             // Clean up stored code immediately
             sessionStorage.removeItem('oauth2_code');
