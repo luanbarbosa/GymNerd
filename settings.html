@@ -96,7 +96,7 @@
     <div class="top-card">
         <div class="top-card-inner">
             <div style="display:flex;align-items:center;width:100%;gap:12px;">
-                <a href="index.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
+                <a href="home.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                 <div style="flex:1;min-width:0;">
                     <h2 data-i18n="page_settings">Settings</h2>
                 </div>
@@ -305,7 +305,7 @@
 
                     try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                     alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!");
-                    location.href = 'index.html';
+                    location.href = 'home.html';
                     return;
                 }
 
@@ -357,7 +357,7 @@
 
                 try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!"); 
-                location.href = 'index.html';
+                location.href = 'home.html';
             } catch (err) {
                 console.error("Import error:", err);
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_error') : "Error importing data. Check console for details.");

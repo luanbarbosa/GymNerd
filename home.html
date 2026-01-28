@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<meta name="theme-color" content="#2563eb">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="default">
+	<meta name="apple-mobile-web-app-title" content="GymNerd">
+	<title>GymNerd | Home</title>
+	<link rel="icon" type="image/svg+xml" href="favicon.svg">
+	<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+	<link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120.png">
+	<link rel="mask-icon" href="icons/safari-pinned-tab.svg" color="#2563eb">
+	<link rel="manifest" href="./manifest.json">
+	<link href="https://fonts.googleapis.com" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
+	<script>
+		window.EXCHANGE_TOKEN_URL = '';
+	</script>
+	<script>
+		// Startup watchdog: run after all scripts are loaded to ensure DriveStorage and db exist.
+		document.addEventListener('DOMContentLoaded', async () => {
+			try {
+				const needs = localStorage.getItem && localStorage.getItem('needs_initial_download');
+				if (needs !== 'true') return;
+				console.info('[StartupWatchdog] needs_initial_download detected — starting auto-restore');
+				try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') : 'Welcome back! Syncing your data...'); } catch(e){}
+
+				if (typeof DriveStorage === 'undefined') {
+					console.warn('[StartupWatchdog] DriveStorage not available');
+					try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+					try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+					return;
+				}
+
+				try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch(e){ console.warn('[StartupWatchdog] ensureDbOpen failed', e); }
+
+				console.info('[StartupWatchdog] calling DriveStorage.load');
+				const data = await DriveStorage.load();
+				console.info('[StartupWatchdog] DriveStorage.load returned', { hasData: !!data, keys: data ? Object.keys(data) : [] });
+
+				if (!data) {
+					try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+					try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+					try { if (window.showApp) window.showApp(); } catch(e){}
+					return;
+				}
+
+				if (typeof db !== 'undefined') {
+					try {
+						await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+							if (db.catalog_images) {
+								await db.catalog_images.clear();
+								if (data.catalog_images) {
+									const normalizedCatalogImages = data.catalog_images.map(img => ({
+										...img,
+										data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+									}));
+									await db.catalog_images.bulkAdd(normalizedCatalogImages);
+								}
+							}
+
+							if (db.catalog_exercises) {
+								await db.catalog_exercises.clear();
+								if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
+							}
+
+							if (db.custom_images) {
+								await db.custom_images.clear();
+								if (data.custom_images) {
+									const normalizedCustomImages = data.custom_images.map(img => ({
+										...img,
+										data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+									}));
+									await db.custom_images.bulkAdd(normalizedCustomImages);
+								}
+							}
+
+							if (db.custom_exercises) {
+								await db.custom_exercises.clear();
+								if (data.custom_exercises) await db.custom_exercises.bulkAdd(data.custom_exercises);
+							}
+
+							if (db.routines) {
+								await db.routines.clear();
+								if (data.routines) await db.routines.bulkAdd(data.routines);
+							}
+
+							if (db.history) {
+								await db.history.clear();
+								if (data.history) await db.history.bulkAdd(data.history);
+							}
+
+							if (db.weights) {
+								console.info('[StartupWatchdog] writing weights to DB', { count: Array.isArray(data.weights) ? data.weights.length : 0, sample: Array.isArray(data.weights) && data.weights.length ? data.weights[0] : null });
+								await db.weights.clear();
+								if (data.weights) await db.weights.bulkPut(data.weights);
+								let newCount = await db.weights.count();
+								if (newCount === 0 && Array.isArray(data.weights) && data.weights.length) {
+									console.warn('[StartupWatchdog] bulkPut wrote 0 items, falling back to per-item put()');
+									for (const w of data.weights) {
+										try { await db.weights.put(w); } catch (e) { console.error('[StartupWatchdog] failed to put weight item', { item: w, error: e }); }
+									}
+									newCount = await db.weights.count();
+								}
+								console.info('[StartupWatchdog] weights write complete', { newCount });
+							}
+						});
+					} catch (e) {
+						console.error('[StartupWatchdog] applying data to DB failed', e);
+					}
+				} else {
+					console.warn('[StartupWatchdog] db not available; skipping DB write');
+				}
+
+				if (data.lastSync) try { localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync); } catch(e){}
+				try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+				try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+
+				console.info('[StartupWatchdog] completed — reloading');
+				try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+				try { location.reload(); } catch(e){}
+			} catch (err) {
+				console.error('[StartupWatchdog] failed', err);
+				try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+			}
+		});
+	</script>
+	<script src="gn-i18n.js"></script>
+	<script>
+		// Early demo-mode flag: set before auth.js runs so other scripts can read it.
+		(function(){
+			function cookieHas(name) {
+				try { if (!document || !document.cookie) return false; const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + '=([^;]+)')); return !!m; } catch(e){return false;}
+			}
+			const hasCookieToken = cookieHas('google_token');
+			const hasLocalToken = !!localStorage.getItem('google_token');
+			window.DEMO_MODE = (!hasCookieToken && !hasLocalToken);
+			// Ensure banner and demo setup run after DOM is ready, in case auth runs earlier.
+			document.addEventListener('DOMContentLoaded', function() {
+				if (!window.DEMO_MODE) return;
+				try { window.authNeedsLogin = false; } catch(e){}
+				try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+				try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+				// Ensure DriveStorage stubs exist
+				window.DriveStorage = window.DriveStorage || {};
+				const _stub = {
+					sync: async function() { console.info('[DemoMode] DriveStorage.sync ignored'); return false; },
+					load: async function() { console.info('[DemoMode] DriveStorage.load ignored'); return null; },
+					deleteFile: async function() { console.info('[DemoMode] DriveStorage.deleteFile ignored'); return false; }
+				};
+				for (const k of Object.keys(_stub)) { if (!window.DriveStorage[k]) window.DriveStorage[k] = _stub[k]; }
+				// Show or create banner
+				let b = document.getElementById('demo-banner');
+				if (!b) {
+					b = document.createElement('div');
+					b.id = 'demo-banner';
+					b.setAttribute('role', 'status');
+					b.setAttribute('aria-live', 'polite');
+					b.style.display = 'flex';
+					b.style.flexDirection = 'column';
+					b.style.justifyContent = 'center';
+					b.style.alignItems = 'center';
+					b.style.gap = '8px';
+					const mainText = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode') || GN_I18N.t('demo_mode_main') || 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.') : 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.';
+					const smallText = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode_warning') || GN_I18N.t('demo_mode_small') || 'Sign in to enable cloud sync and restore from Google Drive.') : 'Sign in to enable cloud sync and restore from Google Drive.';
+					b.innerHTML = mainText + '<small>' + smallText + '</small>';
+					const topInner = document.querySelector('.top-card-inner');
+					if (topInner) topInner.appendChild(b);
+				} else {
+					b.style.display = 'flex';
+				}
+				try { if (typeof window.showApp === 'function') window.showApp(); } catch(e){}
+			});
+		})();
+	</script>
+	<script src="auth.js"></script>
+	<script src="drive-storage.js"></script>
+	<script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+	<script src="db.js"></script>
+	<script>
+		// Demo mode detection: if there's no session token in cookies or localStorage,
+		// enable demo mode which disables token refresh and Drive sync.
+		(function(){
+			function cookieHas(name) {
+				try {
+					if (!document || !document.cookie) return false;
+					const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]+)'));
+					return !!m;
+				} catch (e) { return false; }
+			}
+
+			const hasCookieToken = cookieHas('google_token');
+			const hasLocalToken = !!localStorage.getItem('google_token');
+			if (!hasCookieToken && !hasLocalToken) {
+				window.DEMO_MODE = true;
+				console.info('[DemoMode] enabled: no session token in cookies or localStorage');
+				try { window.authNeedsLogin = false; } catch(e){}
+				try { if (typeof window.showApp === 'function') window.showApp(); } catch(e){}
+				try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+				try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+
+				// Prevent token refresh attempts by stubbing ensureGoogleAccessToken
+				try {
+					window.__orig_ensureGoogleAccessToken = window.ensureGoogleAccessToken;
+				} catch(e){}
+				window.ensureGoogleAccessToken = async function() { return true; };
+
+				// Provide harmless DriveStorage stubs if DriveStorage isn't present yet
+				window.DriveStorage = window.DriveStorage || {};
+				const _stub = {
+					sync: async function() { console.info('[DemoMode] DriveStorage.sync ignored'); return false; },
+					load: async function() { console.info('[DemoMode] DriveStorage.load ignored'); return null; },
+					deleteFile: async function() { console.info('[DemoMode] DriveStorage.deleteFile ignored'); return false; }
+				};
+				for (const k of Object.keys(_stub)) {
+					if (!window.DriveStorage[k]) window.DriveStorage[k] = _stub[k];
+				}
+			} else {
+				window.DEMO_MODE = false;
+			}
+		})();
+	</script>
+	<style>
+		:root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #00e676; --danger: #ff5252; }
+		body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
+		@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+		.main-content { padding: 20px; display: none; margin-top: 12px; }
+		h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
+		.app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: var(--bg); font-style: italic; white-space:nowrap; overflow:visible; }
+        
+		.menu-grid { display: grid; gap: 15px; margin-top: 0px; }
+		/* Top card that holds the topbar + user info (scrolls with page) */
+		/* Use safe-area insets so on edge-to-edge devices the status bar area stays white */
+		.top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 20px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+
+		/* Full-width safe-area overlay so mobile Safari shows white behind status bar */
+		body::before {
+			content: '';
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: constant(safe-area-inset-top);
+			height: env(safe-area-inset-top);
+			background: #ffffff;
+			z-index: 1100;
+			pointer-events: none;
+		}
+		.top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:4px; }
+		.top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; }
+		/* Ensure back/settings icons (and back links) are vertically centered */
+		.top-card .back-btn, .top-card .back-btn .material-symbols-outlined, .top-card a#topbar-settings { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+		/* Ensure title can grow without being clipped */
+		#topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
+		/* Remove bounds for the settings action and make the icon a bit smaller/lighter */
+		.top-card a#topbar-settings { color: var(--bg) !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
+		.top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:1 !important; display:block; stroke: var(--bg) !important; fill: none !important; filter: none !important; }
+		.top-card a#topbar-settings svg * { stroke: var(--bg) !important; fill: none !important; stroke-opacity:1 !important; fill-opacity:0 !important; }
+		.user-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin:8px 0 12px; }
+		.user-avatar { width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.06); }
+		.user-line { display:flex; align-items:center; justify-content:center; gap:10px; }
+		/* Same (larger) font-size for both greeting and name, styles differ */
+		.user-greeting { font-weight:600; font-size:2.2rem; color: var(--text-dim); }
+		.user-name { font-weight:900; font-size:2.2rem; letter-spacing:-0.6px; text-align:center; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(37,99,235,0.32)); }
+		/* motivational-text removed */
+		.nav-card { background: var(--card); padding: 24px; border-radius: 16px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.05); }
+		.nav-card:active { transform: scale(0.97); }
+        
+		details { background: var(--card); border-radius: 16px; margin-top: 40px; border: 1px solid rgba(255,255,255,0.05); }
+		summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
+		summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
+		details[open] summary .chevron { transform: rotate(180deg); }
+		.content-box { padding: 0 20px 20px 20px; border-top: 1px solid rgba(255,255,255,0.05); }
+        
+		.sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+		.export-btn { background: var(--success); color: white; }
+		.import-btn { background: #6366f1; color: white; }
+		label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
+		/* Week dots (GitHub-style) */
+		.week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); max-width: 460px; }
+		.week-dots .days { display:grid; grid-template-columns: repeat(7, 1fr); gap: clamp(6px, 1.6vw, 12px); align-items:center; width:100%; }
+		.week-dots .day { display:flex; flex-direction:column; align-items:center; gap:6px; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); }
+		.week-dots .dot { width: clamp(10px, 4.5vw, 22px); height: clamp(10px, 4.5vw, 22px); border-radius:50%; box-shadow: none; border: none; }
+		.week-dots .dot.fill-0 { background: rgba(255,255,255,0.04); }
+		.week-dots .dot.fill-1 { background: rgba(0,230,118,0.36); }
+		.week-dots .dot.fill-2 { background: rgba(0,230,118,0.64); }
+		.week-dots .dot.fill-3 { background: rgba(0,230,118,0.92); }
+		.week-dots .dot.fill-4 { background: var(--success); }
+		.week-dots .dot.no-workout { background: var(--danger); }
+		.week-dots .dot.future { background: rgba(148,163,184,0.92); }
+
+		/* Demo mode banner */
+		#demo-banner { display: none; margin: 4px 20px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, #e6f0ff, #dbeafe); color: #0f172a; font-weight: 700; text-align: center; box-shadow: none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+		#demo-banner small { display:block; font-weight:500; color: #334155; opacity:0.9; font-size:0.75rem; margin-top:1px; }
+	</style>
+</head>
+<body>
+
+	<script>
+		// Keep the main UI hidden until auth + initial sync complete
+		window.showApp = function() {
+			try { document.querySelector('.main-content').style.display = 'block'; } catch(e){}
+			try { const blocker = document.getElementById('auth-blocker'); if (blocker) blocker.remove(); } catch(e){}
+			try { const loader = document.getElementById('global-loader'); if (loader) loader.style.display = 'none'; } catch(e){}
+			try {
+				const b = document.getElementById('demo-banner');
+				if (b) {
+					b.style.display = (window.DEMO_MODE ? 'flex' : 'none');
+					if (window.DEMO_MODE) {
+						const main = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode') || GN_I18N.t('demo_mode_main') || 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.') : 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.';
+						const small = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode_warning') || GN_I18N.t('demo_mode_small') || 'Sign in to enable cloud sync and restore from Google Drive.') : 'Sign in to enable cloud sync and restore from Google Drive.';
+						b.innerHTML = main + '<small>' + small + '</small>';
+					}
+				}
+			} catch(e){}
+		};
+	</script>
+
+	<div class="top-card">
+		<div class="topbar">
+			<div id="topbar-title">
+				<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+			</div>
+			<div id="topbar-actions">
+				<a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
+					<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300; font-size:20px; line-height:1;">settings</span>
+				</a>
+			</div>
+		</div>
+		<div class="top-card-inner">
+			<div id="home-user-main"></div>
+			<!-- Demo mode banner (shown when no session token present) -->
+			<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
+				Demo Mode — you are using the app without signing in. Your data will be stored locally only.
+				<small>Sign in to enable cloud sync and restore from Google Drive.</small>
+			</div>
+		</div>
+	</div>
+
+	<div style="padding: 0 20px;">
+		<div id="week-dots" class="week-dots" aria-hidden="false"></div>
+	</div>
+
+	<div class="main-content">
+
+		<button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
+			<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
+		</button>
+
+		<div class="menu-grid">
+			<a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span data-i18n="menu_start_routine">🚀 Start Routine</span><span>→</span></a>
+			<a href="routines.html" class="nav-card"><span data-i18n="menu_routines">🏋 Routines</span><span>→</span></a>
+			<a href="history.html" class="nav-card"><span data-i18n="menu_history">📋 History</span><span>→</span></a>
+			<a href="statistics.html" class="nav-card"><span data-i18n="menu_statistics">📊 Statistics</span><span>→</span></a>
+		</div>
+	</div>
+
+	<script>
+
+		// Render compact app title into the sticky topbar
+		function renderCompactApp() {
+			const container = document.getElementById('topbar-title');
+			if (!container) return;
+			container.innerHTML = `
+				<div style="display:flex; align-items:center; gap:12px;">
+					<div style="flex:1; min-width:0;">
+						<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+					</div>
+				</div>
+			`;
+			try {
+				const s = document.getElementById('topbar-settings');
+				if (s) s.setAttribute('aria-label', (typeof GN_I18N !== 'undefined') ? GN_I18N.t('menu_settings') : 'Settings');
+			} catch(e){}
+		}
+		function renderMainUser() {
+			const container = document.getElementById('home-user-main');
+			if (!container) return;
+			let user = null;
+			try {
+				if (typeof getGoogleUser === 'function') user = getGoogleUser();
+				else {
+					const u = localStorage.getItem('google_user'); if (u) user = JSON.parse(u);
+				}
+			} catch (e) { user = null; }
+
+			const name = user ? (user.name || user.email || '') : '';
+			let firstName = '';
+			if (name) {
+				if (name.includes('@')) {
+					firstName = name.split('@')[0].split(/[.\-_+]/)[0];
+				} else {
+					firstName = name.trim().split(/\s+/)[0];
+				}
+			}
+			const avatar = user ? (user.picture || '') : '';
+			const greeting = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('greeting_hi') : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'Olá' : 'Hi');
+
+			container.innerHTML = `
+				<div class="user-card">
+					<div class="user-line" style="flex-direction:column; gap:8px;">
+						<img src="${avatar || 'favicon.svg'}" alt="avatar" class="user-avatar" />
+						<div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
+							<div class="user-greeting">${greeting}</div>
+							<div class="user-name">${firstName || 'GymNerd'}</div>
+						</div>
+					</div>
+				</div>
+			`;
+		}
+
+		try { renderCompactApp(); } catch (e) {}
+		try { renderMainUser(); } catch (e) {}
+		try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
+		try { renderWeekDots && renderWeekDots(); } catch(e){}
+        
+		function updatePendingButtonVisibility() {
+			const btn = document.getElementById('sync-pending-btn');
+			if (!btn) return;
+			try {
+				if (window.DEMO_MODE) { btn.style.display = 'none'; return; }
+				const hasChanges = localStorage.getItem('has_local_changes') === 'true';
+				btn.style.display = hasChanges ? 'block' : 'none';
+			} catch (e) { console.error('Error reading has_local_changes', e); }
+		}
+
+		window.syncToDrive = async function() {
+			try {
+				if (window.DEMO_MODE) { console.info('[DemoMode] syncToDrive skipped'); return false; }
+				if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+				const ok = await DriveStorage.sync(db);
+				if (ok) updatePendingButtonVisibility();
+			} catch (e) {
+				console.error('Sync to Drive failed:', e);
+			}
+		};
+
+		try { updatePendingButtonVisibility(); } catch(e){}
+                
+				async function renderWeekDots(){
+					try{
+						if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+						const container = document.getElementById('week-dots');
+						if (!container) return;
+						container.innerHTML = `<div class="days" role="list"></div>`;
+						const daysContainer = container.querySelector('.days');
+						const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
+						const locale = (lang === 'pt') ? 'pt' : 'en';
+						const today = new Date();
+						const start = new Date(today);
+						start.setHours(0,0,0,0);
+						start.setDate(start.getDate() - start.getDay());
+
+						for (let i = 0; i < 7; i++) {
+							const d = new Date(start);
+							d.setDate(start.getDate() + i);
+							const y = d.getFullYear();
+							const m = String(d.getMonth() + 1).padStart(2, '0');
+							const day = String(d.getDate()).padStart(2, '0');
+							const dateStr = `${y}-${m}-${day}`;
+
+							let count = 0;
+							try { count = await db.history.where('date').equals(dateStr).count(); } catch (e) { count = 0; }
+
+							const level = (count === 0) ? 0 : Math.min(4, 1 + Math.floor(Math.log2(count)));
+							const weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' });
+							const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
+
+							const el = document.createElement('div');
+							el.className = 'day';
+							const titleCount = (window.GN_I18N && GN_I18N.safeT) ? `${weekdayFull}: ${count}` : `${weekdayFull}: ${count}`;
+							el.title = titleCount;
+							const dateObj = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+							const todayMid = new Date(); todayMid.setHours(0,0,0,0);
+							let dotClass = '';
+							if (dateObj.getTime() > todayMid.getTime() || (dateObj.getTime() === todayMid.getTime() && count === 0)) {
+								dotClass = 'future';
+							} else if (count === 0) {
+								dotClass = 'no-workout';
+							} else {
+								dotClass = `fill-${level}`;
+							}
+
+							el.innerHTML = `<div class="dot ${dotClass}" data-count="${count}"></div><div class="label">${weekdayShort}</div>`;
+							daysContainer.appendChild(el);
+						}
+					} catch (err) { console.error('renderWeekDots failed', err); }
+				}
+	</script>
+	<script>
+		if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+			navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
+		} else if ('serviceWorker' in navigator) {
+			console.warn('Service worker registration skipped: insecure origin or file protocol');
+		}
+	</script>
+</body>
+</html>

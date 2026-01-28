@@ -1,411 +1,263 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#2563eb">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="GymNerd">
-    <title>GymNerd | Home</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120.png">
-    <link rel="mask-icon" href="icons/safari-pinned-tab.svg" color="#2563eb">
-    <link rel="manifest" href="./manifest.json">
-    <link href="https://fonts.googleapis.com" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
-    <!-- Optional: set this to your deployed token-exchange function URL.
-         Example:
-         window.EXCHANGE_TOKEN_URL = 'https://us-central1-PROJECT.cloudfunctions.net/exchangeToken';
-         If empty, the app will first try same-origin `/exchangeToken` (works when deployed
-         to Firebase Hosting with rewrites). GitHub Pages won't accept POSTs at that path.
-    -->
-    <script>
-        window.EXCHANGE_TOKEN_URL = '';
-    </script>
-    <script>
-        // Startup watchdog: run after all scripts are loaded to ensure DriveStorage and db exist.
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const needs = localStorage.getItem && localStorage.getItem('needs_initial_download');
-                if (needs !== 'true') return;
-                console.info('[StartupWatchdog] needs_initial_download detected — starting auto-restore');
-                try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') : 'Welcome back! Syncing your data...'); } catch(e){}
-
-                if (typeof DriveStorage === 'undefined') {
-                    console.warn('[StartupWatchdog] DriveStorage not available');
-                    try { localStorage.removeItem('needs_initial_download'); } catch(e){}
-                    try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-                    return;
-                }
-
-                try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch(e){ console.warn('[StartupWatchdog] ensureDbOpen failed', e); }
-
-                console.info('[StartupWatchdog] calling DriveStorage.load');
-                const data = await DriveStorage.load();
-                console.info('[StartupWatchdog] DriveStorage.load returned', { hasData: !!data, keys: data ? Object.keys(data) : [] });
-
-                if (!data) {
-                    try { localStorage.removeItem('needs_initial_download'); } catch(e){}
-                    try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-                    try { if (window.showApp) window.showApp(); } catch(e){}
-                    return;
-                }
-
-                if (typeof db !== 'undefined') {
-                    try {
-                        await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
-                            if (db.catalog_images) {
-                                await db.catalog_images.clear();
-                                if (data.catalog_images) {
-                                    const normalizedCatalogImages = data.catalog_images.map(img => ({
-                                        ...img,
-                                        data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
-                                    }));
-                                    await db.catalog_images.bulkAdd(normalizedCatalogImages);
-                                }
-                            }
-
-                            if (db.catalog_exercises) {
-                                await db.catalog_exercises.clear();
-                                if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
-                            }
-
-                            if (db.custom_images) {
-                                await db.custom_images.clear();
-                                if (data.custom_images) {
-                                    const normalizedCustomImages = data.custom_images.map(img => ({
-                                        ...img,
-                                        data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
-                                    }));
-                                    await db.custom_images.bulkAdd(normalizedCustomImages);
-                                }
-                            }
-
-                            if (db.custom_exercises) {
-                                await db.custom_exercises.clear();
-                                if (data.custom_exercises) await db.custom_exercises.bulkAdd(data.custom_exercises);
-                            }
-
-                            if (db.routines) {
-                                await db.routines.clear();
-                                if (data.routines) await db.routines.bulkAdd(data.routines);
-                            }
-
-                            if (db.history) {
-                                await db.history.clear();
-                                if (data.history) await db.history.bulkAdd(data.history);
-                            }
-
-                            if (db.weights) {
-                                console.info('[StartupWatchdog] writing weights to DB', { count: Array.isArray(data.weights) ? data.weights.length : 0, sample: Array.isArray(data.weights) && data.weights.length ? data.weights[0] : null });
-                                await db.weights.clear();
-                                if (data.weights) await db.weights.bulkPut(data.weights);
-                                let newCount = await db.weights.count();
-                                if (newCount === 0 && Array.isArray(data.weights) && data.weights.length) {
-                                    console.warn('[StartupWatchdog] bulkPut wrote 0 items, falling back to per-item put()');
-                                    for (const w of data.weights) {
-                                        try { await db.weights.put(w); } catch (e) { console.error('[StartupWatchdog] failed to put weight item', { item: w, error: e }); }
-                                    }
-                                    newCount = await db.weights.count();
-                                }
-                                console.info('[StartupWatchdog] weights write complete', { newCount });
-                            }
-                        });
-                    } catch (e) {
-                        console.error('[StartupWatchdog] applying data to DB failed', e);
-                    }
-                } else {
-                    console.warn('[StartupWatchdog] db not available; skipping DB write');
-                }
-
-                if (data.lastSync) try { localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync); } catch(e){}
-                try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
-                try { localStorage.removeItem('needs_initial_download'); } catch(e){}
-
-                console.info('[StartupWatchdog] completed — reloading');
-                try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-                try { location.reload(); } catch(e){}
-            } catch (err) {
-                console.error('[StartupWatchdog] failed', err);
-                try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-            }
-        });
-    </script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GymNerd</title>
+    <link rel="icon" href="favicon.svg" />
     <script src="gn-i18n.js"></script>
-    <script src="auth.js"></script>
-    <script src="drive-storage.js"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-    <script src="db.js"></script>
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #00e676; --danger: #ff5252; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .main-content { padding: 20px; display: none; margin-top: 12px; }
-        h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
-        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: var(--bg); font-style: italic; white-space:nowrap; overflow:visible; }
-        
-        .menu-grid { display: grid; gap: 15px; margin-top: 0px; }
-        /* Top card that holds the topbar + user info (scrolls with page) */
-        /* Use safe-area insets so on edge-to-edge devices the status bar area stays white */
-        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 20px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
-
-        /* Full-width safe-area overlay so mobile Safari shows white behind status bar */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: constant(safe-area-inset-top);
-            height: env(safe-area-inset-top);
-            background: #ffffff;
-            z-index: 1100;
-            pointer-events: none;
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            visibility: hidden; /* keep page blank until auth check completes */
         }
-        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; }
-        .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; }
-        /* Ensure back/settings icons (and back links) are vertically centered */
-        .top-card .back-btn, .top-card .back-btn .material-symbols-outlined, .top-card a#topbar-settings { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-        /* Ensure title can grow without being clipped */
-        #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
-        /* Remove bounds for the settings action and make the icon a bit smaller/lighter */
-        .top-card a#topbar-settings { color: var(--bg) !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
-        .top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:1 !important; display:block; stroke: var(--bg) !important; fill: none !important; filter: none !important; }
-        .top-card a#topbar-settings svg * { stroke: var(--bg) !important; fill: none !important; stroke-opacity:1 !important; fill-opacity:0 !important; }
-        .user-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin:12px 0 26px; }
-        .user-avatar { width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.06); }
-        .user-line { display:flex; align-items:center; justify-content:center; gap:10px; }
-        /* Same (larger) font-size for both greeting and name, styles differ */
-        .user-greeting { font-weight:600; font-size:2.2rem; color: var(--text-dim); }
-        .user-name { font-weight:900; font-size:2.2rem; letter-spacing:-0.6px; text-align:center; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(37,99,235,0.32)); }
-        /* motivational-text removed */
-        .nav-card { background: var(--card); padding: 24px; border-radius: 16px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.05); }
-        .nav-card:active { transform: scale(0.97); }
-        
-        details { background: var(--card); border-radius: 16px; margin-top: 40px; border: 1px solid rgba(255,255,255,0.05); }
-        summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
-        summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
-        details[open] summary .chevron { transform: rotate(180deg); }
-        .content-box { padding: 0 20px 20px 20px; border-top: 1px solid rgba(255,255,255,0.05); }
-        
-        .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
-        .export-btn { background: var(--success); color: white; }
-        .import-btn { background: #6366f1; color: white; }
-        label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
-        /* Week dots (GitHub-style) */
-        .week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); max-width: 460px; }
-        .week-dots .days { display:grid; grid-template-columns: repeat(7, 1fr); gap: clamp(6px, 1.6vw, 12px); align-items:center; width:100%; }
-        .week-dots .day { display:flex; flex-direction:column; align-items:center; gap:6px; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); }
-        .week-dots .dot { width: clamp(10px, 4.5vw, 22px); height: clamp(10px, 4.5vw, 22px); border-radius:50%; box-shadow: none; border: none; }
-        .week-dots .dot.fill-0 { background: rgba(255,255,255,0.04); }
-        .week-dots .dot.fill-1 { background: rgba(0,230,118,0.36); }
-        .week-dots .dot.fill-2 { background: rgba(0,230,118,0.64); }
-        .week-dots .dot.fill-3 { background: rgba(0,230,118,0.92); }
-        .week-dots .dot.fill-4 { background: var(--success); }
-        .week-dots .dot.no-workout { background: var(--danger); }
-        .week-dots .dot.future { background: rgba(148,163,184,0.92); }
+
+        .wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+            color: #fff;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            padding: 28px;
+            box-sizing: border-box;
+        }
+
+        .brand {
+            width: 96px;
+            height: 96px;
+            object-fit: contain;
+            border-radius: 16px;
+        }
+
+        h1 {
+            margin: 12px 0;
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #60a5fa, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 0;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .muted {
+            color: #94a3b8;
+            margin-top: 12px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .col {
+            flex: 1;
+        }
     </style>
 </head>
+
 <body>
-
     <script>
-        // Keep the main UI hidden until auth + initial sync complete
-        window.showApp = function() {
-            try { document.querySelector('.main-content').style.display = 'block'; } catch(e){}
-            try { const blocker = document.getElementById('auth-blocker'); if (blocker) blocker.remove(); } catch(e){}
-            try { const loader = document.getElementById('global-loader'); if (loader) loader.style.display = 'none'; } catch(e){}
-        };
+        (function(){
+            try {
+                const token = localStorage.getItem('google_token');
+                const expires = localStorage.getItem('google_token_expires_at');
+                const isExpired = expires ? (Date.now() > parseInt(expires)) : true;
+                if (token && !isExpired) {
+                    // valid session — redirect to app without rendering login UI
+                    try { window.location.href = 'home.html'; return; } catch(e){}
+                }
+            } catch(e) {}
+            // no valid session — reveal the page
+            try { document.body.style.visibility = 'visible'; } catch(e) { document.documentElement.style.visibility = 'visible'; }
+        })();
     </script>
-
-    <div class="top-card">
-        <div class="topbar">
-            <div id="topbar-title">
-                <div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+    <div style="position:absolute; top:20px; right:20px; z-index:1000; display:flex; align-items:center; gap:8px;">
+        <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">Language</label>
+        <select id="gn-lang-select" style="padding:8px 10px; border-radius:10px; background: rgba(255,255,255,0.02); color: white; border:1px solid rgba(255,255,255,0.06); font-weight:700; cursor:pointer;">
+            <option value="en">🇬🇧 English</option>
+            <option value="pt">🇧🇷 Português</option>
+        </select>
+    </div>
+    <div class="wrap">
+        <div class="card">
+            <img src="favicon.svg" alt="App icon" class="brand" />
+            <h1>GymNerd</h1>
+            <div id="auth-status-container" class="muted" data-i18n="signin_subtext"></div>
+            <div class="row" style="margin-top:24px">
+                <button id="signin-google" class="col btn btn-primary" data-i18n="sign_in_with_google"></button>
             </div>
-            <div id="topbar-actions">
-                <a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
-                    <span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300; font-size:20px; line-height:1;">settings</span>
-                </a>
-            </div>
-        </div>
-        <div class="top-card-inner">
-            <div id="home-user-main"></div>
-        </div>
-    </div>
-
-    <div style="padding: 0 20px;">
-        <div id="week-dots" class="week-dots" aria-hidden="false"></div>
-    </div>
-
-    <div class="main-content">
-
-        <button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
-            <span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
-        </button>
-
-        <div class="menu-grid">
-            <a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span data-i18n="menu_start_routine">🚀 Start Routine</span><span>→</span></a>
-            <a href="routines.html" class="nav-card"><span data-i18n="menu_routines">🏋 Routines</span><span>→</span></a>
-            <a href="history.html" class="nav-card"><span data-i18n="menu_history">📋 History</span><span>→</span></a>
-            <a href="statistics.html" class="nav-card"><span data-i18n="menu_statistics">📊 Statistics</span><span>→</span></a>
-        </div>
-    </div>
-
-    <script>
-
-        // Render compact app title into the sticky topbar
-        function renderCompactApp() {
-            const container = document.getElementById('topbar-title');
-            if (!container) return;
-            container.innerHTML = `
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="flex:1; min-width:0;">
-                        <div class="app-title-compact" data-i18n="title_main">GymNerd</div>
-                    </div>
+            <div class="row" style="margin-top:16px">
+                <div class="col" style="display:flex;justify-content:center;">
+                    <a id="demo-mode" href="#" style="color:#60a5fa;font-weight:600;font-size:0.82rem;text-decoration:none;cursor:pointer;align-self:center;text-transform:uppercase">Demo mode</a>
                 </div>
-            `;
-            // ensure settings aria label is localized
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // Language selector handlers (moved from auth.js)
+        (function attachLangHandlers(){
             try {
-                const s = document.getElementById('topbar-settings');
-                if (s) s.setAttribute('aria-label', (typeof GN_I18N !== 'undefined') ? GN_I18N.t('menu_settings') : 'Settings');
-            } catch(e){}
+                const sel = document.getElementById('gn-lang-select');
+                const key = 'gn_lang';
+                const detectBrowser = () => {
+                    try {
+                        const nl = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+                        return nl.startsWith('pt') ? 'pt' : 'en';
+                    } catch(e) { return 'en'; }
+                };
+
+                const getCookieSafe = (name) => {
+                    try { if (typeof getCookie === 'function') return getCookie(name); } catch(e){}
+                    try { const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : null; } catch(e) { return null; }
+                };
+
+                const initial = (function(){ try { return localStorage.getItem(key) || getCookieSafe(key) || detectBrowser(); } catch(e){ return detectBrowser(); } })();
+                if (sel) sel.value = initial;
+                try { localStorage.setItem(key, initial); } catch(e){}
+
+                try { if (typeof GN_I18N !== 'undefined' && typeof GN_I18N.applyTranslations === 'function') GN_I18N.applyTranslations(document); } catch(e){}
+
+                if (sel) sel.addEventListener('change', (ev) => {
+                    try { localStorage.setItem(key, ev.target.value); location.reload(); } catch(e){}
+                });
+            } catch(e) { console.warn('lang selector init failed', e); }
+        })();
+
+        document.getElementById('signin-google').addEventListener('click', function () {
+            if (typeof handleAuth === 'function') return handleAuth();
+            window.location.href = 'home.html';
+        });
+        const demoBtn = document.getElementById('demo-mode');
+        if (demoBtn) {
+            try { if (typeof GN_I18N !== 'undefined') demoBtn.textContent = GN_I18N.t('demo_mode'); } catch(e){}
+            demoBtn.addEventListener('click', function(e){
+                try { e.preventDefault(); } catch(e){}
+                const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('demo_mode_warning') : 'The data will be stored locally and might be cleared by the system.';
+                try { alert(msg); } catch(e) { console.warn('alert failed', e); }
+                window.location.href = 'home.html';
+            });
         }
-        function renderMainUser() {
-            const container = document.getElementById('home-user-main');
-            if (!container) return;
-            let user = null;
-            try {
-                if (typeof getGoogleUser === 'function') user = getGoogleUser();
-                else {
-                    const u = localStorage.getItem('google_user'); if (u) user = JSON.parse(u);
-                }
-            } catch (e) { user = null; }
+    </script>
+    <script>
+        (function initAuthUI(){
+            function safeText(s){ return (s || '').toString(); }
 
-            const name = user ? (user.name || user.email || '') : '';
-            // Prefer first name only. If we only have an email, use its local-part before punctuation.
-            let firstName = '';
-            if (name) {
-                if (name.includes('@')) {
-                    firstName = name.split('@')[0].split(/[.\-_+]/)[0];
-                } else {
-                    firstName = name.trim().split(/\s+/)[0];
-                }
+            function render(state){
+                const status = document.getElementById('auth-status-container');
+                const signinBtn = document.getElementById('signin-google');
+                if (!status) return;
+                // If running on the login page and we have a valid session, navigate to home
+                try {
+                    if (state && state.token && !state.isExpired && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
+                        try { window.location.href = 'home.html'; return; } catch(e) { /* ignore */ }
+                    }
+                } catch(e) {}
+                try {
+                    if (state && state.token && !state.isExpired) {
+                        if (signinBtn) signinBtn.style.display = 'none';
+                        const user = state.user || {};
+                        const pic = safeText(user.picture) || 'favicon.svg';
+                        const name = safeText(user.name) || '';
+                        const connected = state.isBypass ? '' : '<div style="font-size:0.8rem;color:#94a3b8;margin-top:6px;"><span style="color:#10b981">●</span> Connected to Drive</div>';
+                        status.innerHTML = `
+                            <div style="display:flex;align-items:center;gap:12px">
+                                <img src="${pic}" alt="avatar" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.04);"/>
+                                <div style="text-align:left">
+                                    <div style="font-weight:800;color:#e2e8f0">${name}</div>
+                                    ${connected}
+                                    <div style="margin-top:8px">
+                                        <a href="settings.html" style="color:#94a3b8;margin-right:10px;text-decoration:none;font-weight:700">Settings</a>
+                                        <button id="logout-btn" style="background:#111827;color:#fff;border-radius:8px;padding:6px 10px;border:none;cursor:pointer;font-weight:700">Logout</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        const logoutBtn = document.getElementById('logout-btn');
+                        if (logoutBtn) logoutBtn.addEventListener('click', () => { try { if (typeof window.logout === 'function') window.logout(); } catch(e){} });
+                    } else {
+                        if (signinBtn) signinBtn.style.display = '';
+                        try {
+                            const sub = (typeof GN_I18N !== 'undefined' && typeof GN_I18N.t === 'function') ? GN_I18N.t('signin_subtext') : 'Sign in with Google to sync your data.';
+                            status.textContent = sub;
+                        } catch (e) { status.textContent = 'Sign in with Google to sync your data.'; }
+                    }
+                } catch (e) { console.warn('auth UI render failed', e); }
             }
-            const avatar = user ? (user.picture || '') : '';
 
-            // Simple greeting abbreviation: always show "Hi" or "Olá" next to the name
-            const greeting = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('greeting_hi') : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'Olá' : 'Hi');
-
-            container.innerHTML = `
-                <div class="user-card">
-                    <div class="user-line" style="flex-direction:column; gap:8px;">
-                        <img src="${avatar || 'favicon.svg'}" alt="avatar" class="user-avatar" />
-                        <div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
-                            <div class="user-greeting">${greeting}</div>
-                            <div class="user-name">${firstName || 'GymNerd'}</div>
+            function showRefreshModal(detail){
+                try {
+                    const existing = document.getElementById('auth-refresh-modal');
+                    if (existing) return;
+                    const modal = document.createElement('div');
+                    modal.id = 'auth-refresh-modal';
+                    modal.style = 'position:fixed;inset:0;background:rgba(15,17,26,0.98);display:flex;align-items:center;justify-content:center;z-index:1000000;padding:20px;';
+                    modal.innerHTML = `
+                        <div style="max-width:420px;width:100%;color:white;font-family:system-ui, -apple-system,\"Segoe UI\", Roboto,\"Helvetica Neue\", Arial;">
+                            <h2 style="margin:0 0 8px 0; font-size:1.6rem">${safeText(detail.title)}</h2>
+                            <p style="color:#94a3b8;margin:0 0 18px 0">${safeText(detail.message)}</p>
+                            <div style="display:flex;gap:10px">
+                                <button id="auth-retry-btn" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:#1e293b;color:white;font-weight:700">${safeText(detail.retryText || 'Retry')}</button>
+                                <button id="auth-signin-btn" style="flex:1;padding:12px;border-radius:10px;border:none;background:#3b82f6;color:white;font-weight:700">${safeText(detail.signInText || 'Sign in with Google')}</button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `;
-            // After rendering the DOM
-        }
-
-        // motivational quotes loader removed
-
-        // Initial render
-        try { renderCompactApp(); } catch (e) {}
-        try { renderMainUser(); } catch (e) {}
-        try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
-        try { renderWeekDots && renderWeekDots(); } catch(e){}
-        
-        // Show 'Sync Pending Changes' button when local changes exist
-        function updatePendingButtonVisibility() {
-            const btn = document.getElementById('sync-pending-btn');
-            if (!btn) return;
-            try {
-                const hasChanges = localStorage.getItem('has_local_changes') === 'true';
-                btn.style.display = hasChanges ? 'block' : 'none';
-            } catch (e) { console.error('Error reading has_local_changes', e); }
-        }
-
-        // Expose a global sync handler so the button can trigger a manual sync.
-        window.syncToDrive = async function() {
-            try {
-                if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-                const ok = await DriveStorage.sync(db);
-                if (ok) updatePendingButtonVisibility();
-            } catch (e) {
-                console.error('Sync to Drive failed:', e);
-            }
-        };
-
-        // Ensure visibility is correct on load
-        try { updatePendingButtonVisibility(); } catch(e){}
-
-                // Render the current week's dots (SUN - SAT). Localized by GN_I18N.getLang()
-                async function renderWeekDots(){
-                    try{
-                        if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-                        const container = document.getElementById('week-dots');
-                        if (!container) return;
-                        container.innerHTML = `<div class="days" role="list"></div>`;
-                        const daysContainer = container.querySelector('.days');
-                        const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
-                        const locale = (lang === 'pt') ? 'pt' : 'en';
-                        const today = new Date();
-                        const start = new Date(today);
-                        start.setHours(0,0,0,0);
-                        // find Sunday (0) of current week
-                        start.setDate(start.getDate() - start.getDay());
-
-                        for (let i = 0; i < 7; i++) {
-                            const d = new Date(start);
-                            d.setDate(start.getDate() + i);
-                            const y = d.getFullYear();
-                            const m = String(d.getMonth() + 1).padStart(2, '0');
-                            const day = String(d.getDate()).padStart(2, '0');
-                            const dateStr = `${y}-${m}-${day}`; // YYYY-MM-DD (matches history.date format)
-
-                            let count = 0;
-                            try { count = await db.history.where('date').equals(dateStr).count(); } catch (e) { count = 0; }
-
-                            // Map counts to 0..4 intensity
-                            const level = (count === 0) ? 0 : Math.min(4, 1 + Math.floor(Math.log2(count)));
-                            const weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' });
-                            const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
-
-                            const el = document.createElement('div');
-                            el.className = 'day';
-                            const titleCount = (window.GN_I18N && GN_I18N.safeT) ? `${weekdayFull}: ${count}` : `${weekdayFull}: ${count}`;
-                            el.title = titleCount;
-                            // Determine state: future / no-workout (red) / workout levels (green)
-                            const dateObj = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                            const todayMid = new Date(); todayMid.setHours(0,0,0,0);
-                            let dotClass = '';
-                            // If the day is in the future, or it's today with no workout, show as 'future' (gray)
-                            if (dateObj.getTime() > todayMid.getTime() || (dateObj.getTime() === todayMid.getTime() && count === 0)) {
-                                dotClass = 'future';
-                            } else if (count === 0) {
-                                dotClass = 'no-workout';
+                    `;
+                    document.body.appendChild(modal);
+                    const retry = document.getElementById('auth-retry-btn');
+                    const signin = document.getElementById('auth-signin-btn');
+                    if (retry) retry.addEventListener('click', async () => {
+                        try {
+                            if (typeof window.ensureGoogleAccessToken === 'function') {
+                                const ok = await window.ensureGoogleAccessToken();
+                                if (ok) location.reload(); else alert(detail.message || 'Refresh failed. Please sign in.');
                             } else {
-                                dotClass = `fill-${level}`;
+                                alert(detail.message || 'Refresh failed. Please sign in.');
                             }
+                        } catch (e) { alert(detail.message || 'Refresh failed. Please sign in.'); }
+                    });
+                    if (signin) signin.addEventListener('click', () => { try { if (typeof window.handleAuth === 'function') window.handleAuth(); } catch(e){} });
+                } catch (e) { console.warn('failed to show refresh modal', e); }
+            }
 
-                            el.innerHTML = `<div class="dot ${dotClass}" data-count="${count}"></div><div class="label">${weekdayShort}</div>`;
-                            daysContainer.appendChild(el);
-                        }
-                    } catch (err) { console.error('renderWeekDots failed', err); }
-                }
+            document.addEventListener('DOMContentLoaded', async () => {
+                try {
+                    if (typeof renderAuthStatus === 'function') {
+                        const state = await renderAuthStatus();
+                        render(state);
+                    }
+                } catch (e) { console.warn('initAuthUI failed', e); }
+            });
+
+            window.addEventListener('auth-refresh-error', (ev) => { try { showRefreshModal(ev.detail || {}); } catch(e){} });
+            window.addEventListener('userchange', (ev) => { try { if (typeof renderAuthStatus === 'function') renderAuthStatus().then(render); } catch(e){} });
+        })();
     </script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
-        }
-    </script>
+    <img src="illustration-login.svg" alt="" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:320px; max-width:90%; height:auto; opacity:0.95; pointer-events:none;" />
 </body>
+
 </html>

@@ -1,7 +1,7 @@
 const CACHE = 'gymnerd-v1';
 const ASSETS = [
   './',
-  './index.html',
+  './home.html',
   './livesession.html',
   './manifest.json',
   './favicon.svg',
@@ -41,7 +41,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE).then(cache => cache.put(event.request, resClone));
         } catch (e) { /* ignore caching errors */ }
         return response;
-      }).catch(() => caches.match('./index.html'));
+      }).catch(() => caches.match('./home.html'));
     })
   );
 });

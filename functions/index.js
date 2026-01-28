@@ -8,9 +8,16 @@ const fetch = require('node-fetch');
 // Export as `exchangeTokenV2` so deployment creates a new Gen-2 function instead
 // of attempting to upgrade an existing Gen-1 function with the same name.
 exports.exchangeTokenV2 = onRequest({ region: 'us-central1', secrets: ['OAUTH_CLIENT_SECRET', 'OAUTH_CLIENT_ID'] }, async (req, res) => {
-  // Allow CORS from the GitHub Pages origin (or adjust as needed).
-  const allowedOrigin = 'https://luanbarbosa.github.io';
-  res.set('Access-Control-Allow-Origin', allowedOrigin);
+  // CORS: allow specific origins (include localhost for local development)
+  const allowedOrigins = new Set([
+    'https://luanbarbosa.github.io',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000'
+  ]);
+  const origin = req.get('origin');
+  if (origin && allowedOrigins.has(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+  }
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
 

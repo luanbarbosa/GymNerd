@@ -70,6 +70,7 @@
                 no_file_chosen: 'No file chosen',
                 danger_zone: 'Danger Zone',
                 sign_in_with_google: 'Sign in with Google',
+                signin_subtext: 'Sign in with Google to sync your data.',
                 oauth_signing_in: 'Signing you in…',
                 oauth_callback_help: 'Please wait. Do not close or refresh this page.',
                 oauth_success_close: 'Authentication successful. This window will close.',
@@ -104,6 +105,9 @@
                 failed_to_save_exercise_prefix: 'Failed to save exercise: ',
                 you_can_also_clear_local_data: 'You can also clear local data from the settings if you prefer.' ,
 
+                demo_mode: 'Demo mode',
+                demo_mode_warning: 'The data will be stored locally and might be cleared by the system at any point',
+
                 local_mode: 'Local Mode',
                 running_local_mode_msg: 'Running in Local Mode.',
                 sync_workout_msg: 'Sync your workout data with Google Drive.',
@@ -115,6 +119,7 @@
                 not_connected: 'Not Connected',
                 clear_local: 'Clear Local',
                 login: 'Login',
+
 
                 welcome_back_syncing: 'Welcome back!\nSyncing your data...',
                 confirm_logout: 'Are you sure you want to logout?',
@@ -290,6 +295,7 @@
                 no_file_chosen: 'Nenhum arquivo selecionado',
                 danger_zone: 'Zona de Perigo',
                 sign_in_with_google: 'Entrar com o Google',
+                signin_subtext: 'Entre com o Google para sincronizar seus dados.',
                 oauth_signing_in: 'Fazendo o login…',
                 oauth_callback_help: 'Favor não fechar ou atualizar esta página.',
                 oauth_success_close: 'Autenticação realizada com sucesso. Esta janela irá fechar.',
@@ -335,6 +341,9 @@
                 not_connected: 'Não Conectado',
                 clear_local: 'Limpar Local',
                 login: 'Entrar',
+
+                demo_mode: 'Modo de demonstração',
+                demo_mode_warning: 'Os dados serão armazenados localmente e podem ser apagados pelo sistema a qualquer momento.',
 
                 welcome_back_syncing: 'Bem vindo de volta!\nSincronizando seus dados...',
                 confirm_logout: 'Tem certeza de que deseja sair?',
