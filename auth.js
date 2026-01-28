@@ -51,7 +51,16 @@
             if (!el) {
                 el = document.createElement('div');
                 el.id = 'gn-global-loader';
-                el.style = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.85);color:white;z-index:100000;padding:20px;';
+                // Compute the page background variable and apply it directly to avoid
+                // var() resolution issues in some browsers. Use a very large z-index
+                // and explicit viewport sizing so the overlay fully covers everything.
+                let bgColor = '#0f172a';
+                try {
+                    const docEl = document.documentElement;
+                    const v = getComputedStyle(docEl).getPropertyValue('--bg');
+                    if (v && v.trim()) bgColor = v.trim();
+                } catch (e) {}
+                el.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:' + bgColor + ';color:white;z-index:2147483647;padding:20px;opacity:1;pointer-events:auto;';
                 el.innerHTML = `
                     <div style="max-width:520px;width:100%;text-align:center">
                         <div id="gn-global-loader-message" style="font-weight:800;font-size:1.1rem;margin-bottom:16px">Loading...</div>
@@ -64,6 +73,19 @@
                 style.id = 'gn-global-loader-style';
                 style.textContent = `@keyframes gn-spin { to { transform: rotate(360deg); } }`;
                 document.head.appendChild(style);
+                // Hide all existing body children while loader is visible so
+                // nothing underneath can be seen (Chrome rendering issues).
+                try {
+                    if (!document.body.dataset.gnHidden) {
+                        const children = Array.from(document.body.children);
+                        for (const c of children) {
+                            if (c.id === 'gn-global-loader') continue;
+                            c.dataset.gnPrevDisplay = c.style.display || '';
+                            c.style.display = 'none';
+                        }
+                        document.body.dataset.gnHidden = '1';
+                    }
+                } catch (e) {}
                 document.body.appendChild(el);
             }
             const msgEl = document.getElementById('gn-global-loader-message');
@@ -93,7 +115,25 @@
         } catch(e){}
     });
 
-    window.hideLoading = () => { try { const el = document.getElementById('gn-global-loader'); if (el) el.style.display = 'none'; } catch(e) { try { console.log('[hideLoading]'); } catch(_){} } };
+    window.hideLoading = () => {
+        try {
+            const el = document.getElementById('gn-global-loader');
+            if (el) el.style.display = 'none';
+        } catch(e) { try { console.log('[hideLoading]'); } catch(_){} }
+        try {
+            if (document.body.dataset.gnHidden) {
+                const children = Array.from(document.body.children);
+                for (const c of children) {
+                    if (c.id === 'gn-global-loader') continue;
+                    try {
+                        c.style.display = c.dataset.gnPrevDisplay || '';
+                        delete c.dataset.gnPrevDisplay;
+                    } catch(e) {}
+                }
+                delete document.body.dataset.gnHidden;
+            }
+        } catch(e) {}
+    };
 
     // Non-UI clear of all app data (silent)
     window.clearAllAppData = async () => {

@@ -160,7 +160,6 @@
 					b.id = 'demo-banner';
 					b.setAttribute('role', 'status');
 					b.setAttribute('aria-live', 'polite');
-					b.style.display = 'flex';
 					b.style.flexDirection = 'column';
 					b.style.justifyContent = 'center';
 					b.style.alignItems = 'center';
@@ -171,7 +170,7 @@
 					const topInner = document.querySelector('.top-card-inner');
 					if (topInner) topInner.appendChild(b);
 				} else {
-					b.style.display = 'flex';
+					// keep default display (controlled by CSS)
 				}
 				try { if (typeof window.showApp === 'function') window.showApp(); } catch(e){}
 			});
@@ -304,20 +303,9 @@
 	<script>
 		// Keep the main UI hidden until auth + initial sync complete
 		window.showApp = function() {
-			try { document.querySelector('.main-content').style.display = 'block'; } catch(e){}
-			try { const blocker = document.getElementById('auth-blocker'); if (blocker) blocker.remove(); } catch(e){}
-			try { const loader = document.getElementById('global-loader'); if (loader) loader.style.display = 'none'; } catch(e){}
-			try {
-				const b = document.getElementById('demo-banner');
-				if (b) {
-					b.style.display = (window.DEMO_MODE ? 'flex' : 'none');
-					if (window.DEMO_MODE) {
-						const main = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode') || GN_I18N.t('demo_mode_main') || 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.') : 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.';
-						const small = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode_warning') || GN_I18N.t('demo_mode_small') || 'Sign in to enable cloud sync and restore from Google Drive.') : 'Sign in to enable cloud sync and restore from Google Drive.';
-						b.innerHTML = main + '<small>' + small + '</small>';
-					}
-				}
-			} catch(e){}
+			// Emit an event so pages or other scripts can react instead of directly
+			// manipulating visibility. This keeps `home.html` free of hide/show logic.
+			try { window.dispatchEvent(new CustomEvent('app-shown')); } catch(e){}
 		};
 	</script>
 
