@@ -72,11 +72,13 @@
                 sign_in_with_google: 'Sign in with Google',
                 signin_subtext: 'Sign in with Google to sync your data.',
                 oauth_signing_in: 'Signing you in…',
+                loading: 'Loading...',
                 oauth_callback_help: 'Please wait. Do not close or refresh this page.',
                 oauth_success_close: 'Authentication successful. This window will close.',
                 oauth_notify_fail: 'Could not notify the app. Please return to the application and try again.',
                 oauth_returning: 'Authentication successful. Returning to app...',
                 oauth_no_code: 'No code found in URL.',
+                finalizing_signin: 'Finalizing sign-in...',
 
                 import_success: 'Import successful!',
                 import_error: 'Error importing data. Check console for details.',
@@ -302,6 +304,9 @@
                 oauth_notify_fail: 'Não foi possível notificar o app. Por favor volte ao aplicativo e tente novamente.',
                 oauth_returning: 'Autenticação realizada com sucesso. Retornando ao app...',
                 oauth_no_code: 'Nenhum código encontrado na URL.',
+
+                finalizing_signin: 'Finalizando login...',
+                loading: 'Carregando...',
 
                 import_success: 'Importação bem-sucedida!',
                 import_error: 'Erro ao importar dados. Verifique o console para detalhes.',

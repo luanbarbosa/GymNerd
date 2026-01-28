@@ -60,7 +60,7 @@
                     const v = getComputedStyle(docEl).getPropertyValue('--bg');
                     if (v && v.trim()) bgColor = v.trim();
                 } catch (e) {}
-                el.style.cssText = 'position:fixed;left:0;top:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:' + bgColor + ';color:white;z-index:2147483647;padding:20px;opacity:1;pointer-events:auto;';
+                el.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:' + bgColor + ';color:white;z-index:2147483647;padding:20px;opacity:1;pointer-events:auto;box-sizing:border-box;';
                 el.innerHTML = `
                     <div style="max-width:520px;width:100%;text-align:center">
                         <div id="gn-global-loader-message" style="font-weight:800;font-size:1.1rem;margin-bottom:16px">Loading...</div>
@@ -89,7 +89,7 @@
                 document.body.appendChild(el);
             }
             const msgEl = document.getElementById('gn-global-loader-message');
-            if (msgEl) msgEl.textContent = message || 'Loading...';
+            if (msgEl) msgEl.textContent = message || ((typeof GN_I18N !== 'undefined') ? GN_I18N.t('loading') : 'Loading...');
             el.style.display = 'flex';
         } catch (e) { try { console.log('[showLoading]', message); } catch(_){} }
     };
