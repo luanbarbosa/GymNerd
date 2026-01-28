@@ -304,8 +304,18 @@
 		// Keep the main UI hidden until auth + initial sync complete
 		window.showApp = function() {
 			// Emit an event so pages or other scripts can react instead of directly
-			// manipulating visibility. This keeps `home.html` free of hide/show logic.
+			// manipulating visibility. Also ensure the main content is visible
+			// in cases (like demo mode) where no other listener will unhide it.
 			try { window.dispatchEvent(new CustomEvent('app-shown')); } catch(e){}
+			try {
+				const mc = document.querySelector('.main-content');
+				if (mc) {
+					mc.style.display = 'block';
+					mc.style.opacity = '0';
+					mc.style.transition = 'opacity 260ms ease-out';
+					requestAnimationFrame(() => { mc.style.opacity = '1'; });
+				}
+			} catch(e) {}
 		};
 	</script>
 
@@ -387,13 +397,16 @@
 				}
 			}
 			const avatar = user ? (user.picture || '') : '';
-			const fallbackAvatar = (window && window.location) ? (window.location.origin + '/icons/icon-512.svg') : '/icons/icon-512.svg';
+			const origin = (window && window.location && window.location.origin && window.location.origin !== 'null' && !String(window.location.origin).startsWith('file:')) ? window.location.origin : '';
+			const fallbackAvatar = origin ? (origin + '/icons/icon-512.svg') : 'icons/icon-512.svg';
+			const effectiveAvatar = (window && window.DEMO_MODE) ? fallbackAvatar : (avatar || fallbackAvatar);
+			if (window && window.DEMO_MODE) try { console.info('[DemoMode] using demo avatar', fallbackAvatar); } catch(e){}
 			const greeting = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('greeting_hi') : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'Olá' : 'Hi');
 
 			container.innerHTML = `
 				<div class="user-card">
 					<div class="user-line" style="flex-direction:column; gap:8px;">
-						<img src="${avatar || fallbackAvatar}" alt="avatar" class="user-avatar" onerror="this.onerror=null;this.src='${fallbackAvatar}'" />
+						<img src="${effectiveAvatar}" alt="avatar" class="user-avatar" onerror="this.onerror=null;this.src='${fallbackAvatar}'" />
 						<div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
 							<div class="user-greeting">${greeting}</div>
 							<div class="user-name">${firstName || 'GymNerd'}</div>
