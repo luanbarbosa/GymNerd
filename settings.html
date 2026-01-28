@@ -47,10 +47,11 @@
         .danger { background: transparent; color: var(--danger); border: 1px solid rgba(239,68,68,0.15); }
         label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 6px; }
         .top-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:24px; margin-bottom: 12px; }
+        .danger-row { display:flex; flex-direction:column; gap:10px; padding-top:10px; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: inherit; }
         /* Data Management card specific styles */
-        .data-card .btn-row { display:flex; gap:8px; }
-        .data-card .btn-row .sync-btn { flex:1; }
+        .data-card .btn-row { display:flex; flex-direction:column; gap:10px; }
+        .data-card .sync-btn { width:100%; flex:none; background: rgba(255,255,255,0.03); color: var(--text); border:1px solid rgba(255,255,255,0.06); }
         .data-card .restore-grid { display:grid; gap:6px; grid-template-columns: 1fr; }
         .data-card label { margin-bottom:4px; display:block; color:#94a3b8; }
         .data-card input[type="file"] { width:100%; }
@@ -65,8 +66,11 @@
         .file-row:last-child { border-bottom: none; }
         .hidden-file { display:none; }
 
-        /* Divider used inside cards (e.g., between rows in General) */
-        .card-divider { height: 1px; margin: 12px 0; background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04)); border-radius:1px; }
+        /* Divider used inside cards (e.g., between rows in General) - high visibility */
+        .card-divider { height: 2px; margin: 10px 0; background: rgba(255,255,255,0.18); border-radius:2px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); }
+
+        /* Consistent row spacing for setting items (language, wakelock, etc.) */
+        .setting-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 0; }
 
         /* Refined toggle switch styles */
         .switch { position: relative; display: inline-block; width:54px; height:30px; }
@@ -108,10 +112,12 @@
 
         <h3 class="section-title" data-i18n="general">General</h3>
         <div class="card">
-            <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
-                <div>
-                    <h4 data-i18n="language">Language</h4>
-                    <select id="gn-lang-select" aria-label="Language" style="padding:8px 10px; border-radius:8px; background: rgba(255,255,255,0.02); color: #f8fafc; border:1px solid rgba(255,255,255,0.05); font-weight:700;">
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+                <div class="setting-row">
+                    <div style="display:flex;flex-direction:column;">
+                        <h4 data-i18n="language">Language</h4>
+                    </div>
+                    <select id="gn-lang-select" aria-label="Language" style="padding:8px 10px; border-radius:8px; background: rgba(255,255,255,0.02); color: #f8fafc; border:1px solid rgba(255,255,255,0.05); font-weight:700; min-width:160px;">
                         <option value="en">🇬🇧 English</option>
                         <option value="pt">🇧🇷 Português</option>
                     </select>
@@ -119,7 +125,7 @@
 
                 <div class="card-divider" aria-hidden="true"></div>
 
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div class="setting-row">
                     <div style="display:flex;flex-direction:column;">
                         <h4 data-i18n="keep_device_awake">Keep device awake on workouts</h4>
                         <div style="font-size:0.85rem;color:#94a3b8;" data-i18n="keep_device_awake_help">Prevent the device from sleeping during sessions.</div>
@@ -136,23 +142,25 @@
         <div class="card data-card">
             <div style="margin-top:8px;">
                 <div class="btn-row">
-                    <button id="sync-drive-btn" class="sync-btn" style="background: #3b82f6; color: white;" onclick="syncToDrive()" data-i18n="sync_to_drive">☁️ Sync to Google Drive</button>
-                    <button id="restore-drive-btn" class="sync-btn" style="background: #6366f1; color: white;" onclick="restoreFromDrive()" data-i18n="restore_from_drive">📥 Restore from Google Drive</button>
+                    <button id="sync-drive-btn" class="sync-btn" onclick="syncToDrive()" data-i18n="sync_to_drive">☁️ Sync to Google Drive</button>
+                    <button id="restore-drive-btn" class="sync-btn" onclick="restoreFromDrive()" data-i18n="restore_from_drive">📥 Restore from Google Drive</button>
                 </div>
             </div>
         </div>
 
         <h3 class="section-title" data-i18n="backup">Backup</h3>
         <div class="card data-card">
-            <div style="margin-top:8px;">
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
                 <h4 data-i18n="backup_local">Local Backup</h4>
-                <div style="margin-top:6px;">
-                    <button class="sync-btn export-btn" onclick="exportData()" data-i18n="export_json">📤 Export ZIP Backup</button>
+                <div>
+                    <button class="sync-btn" onclick="exportData()" data-i18n="export_json">📤 Export ZIP Backup</button>
                 </div>
 
-                <h4 data-i18n="restore" style="margin-top:12px;">Restore</h4>
-                <p class="restore-help" data-i18n="restore_help" style="margin:6px 0 8px 0;color:#94a3b8;font-size:0.85rem;">Upload a ZIP backup to restore the app.</p>
-                <div class="restore-grid" style="margin-top:6px;">
+                <div class="card-divider" aria-hidden="true"></div>
+
+                <h4 data-i18n="restore">Restore</h4>
+                <p class="restore-help" data-i18n="restore_help" style="margin:0;color:#94a3b8;font-size:0.85rem;">Upload a ZIP backup to restore the app.</p>
+                <div class="restore-grid" style="margin-top:0;">
                     <div class="file-row">
                         <div class="file-desc">
                             <label data-i18n="label_zip">Import ZIP Backup (.zip)</label>
@@ -167,16 +175,16 @@
                     </div>
                 </div>
                 <div style="margin-top:8px;">
-                    <button class="sync-btn import-btn" onclick="importData()" data-i18n="process_import">📥 Process Import</button>
+                    <button id="process-import-btn" class="sync-btn" onclick="importData()" data-i18n="process_import" disabled>📥 Process Import</button>
                 </div>
             </div>
         </div>
 
         <h3 class="section-title" data-i18n="danger_zone">Danger Zone</h3>
         <div class="card">
-            <div class="top-row">
-                <button onclick="clearAllAppData()" class="sync-btn danger" style="flex:1;" data-i18n="clear_all"></button>
-                <button onclick="logout()" class="sync-btn" style="flex:1; background:#ef4444; color:white; margin-left:10px;" data-i18n="logout"></button>
+            <div class="danger-row">
+                <button onclick="confirmClearAll()" class="sync-btn danger" data-i18n="clear_all"></button>
+                <button onclick="confirmLogout()" class="sync-btn" style="background:#ef4444; color:white;" data-i18n="logout"></button>
             </div>
         </div>
 
@@ -508,16 +516,42 @@
         // Render connection/status in settings
         try { if (typeof renderAuthStatus === 'function') renderAuthStatus('auth-status-container'); } catch(e) {}
 
+        // Confirm logout with localized message
+        function confirmLogout() {
+            try {
+                const msg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('confirm_logout') || 'Are you sure you want to logout?') : 'Are you sure you want to logout?';
+                if (confirm(msg)) {
+                    try { if (typeof logout === 'function') logout(); }
+                    catch(e) { try { window.logout && window.logout(); } catch(_){} }
+                }
+            } catch(e) { try { if (confirm('Are you sure you want to logout?')) logout(); } catch(_){} }
+        }
+
+        // Confirm clear-all with localized danger message
+        function confirmClearAll() {
+            try {
+                const msg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('danger_clear_confirm') || 'This will permanently delete all local data. Continue?') : 'This will permanently delete all local data. Continue?';
+                if (confirm(msg)) {
+                    try { if (typeof clearAllAppData === 'function') clearAllAppData(); }
+                    catch(e) { try { window.clearAllAppData && window.clearAllAppData(); } catch(_){} }
+                }
+            } catch(e) { try { if (confirm('This will permanently delete all local data. Continue?')) clearAllAppData(); } catch(_){} }
+        }
+
         // File input UI: show selected filename in the UI
         (function(){
             const fileIds = ['importZip'];
+            const importBtn = document.getElementById('process-import-btn');
             fileIds.forEach(id => {
                 const input = document.getElementById(id);
                 const nameEl = document.getElementById(id + '-name');
                 if (!input || !nameEl) return;
+                // Initialize button state based on existing selection
+                if (importBtn) importBtn.disabled = !(input.files && input.files.length > 0);
                 input.addEventListener('change', (ev) => {
                     const f = ev.target.files && ev.target.files[0];
                     nameEl.textContent = f ? f.name : (window.GN_I18N ? GN_I18N.t('no_file_chosen') || 'No file chosen' : 'No file chosen');
+                    if (importBtn) importBtn.disabled = !f;
                 });
             });
         })();
