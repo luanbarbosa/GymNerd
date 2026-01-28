@@ -304,8 +304,18 @@
 		// Keep the main UI hidden until auth + initial sync complete
 		window.showApp = function() {
 			// Emit an event so pages or other scripts can react instead of directly
-			// manipulating visibility. This keeps `home.html` free of hide/show logic.
+			// manipulating visibility. Also ensure the main content is visible
+			// in cases (like demo mode) where no other listener will unhide it.
 			try { window.dispatchEvent(new CustomEvent('app-shown')); } catch(e){}
+			try {
+				const mc = document.querySelector('.main-content');
+				if (mc) {
+					mc.style.display = 'block';
+					mc.style.opacity = '0';
+					mc.style.transition = 'opacity 260ms ease-out';
+					requestAnimationFrame(() => { mc.style.opacity = '1'; });
+				}
+			} catch(e) {}
 		};
 	</script>
 
