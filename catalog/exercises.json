@@ -418,5 +418,12 @@
     "name": "Elliptical",
     "namePT": "Elíptico",
     "type": "cardio"
+  },
+  {
+    "id": 61,
+    "imageId": 61,
+    "name": "Hanging leg raise",
+    "namePT": "Elevação de pernas suspenso",
+    "type": "abs"
   }
 ]
