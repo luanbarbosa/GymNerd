@@ -398,7 +398,7 @@
         let viewingIdx = 0;
         let currentWorkoutId = null;
         let timerInterval = null;
-        let seconds = 0;
+        let timerStartMs = null; // timestamp (ms) when current timer started
         let routineModified = false;
         let _finishingSession = false;
 
@@ -415,18 +415,31 @@
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
+            timerStartMs = null;
+        }
+
+        function updateTimerDisplay() {
+            try {
+                const timerEl = document.getElementById('setTimer');
+                if (!timerEl) return;
+                const elapsedSec = timerStartMs ? Math.floor((Date.now() - timerStartMs) / 1000) : 0;
+                timerEl.innerText = formatTime(elapsedSec);
+            } catch (e) { /* ignore */ }
         }
 
         function startTimer() {
             stopTimer();
-            seconds = 0;
-            const timerEl = document.getElementById('setTimer');
-            if (timerEl) timerEl.innerText = formatTime(seconds);
-            timerInterval = setInterval(() => {
-                seconds++;
-                if (timerEl) timerEl.innerText = formatTime(seconds);
-            }, 1000);
+            // Use wall-clock time so elapsed keeps increasing even when page is hidden/throttled.
+            timerStartMs = Date.now();
+            updateTimerDisplay();
+            // Update once per second when possible; when hidden the next tick will reflect full elapsed time.
+            timerInterval = setInterval(updateTimerDisplay, 1000);
         }
+
+        // Ensure display refreshes immediately when page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) updateTimerDisplay();
+        });
 
         // Ensure the fullscreen illustration doesn't extend under the constrained content
         function updateFinishedIllustration() {
