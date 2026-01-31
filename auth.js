@@ -31,6 +31,7 @@
                         if (_db) await _db.delete();
                     } catch(e) {
                         try { const _alt = new Dexie('GymAppDB'); await _alt.delete(); } catch(e2){}
+                try { sessionStorage.removeItem('gn_signing_in'); localStorage.removeItem('gn_signing_in'); } catch(e){}
                     }
                 }
             } catch(e){}
@@ -40,6 +41,8 @@
                 document.cookie = 'google_refresh_token=; path=/; max-age=0;';
             } catch(e){}
         } catch(e){}
+        try { sessionStorage.removeItem('gn_signing_in'); localStorage.removeItem('gn_signing_in'); } catch(e){}
+        try { window.__gn_signing_in = false; } catch(e){}
         try { if (window.hideLoading) window.hideLoading(); } catch(e){}
         try { window.location.href = 'index.html'; } catch(e) { location.reload(); }
     };
@@ -47,6 +50,14 @@
     // Full-screen loading indicator (creates an overlay element)
     window.showLoading = (message) => {
         try {
+            // If the document body is not yet available (auth.js loaded in head),
+            // defer creation until DOM is ready so we can safely append elements.
+            if (!document.body) {
+                try {
+                    document.addEventListener('DOMContentLoaded', () => { try { window.showLoading(message); } catch(e){} }, { once: true });
+                    return;
+                } catch(e) {}
+            }
             let el = document.getElementById('gn-global-loader');
             if (!el) {
                 el = document.createElement('div');
@@ -609,6 +620,12 @@
 
         // store verifier in session for later exchange
         sessionStorage.setItem('pkce_code_verifier', code_verifier);
+        // mark that the app is currently performing an interactive sign-in
+        try {
+            localStorage.setItem('gn_signing_in', '1');
+            sessionStorage.setItem('gn_signing_in', '1');
+        } catch (e) {}
+        try { window.__gn_signing_in = true; } catch(e){}
 
         const params = new URLSearchParams({
             client_id: CLIENT_ID,
@@ -645,17 +662,23 @@
             const redirect_uri = window.location.origin + basePath + REDIRECT_PATH.replace(/^[\/]*/, '');
             try { console.log('OAuth redirect_uri (exchange):', redirect_uri); } catch(e){}
             const verifier = sessionStorage.getItem('pkce_code_verifier');
+
             // Clean up stored code immediately
             sessionStorage.removeItem('oauth2_code');
             localStorage.removeItem('oauth2_code');
+
+            // Ensure the signing-in flag is present (in case of redirect race)
+            try { localStorage.setItem('gn_signing_in', '1'); sessionStorage.setItem('gn_signing_in', '1'); } catch(e){}
+            try { window.__gn_signing_in = true; } catch(e){}
 
             // Show full-screen loading while exchanging the code
             try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('finalizing_signin') || 'Finalizing sign-in...' : 'Finalizing sign-in...'); } catch(e){}
 
             // Exchange code for tokens
             const tokenData = await exchangeCodeForTokens(storedCode, verifier, redirect_uri);
-            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
 
+            // If exchange succeeded and we have a token, navigate immediately
+            // without hiding the global loader so the login UI doesn't flash.
             if (tokenData && tokenData.access_token) {
                 localStorage.setItem('google_token', tokenData.access_token);
                 localStorage.setItem('google_token_expires_at', Date.now() + (tokenData.expires_in * 1000));
@@ -666,10 +689,19 @@
                     }
                 } catch(e) { console.warn('profile fetch after exchange failed', e); }
                 localStorage.setItem('needs_initial_download', 'true');
-                location.reload();
+                // Do not hide the loader here; the upcoming reload/navigation
+                // will replace this page. Use replace to avoid keeping this
+                // intermediate state in history.
+                try { window.location.replace('home.html'); } catch(e) { location.reload(); }
+                return;
             } else {
                 try { console.error('Token exchange failed', tokenData); } catch(e){}
                 try {
+                    // Clear signing-in state and hide loader so the login UI can be shown
+                    try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                    try { sessionStorage.removeItem('gn_signing_in'); localStorage.removeItem('gn_signing_in'); } catch(e){}
+                    try { window.__gn_signing_in = false; } catch(e){}
+
                     const detail = {
                         title: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('signin_failed') || 'Sign-in Failed' : 'Sign-in Failed',
                         message: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_complete_signin') || 'Could not complete sign-in. Please try again.' : 'Could not complete sign-in. Please try again.',
@@ -681,6 +713,8 @@
             }
         } catch (err) {
             try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+            try { sessionStorage.removeItem('gn_signing_in'); localStorage.removeItem('gn_signing_in'); } catch(e){}
+            try { window.__gn_signing_in = false; } catch(e){}
             console.error('Exchange error', err);
             try {
                 const detail = {
@@ -689,6 +723,8 @@
                     retryText: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('retry') || 'Retry' : 'Retry',
                     signInText: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('sign_in_with_google') || 'Sign in with Google' : 'Sign in with Google'
                 };
+                try { sessionStorage.removeItem('gn_signing_in'); localStorage.removeItem('gn_signing_in'); } catch(e){}
+                try { window.__gn_signing_in = false; } catch(e){}
                 try { window.dispatchEvent(new CustomEvent('auth-refresh-error', { detail })); } catch(e){}
             } catch(e){}
         }

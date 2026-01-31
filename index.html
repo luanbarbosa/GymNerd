@@ -31,6 +31,8 @@
             color: #0f172a;
         }
 
+        
+
         .card {
             width: 100%;
             max-width: 420px;
@@ -85,6 +87,7 @@
             flex: 1;
         }
     </style>
+
 </head>
 
 <body>
@@ -144,8 +147,16 @@
                 }
             } catch(e) {}
 
-            // No valid session and no refresh possible — reveal the login UI.
-            try { document.body.style.visibility = 'visible'; } catch(e) { document.documentElement.style.visibility = 'visible'; }
+            // No valid session and no refresh possible — reveal the login UI
+            // unless an interactive sign-in is in progress (set by auth.js).
+            try {
+                if (window.__gn_signing_in) {
+                    // keep page hidden; auth.js will complete the exchange and
+                    // navigate or reveal when appropriate.
+                } else {
+                    document.body.style.visibility = 'visible';
+                }
+            } catch(e) { document.documentElement.style.visibility = 'visible'; }
         })();
     </script>
     <div style="position:absolute; top: calc(constant(safe-area-inset-top) + 20px); top: calc(env(safe-area-inset-top) + 20px); right:20px; z-index:1000; display:flex; align-items:center; gap:8px;">
