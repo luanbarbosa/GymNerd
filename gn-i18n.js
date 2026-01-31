@@ -2,7 +2,7 @@
     window.GN_I18N = {
         translations: {
             en: {
-                new_routine_btn: '+ New Routine',
+                new_routine_btn: 'New Routine',
                 no_routines_placeholder: 'No routines yet. Click <strong>New Routine</strong> to create one.',
                 routine_not_found: 'Routine not found.',
                 page_routine_new: 'New Routine',
@@ -31,7 +31,7 @@
                 edit: 'Edit',
                 title_main: 'GymNerd',
                 sync_pending: '☁️ Sync pending changes to cloud',
-                start_routine: '🚀 Start Routine',
+                start_routine: '🚀 Start Live Routine',
                 menu_start_routine: '🚀 Start Routine',
                 page_start_routine: 'Start Routine',
                 routines: '🏋 Routines',
@@ -230,7 +230,7 @@
                 general: 'General'
             },
             pt: {
-                new_routine_btn: '+ Novo treino',
+                new_routine_btn: 'Novo treino',
                 no_routines_placeholder: 'Ainda não há treinos. Clique em <strong>Novo Treino</strong> para criar um.',
                 routine_not_found: 'Treino não encontrado.',
                 page_routine_new: 'Novo Treino',
@@ -259,7 +259,7 @@
                 edit: 'Editar',
                 title_main: 'GymNerd',
                 sync_pending: '☁️ Enviar novos dados para a nuvem',
-                start_routine: '🚀 Iniciar Treino',
+                start_routine: '🚀 Iniciar treino ao vivo',
                 menu_start_routine: '🚀 Iniciar Treino',
                 page_start_routine: 'Iniciar Treino',
                 routines: '🏋 Treinos',
