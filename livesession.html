@@ -138,8 +138,9 @@
         .set-row.skipped { background: rgba(255,255,255,0.05); border-color: #475569; opacity: 0.5; }
         .set-row.active { background: rgba(59, 130, 246, 0.15); border-color: var(--primary); transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { border-color: var(--primary); } 50% { border-color: #60a5fa; } 100% { border-color: var(--primary); } }
-        .set-row input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; text-align: center; font-size: 1rem; box-sizing: border-box; background: #000; color: white; }
-        .set-label { font-weight: bold; color: var(--text-dim); font-size: 0.8rem; }
+        .set-row input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; text-align: center; font-size: 0.88rem; box-sizing: border-box; background: #000; color: white; }
+        .set-label { font-weight: bold; color: var(--text-dim); font-size: 0.62rem; text-transform:uppercase; }
+        .input-field-label { font-size: 0.56rem; color: var(--text-dim); font-weight:700; text-transform:uppercase; display:block; }
 
         .player-controls-icons { display: flex; justify-content: center; gap: 20px; margin-top: 25px; }
         /* Bottom action bar (fixed) */
@@ -1206,12 +1207,35 @@
 
                 const row = document.createElement('div');
                 row.className = `set-row ${isSkipped ? 'skipped' : (isCompleted ? 'completed' : '')} ${isActive ? 'active' : ''}`;
-                const setsLabel = isSkipped ? skipIcon : (isCompleted ? checkIcon : (s.setNum + GN_I18N.t('history_fmt_sets_short')));
-                row.innerHTML = `
-                    <div class="set-label">${setsLabel}</div>
-                    <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="${GN_I18N.t('history_reps')}">
-                    <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="${GN_I18N.t('history_kg')}">
-                `;
+                let setsLabel;
+                if (isSkipped) {
+                    setsLabel = skipIcon;
+                } else if (isCompleted) {
+                    setsLabel = checkIcon;
+                } else {
+                    const fmt = (GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_fmt_set') : 'Set {n}';
+                    setsLabel = fmt.replace('{n}', s.setNum);
+                }
+                // Add stacked labels above the reps and weight inputs for the first row only
+                if (i === start) {
+                    row.innerHTML = `
+                        <div class="set-label">${setsLabel}</div>
+                        <div style="display:flex;flex-direction:column;gap:6px">
+                            <span class="input-field-label">${(GN_I18N.t('history_reps') || 'Reps')}</span>
+                            <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="${GN_I18N.t('history_reps')}">
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:6px">
+                            <span class="input-field-label">${(GN_I18N.t('history_kg') || 'Kg')}</span>
+                            <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="${GN_I18N.t('history_kg')}">
+                        </div>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <div class="set-label">${setsLabel}</div>
+                        <input type="number" value="${s.reps}" onchange="updateSetData(${i}, 'reps', this.value)" placeholder="${GN_I18N.t('history_reps')}">
+                        <input type="number" step="0.5" value="${s.weight}" onchange="updateSetData(${i}, 'weight', this.value)" placeholder="${GN_I18N.t('history_kg')}">
+                    `;
+                }
                 container.appendChild(row);
             }
 

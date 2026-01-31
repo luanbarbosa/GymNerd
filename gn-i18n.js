@@ -183,6 +183,7 @@
                 history_sets: 'Sets',
                 history_kg: 'Kg',
                 history_reps: 'Reps',
+                history_fmt_set: 'Set {n}',
                 add_set: 'Add new set',
                 history_delete_session: 'Delete Session',
                 history_confirm_delete: 'Delete all entries for {date}?',
@@ -417,6 +418,7 @@
                 history_edit_routine: 'Editando treino',
                 history_edit_weight: 'Editando peso',
                 history_fmt_sets_short: 'sér',
+                history_fmt_set: 'Série {n}',
                 history_fmt_kg_suffix: 'kg'
                 ,
                 history_disclaimer_stats_only: 'Os valores alterados aqui não serão aplicados aos treinos. Somente às estatísticas.'
