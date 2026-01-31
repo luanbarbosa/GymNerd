@@ -412,6 +412,10 @@
                         addExerciseToRoutine(exId, sets, isCustom);
                     }
                 }
+                // If caller requested to open the Add Exercise modal immediately, trigger it after a short delay
+                if (params.get('openAdd')) {
+                    setTimeout(() => { try { openSearchModal(); } catch (e) { console.warn(e); } }, 60);
+                }
             }
             // wire drag/drop on image preview
             try {
