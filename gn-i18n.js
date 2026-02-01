@@ -138,7 +138,7 @@
                 this_week: 'This week',
                 monthly: 'Monthly',
                 yearly: 'Yearly',
-                weight_progress: 'Progress',
+                weight_progress: 'Weight progress',
                 no_weight_data: 'No weight data',
                 weight_kg: 'Weight (kg)',
                 weight_per_rep: 'Weight per rep',

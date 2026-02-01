@@ -46,6 +46,7 @@
         .input-pair { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; grid-column: span 3; }
         .input-pair input { background: #000; }
         .save-session { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
+        button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
         .save-session.success { background: var(--success); }
 
         details.history-section { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-top: 20px; }
@@ -80,19 +81,11 @@
                 <div style="flex:1;min-width:0;">
                     <h2 data-i18n="history_header">History</h2>
                 </div>
+                <button id="toggleRoutineForm" type="button" class="primary" style="margin-left:8px;padding:10px 14px;border-radius:10px;font-size:0.9rem;width:auto;min-width:0;white-space:nowrap;align-self:center;" data-i18n="history_btn_new_routine" onclick="location.href='historycrud.html?mode=routine'">New Routine Entry</button>
             </div>
         </div>
     </div>
     <div class="page-content">
-        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-            <button id="toggleRoutineForm" type="button" class="save-session" style="flex:1" data-i18n="history_btn_new_routine" onclick="location.href='historycrud.html?mode=routine'">New Routine Entry</button>
-            <button id="toggleWeightForm" type="button" class="save-session" style="flex:1" data-i18n="history_btn_new_weight" onclick="location.href='historycrud.html?mode=weight'">New Weight Entry</button>
-        </div>
-    <details class="history-section">
-    <summary class="section-header"><span data-i18n="history_weight_header">Weight History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
-        <div id="weight-history" style="padding: 0 15px 10px 15px;"></div>
-    </details>
-
     <details class="history-section">
     <summary class="section-header"><span data-i18n="history_workout_header">Workout History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
         <div id="history" style="padding: 0 15px 10px 15px;"></div>
@@ -284,7 +277,6 @@
             try { document.title = GN_I18N.t('title_main') + ' | ' + GN_I18N.t('history_header'); } catch(e){}
         }
         init();
-        try { renderWeightHistory(); } catch(e){}
     </script>
     </div>
 </body>

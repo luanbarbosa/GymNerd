@@ -94,18 +94,7 @@
                 </div>
         </div>
 
-        <div id="weightFormSection" class="card" style="margin-bottom: 20px;">
-            <form id="weightForm" onsubmit="event.preventDefault(); saveWeightEntry();">
-                        <img src="illustration-history-weight.svg" alt="" style="display:block; margin:0 auto 36px; width:240px; max-width:80%; opacity:0.95;">
-                <input type="date" id="weightDate" required style="margin-bottom:10px">
-                    <input type="number" id="weightKg" step="0.1" min="0" data-i18n-placeholder="history_weight_kg" placeholder="Weight (kg)" required>
-                    <div class="form-actions">
-                        <button type="button" style="flex:1; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="location.href='history.html'" data-i18n="history_cancel">Cancel</button>
-                        <button type="submit" class="primary" style="flex:1; width:100%;" data-i18n="history_save_weight">💾 Save Weight</button>
-                    </div>
-                </form>
-                <div id="weightSaveMsg" style="color:var(--success);margin-top:8px;display:none" data-i18n="history_weight_saved">Weight saved!</div>
-        </div>
+        <!-- Weight entry handled elsewhere; removed from this page -->
 
     <!-- Localized disclaimer: will be translated by GN_I18N -->
     <!-- moved below page-content so it sits outside the rounded background -->
@@ -116,21 +105,6 @@
         }
         function hideForm(id) {
             document.getElementById(id).style.display = 'none';
-        }
-
-        async function saveWeightEntry() {
-                const date = document.getElementById('weightDate').value;
-                const weight = parseFloat(document.getElementById('weightKg').value);
-                if (!date || isNaN(weight)) return;
-                await ensureDbOpen();
-                await db.weights.put({ date, weight });
-                localStorage.setItem('has_local_changes', 'true');
-                document.getElementById('weightSaveMsg').style.display = 'block';
-                setTimeout(() => { document.getElementById('weightSaveMsg').style.display = 'none'; }, 1500);
-                    hideForm('weightFormSection');
-                    try { renderWeightHistory(); } catch(e){}
-                    // After saving a weight entry in the CRUD page, go back to History view
-                    location.href = 'history.html';
         }
 
     let allEx = [];
@@ -152,7 +126,6 @@
         const p = document.getElementById('routinePicker');
         wks.forEach(w => p.innerHTML += `<option value="${w.id}">${w.name}</option>`);
         document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
         // If opened from History with a mode param, show only the requested form
         try {
             const params = new URLSearchParams(window.location.search);
@@ -162,7 +135,6 @@
             const editDateParam = params.get('editDate');
             if (mode === 'routine') {
                 document.getElementById('routineFormSection').style.display = 'block';
-                document.getElementById('weightFormSection').style.display = 'none';
                 document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
                 // if an edit param is present for a single log, prefill sheet with that log
                 if (editParam) {
@@ -202,20 +174,6 @@
                     }
                 }
                 try { if (window.GN_I18N && GN_I18N.t) document.title = GN_I18N.t('title_main') + ' | ' + (isEditMode ? GN_I18N.t('history_edit_routine') : GN_I18N.t('history_section_log_routine')); } catch(e){}
-            } else if (mode === 'weight') {
-                document.getElementById('weightFormSection').style.display = 'block';
-                document.getElementById('routineFormSection').style.display = 'none';
-                document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
-                if (titleEl) {
-                    if (isEditMode) {
-                        if (window.GN_I18N && GN_I18N.t) titleEl.innerText = GN_I18N.t('history_edit_weight');
-                        else titleEl.innerText = 'Editing weight';
-                    } else {
-                        if (window.GN_I18N && GN_I18N.t) titleEl.innerText = GN_I18N.t('history_section_log_weight');
-                        else titleEl.innerText = 'Log weight';
-                    }
-                }
-                try { if (window.GN_I18N && GN_I18N.t) document.title = GN_I18N.t('title_main') + ' | ' + (isEditMode ? GN_I18N.t('history_edit_weight') : GN_I18N.t('history_section_log_weight')); } catch(e){}
             }
             // Show disclaimer only when operating on routine entries
             try {
