@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <title>GymNerd | Measure</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
+    <script src="gn-i18n.js"></script>
+    <style>
+        :root { --primary: #3b82f6; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width:500px;margin:0 auto;padding:0; }
+        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
+        .top-card-inner { max-width:100%; display:flex; align-items:center; gap:12px; }
+        .back-btn { text-decoration:none; color:inherit; display:inline-flex; align-items:center; justify-content:center; }
+        .page-content { padding: 16px; }
+        h1 { margin: 16px 0; font-size:1.6rem; background: linear-gradient(90deg,#60a5fa,#2563eb); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .card { background: var(--card); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.04); }
+    </style>
+</head>
+<body>
+    <div class="top-card">
+        <div class="top-card-inner">
+            <a href="home.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
+                <div style="flex:1;min-width:0;">
+                <h2 data-i18n="page_measure">Measure</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <div class="card">
+            <h1 data-i18n="measure_weight_header">Body weight</h1>
+            <p style="color:#94a3b8;margin:0 0 12px 0;" data-i18n="measure_instructions">Scroll the ruler to set your body weight.</p>
+
+            <div class="scale-wrapper">
+                <div id="scale-container" class="scale-container" tabindex="0" role="slider" aria-label="Weight selector">
+                    <div class="scale-center-indicator" aria-hidden="true"></div>
+                </div>
+
+                <div class="scale-display">
+                    <div id="weight-value" aria-live="polite">75.0 kg</div>
+                    <button id="save-weight" class="save-btn" data-i18n="history_save_weight">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+
+<style>
+    /* Scale styles */
+    .scale-wrapper { margin-top: 28px; position: relative; padding-bottom: 18px; }
+    .scale-display { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; margin-top:18px; }
+    #weight-value {
+        font-size:40px;
+        font-weight:900;
+        line-height:1;
+        padding:10px 16px;
+        border-radius:10px;
+        background: linear-gradient(90deg, #60a5fa, #2563eb);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 8px 22px rgba(37,99,235,0.14);
+        -webkit-font-smoothing:antialiased;
+        -moz-osx-font-smoothing:grayscale;
+        text-align:center;
+        display:block;
+    }
+    .save-btn { background:#2563eb; color:white; border:none; padding:12px 16px; border-radius:10px; cursor:pointer; font-weight:700; width:100%; box-sizing:border-box; }
+
+    .scale-container { position:relative; height:96px; overflow-x: hidden; overflow-y:hidden; background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06)); border-radius:10px; padding:12px 0; margin-bottom:18px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.20); touch-action: none; cursor: grab; -webkit-user-select:none; user-select:none; }
+    .scale-inner { display:flex; align-items:flex-end; height:100%; position:relative; }
+    .tick { display:inline-block; width:4px; flex: 0 0 4px; margin:0 0; box-sizing:border-box; }
+    .tick .line { width:2px; margin:0 auto; background:#cbd5e1; opacity:0.85; }
+    .tick.minor .line { height:16px; opacity:0.5; }
+    .tick.medium .line { height:40px; opacity:0.9; }
+    .tick.major .line { height:48px; opacity:1; background:#0f172a; }
+    .tick .label { text-align:center; font-size:0.75rem; color:#94a3b8; margin-top:6px; }
+    /* Labels row placed below the ruler for legibility */
+    .labels-row { display:block; height:32px; padding-top:6px; position:relative; pointer-events:none; overflow:hidden; z-index:2; margin-top:6px; }
+    .labels-inner { display:flex; align-items:center; height:100%; }
+    .labels-row .label-cell { width:4px; text-align:center; font-size:0.95rem; color:#e6f0ff; font-weight:900; pointer-events:none; line-height:1; text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+
+    .scale-center-indicator {
+        position:absolute;
+        left:50%;
+        transform:translateX(-50%);
+        top:-12px; /* sit slightly above the ruler */
+        height: calc(100% + 12px); /* extend slightly into the ruler but not past its bottom */
+        width:6px; /* thicker so it's clearly visible */
+        background: linear-gradient(180deg,#60a5fa,#2563eb);
+        border-radius:4px;
+        pointer-events:none;
+        box-shadow: 0 6px 14px rgba(37,99,235,0.22);
+        z-index: 3;
+    }
+
+    /* padding elements to center first/last tick */
+    .pad { flex: 0 0 var(--pad-width); }
+
+    @media (max-width:420px) { .scale-container { height:86px; } .tick .line { width:2px; } }
+</style>
+
+<script>
+// Canvas-based horizontal weight selector (stable layout, labels drawn on canvas)
+(async function(){
+    const min = 30.0;
+    const max = 200.0;
+    const step = 0.1;
+    const tickWidth = 1.5; // px per 0.1kg step — reduced so major/medium ticks are closer together
+
+    const container = document.getElementById('scale-container');
+    const weightDisplay = document.getElementById('weight-value');
+    const saveBtn = document.getElementById('save-weight');
+
+    if (!container || !weightDisplay) return;
+
+    // read initial value (DB > localStorage > default)
+    let initial = null;
+    try {
+        if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+        if (window.db && db.weights) {
+            try {
+                const last = await db.weights.orderBy('date').last();
+                if (last && typeof last.weight === 'number') initial = parseFloat(last.weight);
+                else if (last && last.weight) initial = parseFloat(last.weight);
+            } catch (e) {}
+        }
+    } catch (e) {}
+    if (initial === null || Number.isNaN(initial)) {
+        const stored = parseFloat(localStorage.getItem('user_weight'));
+        if (!Number.isNaN(stored)) initial = stored;
+        else initial = 60.0;
+    }
+    initial = Math.min(max, Math.max(min, initial));
+
+    const steps = Math.round((max - min) / step);
+
+    // initial index and offset so the saved value appears under the center
+    const initialIndex = Math.round((initial - min) / step);
+    let offset = initialIndex * tickWidth; // px, 0 .. steps * tickWidth
+
+    // create canvas
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    container.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    let dpr = Math.max(1, window.devicePixelRatio || 1);
+    // pad will be computed on resize; declare early to avoid TDZ
+    let pad = 0;
+
+    function resizeCanvas() {
+        dpr = Math.max(1, window.devicePixelRatio || 1);
+        canvas.width = Math.round(container.clientWidth * dpr);
+        canvas.height = Math.round(container.clientHeight * dpr);
+        canvas.style.width = container.clientWidth + 'px';
+        canvas.style.height = container.clientHeight + 'px';
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        // update pad width when size changes so tick positions stay consistent
+        pad = container.clientWidth / 2;
+        render();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // drawing parameters
+
+    let isDragging = false;
+    let startX = 0;
+    let startOffset = 0;
+    let lastX = 0;
+    let lastTime = 0;
+    let velocity = 0;
+    let raf = null;
+
+    function clamp(v) { return Math.max(0, Math.min(v, steps * tickWidth)); }
+
+    function render() {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        ctx.clearRect(0,0,w,h);
+
+        // transparent background — do not draw overlay so underlying page shows through
+
+        // draw ticks
+        const visibleLeft = -pad + offset - 50;
+        const visibleRight = offset + w + pad + 50;
+        const i0 = Math.max(0, Math.floor(visibleLeft / tickWidth));
+        const i1 = Math.min(steps, Math.ceil(visibleRight / tickWidth));
+
+        for (let i = i0; i <= i1; i++) {
+            const x = pad + i * tickWidth - offset;
+                    const value = +(min + i * step).toFixed(1);
+                    const units = Math.round(value * 10); // 100g units
+                    // classify tick: major (10kg), medium (5kg), minor (100g)
+                    let lineH, color, width;
+                    if (units % 100 === 0) { // 10kg major
+                        lineH = 72; color = 'rgba(255,69,58,1)'; width = 2; // red majors (increased)
+                    } else if (units % 50 === 0) { // 5kg medium
+                        lineH = 54; color = 'rgba(203,213,225,0.9)'; width = 2; // increased
+                    } else { // minor 100g - draw only every 5th unit (0.5kg) to reduce clutter
+                        if ((units % 5) !== 0) continue; // show minors at 0.5kg intervals only
+                        lineH = 30; color = 'rgba(203,213,225,0.55)'; width = 1; // increased
+                    }
+                    ctx.fillStyle = color;
+                    // vertical line from bottom
+                    ctx.fillRect(Math.round(x - width/2), h - 8 - lineH, width, lineH);
+
+                    // draw label for majors only
+                    if (units % 100 === 0) {
+                        ctx.fillStyle = '#e6f0ff';
+                        ctx.font = '700 14px system-ui, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(String(Math.round(value)), x, h - 8 - lineH - 6);
+                    }
+        }
+
+        // center indicator is handled by the absolute .scale-center-indicator element (CSS)
+
+        // update displayed weight
+        const centerIndex = offset / tickWidth;
+        let val = min + centerIndex * step;
+        val = Math.max(min, Math.min(max, val));
+        weightDisplay.textContent = val.toFixed(1) + ' kg';
+        container.__currentValue = val;
+        container.__currentIndex = centerIndex;
+    }
+
+    function startInertia() {
+        if (raf) cancelAnimationFrame(raf);
+        const decay = 0.95;
+        function step() {
+            const dt = 16;
+            const delta = velocity * dt * -1; // flip sign to align with dragging direction
+            offset = clamp(offset + delta);
+            render();
+            velocity *= decay;
+            if (Math.abs(velocity) > 0.001) raf = requestAnimationFrame(step);
+            else raf = null;
+        }
+        raf = requestAnimationFrame(step);
+    }
+
+    // pointer handlers
+    container.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        startOffset = offset;
+        lastX = e.clientX;
+        lastTime = performance.now();
+        velocity = 0;
+        if (e.pointerId) try { container.setPointerCapture(e.pointerId); } catch (err) {}
+        e.preventDefault();
+    });
+
+    container.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        offset = clamp(startOffset - dx);
+        const now = performance.now();
+        const dt = Math.max(1, now - lastTime);
+        const vx = (e.clientX - lastX) / dt;
+        velocity = vx * 0.6 + velocity * 0.4;
+        lastX = e.clientX; lastTime = now;
+        render();
+        e.preventDefault();
+    });
+
+    function endPointer(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        if (e && e.pointerId) try { container.releasePointerCapture(e.pointerId); } catch (err) {}
+        // start inertia if velocity significant
+        if (Math.abs(velocity) > 0.02) startInertia();
+    }
+
+    container.addEventListener('pointerup', endPointer);
+    container.addEventListener('pointercancel', endPointer);
+    container.addEventListener('mouseleave', endPointer);
+
+    // initial render
+    render();
+
+    saveBtn.addEventListener('click', async () => {
+        const value = container.__currentValue || initial;
+        try { localStorage.setItem('user_weight', value.toFixed(1)); } catch(e){}
+        try {
+            if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+            if (window.db && window.db.weights) {
+                const date = new Date();
+                const dateStr = date.toISOString().slice(0,10);
+                await db.weights.put({ date: dateStr, weight: value });
+            }
+        } catch (err) {}
+        try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('saved'); else saveBtn.textContent = 'Saved'; } catch(e){ saveBtn.textContent = 'Saved'; }
+        setTimeout(() => { try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('history_save_weight'); else saveBtn.textContent = 'Save'; } catch(e){ saveBtn.textContent = 'Save'; } }, 1400);
+    });
+
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(document); } catch(e){}
+});
+</script>
