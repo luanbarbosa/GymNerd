@@ -122,7 +122,7 @@
 <script>
 // Canvas-based horizontal weight selector (stable layout, labels drawn on canvas)
 (async function(){
-    const min = 30.0;
+    const min = 0.0;
     const max = 200.0;
     const step = 0.1;
     const tickWidth = 1.5; // px per 0.1kg step — reduced so major/medium ticks are closer together
@@ -305,15 +305,20 @@
 
     saveBtn.addEventListener('click', async () => {
         const value = container.__currentValue || initial;
-        try { localStorage.setItem('user_weight', value.toFixed(1)); } catch(e){}
+        try { localStorage.setItem('user_weight', value.toFixed(2)); } catch(e){}
         try {
+            console.log('[measure] saving weight', value);
             if (typeof ensureDbOpen === 'function') await ensureDbOpen();
             if (window.db && window.db.weights) {
                 const date = new Date();
                 const dateStr = date.toISOString().slice(0,10);
-                await db.weights.put({ date: dateStr, weight: value });
+                console.log('[measure] putting to db.weights', dateStr, value);
+                await db.weights.put({ date: dateStr, weight: Number(value.toFixed(2)) });
+                console.log('[measure] db.weights.put complete');
             }
-        } catch (err) {}
+        } catch (err) { console.error('[measure] save error', err); }
+        // refresh the chart after saving so the UI updates immediately
+        try { console.log('[measure] calling renderMeasureWeightChart()'); if (typeof renderMeasureWeightChart === 'function') await renderMeasureWeightChart(); console.log('[measure] renderMeasureWeightChart() returned'); } catch(e){ console.error('[measure] render error', e); }
         try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('saved'); else saveBtn.textContent = 'Saved'; } catch(e){ saveBtn.textContent = 'Saved'; }
         setTimeout(() => { try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('history_save_weight'); else saveBtn.textContent = 'Save'; } catch(e){ saveBtn.textContent = 'Save'; } }, 1400);
     });
