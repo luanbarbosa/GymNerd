@@ -35,7 +35,7 @@
         /* Ensure back button icons are vertically centered inside top bars */
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         .header-left { display: flex; align-items: center; gap: 15px; }
-        .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+        .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         .view-content { padding: 12px 15px 20px 15px; }
@@ -229,14 +229,29 @@
         #finishedView { display: flex; flex-direction: column; position: fixed; inset: 0; padding: 0; margin: 0; box-sizing: border-box; overflow: hidden; z-index: 1200; }
           /* Fullscreen illustration: position absolutely to fill viewport but stop above content
               The bottom offset is controlled by the CSS variable --finished-content-height set by JS. */
-          .finished-illustration { position: absolute; top: 0; left: 0; right: 0; bottom: var(--finished-content-height, 96px); width: 100%; height: auto; margin: 0; display:block; box-sizing: border-box; }
-        /* Image covers the full-bleed area */
-        .finished-illustration img, .finished-illustration-img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display:block; opacity: 0.7; }
+        .finished-illustration { position: absolute; top: var(--finished-top-height, 0); left: 0; right: 0; bottom: var(--finished-content-height, 96px); width: 100%; height: auto; margin: 0; display:block; box-sizing: border-box; pointer-events: none; padding: 0 var(--finished-h-gap, 20px); }
+        /* Image covers the area between top bar and content; inset horizontally to avoid touching edges */
+        .finished-illustration img, .finished-illustration-img { width: 100%; height: 100%; object-fit: contain; object-position: center center; display:block; opacity: 0.95; }
+        /* Background SVG illustration (bottom-aligned, subtle alpha) */
+        .finished-illustration::before {
+            content: '';
+            position: absolute;
+            left: var(--finished-h-gap, 20px);
+            right: var(--finished-h-gap, 20px);
+            bottom: 0;
+            top: 0;
+            background-image: url('illustration-livesession-end.svg');
+            background-repeat: no-repeat;
+            background-position: bottom center;
+            background-size: contain;
+            opacity: 0.9;
+            pointer-events: none;
+        }
         /* Content constrained and pinned to bottom above safe area
            Add extra bottom spacing so the finish button isn't flush to the screen edge. */
         .finished-content { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 12px) + 12px); width: min(500px, calc(100% - 32px)); padding: 8px 12px; box-sizing: border-box; text-align:center; z-index: 3; }
 
-        /* More impactful finished title */
+        /* More impactful finished title (legacy small title kept for fallback) */
         .finished-content h2 {
             font-size: 1.9rem;
             line-height: 1.02;
@@ -244,10 +259,46 @@
             margin: 0 0 8px;
             background: var(--primary-grad);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.4px;
             text-align: center;
         }
+
+        /* New top-positioned large title for finished view */
+        .finished-top { display: none; }
+        /* Top-card variant for finished view: reuse top-card visual style but positioned inside finishedView */
+        .finished-top-card {
+            position: static; /* keep it in flow so it pushes content down */
+            width: 100%;
+            box-sizing: border-box;
+            background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%);
+            color: #0f172a;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 6px 16px rgba(2,6,23,0.06);
+            padding-top: calc(10px + env(safe-area-inset-top));
+            z-index: 3;
+        }
+        .finished-top-card .top-card-inner { padding-bottom: 6px; }
+        .finished-top-card .topbar { padding: 10px 16px; display:flex; align-items:center; justify-content:center; }
+        .finished-top-card h1 { margin: 0; font-weight: 900; line-height: 1; font-size: clamp(2rem, 4.5vw, 2.4rem); background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.6px; text-transform: uppercase; text-align: center; }
+        .finished-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin:16px 0; align-items:stretch; }
+        .stat-card { background: rgba(255,255,255,0.03); border-radius:12px; padding:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:88px; }
+        .stat-label { font-size:0.78rem; color:var(--text-dim); font-weight:800; text-transform:uppercase; }
+        .stat-value { font-size:1.4rem; font-weight:900; margin-top:6px; }
+        .chart-card canvas { width:100%; height:100%; max-height:140px; }
+
+        /* Type progress (segmented bar) */
+        .type-progress { display:flex; gap:6px; height:56px; align-items:stretch; margin-top:8px; border-radius:10px; overflow:hidden; background: rgba(255,255,255,0.03); box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); width:100%; }
+        .type-segment { display:flex; align-items:center; justify-content:center; min-width:0; color:#fff; font-weight:700; position:relative; }
+        .type-seg-label { display:flex; flex-direction:column; align-items:center; font-size:12px; line-height:1; text-shadow: 0 1px 2px rgba(0,0,0,0.45); padding:6px; }
+        .type-name { font-weight:700; font-size:12px; }
+        .type-count { font-size:11px; opacity:0.95; }
+        /* Legend below the progress bar so full labels are always visible */
+        .type-legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .type-legend-item { display:flex; align-items:center; gap:8px; background: rgba(255,255,255,0.02); padding:6px 8px; border-radius:8px; font-size:13px; }
+        .type-swatch { width:14px; height:14px; border-radius:3px; flex:0 0 14px; }
 
         .finished-content p { margin: 0 0 12px; color: var(--text-dim); font-weight: 700; }
 
@@ -380,23 +431,20 @@
             </div>
         </aside>
 
-        <!-- Finished view shown when all exercises are completed -->
+        <!-- Finished view shown when all exercises are completed (minimalized) -->
         <div id="finishedView" style="display:none;">
-            <div class="finished-illustration" aria-hidden="true">
-                <img src="illustration-livesession-end.svg" alt="Success illustration" class="finished-illustration-img">
+            <div class="finished-illustration" aria-hidden="true"></div>
+            <div class="top-card finished-top-card">
+                <div class="top-card-inner">
+                    <div class="topbar">
+                        <div style="flex:1;min-width:0; text-align:center;">
+                            <h2 data-i18n="routine_done"></h2>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="finished-content">
-                <h2 data-i18n="finished_title" style="margin-top:0;"></h2>
-                <p data-i18n="finished_subtitle" style="color:var(--text-dim); margin:10px 0 20px;"></p>
                 <div style="display:flex; gap:10px; justify-content:center; align-items:center; flex-direction:column;">
-                    <div id="saveRoutineOpt" class="save-warning-box" style="display:none; margin-bottom:12px;">
-                        <div class="warning-note" data-i18n="save_routine_warning"></div>
-                        <small style="color:var(--text-dim);" data-i18n="save_routine_note"></small>
-                        <label style="display:flex; gap:10px; align-items:center; color:var(--text); margin-top:6px;">
-                            <input id="saveRoutineCheckbox" type="checkbox" />
-                            <span data-i18n="save_changes_to_routine"></span>
-                        </label>
-                    </div>
                     <button id="finishRoutineBtn" class="finish-btn" style="min-width:140px; width:100%;" onclick="finishSession()" data-i18n="finish_routine"></button>
                 </div>
             </div>
@@ -410,6 +458,7 @@
         let currentWorkoutId = null;
         let timerInterval = null;
         let timerStartMs = null; // timestamp (ms) when current timer started
+        let sessionStartMs = null; // timestamp (ms) when session started
         let routineModified = false;
         let _finishingSession = false;
 
@@ -463,18 +512,181 @@
             // measure content height including margins
             const contentRect = content.getBoundingClientRect();
             const bottomGap = 12; // spacing between image and content
-            // safe-area-inset-bottom can't be read directly; use env() fallback of 0
             const reserved = Math.ceil(contentRect.height + bottomGap);
 
-            // Set CSS variable on finishedView so CSS positions the illustration above content
+            // measure top card height so illustration doesn't extend under it
+            const topCard = finishedView.querySelector('.finished-top-card');
+            let topHeight = 0;
+            try {
+                if (topCard) {
+                    const topRect = topCard.getBoundingClientRect();
+                    topHeight = Math.ceil(topRect.height);
+                }
+            } catch (e) { topHeight = 0; }
+
+            // Set CSS variables on finishedView so CSS positions the illustration between top and content
             finishedView.style.setProperty('--finished-content-height', reserved + 'px');
-            // ensure content is above the illustration
+            finishedView.style.setProperty('--finished-top-height', topHeight + 'px');
+            // ensure proper stacking
             ill.style.zIndex = 1;
-            content.style.zIndex = 3;
+            if (topCard) topCard.style.zIndex = 3;
+            content.style.zIndex = 4;
         }
+
+        async function renderFinishedStats() {
+            try {
+                const finishedView = document.getElementById('finishedView');
+                if (!finishedView) return;
+                // Prepare container inside finished-content
+                const content = finishedView.querySelector('.finished-content');
+                if (!content) return;
+
+                // Create or reuse grid
+                let grid = content.querySelector('.finished-grid');
+                if (!grid) {
+                    grid = document.createElement('div');
+                    grid.className = 'finished-grid';
+                    // insert grid above the button container
+                    const btnBox = content.querySelector('div[style*="display:flex"]');
+                    if (btnBox) content.insertBefore(grid, btnBox);
+                    else content.appendChild(grid);
+                }
+
+                // Compute stats
+                const completedOcc = new Set();
+                let totalWeightLifted = 0; // total kg lifted (weight * reps)
+                let totalReps = 0;
+                const typeSums = {}; // type -> weight*reps (kept for reference)
+                const occTypeMap = {}; // occurrenceId -> type
+
+                // Load exercise metadata
+                const [catalogEx, customEx] = await Promise.all([db.catalog_exercises.toArray(), db.custom_exercises.toArray()]);
+                const allExercises = [
+                    ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                    ...customEx.map(ex => ({ ...ex, isCustom: true }))
+                ];
+
+                for (const s of sessionSets) {
+                    if (s.completed) {
+                        completedOcc.add(s.occurrenceId);
+                        const reps = Number(s.reps || 0);
+                        const weight = Number(s.weight || 0);
+                        const lifted = reps * weight;
+                        totalWeightLifted += lifted;
+                        totalReps += reps;
+
+                        // find exercise type and map occurrence
+                        const ex = allExercises.find(e => e.id === s.exId && (!!e.isCustom) === !!s.isCustom);
+                        const type = (ex && ex.type) ? ex.type : 'other';
+                        typeSums[type] = (typeSums[type] || 0) + lifted;
+                        if (!occTypeMap[s.occurrenceId]) occTypeMap[s.occurrenceId] = type;
+                    }
+                }
+
+                // session duration
+                let durationSec = 0;
+                if (sessionStartMs) durationSec = Math.floor((Date.now() - sessionStartMs) / 1000);
+
+                // Render grid content (2x2)
+                const formatSeconds = (s) => {
+                    const h = Math.floor(s / 3600);
+                    const m = Math.floor((s % 3600) / 60);
+                    const sec = s % 60;
+                    if (h > 0) return `${h}h ${m}m`;
+                    return `${m}m ${sec}s`;
+                };
+
+                // compute exercises-per-type (count unique completed occurrences per type)
+                const countsPerType = {};
+                for (const occId of completedOcc) {
+                    const t = occTypeMap[occId] || 'other';
+                    countsPerType[t] = (countsPerType[t] || 0) + 1;
+                }
+
+                const avgKgPerRep = totalReps > 0 ? (totalWeightLifted / totalReps) : 0;
+
+                grid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('exercises_completed') : 'Exercises'}</div>
+                        <div class="stat-value">${completedOcc.size}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('total_weight') : 'Total weight'}</div>
+                        <div class="stat-value">${totalWeightLifted.toFixed(1)} ${GN_I18N.t ? GN_I18N.t('history_fmt_kg_suffix') : 'kg'}</div>
+                    </div>
+                    <div class="stat-card type-progress-card" style="grid-column:1 / -1;">
+                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('by_type') : 'By Type'}</div>
+                        <div class="type-progress" role="list" aria-label="${GN_I18N.t ? GN_I18N.t('by_type') : 'By Type'}"></div>
+                    </div>
+                `;
+
+                // Render segmented progress bar for counts per type
+                const progressContainer = grid.querySelector('.type-progress');
+                if (progressContainer) {
+                    progressContainer.innerHTML = '';
+                    const entries = Object.entries(countsPerType).filter(([k,v]) => v > 0);
+                    const total = entries.reduce((acc, e) => acc + e[1], 0);
+                    if (entries.length === 0 || total === 0) {
+                        const empty = document.createElement('div');
+                        empty.className = 'type-empty';
+                        empty.textContent = '—';
+                        progressContainer.appendChild(empty);
+                    } else {
+                        const colors = ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+                        entries.forEach(([type, val], i) => {
+                            const seg = document.createElement('div');
+                            seg.className = 'type-segment';
+                            const pct = Math.round((val / total) * 100);
+                            seg.style.flex = `${val} 1 0%`;
+                            seg.style.minWidth = '0';
+                            seg.style.background = colors[i % colors.length];
+                            seg.setAttribute('role', 'listitem');
+                            seg.setAttribute('aria-label', `${type}: ${val}`);
+                            const label = document.createElement('div');
+                            label.className = 'type-seg-label';
+                            const typeLabel = (GN_I18N && GN_I18N.t) ? (GN_I18N.t('exercise_type_' + type) || type) : type;
+                            // keep segment label minimal (only count); full name rendered in legend
+                            label.innerHTML = `<span class="type-count">${val}</span>`;
+                            seg.appendChild(label);
+                            progressContainer.appendChild(seg);
+                        });
+
+                        // Render legend so full labels and counts are always visible
+                        try {
+                            let legend = grid.querySelector('.type-legend');
+                            if (!legend) {
+                                legend = document.createElement('div');
+                                legend.className = 'type-legend';
+                                // append legend right after the progress bar
+                                progressContainer.parentNode.appendChild(legend);
+                            } else {
+                                legend.innerHTML = '';
+                            }
+                            entries.forEach(([type, val], i) => {
+                                const item = document.createElement('div');
+                                item.className = 'type-legend-item';
+                                const sw = document.createElement('div'); sw.className = 'type-swatch'; sw.style.background = colors[i % colors.length];
+                                const name = (GN_I18N && GN_I18N.t) ? (GN_I18N.t('exercise_type_' + type) || type) : type;
+                                const txt = document.createElement('div');
+                                txt.innerHTML = `<strong>${name}</strong>`;
+                                item.appendChild(sw);
+                                item.appendChild(txt);
+                                legend.appendChild(item);
+                            });
+                        } catch (e) { /* ignore legend render errors */ }
+                    }
+                }
+
+                // ensure layout adaptation: set finishedView CSS var for content height
+                updateFinishedIllustration();
+            } catch (e) { console.warn('renderFinishedStats failed', e); }
+        }
+
+        /* finished title removed -- no split needed */
 
         window.addEventListener('resize', () => requestAnimationFrame(updateFinishedIllustration));
         window.addEventListener('orientationchange', () => requestAnimationFrame(updateFinishedIllustration));
+
 
         async function init() {
             await ensureDbOpen();
@@ -512,7 +724,9 @@
         }
 
         function saveSessionState() {
-            const state = { sessionSets, currentIdx, viewingIdx, currentWorkoutId };
+            // compute elapsed session time so unfinished sessions can be resumed with correct duration
+            const sessionElapsedMs = sessionStartMs ? (Date.now() - sessionStartMs) : 0;
+            const state = { sessionSets, currentIdx, viewingIdx, currentWorkoutId, sessionElapsedMs };
             localStorage.setItem('gymNerd_activeSession', JSON.stringify(state));
         }
 
@@ -528,6 +742,18 @@
             currentIdx = state.currentIdx;
             viewingIdx = state.viewingIdx || state.currentIdx;
             currentWorkoutId = state.currentWorkoutId;
+
+            // restore session elapsed ms so duration continues from where the user left off
+            try {
+                const elapsed = state.sessionElapsedMs || 0;
+                if (elapsed && typeof elapsed === 'number') {
+                    sessionStartMs = Date.now() - elapsed;
+                } else {
+                    sessionStartMs = null;
+                }
+            } catch (e) {
+                sessionStartMs = null;
+            }
 
             const workout = await db.routines.get(currentWorkoutId);
             if (workout) {
@@ -1026,6 +1252,7 @@
 
             currentIdx = 0;
             viewingIdx = 0;
+            sessionStartMs = Date.now();
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
             const bb = document.getElementById('bottomBar'); if (bb) bb.style.display = 'flex';
@@ -1276,6 +1503,7 @@
                     // wait a frame to allow layout, then adjust illustration and show save option if needed
                     await new Promise(r => requestAnimationFrame(r));
                     updateFinishedIllustration();
+                    try { await renderFinishedStats(); } catch(e) { console.warn('renderFinishedStats call failed', e); }
                     // Show save option when session differs from the workout template or user edited values
                     try {
                         const saveOpt = document.getElementById('saveRoutineOpt');
