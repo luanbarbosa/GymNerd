@@ -54,7 +54,7 @@
 
                 <div class="scale-display">
                     <div id="weight-value" aria-live="polite">75.0 kg</div>
-                    <button id="save-weight" class="save-btn" data-i18n="history_save_weight">Save</button>
+                    <button id="save-weight" class="save-btn" data-i18n="measure_save_weight">Save</button>
                 </div>
             </div>
         </div>
@@ -67,7 +67,7 @@
         </div>
 
         <details class="history-section card" style="margin-top:12px;">
-            <summary class="section-header"><span>History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+            <summary class="section-header"><span data-i18n="measure_history_title">History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
             <div id="weight-history" style="padding:0;color:#94a3b8;"></div>
         </details>
     </div>
@@ -366,10 +366,10 @@
             if (typeof renderMeasureWeightChart === 'function') await renderMeasureWeightChart();
                 try { if (typeof renderWeightHistory === 'function') await renderWeightHistory(); } catch(e){ console.error('[measure] renderWeightHistory error', e); }
             console.log('[measure] renderMeasureWeightChart() returned');
-            try { const snack = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? GN_I18N.t('saved') : 'Saved'; showSnackbar(snack); } catch(e){}
+                try { const snack = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? GN_I18N.t('measure_saved') : 'Saved'; showSnackbar(snack); } catch(e){}
         } catch(e){ console.error('[measure] render error', e); }
-        try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('saved'); else saveBtn.textContent = 'Saved'; } catch(e){ saveBtn.textContent = 'Saved'; }
-        setTimeout(() => { try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('history_save_weight'); else saveBtn.textContent = 'Save'; } catch(e){ saveBtn.textContent = 'Save'; } }, 1400);
+        try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('measure_saved'); else saveBtn.textContent = 'Saved'; } catch(e){ saveBtn.textContent = 'Saved'; }
+        setTimeout(() => { try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('measure_save_weight'); else saveBtn.textContent = 'Save'; } catch(e){ saveBtn.textContent = 'Save'; } }, 1400);
     });
 
 })();
@@ -406,7 +406,7 @@ async function renderMeasureWeightChart() {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         ctx.font = '14px sans-serif';
         ctx.fillStyle = '#94a3b8';
-        ctx.fillText((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_weight_data') : 'No weight data', 20, 40);
+        ctx.fillText((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('measure_no_weight_data') : 'No weight data', 20, 40);
         return;
     }
 
@@ -429,7 +429,7 @@ async function renderMeasureWeightChart() {
         data: {
             labels,
             datasets: [{
-                label: (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('weight_kg') : 'kg',
+                label: (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('measure_weight_kg') : 'kg',
                 data,
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16,185,129,0.1)',
@@ -467,14 +467,14 @@ async function renderWeightHistory() {
     if (!container) return;
     container.innerHTML = '';
     if (!weights || weights.length === 0) {
-        const msg = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_no_weight') : 'No weight history';
+        const msg = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('measure_history_no_weight') : 'No weight history';
         container.innerHTML = `<div style="padding:12px 0;color:var(--text-dim)">${msg}</div>`;
         return;
     }
-    const kgSuffix = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_fmt_kg_suffix') : 'kg';
+    const kgSuffix = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('measure_history_fmt_kg_suffix') : 'kg';
     for (const w of weights) {
         const formatted = formatDateDisplay(w.date);
-        const delTitle = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_delete_weight') : 'Delete weight';
+        const delTitle = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('measure_delete_weight') : 'Delete weight';
         // show weight as the primary line and date as subtext
         container.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row">${w.weight} ${kgSuffix}</div><div class="data-row">${formatted}</div></div><button class="delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteWeight('${w.date}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`;
     }
@@ -483,7 +483,7 @@ async function renderWeightHistory() {
 async function deleteWeight(date) {
     const fmt = formatDateDisplay(date);
     if (window.GN_I18N && typeof GN_I18N.t === 'function') {
-        const tmpl = GN_I18N.t('history_confirm_delete_weight') || GN_I18N.t('history_confirm_delete') || 'Delete this weight entry?';
+        const tmpl = GN_I18N.t('measure_confirm_delete_weight') || GN_I18N.t('measure_confirm_delete') || 'Delete this weight entry?';
         const ok = tmpl.replace ? tmpl.replace('{date}', fmt) : tmpl;
         if (!confirm(ok)) return;
     } else {
