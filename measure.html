@@ -27,6 +27,9 @@
         .light-card { background: linear-gradient(180deg,#ffffff 0%, #f3f4f6 100%); color: #0f172a; }
         .light-card h1, .light-card h2, .light-card h3 { background: none; -webkit-background-clip: unset; -webkit-text-fill-color: initial; color: #0f172a; }
         .light-card p { color: #475569; }
+        /* Snackbar (temporary) */
+        #snackbar { position: fixed; left: 50%; transform: translateX(-50%) translateY(8px); bottom: 18px; background: rgba(2,6,23,0.88); color: #ffffff; padding: 10px 14px; border-radius: 10px; box-shadow: 0 8px 20px rgba(2,6,23,0.6); opacity: 0; pointer-events: none; transition: opacity 200ms ease, transform 200ms ease; z-index: 9999; font-weight: 700; font-family: system-ui, sans-serif; }
+        #snackbar.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
     </style>
 </head>
 <body>
@@ -62,6 +65,11 @@
                 <canvas id="weightChartMeasure"></canvas>
             </div>
         </div>
+
+        <details class="history-section card" style="margin-top:12px;">
+            <summary class="section-header"><span>History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+            <div id="weight-history" style="padding:0;color:#94a3b8;"></div>
+        </details>
     </div>
 
 <style>
@@ -116,6 +124,24 @@
     /* padding elements to center first/last tick */
     .pad { flex: 0 0 var(--pad-width); }
 
+    /* History list styles (small subset from history.html) */
+    .log-entry { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: flex-start; font-size: 0.95rem; color: var(--text-dim); }
+    .log-entry .meta { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+    .log-entry .name-row { font-weight: 700; color: var(--text); }
+    .log-entry .data-row { font-size: 0.9rem; color: var(--text-dim); }
+    .delete-btn { background: none; border: none; color: #ef4444; cursor: pointer; padding: 8px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; width: 40px; height: 40px; touch-action: manipulation; opacity: 0.9 }
+    .date-delete-btn { background: none; border: 1px solid rgba(255,255,255,0.06); color: #ef4444; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+
+    /* Collapsible summary header tweaks: hide native marker and align custom chevron */
+    details.history-section summary.section-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding: 8px 0; cursor: pointer; }
+    /* Normalize heading styles: use Body weight (card h3) as reference */
+    .card h3 { margin: 0 0 12px 0; font-weight: 700; font-size: 1rem; line-height: 1.1; }
+    details.history-section summary.section-header span { margin: 0; font-weight: 700; font-size: 1rem; line-height: 1.1; display: inline-block; }
+    details.history-section summary.section-header::-webkit-details-marker { display: none; }
+    details.history-section summary.section-header::marker { font-size: 0; color: transparent; }
+    details.history-section summary.section-header .chevron { margin-left: auto; transition: transform 0.18s ease; color: var(--text-dim); }
+    details.history-section[open] summary.section-header .chevron { transform: rotate(180deg); }
+
     @media (max-width:420px) { .scale-container { height:86px; } .tick .line { width:2px; } }
 </style>
 
@@ -132,6 +158,23 @@
     const saveBtn = document.getElementById('save-weight');
 
     if (!container || !weightDisplay) return;
+
+    function showSnackbar(msg) {
+        try {
+            let el = document.getElementById('snackbar');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'snackbar';
+                el.setAttribute('role', 'status');
+                el.setAttribute('aria-live', 'polite');
+                document.body.appendChild(el);
+            }
+            el.textContent = msg;
+            el.classList.add('visible');
+            if (el._timeout) clearTimeout(el._timeout);
+            el._timeout = setTimeout(() => { el.classList.remove('visible'); }, 3000);
+        } catch (e) { /* ignore */ }
+    }
 
     // read initial value (DB > localStorage > default)
     let initial = null;
@@ -318,7 +361,13 @@
             }
         } catch (err) { console.error('[measure] save error', err); }
         // refresh the chart after saving so the UI updates immediately
-        try { console.log('[measure] calling renderMeasureWeightChart()'); if (typeof renderMeasureWeightChart === 'function') await renderMeasureWeightChart(); console.log('[measure] renderMeasureWeightChart() returned'); } catch(e){ console.error('[measure] render error', e); }
+        try {
+            console.log('[measure] calling renderMeasureWeightChart()');
+            if (typeof renderMeasureWeightChart === 'function') await renderMeasureWeightChart();
+                try { if (typeof renderWeightHistory === 'function') await renderWeightHistory(); } catch(e){ console.error('[measure] renderWeightHistory error', e); }
+            console.log('[measure] renderMeasureWeightChart() returned');
+            try { const snack = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? GN_I18N.t('saved') : 'Saved'; showSnackbar(snack); } catch(e){}
+        } catch(e){ console.error('[measure] render error', e); }
         try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('saved'); else saveBtn.textContent = 'Saved'; } catch(e){ saveBtn.textContent = 'Saved'; }
         setTimeout(() => { try { if (typeof GN_I18N !== 'undefined' && GN_I18N.t) saveBtn.textContent = GN_I18N.t('history_save_weight'); else saveBtn.textContent = 'Save'; } catch(e){ saveBtn.textContent = 'Save'; } }, 1400);
     });
@@ -372,7 +421,7 @@ async function renderMeasureWeightChart() {
         return;
     }
 
-    const labels = valid.map(w => (String(w.date).slice(5)));
+    const labels = valid.map(w => formatDateDisplay(w.date));
     const data = valid.map(w => Number(w.weight));
     if (window.measureWeightChartInstance) window.measureWeightChartInstance.destroy();
     window.measureWeightChartInstance = new Chart(ctx, {
@@ -402,9 +451,59 @@ async function renderMeasureWeightChart() {
     });
 }
 
+function formatDateDisplay(dateStr){
+    if (!dateStr) return dateStr;
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    // return in DD/MM/YY format (e.g. 01/02/26)
+    const yy = parts[0].slice(2);
+    return `${parts[2]}/${parts[1]}/${yy}`;
+}
+
+async function renderWeightHistory() {
+    try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch(e){}
+    const weights = (window.db && db.weights) ? await db.weights.orderBy('date').reverse().toArray() : [];
+    const container = document.getElementById('weight-history');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!weights || weights.length === 0) {
+        const msg = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_no_weight') : 'No weight history';
+        container.innerHTML = `<div style="padding:12px 0;color:var(--text-dim)">${msg}</div>`;
+        return;
+    }
+    const kgSuffix = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_fmt_kg_suffix') : 'kg';
+    for (const w of weights) {
+        const formatted = formatDateDisplay(w.date);
+        const delTitle = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_delete_weight') : 'Delete weight';
+        // show weight as the primary line and date as subtext
+        container.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row">${w.weight} ${kgSuffix}</div><div class="data-row">${formatted}</div></div><button class="delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteWeight('${w.date}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`;
+    }
+}
+
+async function deleteWeight(date) {
+    const fmt = formatDateDisplay(date);
+    if (window.GN_I18N && typeof GN_I18N.t === 'function') {
+        const tmpl = GN_I18N.t('history_confirm_delete_weight') || GN_I18N.t('history_confirm_delete') || 'Delete this weight entry?';
+        const ok = tmpl.replace ? tmpl.replace('{date}', fmt) : tmpl;
+        if (!confirm(ok)) return;
+    } else {
+        if (!confirm(`Delete weight entry for ${fmt}?`)) return;
+    }
+    try {
+        try { await db.weights.delete(date); }
+        catch (e) { await db.weights.where('date').equals(date).delete(); }
+        localStorage.setItem('has_local_changes', 'true');
+        await renderWeightHistory();
+        try { if (typeof renderMeasureWeightChart === 'function') await renderMeasureWeightChart(); } catch(e){}
+    } catch (e) {
+        console.error('Failed to delete weight', e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function(){
     try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(document); } catch(e){}
     try { renderMeasureWeightChart(); } catch(e){}
+    try { if (typeof renderWeightHistory === 'function') renderWeightHistory(); } catch(e){}
 });
 
 </script>
