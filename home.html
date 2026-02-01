@@ -284,14 +284,10 @@
 		.week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); max-width: 460px; }
 		.week-dots .days { display:grid; grid-template-columns: repeat(7, 1fr); gap: clamp(6px, 1.6vw, 12px); align-items:center; width:100%; }
 		.week-dots .day { display:flex; flex-direction:column; align-items:center; gap:6px; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); }
-		.week-dots .dot { width: clamp(10px, 4.5vw, 22px); height: clamp(10px, 4.5vw, 22px); border-radius:50%; box-shadow: none; border: none; }
-		.week-dots .dot.fill-0 { background: rgba(255,255,255,0.04); }
-		.week-dots .dot.fill-1 { background: rgba(0,230,118,0.36); }
-		.week-dots .dot.fill-2 { background: rgba(0,230,118,0.64); }
-		.week-dots .dot.fill-3 { background: rgba(0,230,118,0.92); }
-		.week-dots .dot.fill-4 { background: var(--success); }
-		.week-dots .dot.no-workout { background: var(--danger); }
-		.week-dots .dot.future { background: rgba(148,163,184,0.92); }
+		.week-dots .dot { width: clamp(14px, 5.5vw, 32px); height: clamp(14px, 5.5vw, 32px); box-shadow: none; border: none; display:flex; align-items:center; justify-content:center; }
+		.week-dots .dot img { width: 100%; height: 100%; object-fit: contain; display:block; }
+		/* Backwards-compatible classes retained but visuals are handled by images */
+		.week-dots .dot.fill-0, .week-dots .dot.fill-1, .week-dots .dot.fill-2, .week-dots .dot.fill-3, .week-dots .dot.fill-4, .week-dots .dot.no-workout, .week-dots .dot.future { background: transparent; }
 
 		/* Demo mode banner */
 		#demo-banner { display: none; margin: 4px 20px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, #e6f0ff, #dbeafe); color: #0f172a; font-weight: 700; text-align: center; box-shadow: none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
@@ -481,15 +477,26 @@
 							const dateObj = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 							const todayMid = new Date(); todayMid.setHours(0,0,0,0);
 							let dotClass = '';
-							if (dateObj.getTime() > todayMid.getTime() || (dateObj.getTime() === todayMid.getTime() && count === 0)) {
+							let imgName = '';
+							let statusText = '';
+							const isFuture = (dateObj.getTime() > todayMid.getTime()) || (dateObj.getTime() === todayMid.getTime() && count === 0);
+							if (isFuture) {
 								dotClass = 'future';
+								imgName = 'icons/day-future.svg';
+								statusText = 'Future';
 							} else if (count === 0) {
-								dotClass = 'no-workout';
+								dotClass = 'missed';
+								imgName = 'icons/day-missed.svg';
+								statusText = 'Missed';
 							} else {
-								dotClass = `fill-${level}`;
+								dotClass = 'done';
+								imgName = 'icons/day-done.svg';
+								statusText = 'Done';
 							}
-
-							el.innerHTML = `<div class="dot ${dotClass}" data-count="${count}"></div><div class="label">${weekdayShort}</div>`;
+							const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+							const imgPath = basePath + imgName;
+							const altText = `${weekdayFull} - ${statusText}: ${count}`;
+							el.innerHTML = `<div class="dot ${dotClass}" data-count="${count}"><img src="${imgPath}" alt="${altText}" loading="lazy" /></div><div class="label">${weekdayShort}</div>`;
 							daysContainer.appendChild(el);
 						}
 					} catch (err) { console.error('renderWeekDots failed', err); }
