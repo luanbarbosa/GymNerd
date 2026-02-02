@@ -29,14 +29,14 @@
         .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
-        .page-content { padding: 16px; padding-top: 12px; }
+        .page-content { padding: 8px; padding-top: 8px; }
         .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
         /* Ensure back button icons are vertically centered inside top bars */
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
         .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: var(--bg); font-style: italic; white-space:nowrap; overflow:visible; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
-        .main-content { padding: 20px; }
+        .main-content { padding: 12px; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 20px; margin-top: 20px; letter-spacing: -1px; font-size: 2.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         /* Keep top-bar title visually consistent without changing font-size */
         .top-title { margin: 0; font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -44,7 +44,7 @@
         .card h3, .card h4 { margin-top: 0; margin-bottom: 6px; }
         /* Section titles placed outside cards */
         .section-title { margin: 14px 0 8px 0; font-weight: 900; letter-spacing: -0.5px; font-size: 1.2rem; }
-        .card { background: var(--card); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 16px; }
+        .card { background: var(--card); padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); margin-bottom: 12px; }
         .sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
         .export-btn { background: var(--success); color: white; }
         .import-btn { background: #6366f1; color: white; }

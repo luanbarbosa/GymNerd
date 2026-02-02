@@ -25,7 +25,7 @@
         .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
-        .page-content { padding: 16px; padding-top: 12px; }
+        .page-content { padding: 16px; padding-top: 8px; }
         .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
         #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
         .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: var(--bg); font-style: italic; white-space:nowrap; overflow:visible; }
@@ -49,7 +49,7 @@
         button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
         .save-session.success { background: var(--success); }
 
-        details.history-section { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-top: 20px; }
+        details.history-section, .history-section { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-top: 12px; }
         summary.section-header { font-weight: 800; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
         summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
         details[open] summary .chevron { transform: rotate(180deg); }
@@ -58,8 +58,9 @@
         summary.month-header { font-weight: 700; font-size: 0.85rem; color: var(--text-dim); cursor: pointer; padding: 8px 0; list-style: none; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
 
         details.history-group { background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; overflow: hidden; }
-        summary.date-header { padding: 12px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
-        .log-entry { padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: flex-start; font-size: 0.85rem; color: var(--text-dim); }
+        #history .history-group:first-child { margin-top: 16px; }
+        summary.date-header { padding: 16px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        .log-entry { padding: 14px 15px; border-bottom: 1px solid rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: flex-start; font-size: 0.85rem; color: var(--text-dim); }
         .log-entry .meta { display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
         .log-entry .name-row { display:flex; align-items:center; gap:8px; font-weight:700; color:var(--text); }
         .log-entry .data-row { font-size:0.85rem; color:var(--text-dim); }
@@ -71,6 +72,13 @@
         .date-header .delete-btn { margin-left:12px; margin-right:6px; opacity:0.8 }
         .log-entry { gap: 8px; }
         .date-delete-btn { background:none; border:1px solid rgba(255,255,255,0.06); color:var(--danger); padding:8px 12px; border-radius:10px; cursor:pointer; }
+        /* Filter row styles */
+        .filters-wrap { max-width:500px; margin: 20px auto 0; padding: 0 16px; }
+        .filter-row { display:flex; gap:8px; padding:8px 6px; align-items:center; margin:6px 0 6px 0; }
+        .filter-label { color:var(--text-dim); font-size:0.85rem; white-space:nowrap; }
+        .filter-select { flex:1; max-width:160px; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,0.03); color:var(--text); border:1px solid rgba(255,255,255,0.06); outline:none; }
+        @media (max-width:420px) { .filter-row { flex-wrap:wrap; } .filter-select { max-width:100%; } }
+        .empty-state { padding:12px; color:var(--text-dim); text-align:center; }
     </style>
 </head>
 <body>
@@ -85,18 +93,26 @@
             </div>
         </div>
     </div>
+    <div class="filters-wrap">
+        <div class="filter-row">
+            <label class="filter-label" for="filterMonth" data-i18n="filter_month">Month</label>
+            <select id="filterMonth" class="filter-select"></select>
+            <label class="filter-label" for="filterYear" data-i18n="filter_year">Year</label>
+            <select id="filterYear" class="filter-select"></select>
+        </div>
+    </div>
     <div class="page-content">
-    <details class="history-section">
-    <summary class="section-header"><span data-i18n="history_workout_header">Workout History</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
-        <div id="history" style="padding: 0 15px 10px 15px;"></div>
-    </details>
+    <div class="history-section">
+        <div id="history" style="padding: 12px 15px 12px 15px;"></div>
+    </div>
 
         <script>
                 function formatDateDisplay(dateStr){
                     if (!dateStr) return dateStr;
                     const parts = dateStr.split('-');
                     if (parts.length !== 3) return dateStr;
-                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    // Return DD/MM/YY
+                    return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
                 }
         let allEx = [];
 
@@ -112,6 +128,97 @@
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
             ];
             renderHistory();
+            // Allow only one open details at a time: when one `details.history-group` opens,
+            // collapse all other `details.history-group` elements.
+            const historyContainer = document.getElementById('history');
+            if (historyContainer && !historyContainer._singleOpenListener) {
+                historyContainer.addEventListener('toggle', function(e){
+                    const opened = e.target;
+                    if (!opened || !opened.classList || !opened.classList.contains('history-group')) return;
+                    if (!opened.open) return; // only act when it was opened
+                    const others = historyContainer.querySelectorAll('details.history-group');
+                    others.forEach(d => { if (d !== opened) d.open = false; });
+                }, true);
+                historyContainer._singleOpenListener = true;
+            }
+        }
+
+        function populateFilters(monthKeys) {
+            // monthKeys: array of 'YYYY-MM' strings
+            const monthSel = document.getElementById('filterMonth');
+            const yearSel = document.getElementById('filterYear');
+            if (!monthSel || !yearSel) return;
+            // build min/max year from keys
+            const years = new Set();
+            monthKeys.forEach(k => { const y = k.split('-')[0]; if (y) years.add(y); });
+            const yearArr = Array.from(years).sort((a,b)=>a-b);
+            const current = new Date();
+            const curYear = String(current.getFullYear());
+            const curMonth = String(current.getMonth()+1).padStart(2,'0');
+
+            // populate months (localized short names)
+            if (monthSel.options.length === 0) {
+                const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : (navigator.language || 'en');
+                const locale = lang === 'pt' ? 'pt' : 'en';
+                const monthNames = [];
+                for (let i = 0; i < 12; i++) {
+                    const dt = new Date(2020, i, 1);
+                    monthNames.push(new Intl.DateTimeFormat(locale, { month: 'short' }).format(dt));
+                }
+                for (let i=1;i<=12;i++){
+                    const val = String(i).padStart(2,'0');
+                    const opt = document.createElement('option'); opt.value = val; opt.text = monthNames[i-1];
+                    monthSel.appendChild(opt);
+                }
+            }
+
+            // populate years if not already populated or if range changed
+            // Ensure current year is available in the list and selected by default
+            if (!yearArr.includes(curYear)) {
+                yearArr.push(curYear);
+                yearArr.sort((a,b)=>a-b);
+            }
+            if (yearSel.options.length === 0) {
+                for (const y of yearArr) {
+                    const opt = document.createElement('option'); opt.value = y; opt.text = y; yearSel.appendChild(opt);
+                }
+            }
+
+            // Ensure current year option exists in the select even if options were already present
+            if (!yearSel.querySelector(`option[value="${curYear}"]`)) {
+                const opt = document.createElement('option'); opt.value = curYear; opt.text = curYear; yearSel.appendChild(opt);
+                // sort options by value
+                const opts = Array.from(yearSel.options).sort((a,b) => a.value.localeCompare(b.value));
+                yearSel.innerHTML = '';
+                opts.forEach(o => yearSel.appendChild(o));
+            }
+
+            // Pre-select current year on first initialization (preserve user selection afterwards)
+            if (!yearSel._initialized) {
+                try { yearSel.value = curYear; } catch(e) {}
+                yearSel._initialized = true;
+            }
+
+            // ensure current month/year selected by default if available
+            if (!monthSel.value) monthSel.value = curMonth;
+            if (!yearSel.value) {
+                yearSel.value = yearArr.includes(curYear) ? curYear : (yearArr.length ? yearArr[yearArr.length-1] : curYear);
+            }
+
+            // attach onchange listeners once
+            if (!monthSel._listenerAttached) {
+                monthSel.addEventListener('change', () => renderHistory());
+                monthSel._listenerAttached = true;
+            }
+            if (!yearSel._listenerAttached) {
+                yearSel.addEventListener('change', () => renderHistory());
+                yearSel._listenerAttached = true;
+            }
+
+            // Ensure filters are translated if localization is available
+            if (window.GN_I18N && typeof GN_I18N.applyTranslations === 'function') {
+                try { GN_I18N.applyTranslations(document.querySelector('.filters-wrap') || document); } catch(e){}
+            }
         }
         
 
@@ -164,8 +271,14 @@
             const logs = await db.history.orderBy('date').reverse().toArray();
             if (!logs || logs.length === 0) {
                 const container = document.getElementById('history');
-                const msg = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_no_history') : 'No history data';
-                container.innerHTML = `<div style="padding:12px;color:var(--text-dim)">${msg}</div>`;
+                    let msg = '';
+                    if (window.GN_I18N && GN_I18N.safeT) {
+                        msg = GN_I18N.safeT('history_no_routine');
+                    } else {
+                        const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : (navigator.language || 'en');
+                        msg = (pageLang && pageLang.startsWith('pt')) ? 'Nenhum treino encontrado' : 'No routine entry found';
+                    }
+                    container.innerHTML = `<div style="padding:12px;color:var(--text-dim)">${msg}</div>`;
                 return;
             }
             const groups = logs.reduce((acc, l) => {
@@ -181,20 +294,41 @@
             const locale = lang === 'pt' ? 'pt' : 'en';
             container.innerHTML = "";
 
-            for (const month of Object.keys(groups).sort().reverse()) {
-                const monthDet = document.createElement('details');
-                monthDet.className = "month-group";
-                const [y, m] = month.split('-');
-                const monthName = new Date(y, m - 1).toLocaleString(locale, { month: 'long', year: 'numeric' });
-                monthDet.innerHTML = `<summary class="month-header"><span>${monthName}</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
-                
-                for (const date of Object.keys(groups[month]).sort().reverse()) {
-                    const dateDet = document.createElement('details');
-                    dateDet.className = "history-group";
-                            const delTitle = GN_I18N.safeT ? GN_I18N.safeT('history_delete_session') : 'Delete Session';
-                            const formattedDate = formatDateDisplay(date);
-                            dateDet.innerHTML = `<summary class="date-header"><span>${formattedDate}</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
-                    for (const l of groups[month][date]) {
+            // Flattened view: render every date as a top-level collapsed entry (no month groups)
+            const flatDates = [];
+            for (const month of Object.keys(groups)) {
+                for (const date of Object.keys(groups[month])) {
+                    flatDates.push({ date, items: groups[month][date] });
+                }
+            }
+            // sort dates descending
+            flatDates.sort((a, b) => (a.date < b.date ? 1 : -1));
+
+            // Populate filters (month/year) once based on available data
+            try { populateFilters(Object.keys(groups)); } catch(e) {}
+
+            // read selected filter values (if selects present)
+            const monthSel = document.getElementById('filterMonth');
+            const yearSel = document.getElementById('filterYear');
+            let selectedPrefix = null; // 'YYYY-MM'
+            if (monthSel && yearSel) {
+                const m = monthSel.value.padStart(2, '0');
+                const y = yearSel.value;
+                selectedPrefix = `${y}-${m}`;
+            }
+
+            // track how many date groups are rendered (used to show filtered empty state)
+            let renderedCount = 0;
+
+            for (const entry of flatDates) {
+                if (selectedPrefix && !entry.date.startsWith(selectedPrefix)) continue;
+                const date = entry.date;
+                const dateDet = document.createElement('details');
+                dateDet.className = "history-group";
+                const delTitle = GN_I18N && GN_I18N.safeT ? GN_I18N.safeT('history_delete_session') : 'Delete Session';
+                const formattedDate = formatDateDisplay(date);
+                dateDet.innerHTML = `<summary class="date-header"><span>${formattedDate}</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
+                for (const l of entry.items) {
                         // Prefer DB lookup so we can show localized names dynamically
                         const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
                         let imageId = l.imageId;
@@ -225,15 +359,31 @@
                         const displayName = (exRec ? ((lang === 'pt' && exRec.namePT) ? exRec.namePT : exRec.name) : (l.exerciseName || (l.exerciseId ? `#${l.exerciseId}` : 'Unknown')));
 
                         dateDet.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${displayName}</div><div class="data-row">${l.sets || 3} ${setsText} x ${l.weight}${kgSuffix} x ${l.reps}</div></div></div>`;
-                    }
-                    // add date-level text delete button at the bottom of the date box
-                    const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
-                    const delText = (pageLang === 'pt') ? 'Deletar' : 'Exclude';
-                    // Add Edit Session button next to the date-level delete button
-                    dateDet.innerHTML += `<div style="padding:10px 12px;display:flex;justify-content:flex-end;gap:8px"><button class="date-edit-btn" aria-label="Edit session" title="Edit session" onclick="event.stopPropagation(); openEditDate('${date}')">Edit</button><button class="date-delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteDateLogs('${date}')">${delText}</button></div>`;
-                    monthDet.appendChild(dateDet);
                 }
-                container.appendChild(monthDet);
+                // add date-level text delete/edit buttons at the bottom of the date box (localized)
+                const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : (navigator.language || 'en');
+                const editText = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_edit_session') : (pageLang && pageLang.startsWith('pt') ? 'Editar' : 'Edit');
+                const delText = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_delete') : (pageLang && pageLang.startsWith('pt') ? 'Deletar' : 'Delete');
+                dateDet.innerHTML += `<div style="padding:10px 12px;display:flex;justify-content:flex-end;gap:8px"><button class="date-edit-btn" aria-label="${editText}" title="${editText}" onclick="event.stopPropagation(); openEditDate('${date}')">${editText}</button><button class="date-delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteDateLogs('${date}')">${delText}</button></div>`;
+                container.appendChild(dateDet);
+                renderedCount++;
+
+                // apply translations to this newly created block if GN_I18N is present
+                if (window.GN_I18N && typeof GN_I18N.applyTranslations === 'function') {
+                    try { GN_I18N.applyTranslations(dateDet); } catch(e){}
+                }
+            }
+
+            // If filters are applied but nothing matched, show localized empty-state message
+            if (renderedCount === 0) {
+                let msg = '';
+                if (window.GN_I18N && GN_I18N.safeT) {
+                    msg = GN_I18N.safeT('history_no_routine');
+                } else {
+                    const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : (navigator.language || 'en');
+                    msg = (pageLang && pageLang.startsWith('pt')) ? 'Nenhum treino encontrado' : 'No routine entry found';
+                }
+                container.innerHTML = `<div class="empty-state">${msg}</div>`;
             }
         }
 
@@ -243,7 +393,7 @@
             container.innerHTML = '';
             if (!weights || weights.length === 0) {
                 const msg = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_no_weight') : 'No weight history';
-                container.innerHTML = `<div style="padding:12px;color:var(--text-dim)">${msg}</div>`;
+                container.innerHTML = `<div class="empty-state">${msg}</div>`;
                 return;
             }
             const kgSuffix = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_fmt_kg_suffix') : 'kg';

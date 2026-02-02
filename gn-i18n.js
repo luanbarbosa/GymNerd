@@ -207,6 +207,13 @@
                 history_fmt_sets_short: 'sets',
                 history_fmt_kg_suffix: 'kg'
                 ,
+                // UI strings added for history page filters and empty state
+                filter_month: 'Month',
+                filter_year: 'Year',
+                history_no_routine: 'No routine entry found',
+                history_edit_session: 'Edit session',
+                history_delete: 'Delete',
+
                 history_disclaimer_stats_only: 'The values changed here will not be applied to the routines. Only to the statistics.'
                 ,
                 /* Livesession specific */
@@ -454,6 +461,13 @@
                 history_fmt_set: 'Série {n}',
                 history_fmt_kg_suffix: 'kg'
                 ,
+                // UI strings added for history page filters and empty state (Portuguese)
+                filter_month: 'Mês',
+                filter_year: 'Ano',
+                history_no_routine: 'Nenhum treino encontrado',
+                history_edit_session: 'Editar sessão',
+                history_delete: 'Deletar',
+
                 history_disclaimer_stats_only: 'Os valores alterados aqui não serão aplicados aos treinos. Somente às estatísticas.'
                 ,
                 /* Livesession specific */

@@ -133,12 +133,7 @@
         </div>
         </div>
 
-        <div class="card" id="weightCard">
-            <div class="calendar-header"><h3 data-i18n="weight_progress"></h3></div>
-            <div class="canvas-wrapper" style="height: 200px;">
-                <canvas id="weightChart"></canvas>
-            </div>
-        </div>
+        
         <div class="card" id="radarCard">
             <div class="calendar-header">
                 <h3 data-i18n="exercise_frequency"></h3>
@@ -177,55 +172,10 @@
             renderCharts(logs);
             updateStreakBadge();
             updateFrequencyChart(logs);
-            renderWeightChart();
             updateRadarChart(logs);
         }
 
-        async function renderWeightChart() {
-            await ensureDbOpen();
-            const weights = await db.weights.orderBy('date').toArray();
-            const ctx = document.getElementById('weightChart').getContext('2d');
-            if (!weights || weights.length === 0) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.font = '14px sans-serif';
-                ctx.fillStyle = '#94a3b8';
-                ctx.fillText(GN_I18N.t('no_weight_data'), 20, 40);
-                return;
-            }
-            const labels = weights.map(w => w.date.slice(5));
-            const data = weights.map(w => w.weight);
-            if (window.weightChartInstance) window.weightChartInstance.destroy();
-            window.weightChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label: GN_I18N.t('weight_kg'),
-                        data,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16,185,129,0.1)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#10b981',
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { display: false },
-                        y: {
-                            grace: '15%',
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#94a3b8', font: { size: 10 } }
-                        }
-                    }
-                }
-            });
-        }
+        
 
         function changeMonth(offset) {
             currentViewDate.setMonth(currentViewDate.getMonth() + offset);
