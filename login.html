@@ -226,7 +226,7 @@
                     try { e.preventDefault(); } catch(e){}
                     const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('demo_mode_warning') : 'The data will be stored locally and might be cleared by the system.';
                     try { alert(msg); } catch(e) { console.warn('alert failed', e); }
-                    try { window.location.replace('home.html'); } catch(e) { window.location.href = 'home.html'; }
+                    try { window.location.replace('index.html?start=home'); } catch(e) { window.location.href = 'index.html?start=home'; }
                 });
         }
     </script>

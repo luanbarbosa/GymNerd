@@ -103,15 +103,22 @@
                 } else {
                     const key = (s.textContent || '').trim();
                     if (!key) continue;
-                    // Guard against script content that contains HTML (e.g. accidental fragments)
-                    if (key.indexOf('<') !== -1) {
-                        try { console.warn('Skipping non-JS inline script during SPA injection'); } catch(e){}
-                        continue;
-                    }
                     if (window.__spa_loaded_inline_scripts.has(key)) continue;
-                    try { const fn = new Function(key); fn(); window.__spa_loaded_inline_scripts.add(key); } catch(e) {
+                    // Try to run inline script via Function first. If that fails
+                    // (for example because the script contains template HTML or
+                    // complex constructs), fall back to appending a script
+                    // element so browsers execute it naturally.
+                    try {
+                        const fn = new Function(key);
+                        fn();
+                        window.__spa_loaded_inline_scripts.add(key);
+                    } catch(e) {
                         try {
-                            const ns = document.createElement('script'); ns.textContent = s.textContent; document.body.appendChild(ns); document.body.removeChild(ns);
+                            const ns = document.createElement('script');
+                            ns.textContent = s.textContent;
+                            document.body.appendChild(ns);
+                            document.body.removeChild(ns);
+                            window.__spa_loaded_inline_scripts.add(key);
                         } catch (err) {
                             try { console.warn('Failed to execute injected inline script', err); } catch(e){}
                         }
@@ -132,6 +139,14 @@
             try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(container); } catch(e){}
             // If the page defines showApp(), call it to unhide main content
             try { if (typeof window.showApp === 'function') window.showApp(); } catch(e) {}
+
+            // Some pages register initialization via DOMContentLoaded or inline
+            // scripts that won't re-run when fragments are injected. Call common
+            // init helpers (if present) so injected pages initialize correctly.
+            try { if (typeof renderCompactApp === 'function') renderCompactApp(); } catch(e) {}
+            try { if (typeof renderMainUser === 'function') renderMainUser(); } catch(e) {}
+            try { if (typeof renderWeekDots === 'function') renderWeekDots(); } catch(e) {}
+            try { if (typeof updatePendingButtonVisibility === 'function') updatePendingButtonVisibility(); } catch(e) {}
             try { window.scrollTo(0,0); } catch(e){}
             if (addHistory) history.pushState({ spa:true, url: href }, doc.title || '', href);
                 // Update active bottom-nav item if present and show/hide nav
@@ -180,16 +195,22 @@
                                                     const ns = document.createElement('script'); ns.src = resolved; ns.async = false; document.body.appendChild(ns);
                                                     await new Promise((res) => { ns.onload = () => { window.__spa_loaded_scripts.add(resolved); res(); }; ns.onerror = () => { res(); }; });
                                                     } else {
-                                                        const key2 = (s.textContent || '').trim();
-                                                        if (!key2) continue;
-                                                        if (key2.indexOf('<') !== -1) {
-                                                            try { console.warn('Skipping non-JS inline script in fragment injection'); } catch(e){}
-                                                            continue;
-                                                        }
-                                                        if (window.__spa_loaded_inline_scripts.has(key2)) continue;
-                                                        try { const fn = new Function(key2); fn(); window.__spa_loaded_inline_scripts.add(key2); } catch(e) {
-                                                            try { const ns = document.createElement('script'); ns.textContent = s.textContent; document.body.appendChild(ns); document.body.removeChild(ns); } catch(err) { try { console.warn('Failed to execute fragment inline script', err); } catch(e){} }
-                                                        }
+                                                                const key2 = (s.textContent || '').trim();
+                                                                if (!key2) continue;
+                                                                if (window.__spa_loaded_inline_scripts.has(key2)) continue;
+                                                                try {
+                                                                    const fn = new Function(key2);
+                                                                    fn();
+                                                                    window.__spa_loaded_inline_scripts.add(key2);
+                                                                } catch(e) {
+                                                                    try {
+                                                                        const ns = document.createElement('script');
+                                                                        ns.textContent = s.textContent;
+                                                                        document.body.appendChild(ns);
+                                                                        document.body.removeChild(ns);
+                                                                        window.__spa_loaded_inline_scripts.add(key2);
+                                                                    } catch(err) { try { console.warn('Failed to execute fragment inline script', err); } catch(e){} }
+                                                                }
                                                     }
                                             }
                                             try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(curMain); } catch(e){}
@@ -240,8 +261,23 @@
     (function initRouteOnLoad(){
         try {
             const name = (location.pathname || '').split('/').pop() || 'index.html';
+            // Allow overriding initial route with a `start` query param or hash
+            const params = new URLSearchParams(location.search);
+            const startParam = params.get('start') || null;
+            const hashParam = (location.hash && location.hash.length > 1) ? location.hash.slice(1) : null;
+            const startHint = startParam || hashParam;
+            const allowed = ['home.html','routines.html','history.html','statistics.html','home','routines','history','statistics'];
+
             if (name === '' || name === 'index.html') {
-                // Do not add history entry for initial render
+                if (startHint) {
+                    let candidate = startHint;
+                    if (!candidate.endsWith('.html')) candidate = candidate + '.html';
+                    if (allowed.includes(startHint) || allowed.includes(candidate)) {
+                        spaNavigate(candidate, false).catch(() => {});
+                        return;
+                    }
+                }
+                // Default to showing the login page
                 spaNavigate('login.html', false).catch(() => {});
             }
         } catch (e) {}
