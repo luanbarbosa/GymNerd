@@ -1,0 +1,337 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.json" />
+    <title>GymNerd</title>
+    <link rel="icon" href="favicon.svg" />
+    <script src="gn-i18n.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            /* Hide by default to avoid flashing the login UI while auth.js refreshes tokens */
+            visibility: hidden;
+            background: #0f172a;
+            padding-top: constant(safe-area-inset-top);
+            padding-top: env(safe-area-inset-top);
+        }
+
+        .wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+            color: #0f172a;
+        }
+
+        
+
+        .card {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            padding: 28px;
+            box-sizing: border-box;
+        }
+
+        .brand {
+            width: 96px;
+            height: 96px;
+            object-fit: contain;
+            border-radius: 16px;
+        }
+
+        h1 {
+            margin: 12px 0;
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #60a5fa, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 0;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .muted {
+            color: #94a3b8;
+            margin-top: 12px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .col {
+            flex: 1;
+        }
+    </style>
+
+</head>
+
+<body>
+    <script>
+        (function(){
+            try {
+                const token = localStorage.getItem('google_token');
+                const expires = localStorage.getItem('google_token_expires_at');
+                <div class="main-content">
+                const refresh = localStorage.getItem('google_refresh_token');
+                const isExpired = expires ? (Date.now() > parseInt(expires)) : true;
+
+                // If we have a valid (non-expired) token, go straight to the app.
+                if (token && !isExpired) {
+                    try { window.location.replace('home.html'); return; } catch(e){}
+                }
+
+                // If token is expired but we have a refresh token, show a
+                // full-screen "Refreshing session" overlay and do NOT reveal
+                // the login UI. auth.js will attempt refresh and navigate.
+                if (token && isExpired && refresh) {
+                    try {
+                        // Create a simple loader element that auth.js's hideLoading
+                        // will later hide if it runs. Use the same id so hideLoading
+                        // can target it.
+                        if (!document.getElementById('gn-global-loader')) {
+                            const el = document.createElement('div');
+                            el.id = 'gn-global-loader';
+                            el.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#0f172a;color:white;z-index:2147483647;padding:20px;box-sizing:border-box;';
+                            el.innerHTML = `
+                                <div style="max-width:520px;width:100%;text-align:center">
+                                    <div id="gn-global-loader-message" style="font-weight:800;font-size:1.1rem;margin-bottom:16px">Refreshing session...</div>
+                </div>
+                                    <div style="display:flex;align-items:center;justify-content:center">
+                                        <div style="width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.12);border-top-color:#3b82f6;animation:gn-spin 1s linear infinite"></div>
+                                    </div>
+                                </div>
+                            `;
+                            const style = document.createElement('style');
+                            style.id = 'gn-global-loader-style';
+                            style.textContent = `@keyframes gn-spin { to { transform: rotate(360deg); } }`;
+                            document.head.appendChild(style);
+                            // hide page content underneath
+                            try {
+                                const children = Array.from(document.body.children);
+                                for (const c of children) {
+                                    if (c.id === 'gn-global-loader') continue;
+                                    c.dataset.gnPrevDisplay = c.style.display || '';
+                                    c.style.display = 'none';
+                                }
+                                document.body.dataset.gnHidden = '1';
+                            } catch (e) {}
+                            document.body.appendChild(el);
+                        }
+                        return; // don't reveal login UI
+                    } catch (e) {
+                        // fallback to showing login UI if overlay creation fails
+                    }
+                }
+            } catch(e) {}
+
+            // No valid session and no refresh possible — reveal the login UI
+            // unless an interactive sign-in is in progress (set by auth.js).
+            try {
+                if (window.__gn_signing_in) {
+                    // keep page hidden; auth.js will complete the exchange and
+                    // navigate or reveal when appropriate.
+                } else {
+                    document.body.style.visibility = 'visible';
+                }
+            } catch(e) { document.documentElement.style.visibility = 'visible'; }
+        })();
+    </script>
+    <div style="position:absolute; top: calc(constant(safe-area-inset-top) + 20px); top: calc(env(safe-area-inset-top) + 20px); right:20px; z-index:1000; display:flex; align-items:center; gap:8px;">
+        <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">Language</label>
+        <select id="gn-lang-select" style="padding:8px 10px; border-radius:10px; background: rgba(255,255,255,0.02); color: white; border:1px solid rgba(255,255,255,0.06); font-weight:700; cursor:pointer;">
+            <option value="en">🇬🇧 English</option>
+            <option value="pt">🇧🇷 Português</option>
+        </select>
+    </div>
+    <div class="wrap">
+        <div class="card">
+            <img src="favicon.svg" alt="App icon" class="brand" />
+            <h1>GymNerd</h1>
+            <div id="auth-status-container" class="muted" data-i18n="signin_subtext"></div>
+            <div class="row" style="margin-top:24px">
+                <button id="signin-google" class="col btn btn-primary" data-i18n="sign_in_with_google"></button>
+            </div>
+            <div class="row" style="margin-top:16px">
+                <div class="col" style="display:flex;justify-content:center;">
+                    <a id="demo-mode" href="#" style="color:#60a5fa;font-weight:600;font-size:0.82rem;text-decoration:none;cursor:pointer;align-self:center;text-transform:uppercase">Demo mode</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // Language selector handlers (moved from auth.js)
+        (function attachLangHandlers(){
+            try {
+                const sel = document.getElementById('gn-lang-select');
+                const key = 'gn_lang';
+                const detectBrowser = () => {
+                    try {
+                        const nl = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+                        return nl.startsWith('pt') ? 'pt' : 'en';
+                    } catch(e) { return 'en'; }
+                };
+
+                const getCookieSafe = (name) => {
+                    try { if (typeof getCookie === 'function') return getCookie(name); } catch(e){}
+                    try { const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : null; } catch(e) { return null; }
+                };
+
+                const initial = (function(){ try { return localStorage.getItem(key) || getCookieSafe(key) || detectBrowser(); } catch(e){ return detectBrowser(); } })();
+                if (sel) sel.value = initial;
+                try { localStorage.setItem(key, initial); } catch(e){}
+
+                try { if (typeof GN_I18N !== 'undefined' && typeof GN_I18N.applyTranslations === 'function') GN_I18N.applyTranslations(document); } catch(e){}
+
+                if (sel) sel.addEventListener('change', (ev) => {
+                    try { localStorage.setItem(key, ev.target.value); location.reload(); } catch(e){}
+                });
+            } catch(e) { console.warn('lang selector init failed', e); }
+        })();
+
+        document.getElementById('signin-google').addEventListener('click', function () {
+            if (typeof handleAuth === 'function') return handleAuth();
+            try { window.location.replace('home.html'); } catch(e) { window.location.href = 'home.html'; }
+        });
+        const demoBtn = document.getElementById('demo-mode');
+        if (demoBtn) {
+            try { if (typeof GN_I18N !== 'undefined') demoBtn.textContent = GN_I18N.t('demo_mode'); } catch(e){}
+            demoBtn.addEventListener('click', function(e){
+                    try { e.preventDefault(); } catch(e){}
+                    const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('demo_mode_warning') : 'The data will be stored locally and might be cleared by the system.';
+                    try { alert(msg); } catch(e) { console.warn('alert failed', e); }
+                    try { window.location.replace('home.html'); } catch(e) { window.location.href = 'home.html'; }
+                });
+        }
+    </script>
+    <script>
+        (function initAuthUI(){
+            function safeText(s){ return (s || '').toString(); }
+
+            function render(state){
+                const status = document.getElementById('auth-status-container');
+                const signinBtn = document.getElementById('signin-google');
+                if (!status) return;
+                // If running on the login page and we have a valid session, navigate to home
+                try {
+                    if (state && state.token && !state.isExpired && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
+                        try { window.location.replace('home.html'); return; } catch(e) { try { window.location.href = 'home.html'; } catch(e2){} }
+                    }
+                } catch(e) {}
+                try {
+                    if (state && state.token && !state.isExpired) {
+                        if (signinBtn) signinBtn.style.display = 'none';
+                        const user = state.user || {};
+                        const origin = (window && window.location && window.location.origin && window.location.origin !== 'null' && !String(window.location.origin).startsWith('file:')) ? window.location.origin : '';
+                        const basePath = window.location.pathname.replace(/\/[^\/] *$/, '/');
+                        const fallbackAvatar = origin ? (origin + basePath + 'icons/icon-512.svg') : 'icons/icon-512.svg';
+                        const pic = (window && window.DEMO_MODE) ? fallbackAvatar : (safeText(user.picture) || fallbackAvatar);
+                        const name = safeText(user.name) || '';
+                        const connected = state.isBypass ? '' : '<div style="font-size:0.8rem;color:#94a3b8;margin-top:6px;"><span style="color:#10b981">●</span> Connected to Drive</div>';
+                        status.innerHTML = `
+                            <div style="display:flex;align-items:center;gap:12px">
+                                <img src="${pic}" alt="avatar" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.04);" onerror="this.onerror=null;this.src='${fallbackAvatar}'"/>
+                                <div style="text-align:left">
+                                    <div style="font-weight:800;color:#e2e8f0">${name}</div>
+                                    ${connected}
+                                    <div style="margin-top:8px">
+                                        <a href="settings.html" style="color:#94a3b8;margin-right:10px;text-decoration:none;font-weight:700">Settings</a>
+                                        <button id="logout-btn" style="background:#111827;color:#fff;border-radius:8px;padding:6px 10px;border:none;cursor:pointer;font-weight:700">Logout</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        const logoutBtn = document.getElementById('logout-btn');
+                        if (logoutBtn) logoutBtn.addEventListener('click', () => { try { if (typeof window.logout === 'function') window.logout(); } catch(e){} });
+                    } else {
+                        if (signinBtn) signinBtn.style.display = '';
+                        try {
+                            const sub = (typeof GN_I18N !== 'undefined' && typeof GN_I18N.t === 'function') ? GN_I18N.t('signin_subtext') : 'Sign in with Google to sync your data.';
+                            status.textContent = sub;
+                        } catch (e) { status.textContent = 'Sign in with Google to sync your data.'; }
+                    }
+                } catch (e) { console.warn('auth UI render failed', e); }
+            }
+
+            function showRefreshModal(detail){
+                try {
+                    const existing = document.getElementById('auth-refresh-modal');
+                    if (existing) return;
+                    const modal = document.createElement('div');
+                    modal.id = 'auth-refresh-modal';
+                    modal.style = 'position:fixed;inset:0;background:rgba(15,17,26,0.98);display:flex;align-items:center;justify-content:center;z-index:1000000;padding:20px;';
+                    modal.innerHTML = `
+                        <div style="max-width:420px;width:100%;color:white;font-family:system-ui, -apple-system,\"Segoe UI\", Roboto,\"Helvetica Neue\", Arial;">
+                            <h2 style="margin:0 0 8px 0; font-size:1.6rem">${safeText(detail.title)}</h2>
+                            <p style="color:#94a3b8;margin:0 0 18px 0">${safeText(detail.message)}</p>
+                            <div style="display:flex;gap:10px">
+                                <button id="auth-retry-btn" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:#1e293b;color:white;font-weight:700">${safeText(detail.retryText || 'Retry')}</button>
+                                <button id="auth-signin-btn" style="flex:1;padding:12px;border-radius:10px;border:none;background:#3b82f6;color:white;font-weight:700">${safeText(detail.signInText || 'Sign in with Google')}</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    const retry = document.getElementById('auth-retry-btn');
+                    const signin = document.getElementById('auth-signin-btn');
+                    if (retry) retry.addEventListener('click', async () => {
+                        try {
+                            if (typeof window.ensureGoogleAccessToken === 'function') {
+                                const ok = await window.ensureGoogleAccessToken();
+                                if (ok) location.reload(); else alert(detail.message || 'Refresh failed. Please sign in.');
+                            } else {
+                                alert(detail.message || 'Refresh failed. Please sign in.');
+                            }
+                        } catch (e) { alert(detail.message || 'Refresh failed. Please sign in.'); }
+                    });
+                    if (signin) signin.addEventListener('click', () => { try { if (typeof window.handleAuth === 'function') window.handleAuth(); } catch(e){} });
+                } catch (e) { console.warn('failed to show refresh modal', e); }
+            }
+
+            document.addEventListener('DOMContentLoaded', async () => {
+                try {
+                    if (typeof renderAuthStatus === 'function') {
+                        const state = await renderAuthStatus();
+                        render(state);
+                    }
+                } catch (e) { console.warn('initAuthUI failed', e); }
+            });
+
+            window.addEventListener('auth-refresh-error', (ev) => { try { showRefreshModal(ev.detail || {}); } catch(e){} });
+            window.addEventListener('userchange', (ev) => { try { if (typeof renderAuthStatus === 'function') renderAuthStatus().then(render); } catch(e){} });
+        })();
+    </script>
+    <img src="illustration-login.svg" alt="" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:320px; max-width:90%; height:auto; opacity:0.95; pointer-events:none; z-index:50;" />
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered from index')).catch(err => console.warn('SW registration failed', err));
+        }
+    </script>
+</body>
+
+</html>
