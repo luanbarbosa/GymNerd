@@ -142,7 +142,18 @@
             try { if (typeof renderWeekDots === 'function') renderWeekDots(); } catch(e) {}
             try { if (typeof updatePendingButtonVisibility === 'function') updatePendingButtonVisibility(); } catch(e) {}
             try { window.scrollTo(0,0); } catch(e){}
-            if (addHistory) history.pushState({ spa:true, url: href }, doc.title || '', href);
+            if (addHistory) {
+                try {
+                    // push a hash-based URL for the visible address so refreshing
+                    // doesn't request the physical HTML file (e.g. /history.html)
+                    const name = (href.split('/').pop() || 'index.html');
+                    const short = name.replace(/\.html$/i, '');
+                    const pushUrl = '/#' + short;
+                    history.pushState({ spa:true, url: href }, doc.title || '', pushUrl);
+                } catch (e) {
+                    history.pushState({ spa:true, url: href }, doc.title || '', href);
+                }
+            }
                 // Update active bottom-nav item if present and show/hide nav
             try {
                 const map = { 'home.html':'nav-home','index.html':'nav-home','routines.html':'nav-routines','routinecrud.html':'nav-routines','history.html':'nav-history','historycrud.html':'nav-history','statistics.html':'nav-statistics' };
@@ -238,7 +249,16 @@
         } catch(e){}
     });
 
-    window.addEventListener('popstate', function(e){ try { spaNavigate(location.pathname, false); } catch(e){} });
+    window.addEventListener('popstate', function(e){
+        try {
+            // Prefer the stored SPA URL (original fetched path) when available
+            if (e && e.state && e.state.url) {
+                spaNavigate(e.state.url, false);
+            } else {
+                spaNavigate(location.pathname, false);
+            }
+        } catch(e){}
+    });
 
     // expose API
     window.spaNavigate = spaNavigate;
@@ -254,7 +274,7 @@
             const startParam = params.get('start') || null;
             const hashParam = (location.hash && location.hash.length > 1) ? location.hash.slice(1) : null;
             const startHint = startParam || hashParam;
-            const allowed = ['home.html','routines.html','history.html','statistics.html','home','routines','history','statistics'];
+            const allowed = ['home.html','routines.html','history.html','statistics.html','settings.html','home','routines','history','statistics','settings'];
 
             if (name === '' || name === 'index.html') {
                 if (startHint) {
