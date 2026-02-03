@@ -104,24 +104,18 @@
                     const key = (s.textContent || '').trim();
                     if (!key) continue;
                     if (window.__spa_loaded_inline_scripts.has(key)) continue;
-                    // Try to run inline script via Function first. If that fails
-                    // (for example because the script contains template HTML or
-                    // complex constructs), fall back to appending a script
-                    // element so browsers execute it naturally.
+                    // Execute inline scripts by appending a script element so
+                    // function declarations and global bindings are created on
+                    // `window`, matching normal page load behavior.
                     try {
-                        const fn = new Function(key);
-                        fn();
+                        const ns = document.createElement('script');
+                        ns.textContent = s.textContent;
+                        document.body.appendChild(ns);
+                        // remove the node to avoid DOM clutter
+                        try { document.body.removeChild(ns); } catch(e){}
                         window.__spa_loaded_inline_scripts.add(key);
-                    } catch(e) {
-                        try {
-                            const ns = document.createElement('script');
-                            ns.textContent = s.textContent;
-                            document.body.appendChild(ns);
-                            document.body.removeChild(ns);
-                            window.__spa_loaded_inline_scripts.add(key);
-                        } catch (err) {
-                            try { console.warn('Failed to execute injected inline script', err); } catch(e){}
-                        }
+                    } catch (err) {
+                        try { console.warn('Failed to execute injected inline script', err); } catch(e){}
                     }
                 }
             }
@@ -199,18 +193,12 @@
                                                                 if (!key2) continue;
                                                                 if (window.__spa_loaded_inline_scripts.has(key2)) continue;
                                                                 try {
-                                                                    const fn = new Function(key2);
-                                                                    fn();
+                                                                    const ns = document.createElement('script');
+                                                                    ns.textContent = s.textContent;
+                                                                    document.body.appendChild(ns);
+                                                                    try { document.body.removeChild(ns); } catch(e){}
                                                                     window.__spa_loaded_inline_scripts.add(key2);
-                                                                } catch(e) {
-                                                                    try {
-                                                                        const ns = document.createElement('script');
-                                                                        ns.textContent = s.textContent;
-                                                                        document.body.appendChild(ns);
-                                                                        document.body.removeChild(ns);
-                                                                        window.__spa_loaded_inline_scripts.add(key2);
-                                                                    } catch(err) { try { console.warn('Failed to execute fragment inline script', err); } catch(e){} }
-                                                                }
+                                                                } catch(err) { try { console.warn('Failed to execute fragment inline script', err); } catch(e){} }
                                                     }
                                             }
                                             try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(curMain); } catch(e){}
