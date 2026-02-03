@@ -21,6 +21,11 @@
             padding-top: env(safe-area-inset-top);
         }
         .main-content { min-height: 100vh; }
+        /* Bottom navigation (mobile) */
+        #bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; display: none; gap: 8px; justify-content: space-around; align-items: center; padding: 10px 8px; background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(15,23,42,0.95)); border-top: 1px solid rgba(255,255,255,0.04); box-shadow: 0 -6px 20px rgba(0,0,0,0.25); z-index: 1400; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+        #bottom-nav a { color: #94a3b8; text-decoration: none; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; padding:6px 8px; border-radius:10px; }
+        #bottom-nav a .nav-icon { width:20px; height:20px; display:block; }
+        #bottom-nav a.active { color: #fff; background: rgba(59,130,246,0.08); }
     </style>
 </head>
 
@@ -28,6 +33,26 @@
     <div class="main-content" id="app-shell">
         <!-- SPA root shell. `spa.js` will inject login.html or other pages here. -->
     </div>
+
+    <!-- Bottom navigation (SPA will toggle visibility) -->
+    <nav id="bottom-nav" aria-hidden="true" role="navigation">
+        <a id="nav-home" href="home.html" aria-label="Home">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>
+            <span>Home</span>
+        </a>
+        <a id="nav-routines" href="routines.html" aria-label="Routines">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>
+            <span>Routines</span>
+        </a>
+        <a id="nav-history" href="history.html" aria-label="History">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>
+            <span>History</span>
+        </a>
+        <a id="nav-statistics" href="statistics.html" aria-label="Statistics">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>
+            <span>Stats</span>
+        </a>
+    </nav>
 
     <script src="auth.js"></script>
     <script src="spa.js"></script>

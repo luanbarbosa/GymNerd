@@ -314,35 +314,35 @@
 		};
 	</script>
 
-	<div class="top-card">
-		<div class="topbar">
-			<div id="topbar-title">
-				<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
-			</div>
-			<div id="topbar-actions">
-				<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;margin-right:8px;">
-					<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">square_foot</span>
-				</a>
-				<a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
-					<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">settings</span>
-				</a>
-			</div>
-		</div>
-		<div class="top-card-inner">
-			<div id="home-user-main"></div>
-			<!-- Demo mode banner (shown when no session token present) -->
-			<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
-				Demo Mode — you are using the app without signing in. Your data will be stored locally only.
-				<small>Sign in to enable cloud sync and restore from Google Drive.</small>
-			</div>
-		</div>
-	</div>
-
-	<div style="padding: 0 20px;">
-		<div id="week-dots" class="week-dots" aria-hidden="false"></div>
-	</div>
-
 	<div class="main-content">
+
+		<div class="top-card">
+			<div class="topbar">
+				<div id="topbar-title">
+					<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+				</div>
+				<div id="topbar-actions">
+					<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;margin-right:8px;">
+						<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">square_foot</span>
+					</a>
+					<a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
+						<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">settings</span>
+					</a>
+				</div>
+			</div>
+			<div class="top-card-inner">
+				<div id="home-user-main"></div>
+				<!-- Demo mode banner (shown when no session token present) -->
+				<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
+					Demo Mode — you are using the app without signing in. Your data will be stored locally only.
+					<small>Sign in to enable cloud sync and restore from Google Drive.</small>
+				</div>
+			</div>
+		</div>
+
+		<div style="padding: 0 20px;">
+			<div id="week-dots" class="week-dots" aria-hidden="false"></div>
+		</div>
 
 		<button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
 			<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>

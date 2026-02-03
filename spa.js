@@ -144,7 +144,14 @@
                 // toggle visibility: hide on index/login, show on app pages
                 const nav = document.getElementById('bottom-nav') || document.getElementById('gn-bottom-nav');
                 if (nav) {
-                    if (key === 'index.html' || key === '' ) nav.style.display = 'none'; else nav.style.display = 'flex';
+                    // Hide nav on the login/index shell pages; show for app pages
+                    if (key === 'index.html' || key === '' || key === 'login.html') {
+                        nav.style.display = 'none';
+                        try { nav.setAttribute('aria-hidden', 'true'); } catch(e){}
+                    } else {
+                        nav.style.display = 'flex';
+                        try { nav.setAttribute('aria-hidden', 'false'); } catch(e){}
+                    }
                 }
 
                     // Fallback: if navigating to home.html and the injected main-content

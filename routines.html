@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
     <meta charset="UTF-8">
+</head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <div class="main-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="manifest" href="./manifest.json">
@@ -959,12 +960,13 @@
 
         init();
     </script>
-    </div>
+        </div>
     <div id="imagePreviewModal" class="image-modal hidden" onclick="hideImagePreview()">
             <div class="modal-inner" onclick="event.stopPropagation()">
                 <button class="close-btn" onclick="hideImagePreview()">×</button>
                 <img id="imagePreviewImg" src="" alt="Preview">
             </div>
         </div>
+    </div>
 </body>
 </html>
