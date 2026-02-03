@@ -241,7 +241,8 @@
             const url = new URL(href, location.href);
             if (url.origin !== location.origin) return;
             const name = url.pathname.split('/').pop() || 'index.html';
-            const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html'];
+            // `settings.html` is a standalone page and should not be embedded into the SPA.
+            const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html'];
             if (spaTargets.includes(name)) {
                 e.preventDefault();
                 spaNavigate(url.pathname);

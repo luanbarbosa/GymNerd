@@ -154,7 +154,12 @@
             }
             if (typeof Dexie !== 'undefined') { try { const _db = new Dexie('GymAppDB'); await _db.delete(); } catch(e){} }
             try { localStorage.clear(); } catch(e){}
-            try { location.reload(); } catch(e){}
+            try {
+                if (typeof logout === 'function') await logout();
+                else try { location.reload(); } catch(e){}
+            } catch(e) {
+                try { location.reload(); } catch(_){}
+            }
         } catch (err) {
             console.error('Clear failed:', err);
         }

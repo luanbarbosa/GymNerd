@@ -109,7 +109,7 @@
         <div class="top-card">
             <div class="top-card-inner">
                 <div style="display:flex;align-items:center;width:100%;gap:12px;">
-                    <a href="home.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
+                    <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); history.back();"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                     <div style="flex:1;min-width:0;">
                         <h2 class="app-title-compact" data-i18n="page_settings">Settings</h2>
                     </div>
@@ -320,7 +320,7 @@
 
                     try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                     alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!");
-                    location.href = 'home.html';
+                    try { history.back(); } catch(e) { location.href = 'home.html'; }
                     return;
                 }
 
@@ -372,7 +372,7 @@
 
                 try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!"); 
-                location.href = 'home.html';
+                try { history.back(); } catch(e) { location.href = 'home.html'; }
             } catch (err) {
                 console.error("Import error:", err);
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_error') : "Error importing data. Check console for details.");
@@ -453,7 +453,7 @@
                     if (data.lastSync) localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync);
                     localStorage.setItem('has_local_changes', 'false');
 
-                    location.reload();
+                    try { history.back(); } catch(e) { location.reload(); }
                 }
             } catch (error) {
                 if (error.message === "AUTH_EXPIRED") {
