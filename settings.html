@@ -21,6 +21,7 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="styles/app-titles.css">
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
@@ -34,7 +35,8 @@
         /* Ensure back button icons are vertically centered inside top bars */
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
-        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: var(--bg); font-style: italic; white-space:nowrap; overflow:visible; }
+        /* Use same compact app title style as home.html */
+
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         .main-content { padding: 12px; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 20px; margin-top: 20px; letter-spacing: -1px; font-size: 2.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -109,7 +111,7 @@
                 <div style="display:flex;align-items:center;width:100%;gap:12px;">
                     <a href="home.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                     <div style="flex:1;min-width:0;">
-                        <h2 data-i18n="page_settings">Settings</h2>
+                        <h2 class="app-title-compact" data-i18n="page_settings">Settings</h2>
                     </div>
                 </div>
             </div>

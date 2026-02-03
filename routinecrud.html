@@ -17,6 +17,7 @@
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <link rel="stylesheet" href="styles/app-titles.css">
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; }
@@ -29,6 +30,8 @@
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
         .page-content { padding: 16px; padding-top: 12px; }
         .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
+        /* Use same compact app title style as home.html */
+        
         .top-card .back-btn { color: inherit; }
         /* Ensure back button icons are vertically centered inside top bars */
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
@@ -180,7 +183,7 @@
             <div style="display:flex;align-items:center;width:100%;gap:12px;">
                 <a href="routines.html" class="back-btn" style="outline:none; box-shadow:none; border:none; background:none;" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                 <div style="flex:1;min-width:0;">
-                    <h2 id="pageTitle" style="margin:0; text-align:left;" data-i18n="page_routine_new">Nova Rotina</h2>
+                    <h2 id="pageTitle" class="app-title-compact" style="margin:0; text-align:left;" data-i18n="page_routine_new">Nova Rotina</h2>
                 </div>
             </div>
         </div>
@@ -210,7 +213,7 @@
                     <div style="display:flex;align-items:center;width:100%;gap:12px;">
                         <a href="javascript:void(0)" class="back-btn" onclick="closeSearchModal()" style="outline:none; box-shadow:none; border:none; background:none; font-size:1.5rem; text-decoration:none;" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                         <div style="flex:1;min-width:0;">
-                            <h2 style="margin:0; text-align:left;" data-i18n="add_exercise_modal_title">Adicionar Exercício</h2>
+                            <h2 class="app-title-compact" style="margin:0; text-align:left;" data-i18n="add_exercise_modal_title">Adicionar Exercício</h2>
                         </div>
                         <div class="top-action-wrapper" style="display:flex; gap:8px; align-items:center;">
                             <button id="newCustomBtn" type="button" class="add-set-btn prominent top-action-btn" onclick="openCreateModal()"><span data-i18n="new_custom">custom</span></button>
@@ -242,7 +245,7 @@
                 <div style="display:flex;align-items:center;width:100%;gap:12px;">
                     <a href="javascript:void(0)" class="back-btn" onclick="closeCustomModal()" style="outline:none; box-shadow:none; border:none; background:none; font-size:1.5rem; text-decoration:none;" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                     <div style="flex:1;min-width:0;">
-                        <h2 id="customModalTitle" style="margin:0; text-align:left;" data-i18n="custom_exercise_title">Exercício Personalizado</h2>
+                        <h2 id="customModalTitle" class="app-title-compact" style="margin:0; text-align:left;" data-i18n="custom_exercise_title">Exercício Personalizado</h2>
                     </div>
                 </div>
             </div>

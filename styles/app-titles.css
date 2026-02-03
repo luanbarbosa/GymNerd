@@ -1,0 +1,12 @@
+/* Shared title styles for compact app titles used across pages */
+:root { }
+.app-title-compact {
+    font-weight: 600;
+    font-size: 1.2rem;
+    letter-spacing: -1px;
+    color: var(--bg);
+    font-style: normal;
+    white-space: nowrap;
+    overflow: visible;
+    margin: 0;
+}

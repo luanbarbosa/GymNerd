@@ -20,6 +20,7 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <script src="gn-i18n.js"></script>
+    <link rel="stylesheet" href="styles/app-titles.css">
     <style>
         :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
@@ -36,6 +37,7 @@
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+        
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         .view-content { padding: 12px 15px 20px 15px; }
@@ -333,11 +335,10 @@
             <div class="top-card-inner">
                 <div class="topbar">
                     <div style="display:flex;align-items:center;width:100%;gap:12px;">
-                        <a href="home.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
-                        <div style="flex:1;min-width:0;">
-                            <h2 data-i18n="page_start_routine"></h2>
+                            <div style="flex:1;min-width:0;">
+                                <h2 class="app-title-compact" data-i18n="page_start_routine"></h2>
+                            </div>
                         </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -375,9 +376,8 @@
             <div class="top-card-inner">
                 <div class="topbar">
                     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                        <a href="livesession.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                         <div style="flex:1;min-width:0;">
-                            <h2 id="playerWorkoutTitle"></h2>
+                            <h2 id="playerWorkoutTitle" class="app-title-compact"></h2>
                         </div>
                     </div>
                     <div class="header-timer" onclick="startTimer()">
@@ -438,7 +438,7 @@
                 <div class="top-card-inner">
                     <div class="topbar">
                         <div style="flex:1;min-width:0; text-align:center;">
-                            <h2 data-i18n="routine_done"></h2>
+                            <h2 class="app-title-compact" data-i18n="routine_done"></h2>
                         </div>
                     </div>
                 </div>
