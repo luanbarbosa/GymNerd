@@ -193,15 +193,17 @@
                         width: auto !important;
                         min-width: 0 !important;
                         max-width: 220px !important;
-                        white-space: nowrap !important;
+                        white-space: normal !important;
                     }
-                    /* Label: keep single-line, ellipsize when exceeding max-width */
+                    /* Label: allow up to two lines, then ellipsize (uses webkit line-clamp) */
                     .page-content #tabsWrapper #routines-tabs .tab-btn .tab-label, #routines-tabs .tab-btn .tab-label {
-                        display: inline-block !important;
+                        display: -webkit-box !important;
+                        -webkit-box-orient: vertical !important;
+                        -webkit-line-clamp: 2 !important;
                         overflow: hidden !important;
                         text-overflow: ellipsis !important;
-                        white-space: nowrap !important;
-                        line-height: 1 !important;
+                        white-space: normal !important;
+                        line-height: 1.1 !important;
                         text-align: center !important;
                         max-width: 100% !important;
                     }
