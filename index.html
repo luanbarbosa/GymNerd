@@ -20,12 +20,38 @@
             padding-top: constant(safe-area-inset-top);
             padding-top: env(safe-area-inset-top);
         }
-        .main-content { min-height: 100vh; }
+        .main-content { min-height: 100vh; padding: 0 !important; margin: 0 !important; }
         /* Bottom navigation (mobile) */
         #bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; display: none; gap: 8px; justify-content: space-around; align-items: center; padding: 10px 8px; background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(15,23,42,0.95)); border-top: 1px solid rgba(255,255,255,0.04); box-shadow: 0 -6px 20px rgba(0,0,0,0.25); z-index: 1400; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
         #bottom-nav a { color: #94a3b8; text-decoration: none; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; padding:6px 8px; border-radius:10px; }
         #bottom-nav a .nav-icon { width:20px; height:20px; display:block; }
         #bottom-nav a.active { color: #fff; background: rgba(59,130,246,0.08); }
+
+        /* Safe-area overlay for system status bar and helper topbar class
+           - `body::before` paints the area under the OS status bar (iOS/Android)
+           - Set `--status-bar-bg` on `body` or `:root` to change that color per-page
+           - Use `.app-topbar` on page top bars to apply spacing so content doesn't overlap
+        */
+        :root { --status-bar-bg: transparent; --topbar-bg: transparent; }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: constant(safe-area-inset-top);
+            height: env(safe-area-inset-top);
+            background: var(--status-bar-bg, transparent);
+            z-index: 1200;
+            pointer-events: none;
+        }
+        .app-topbar {
+            background: var(--topbar-bg, transparent);
+            padding-top: calc(12px + constant(safe-area-inset-top));
+            padding-top: calc(12px + env(safe-area-inset-top));
+            position: relative;
+            z-index: 1201;
+        }
     </style>
 </head>
 
