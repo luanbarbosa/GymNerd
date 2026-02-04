@@ -10,6 +10,9 @@
     <link rel="manifest" href="./manifest.json" />
     <title>GymNerd</title>
     <link rel="icon" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" rel="stylesheet" />
     <script src="gn-i18n.js"></script>
     <style>
         body {
@@ -17,15 +20,47 @@
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
             visibility: visible; /* shell should be visible; pages control hiding */
             background: #0f172a;
-            padding-top: constant(safe-area-inset-top);
-            padding-top: env(safe-area-inset-top);
+            padding-top: 0; /* let page topbars control their own safe-area spacing */
         }
-        .main-content { min-height: 100vh; padding: 0 !important; margin: 0 !important; }
+        /* ensure the page content has room at the bottom for the fixed nav */
+        .main-content { min-height: 100vh; padding: 0 0 calc(84px + env(safe-area-inset-bottom)) !important; margin: 0 !important; }
         /* Bottom navigation (mobile) */
         #bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; display: none; gap: 8px; justify-content: space-around; align-items: center; padding: 10px 8px; background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(15,23,42,0.95)); border-top: 1px solid rgba(255,255,255,0.04); box-shadow: 0 -6px 20px rgba(0,0,0,0.25); z-index: 1400; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
         #bottom-nav a { color: #94a3b8; text-decoration: none; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; padding:6px 8px; border-radius:10px; }
-        #bottom-nav a .nav-icon { width:20px; height:20px; display:block; }
+        #bottom-nav a .nav-icon { width:auto; height:auto; display:inline-flex; align-items:center; justify-content:center; font-size:20px; line-height:1; }
         #bottom-nav a.active { color: #fff; background: rgba(59,130,246,0.08); }
+
+        /* Make all nav items the same width except the prominent Play button */
+        #bottom-nav a:not(#nav-play) {
+            box-sizing: border-box;
+            flex: 0 0 64px;
+            width: 64px;
+            padding-left: 6px;
+            padding-right: 6px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Prominent centered Play button styling (offset above the nav) */
+        #bottom-nav a#nav-play {
+            position: relative;
+            top: -22px; /* lift the button above the bar */
+            width: 64px;
+            height: 64px;
+            padding: 0;
+            border-radius: 16px;
+            background: var(--primary-grad);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color: #ffffff;
+            box-shadow: 0 10px 20px rgba(37,99,235,0.3);
+        }
+        #bottom-nav a#nav-play .nav-icon { width:auto; height:auto; font-size:28px; }
+        /* hide only the text label in the Play button, keep the icon visible */
+        #bottom-nav a#nav-play span:not(.nav-icon) { display:none; }
 
         /* Safe-area overlay for system status bar and helper topbar class
            - `body::before` paints the area under the OS status bar (iOS/Android)
@@ -63,19 +98,23 @@
     <!-- Bottom navigation (SPA will toggle visibility) -->
     <nav id="bottom-nav" aria-hidden="true" role="navigation">
         <a id="nav-home" href="home.html" aria-label="Home">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>
+            <span class="material-symbols-outlined nav-icon">home</span>
             <span>Home</span>
         </a>
         <a id="nav-routines" href="routines.html" aria-label="Routines">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>
+            <span class="material-symbols-outlined nav-icon">exercise</span>
             <span>Routines</span>
         </a>
+        <a id="nav-play" href="/livesession.html" aria-label="Play">
+            <span class="material-symbols-outlined nav-icon">play_arrow</span>
+            <span>Play</span>
+        </a>
         <a id="nav-history" href="history.html" aria-label="History">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>
+            <span class="material-symbols-outlined nav-icon">history</span>
             <span>History</span>
         </a>
         <a id="nav-statistics" href="statistics.html" aria-label="Statistics">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/></svg>
+            <span class="material-symbols-outlined nav-icon">finance_mode</span>
             <span>Stats</span>
         </a>
     </nav>
