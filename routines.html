@@ -121,11 +121,12 @@
         .workout-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
         .workout-name { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
         /* Stack image, title and sets vertically inside the main area; drag handle sits at the right */
-        .exercise-tag { display: flex; align-items: stretch; gap: 12px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); box-shadow: none; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
-        .exercise-tag:hover { transform: translateY(-3px); }
-        .exercise-tag .main { flex: 1 1 auto; display:flex; flex-direction:column; gap:8px; }
-        .exercise-tag .ex-thumb { width: 100%; height: 110px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
-        .exercise-tag .exercise-title { font-weight:700; font-size: 1rem; color: var(--text); margin: 0; }
+        .exercise-row { display: flex; align-items: stretch; gap: 12px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); box-shadow: none; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
+        .exercise-row:hover { transform: translateY(-3px); }
+        /* `.main` wrapper removed; make `.exercise-meta` provide the vertical stacking and growth */
+        .exercise-row .exercise-meta { flex: 1 1 auto; display:flex; flex-direction:column; gap:8px; }
+        .exercise-row .ex-thumb { width: 100%; height: 110px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
+        .exercise-row .exercise-title { font-weight:700; font-size: 1rem; color: var(--text); margin: 0; }
         /* New card layout: preview square + meta column + sets table */
         .ex-preview-square { width:72px; height:72px; border-radius:8px; object-fit:cover; object-position:center; background:#fff; flex-shrink:0; align-self:flex-start; }
         .exercise-row { display:flex; gap:12px; align-items:flex-start; }
@@ -145,8 +146,8 @@
         .exercise-list.reorder-mode .sets-compact,
         .exercise-list.reorder-mode .set-pill,
         .exercise-list.reorder-mode .sets-table { display: none !important; }
-        .exercise-tag .drag-handle { display: none; border: none; background: transparent; color: var(--text-dim); font-size: 1.1rem; padding: 6px 8px; border-radius: 8px; cursor: grab; margin-left: auto; align-self: center; }
-        .exercise-tag .drag-handle:active { cursor: grabbing; }
+        .exercise-row .drag-handle { display: none; border: none; background: transparent; color: var(--text-dim); font-size: 1.1rem; padding: 6px 8px; border-radius: 8px; cursor: grab; margin-left: auto; align-self: center; }
+        .exercise-row .drag-handle:active { cursor: grabbing; }
         .sort-btn { color: var(--text-dim); background: rgba(255,255,255,0.02); border: none; cursor: pointer; display: flex; align-items: center; padding: 8px; border-radius: 10px; transition: background 0.12s; }
         .sort-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
 
@@ -681,20 +682,16 @@
                 const localizedType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(ex.type) : ex.type || '';
                 const isCustomEx = !!it.isCustom || !!ex.isCustom;
                 const customBadgeHtml = isCustomEx ? ('<span class="custom-badge">' + ((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Personalizado') + '</span>') : '';
-                return `<div class="exercise-tag" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
-                    <div class="main">
-                        <div class="exercise-row">
-                            <img src="${images[ex.imageId] || defaultImage}" class="ex-preview-square" style="cursor:pointer" onclick='event.stopPropagation(); showImagePreview(${JSON.stringify(images[ex.imageId] || defaultImage)})'>
-                            <div class="exercise-meta">
-                                ${customBadgeHtml}
-                                <strong class="exercise-title">${getDisplayedName(ex)}</strong>
-                                <div class="exercise-type">${localizedType}</div>
-                                ${setsHtml}
-                            </div>
+                return `<div class="exercise-row" data-id="${it.id}" data-is-custom="${!!it.isCustom}" data-orig-index="${it.__origIndex}">
+                        <img src="${images[ex.imageId] || defaultImage}" class="ex-preview-square" style="cursor:pointer" onclick='event.stopPropagation(); showImagePreview(${JSON.stringify(images[ex.imageId] || defaultImage)})'>
+                        <div class="exercise-meta">
+                            ${customBadgeHtml}
+                            <strong class="exercise-title">${getDisplayedName(ex)}</strong>
+                            <div class="exercise-type">${localizedType}</div>
+                            ${setsHtml}
                         </div>
-                    </div>
-                    <button class="drag-handle" title="${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('drag_to_reorder') : 'Drag to reorder'}">☰</button>
-                </div>`;
+                        <button class="drag-handle" title="${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('drag_to_reorder') : 'Drag to reorder'}">☰</button>
+                    </div>`;
             }).join('');
 
             const labelDeleteRoutine = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('delete_routine') : 'Delete routine';
@@ -823,7 +820,7 @@
         function _onHandlePointerDown(e) {
             const handle = e.target.closest('.drag-handle');
             if (!handle) return;
-            const item = handle.closest('.exercise-tag');
+            const item = handle.closest('.exercise-row');
             if (!item) return;
             _startDrag(e, item);
         }
@@ -836,7 +833,7 @@
             const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0;
 
             const placeholder = document.createElement('div');
-            placeholder.className = 'exercise-tag placeholder';
+            placeholder.className = 'exercise-row placeholder';
             placeholder.style.height = rect.height + 'px';
             placeholder.style.width = rect.width + 'px';
             placeholder.style.boxSizing = 'border-box';
@@ -893,7 +890,7 @@
                             g.style.transform = `translate3d(${_routinesDragState.lastX - _routinesDragState.offsetX}px, ${_routinesDragState.lastY - _routinesDragState.offsetY}px, 0)`;
                         }
                         // find first child whose midpoint is below pointer and insert placeholder before it
-                        const children = Array.from(container.querySelectorAll('.exercise-tag:not(.placeholder)'));
+                        const children = Array.from(container.querySelectorAll('.exercise-row:not(.placeholder)'));
                         let inserted = false;
                         for (const ch of children) {
                             const r = ch.getBoundingClientRect();
@@ -968,7 +965,7 @@
             try {
                 const list = document.getElementById('exerciseList');
                 if (!list) return;
-                const children = Array.from(list.querySelectorAll('.exercise-tag'));
+                const children = Array.from(list.querySelectorAll('.exercise-row'));
                 const workout = await db.routines.get(workoutId);
                 if (!workout) return;
 
