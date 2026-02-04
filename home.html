@@ -473,7 +473,9 @@
 						const today = new Date();
 						const start = new Date(today);
 						start.setHours(0,0,0,0);
-						start.setDate(start.getDate() - start.getDay());
+						// shift so week starts on Monday instead of Sunday
+						const daysSinceMonday = (start.getDay() + 6) % 7; // 0=Monday, ..., 6=Sunday
+						start.setDate(start.getDate() - daysSinceMonday);
 
 						for (let i = 0; i < 7; i++) {
 							const d = new Date(start);
