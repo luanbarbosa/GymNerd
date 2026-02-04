@@ -199,7 +199,7 @@
             <button id="openSearchBtn" class="add-set-btn prominent" style="width:100%;" onclick="openSearchModal()" data-i18n="add_exercise">🔍 Adicionar Exercício</button>
             <div id="selectedList" class="selected-ex-list" onclick="if(this.querySelectorAll('.selected-ex-card').length===0) openSearchModal()"></div>
             <div style="display:flex; gap:8px;">
-                <button style="flex:1; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="location.href='routines.html'" data-i18n="cancel">Cancelar</button>
+                <button style="flex:1; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="(function(ev){ ev.preventDefault(); try{ history.back(); return; } catch(e){} try{ if (window.spaNavigate) { window.spaNavigate('routines.html'); return; } } catch(e){} location.href='routines.html'; })(event)" data-i18n="cancel">Cancelar</button>
                 <button class="primary" id="saveRoutineBtn" onclick="saveRoutine()" data-i18n="save_routine" style="flex:1; width:100%;">Salvar Rotina</button>
             </div>
         </div>
@@ -808,10 +808,20 @@
             if (editingId) {
                 await db.routines.update(editingId, { name, exerciseIds });
                 localStorage.setItem('has_local_changes', 'true');
+                try {
+                    history.back();
+                    return;
+                } catch (e) {}
+                try { if (window.spaNavigate) { window.spaNavigate('routines.html?id=' + editingId); return; } } catch(e) {}
                 location.href = 'routines.html?id=' + editingId;
             } else {
                 const id = await db.routines.add({ name, exerciseIds });
                 localStorage.setItem('has_local_changes', 'true');
+                try {
+                    history.back();
+                    return;
+                } catch (e) {}
+                try { if (window.spaNavigate) { window.spaNavigate('routines.html?id=' + id); return; } } catch(e) {}
                 location.href = 'routines.html?id=' + id;
             }
         }

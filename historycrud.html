@@ -91,7 +91,7 @@
                 <select id="routinePicker" onchange="generateSheet()"><option value="" data-i18n="history_placeholder_choose_routine">-- Choose Routine --</option></select>
                 <div id="workoutSheet"></div>
                 <div class="form-actions">
-                    <button type="button" style="flex:1; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="location.href='history.html'" data-i18n="history_cancel">Cancel</button>
+                    <button type="button" style="flex:1; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text-dim); padding:12px; border-radius:12px;" onclick="(function(ev){ ev.preventDefault(); try{ history.back(); return; } catch(e){} try{ if (window.spaNavigate) { window.spaNavigate('history.html'); return; } } catch(e){} location.href='history.html'; })(event)" data-i18n="history_cancel">Cancel</button>
                     <button id="saveBtn" class="primary" style="flex:1; width:100%;" onclick="saveSession()" data-i18n="history_save_session">💾 Save Session</button>
                 </div>
         </div>
@@ -492,6 +492,11 @@
             await db.history.bulkAdd(logs);
         }
         localStorage.setItem('has_local_changes', 'true');
+        try {
+            history.back();
+            return;
+        } catch (e) {}
+        try { if (window.spaNavigate) { window.spaNavigate('history.html'); return; } } catch(e) {}
         location.href = 'history.html';
     }
 
