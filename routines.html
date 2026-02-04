@@ -170,8 +170,8 @@
         .del-btn { color: var(--danger); background: rgba(255,255,255,0.05); border: none; cursor: pointer; display: flex; align-items: center; padding: 10px; border-radius: 10px; transition: background 0.2s; }
 
         .section-title { margin-top: 40px; margin-bottom: 20px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; padding-left: 5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; }
-        /* Tabs - mobile segmented control style */
-        #tabsWrapper { position: sticky; top: var(--header-height); z-index: 1150; }
+        /* Tabs - mobile segmented control style (scroll with page) */
+        #tabsWrapper { position: static; top: auto; z-index: auto; }
         #routines-tabs { display:flex; gap:6px; flex-wrap:nowrap; justify-content:flex-start; align-items:center; padding:8px 12px; background: rgba(255,255,255,0.02); border-radius: 14px; margin: 0 0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
           /* Tabs: allow up to two lines, then ellipsize; width grows with text up to max-width
               Use high-specificity and !important to avoid other injected styles overwriting these rules
@@ -182,8 +182,8 @@
         .tab-btn:focus { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); border-radius:10px; }
         .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
         .tab-card { background: transparent; padding: 12px; border-radius: 12px; border: none; }
-        /* Make routines content the scrollable area so header and tabs stay fixed */
-        #routines-content { height: calc(100vh - var(--header-height) - var(--tabs-height)); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px 12px 24px; box-sizing: border-box; }
+        /* Let the entire page scroll instead of a fixed inner pane */
+        #routines-content { padding: 6px 12px 24px; box-sizing: border-box; }
     </style>
 </head>
 <body>
