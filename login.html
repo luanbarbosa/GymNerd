@@ -96,7 +96,6 @@
             try {
                 const token = localStorage.getItem('google_token');
                 const expires = localStorage.getItem('google_token_expires_at');
-                <div class="main-content">
                 const refresh = localStorage.getItem('google_refresh_token');
                 const isExpired = expires ? (Date.now() > parseInt(expires)) : true;
 

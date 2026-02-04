@@ -49,6 +49,9 @@
             const text = await resp.text();
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, 'text/html');
+            // canonical absolute URL for this fetched document (used for scoping inline scripts)
+            let pageKey = null;
+            try { pageKey = new URL(href, location.href).href; } catch(e) { pageKey = href || ''; }
             let newMain = doc.querySelector('.main-content');
             const container = ensureContainer();
             if (!newMain) {
@@ -64,6 +67,14 @@
                     if (st.tagName && st.tagName.toLowerCase() === 'link') {
                         let resolved = null;
                         try { resolved = new URL(st.href, href).href; } catch(e) { resolved = st.href; }
+                        // Skip malformed root Google Fonts link (some pages mistakenly include
+                        // <link href="https://fonts.googleapis.com" rel="stylesheet">)
+                        try {
+                            const u = new URL(resolved);
+                            if (u.hostname === 'fonts.googleapis.com' && (!u.pathname || u.pathname === '/')) {
+                                continue;
+                            }
+                        } catch(e) {}
                         if (window.__spa_loaded_styles.has(resolved)) continue;
                         if (document.querySelector('link[href="' + resolved + '"]')) { window.__spa_loaded_styles.add(resolved); continue; }
                         const ln = document.createElement('link'); ln.rel = 'stylesheet'; ln.href = resolved;
@@ -103,17 +114,18 @@
                 } else {
                     const key = (s.textContent || '').trim();
                     if (!key) continue;
-                    if (window.__spa_loaded_inline_scripts.has(key)) continue;
-                    // Execute inline scripts by appending a script element so
-                    // function declarations and global bindings are created on
-                    // `window`, matching normal page load behavior.
+                    // Scope inline script tracking to the fetched URL so
+                    // identical inline snippets on different pages still run
+                    // when those pages are navigated to (avoids missing
+                    // per-page initialization after SPA navigations).
+                    const scopedKey = (pageKey || href || '') + '::' + key;
+                    if (window.__spa_loaded_inline_scripts.has(scopedKey)) continue;
                     try {
                         const ns = document.createElement('script');
                         ns.textContent = s.textContent;
                         document.body.appendChild(ns);
-                        // remove the node to avoid DOM clutter
                         try { document.body.removeChild(ns); } catch(e){}
-                        window.__spa_loaded_inline_scripts.add(key);
+                        window.__spa_loaded_inline_scripts.add(scopedKey);
                     } catch (err) {
                         try { console.warn('Failed to execute injected inline script', err); } catch(e){}
                     }
@@ -141,6 +153,25 @@
             try { if (typeof renderMainUser === 'function') renderMainUser(); } catch(e) {}
             try { if (typeof renderWeekDots === 'function') renderWeekDots(); } catch(e) {}
             try { if (typeof updatePendingButtonVisibility === 'function') updatePendingButtonVisibility(); } catch(e) {}
+
+            // Page-specific init: some pages declare generic `init()` which collides
+            // across pages. Call unique per-page helpers to ensure correct
+            // initialization when inline scripts are skipped due to dedup.
+            try {
+                const pageName = (href.split('/').pop() || 'index.html');
+                if (pageName === 'routines.html') {
+                    try { if (typeof renderTabs === 'function') renderTabs(); } catch(e){}
+                    try { if (typeof renderWorkouts === 'function') renderWorkouts(); } catch(e){}
+                } else if (pageName === 'history.html') {
+                    try { if (typeof renderHistory === 'function') renderHistory(); } catch(e){}
+                    try { if (typeof renderWeightHistory === 'function') renderWeightHistory(); } catch(e){}
+                } else if (pageName === 'statistics.html') {
+                    try { if (typeof renderCalendar === 'function') renderCalendar([]); } catch(e){}
+                    try { if (typeof renderCharts === 'function') renderCharts([]); } catch(e){}
+                    try { if (typeof updateFrequencyChart === 'function') updateFrequencyChart([]); } catch(e){}
+                    try { if (typeof updateRadarChart === 'function') updateRadarChart([]); } catch(e){}
+                }
+            } catch(e) {}
             try { window.scrollTo(0,0); } catch(e){}
             if (addHistory) {
                 try {

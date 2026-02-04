@@ -10,7 +10,8 @@
     <title>GymNerd | History</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="favicon.svg">
-    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
     <script src="auth.js"></script>
     <script src="gn-i18n.js"></script>
@@ -103,7 +104,7 @@
         </div>
     </div>
     <div class="page-content">
-    <div class="history-section">
+    <div id="history" class="history-section">
         
     </div>
 
@@ -194,16 +195,18 @@
                 opts.forEach(o => yearSel.appendChild(o));
             }
 
-            // Pre-select current year on first initialization (preserve user selection afterwards)
-            if (!yearSel._initialized) {
-                try { yearSel.value = curYear; } catch(e) {}
-                yearSel._initialized = true;
+            // Pre-select current month/year on first initialization (preserve user selection afterwards)
+            if (!monthSel._initialized) {
+                try {
+                    if (monthSel.querySelector(`option[value="${curMonth}"]`)) monthSel.value = curMonth;
+                    else if (monthSel.options.length) monthSel.value = monthSel.options[0].value;
+                } catch(e) {}
+                monthSel._initialized = true;
             }
 
-            // ensure current month/year selected by default if available
-            if (!monthSel.value) monthSel.value = curMonth;
-            if (!yearSel.value) {
-                yearSel.value = yearArr.includes(curYear) ? curYear : (yearArr.length ? yearArr[yearArr.length-1] : curYear);
+            if (!yearSel._initialized) {
+                try { yearSel.value = yearArr.includes(curYear) ? curYear : (yearArr.length ? yearArr[yearArr.length-1] : curYear); } catch(e) {}
+                yearSel._initialized = true;
             }
 
             // attach onchange listeners once
