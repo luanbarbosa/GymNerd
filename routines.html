@@ -176,8 +176,35 @@
           /* Tabs: allow up to two lines, then ellipsize; width grows with text up to max-width
               Use high-specificity and !important to avoid other injected styles overwriting these rules
               after SPA fragment navigations. */
-          .page-content #tabsWrapper #routines-tabs .tab-btn, #routines-tabs .tab-btn { padding: 10px 12px !important; border-radius: 10px !important; background: transparent !important; border: none !important; color: var(--text-dim) !important; cursor: pointer !important; font-weight:800 !important; font-size:0.95rem !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; box-sizing:border-box !important; flex:0 0 auto !important; max-width:150px !important; min-width:64px !important; }
-          .page-content #tabsWrapper #routines-tabs .tab-btn .tab-label, #routines-tabs .tab-btn .tab-label { display: -webkit-box !important; -webkit-box-orient: vertical !important; -webkit-line-clamp: 2 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: normal !important; line-height: 1.1 !important; text-align: center !important; }
+                    .page-content #tabsWrapper #routines-tabs .tab-btn, #routines-tabs .tab-btn {
+                        padding: 8px 12px !important;
+                        border-radius: 10px !important;
+                        background: transparent !important;
+                        border: none !important;
+                        color: var(--text-dim) !important;
+                        cursor: pointer !important;
+                        font-weight:800 !important;
+                        font-size:0.95rem !important;
+                        display:inline-flex !important;
+                        align-items:center !important;
+                        justify-content:center !important;
+                        box-sizing:border-box !important;
+                        flex: 0 0 auto !important;
+                        width: auto !important;
+                        min-width: 0 !important;
+                        max-width: 220px !important;
+                        white-space: nowrap !important;
+                    }
+                    /* Label: keep single-line, ellipsize when exceeding max-width */
+                    .page-content #tabsWrapper #routines-tabs .tab-btn .tab-label, #routines-tabs .tab-btn .tab-label {
+                        display: inline-block !important;
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                        white-space: nowrap !important;
+                        line-height: 1 !important;
+                        text-align: center !important;
+                        max-width: 100% !important;
+                    }
           .page-content #tabsWrapper #routines-tabs .tab-btn.active, #routines-tabs .tab-btn.active { color: #fff !important; background: var(--primary) !important; box-shadow: 0 6px 18px rgba(59,130,246,0.12) !important; }
         .tab-btn:focus { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); border-radius:10px; }
         .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }

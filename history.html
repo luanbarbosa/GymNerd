@@ -395,6 +395,8 @@
         async function renderWeightHistory() {
             const weights = await db.weights.orderBy('date').reverse().toArray();
             const container = document.getElementById('weight-history');
+            // If this page doesn't include a weight-history container, skip rendering.
+            if (!container) return;
             container.innerHTML = '';
             if (!weights || weights.length === 0) {
                 const msg = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_no_weight') : 'No weight history';
