@@ -3,14 +3,43 @@ const defaultImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAQA
 const db = new Dexie("GymAppDB");
 // Expose the Dexie instance on window for pages that check `window.db`
 window.db = db;
-db.version(11).stores({ 
+// Add sessionId to history and migrate existing rows when upgrading.
+db.version(12).stores({ 
     catalog_exercises: '++id, name, namePT, type, imageId',
     catalog_images: '++id',
     custom_exercises: '++id, name, namePT, type, imageId', 
     custom_images: '++id',
     routines: '++id, name, exerciseIds',
-    history: '++id, exerciseId, weight, reps, date',
+    // sessionId groups all entries that belong to the same recorded session
+    history: '++id, exerciseId, weight, reps, date, sessionId',
     weights: 'date, weight'
+});
+
+// Migration: ensure older history rows have a `sessionId` using their `date` as fallback.
+db.version(12).upgrade(async (tx) => {
+    try {
+        const historyTable = tx.table('history');
+        const all = await historyTable.toArray();
+        let updated = 0;
+        for (const h of all) {
+            if (h && (h.sessionId === undefined || h.sessionId === null)) {
+                let sid = null;
+                if (typeof h.date === 'string') {
+                    const parsed = Date.parse(h.date);
+                    if (!isNaN(parsed)) sid = parsed;
+                } else if (h.date instanceof Date) {
+                    sid = h.date.getTime();
+                }
+                if (sid === null || isNaN(sid)) sid = Date.now();
+                h.sessionId = sid;
+                try { await historyTable.put(h); } catch (e) { /* best-effort */ }
+                updated++;
+            }
+        }
+        if (updated > 0) console.info(`[DB Migration] added sessionId to ${updated} history rows`);
+    } catch (err) {
+        console.warn('[DB Migration] sessionId migration failed', err);
+    }
 });
 
 // Canonical list of available exercise types used across the app

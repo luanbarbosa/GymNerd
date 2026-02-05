@@ -21,25 +21,34 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="styles/app-titles.css">
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0 18px; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         /* Top-card (same style used on index.html) */
-        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 16px 16px 14px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(16px + constant(safe-area-inset-top)); padding-top: calc(16px + env(safe-area-inset-top)); }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
-        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
-        .page-content { padding: 8px; padding-top: 8px; }
+        .top-card-inner { max-width: 100%; display:flex; align-items:center; gap:12px; padding-bottom: 2px; }
+        .page-content { padding: 0; }
+        /* Prevent top bar from wrapping (keeps height consistent with measurements.html) */
+        .top-card-inner > div { flex-wrap: nowrap; }
+        .top-card-inner .app-title-compact, .top-card-inner h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
         /* Ensure back button icons are vertically centered inside top bars */
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
-        .app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: var(--bg); font-style: italic; white-space:nowrap; overflow:visible; }
+        /* Use same compact app title style as home.html */
+
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
-        .main-content { padding: 12px; }
+        .main-content { padding: 0; }
+        /* Keep top-card full-bleed so page horizontal padding does not affect it */
+        .main-content > .top-card { margin-left: -18px; margin-right: -18px; }
         h1 { text-align: center; font-weight: 900; margin-bottom: 20px; margin-top: 20px; letter-spacing: -1px; font-size: 2.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         /* Keep top-bar title visually consistent without changing font-size */
-        .top-title { margin: 0; font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .top-title { margin: 20px 0; font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* Page title used inside top-card */
+        .app-title-compact { margin: 20px 0; }
         /* Reduce vertical spacing for card titles only */
         .card h3, .card h4 { margin-top: 0; margin-bottom: 6px; }
         /* Section titles placed outside cards */
@@ -101,18 +110,19 @@
 </head>
 <body>
 
-    <div class="top-card">
-        <div class="top-card-inner">
-            <div style="display:flex;align-items:center;width:100%;gap:12px;">
-                <a href="home.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
-                <div style="flex:1;min-width:0;">
-                    <h2 data-i18n="page_settings">Settings</h2>
+    <div class="page-content">
+        <div class="main-content">
+
+        <div class="top-card">
+            <div class="top-card-inner">
+                <div style="display:flex;align-items:center;width:100%;gap:12px;">
+                    <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); history.back();"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
+                    <div style="flex:1;min-width:0;">
+                        <h2 class="app-title-compact" data-i18n="page_settings">Settings</h2>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="page-content">
-        <div class="main-content">
 
         <h3 class="section-title" data-i18n="general">General</h3>
         <div class="card">
@@ -187,8 +197,9 @@
         <h3 class="section-title" data-i18n="danger_zone">Danger Zone</h3>
         <div class="card">
             <div class="danger-row">
-                <button onclick="confirmClearAll()" class="sync-btn danger" data-i18n="clear_all"></button>
                 <button onclick="confirmLogout()" class="sync-btn" style="background:#ef4444; color:white;" data-i18n="logout"></button>
+                <button onclick="deleteHistory()" class="sync-btn danger" data-i18n="delete_history"></button>
+                <button onclick="confirmClearAll()" class="sync-btn danger" data-i18n="clear_all"></button>
             </div>
         </div>
 
@@ -297,8 +308,22 @@
                         }
 
                         if (Array.isArray(extracted.history)) {
+                            // Ensure each imported history item has a sessionId
+                            const normalized = extracted.history.map(h => {
+                                const copy = { ...h };
+                                if (copy.sessionId === undefined || copy.sessionId === null) {
+                                    let sid = null;
+                                    if (typeof copy.date === 'string') {
+                                        const parsed = Date.parse(copy.date);
+                                        if (!isNaN(parsed)) sid = parsed;
+                                    } else if (copy.date instanceof Date) sid = copy.date.getTime();
+                                    if (sid === null || isNaN(sid)) sid = Date.now();
+                                    copy.sessionId = sid;
+                                }
+                                return copy;
+                            });
                             await db.history.clear();
-                            await db.history.bulkAdd(extracted.history);
+                            await db.history.bulkAdd(normalized);
                         }
 
                         if (Array.isArray(extracted.weights)) {
@@ -317,7 +342,7 @@
 
                     try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                     alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!");
-                    location.href = 'home.html';
+                    try { history.back(); } catch(e) { try { const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/'); location.href = basePath + 'index.html?start=home'; } catch(_) { location.href = 'index.html?start=home'; } }
                     return;
                 }
 
@@ -369,7 +394,7 @@
 
                 try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!"); 
-                location.href = 'home.html';
+                try { history.back(); } catch(e) { try { const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/'); location.href = basePath + 'index.html?start=home'; } catch(_) { location.href = 'index.html?start=home'; } }
             } catch (err) {
                 console.error("Import error:", err);
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_error') : "Error importing data. Check console for details.");
@@ -428,7 +453,22 @@
                         if (data.routines) await db.routines.bulkAdd(data.routines);
                         
                         await db.history.clear();
-                        if (data.history) await db.history.bulkAdd(data.history);
+                        if (data.history) {
+                            const normalized = data.history.map(h => {
+                                const copy = { ...h };
+                                if (copy.sessionId === undefined || copy.sessionId === null) {
+                                    let sid = null;
+                                    if (typeof copy.date === 'string') {
+                                        const parsed = Date.parse(copy.date);
+                                        if (!isNaN(parsed)) sid = parsed;
+                                    } else if (copy.date instanceof Date) sid = copy.date.getTime();
+                                    if (sid === null || isNaN(sid)) sid = Date.now();
+                                    copy.sessionId = sid;
+                                }
+                                return copy;
+                            });
+                            await db.history.bulkAdd(normalized);
+                        }
 
                         // Weights table
                         if (db.weights) {
@@ -450,7 +490,7 @@
                     if (data.lastSync) localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync);
                     localStorage.setItem('has_local_changes', 'false');
 
-                    location.reload();
+                    try { history.back(); } catch(e) { location.reload(); }
                 }
             } catch (error) {
                 if (error.message === "AUTH_EXPIRED") {
@@ -540,6 +580,33 @@
                     catch(e) { try { window.clearAllAppData && window.clearAllAppData(); } catch(_){} }
                 }
             } catch(e) { try { if (confirm('This will permanently delete all local data. Continue?')) clearAllAppData(); } catch(_){} }
+        }
+
+        // Delete history: clears `db.history` and attempts to sync to Drive
+        async function deleteHistory() {
+            try {
+                await ensureDbOpen();
+                const msg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('delete_history_attention') || 'Attention! You will lose all your history and statistics locally and on Google Drive') : 'Attention! You will lose all your history and statistics locally and on Google Drive';
+                if (!confirm(msg)) return;
+                // Clear history
+                try { await db.history.clear(); } catch (e) { console.error('[UI] failed to clear history', e); throw e; }
+                // Try to sync the removal to Drive
+                try {
+                    if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
+                        await DriveStorage.sync(db);
+                    }
+                } catch (e) {
+                    console.error('[UI] deleteHistory sync failed', e);
+                }
+                try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+                const okMsg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('delete_history_success') || 'History deleted and synced.') : 'History deleted and synced.';
+                alert(okMsg);
+                try { history.back(); } catch(e) {}
+            } catch (err) {
+                console.error('deleteHistory failed', err);
+                const failMsg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('delete_history_failed') || 'Failed to delete history.') : 'Failed to delete history.';
+                alert(failMsg);
+            }
         }
 
         // File input UI: show selected filename in the UI

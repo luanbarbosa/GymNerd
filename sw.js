@@ -13,6 +13,16 @@ const ASSETS = [
   './icons/icon-512.svg'
 ];
 
+// Avoid attempting to cache requests with unsupported URL schemes
+function isCacheableRequestUrl(url) {
+  try {
+    const proto = new URL(url).protocol;
+    return proto === 'http:' || proto === 'https:' || proto === 'data:';
+  } catch (e) {
+    return false;
+  }
+}
+
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll(ASSETS))
@@ -46,9 +56,13 @@ self.addEventListener('fetch', event => {
       event.respondWith(
         fetch(event.request, { cache: 'no-store' }).then(response => {
           if (response && response.status === 200) {
-            const resClone = response.clone();
-            caches.open(CACHE).then(cache => cache.put(event.request, resClone));
-          }
+              const resClone = response.clone();
+              caches.open(CACHE).then(cache => {
+                try {
+                  if (isCacheableRequestUrl(event.request.url)) cache.put(event.request, resClone).catch(()=>{});
+                } catch (e) {}
+              });
+            }
           return response;
         }).catch(() => caches.match('./home.html'))
       );
@@ -59,7 +73,11 @@ self.addEventListener('fetch', event => {
       fetch(event.request, { cache: 'no-store' }).then(response => {
         if (response && response.status === 200) {
           const resClone = response.clone();
-          caches.open(CACHE).then(cache => cache.put(event.request, resClone));
+          caches.open(CACHE).then(cache => {
+            try {
+              if (isCacheableRequestUrl(event.request.url)) cache.put(event.request, resClone).catch(()=>{});
+            } catch (e) {}
+          });
         }
         return response;
       }).catch(() => caches.match('./home.html'))
@@ -79,7 +97,11 @@ self.addEventListener('fetch', event => {
         if (response.type === 'basic' || new URL(event.request.url).origin === self.location.origin) {
           try {
             const resClone = response.clone();
-            caches.open(CACHE).then(cache => cache.put(event.request, resClone));
+            caches.open(CACHE).then(cache => {
+              try {
+                if (isCacheableRequestUrl(event.request.url)) cache.put(event.request, resClone).catch(()=>{});
+              } catch (e) {}
+            });
           } catch (e) { /* ignore caching errors */ }
         }
         return response;
@@ -96,7 +118,11 @@ self.addEventListener('fetch', event => {
         if (response.type === 'basic' || new URL(event.request.url).origin === self.location.origin) {
           try {
             const resClone = response.clone();
-            caches.open(CACHE).then(cache => cache.put(event.request, resClone));
+            caches.open(CACHE).then(cache => {
+              try {
+                if (isCacheableRequestUrl(event.request.url)) cache.put(event.request, resClone).catch(()=>{});
+              } catch (e) {}
+            });
           } catch (e) { /* ignore caching errors */ }
         }
         return response;

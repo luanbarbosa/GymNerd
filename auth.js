@@ -43,7 +43,7 @@
         } catch(e){}
         try { sessionStorage.removeItem('gn_signing_in'); localStorage.removeItem('gn_signing_in'); } catch(e){}
         try { window.__gn_signing_in = false; } catch(e){}
-        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+        try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
         try { window.location.href = 'index.html'; } catch(e) { location.reload(); }
     };
 
@@ -146,6 +146,11 @@
         } catch(e) {}
     };
 
+    // Capture the auth module's original loader references so later scripts
+    // (e.g. SPA) can't overwrite them and leave the app stuck on a loader.
+    var __auth_showLoading = window.showLoading;
+    var __auth_hideLoading = window.hideLoading;
+
     // Non-UI clear of all app data (silent)
     window.clearAllAppData = async () => {
         try {
@@ -154,7 +159,12 @@
             }
             if (typeof Dexie !== 'undefined') { try { const _db = new Dexie('GymAppDB'); await _db.delete(); } catch(e){} }
             try { localStorage.clear(); } catch(e){}
-            try { location.reload(); } catch(e){}
+            try {
+                if (typeof logout === 'function') await logout();
+                else try { location.reload(); } catch(e){}
+            } catch(e) {
+                try { location.reload(); } catch(_){}
+            }
         } catch (err) {
             console.error('Clear failed:', err);
         }
@@ -192,7 +202,7 @@
         // Previously this function injected UI into the page. To keep
         // UI responsibility inside the app pages, dispatch an event with
         // useful text so the page can show its own modal.
-        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+            try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
         const detail = {
             title: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('session_expired') : 'Session Expired',
             message: (typeof GN_I18N !== 'undefined') ? GN_I18N.t('failed_to_refresh_session') : 'Could not refresh your session automatically. Please sign in again.',
@@ -209,12 +219,12 @@
                 sessionStorage.setItem('auto_refresh_attempted', '1');
                 (async () => {
                     try {
-                        try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...'); } catch(e){}
+                            try { if (typeof __auth_showLoading === 'function') __auth_showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('retrying') : 'Retrying...'); } catch(e){}
                         const ok = await refreshAccessToken();
-                        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                        try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
                         if (ok) location.reload();
                     } catch (e) {
-                        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                        try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
                     }
                 })();
             }
@@ -268,7 +278,17 @@
                         token = localStorage.getItem('google_token');
                         expiresAt = localStorage.getItem('google_token_expires_at');
                         // If running on the login page, navigate to the app home
-                        try { if (window.location && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) { window.location.href = 'home.html'; } else { try { location.reload(); } catch(e){} } } catch(e) {}
+                                try {
+                                    if (window.location && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
+                                try {
+                                    const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                                    const target = basePath + 'index.html?start=home';
+                                    window.location.href = target;
+                                } catch (e) {
+                                    try { window.location.href = 'index.html?start=home'; } catch(_) { /* ignore */ }
+                                }
+                            } else { try { location.reload(); } catch(e){} }
+                        } catch(e) {}
                     } else {
                         if (hadRefresh) {
                             renderRefreshError();
@@ -305,12 +325,12 @@
         try {
             if (window.showApp) {
                 window.showApp();
-                try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
                 return;
             }
             document.addEventListener('DOMContentLoaded', () => {
                 try { if (window.showApp) window.showApp(); } catch(e){}
-                try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
             }, { once: true });
         } catch(e){}
     }
@@ -344,7 +364,7 @@
 
             if (!data) {
                 try { localStorage.removeItem('needs_initial_download'); } catch(e){}
-                try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
                 if (isAuto && window.showApp) window.showApp();
                 return;
             }
@@ -399,7 +419,22 @@
 
                         if (db.history) {
                             await db.history.clear();
-                            if (data.history) await db.history.bulkAdd(data.history);
+                            if (data.history) {
+                                const normalized = data.history.map(h => {
+                                    const copy = { ...h };
+                                    if (copy.sessionId === undefined || copy.sessionId === null) {
+                                        let sid = null;
+                                        if (typeof copy.date === 'string') {
+                                            const parsed = Date.parse(copy.date);
+                                            if (!isNaN(parsed)) sid = parsed;
+                                        } else if (copy.date instanceof Date) sid = copy.date.getTime();
+                                        if (sid === null || isNaN(sid)) sid = Date.now();
+                                        copy.sessionId = sid;
+                                    }
+                                    return copy;
+                                });
+                                await db.history.bulkAdd(normalized);
+                            }
                         }
 
                         // Weights table
@@ -430,12 +465,12 @@
             try { localStorage.removeItem('needs_initial_download'); } catch(e){}
 
             console.info('[AutoRestore] completed — reloading');
-            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+            try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
             try { location.reload(); } catch(e){}
         } catch (err) {
             console.error('[AutoRestore] failed', err);
             try { if (err && err.message === 'AUTH_EXPIRED') { renderRefreshError(); } } catch(e){}
-            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+            try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
         }
     };
 
@@ -501,9 +536,9 @@
         // don't trigger multiple calls to the Cloud Function.
         if (_refreshPromise) return await _refreshPromise;
 
-        try {
-            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('refreshing_session') || 'Refreshing session...' : 'Refreshing session...');
-        } catch(e){}
+            try {
+                if (typeof __auth_showLoading === 'function') __auth_showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('refreshing_session') || 'Refreshing session...' : 'Refreshing session...');
+            } catch(e){}
 
         _refreshPromise = (async () => {
             try {
@@ -534,7 +569,11 @@
                     // If we're on the login page, navigate to home so the app proceeds.
                     try {
                         if (window && window.location && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
-                            try { window.location.href = 'home.html'; } catch(e) { /* ignore */ }
+                            try {
+                                const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                                const target = basePath + 'index.html?start=home';
+                                try { window.location.href = target; } catch(e) { /* ignore */ }
+                            } catch (e) { try { window.location.href = 'index.html?start=home'; } catch(_){} }
                         }
                     } catch (e) {}
                     return true;
@@ -556,7 +595,7 @@
         try {
             return await _refreshPromise;
         } finally {
-            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+            try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
         }
     }
 
@@ -672,14 +711,14 @@
             try { window.__gn_signing_in = true; } catch(e){}
 
             // Show full-screen loading while exchanging the code
-            try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('finalizing_signin') || 'Finalizing sign-in...' : 'Finalizing sign-in...'); } catch(e){}
+            try { if (typeof __auth_showLoading === 'function') __auth_showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('finalizing_signin') || 'Finalizing sign-in...' : 'Finalizing sign-in...'); } catch(e){}
 
             // Exchange code for tokens
             const tokenData = await exchangeCodeForTokens(storedCode, verifier, redirect_uri);
 
-            // If exchange succeeded and we have a token, navigate immediately
-            // without hiding the global loader so the login UI doesn't flash.
-            if (tokenData && tokenData.access_token) {
+                // If exchange succeeded and we have a token, navigate immediately
+                // without hiding the global loader so the login UI doesn't flash.
+                if (tokenData && tokenData.access_token) {
                 localStorage.setItem('google_token', tokenData.access_token);
                 localStorage.setItem('google_token_expires_at', Date.now() + (tokenData.expires_in * 1000));
                 if (tokenData.refresh_token) localStorage.setItem('google_refresh_token', tokenData.refresh_token);
@@ -689,16 +728,20 @@
                     }
                 } catch(e) { console.warn('profile fetch after exchange failed', e); }
                 localStorage.setItem('needs_initial_download', 'true');
-                // Do not hide the loader here; the upcoming reload/navigation
-                // will replace this page. Use replace to avoid keeping this
-                // intermediate state in history.
-                try { window.location.replace('home.html'); } catch(e) { location.reload(); }
+                	// Do not hide the loader here; the upcoming reload/navigation
+                	// will replace this page. Use replace to avoid keeping this
+                	// intermediate state in history.
+                	try {
+                		const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                		const target = basePath + 'index.html?start=home';
+                		try { window.location.replace(target); } catch(e) { location.reload(); }
+                	} catch (e) { try { window.location.replace('index.html?start=home'); } catch(_) { location.reload(); } }
                 return;
             } else {
                 try { console.error('Token exchange failed', tokenData); } catch(e){}
                 try {
                     // Clear signing-in state and hide loader so the login UI can be shown
-                    try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+                    try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
                     try { sessionStorage.removeItem('gn_signing_in'); localStorage.removeItem('gn_signing_in'); } catch(e){}
                     try { window.__gn_signing_in = false; } catch(e){}
 
@@ -712,7 +755,7 @@
                 } catch(e){}
             }
         } catch (err) {
-            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+            try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
             try { sessionStorage.removeItem('gn_signing_in'); localStorage.removeItem('gn_signing_in'); } catch(e){}
             try { window.__gn_signing_in = false; } catch(e){}
             console.error('Exchange error', err);

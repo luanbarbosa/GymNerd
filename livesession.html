@@ -20,6 +20,7 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <script src="gn-i18n.js"></script>
+    <link rel="stylesheet" href="styles/app-titles.css">
     <style>
         :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
@@ -29,6 +30,7 @@
         .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
+        .app-title-compact, .top-title { margin: 20px 0; }
         .page-content { padding: 16px; padding-top: 12px; }
         .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
         .top-card .back-btn { color: inherit; }
@@ -36,6 +38,7 @@
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+        
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         .view-content { padding: 12px 15px 20px 15px; }
@@ -333,11 +336,11 @@
             <div class="top-card-inner">
                 <div class="topbar">
                     <div style="display:flex;align-items:center;width:100%;gap:12px;">
-                        <a href="home.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
-                        <div style="flex:1;min-width:0;">
-                            <h2 data-i18n="page_start_routine"></h2>
+                            <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); history.back();"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
+                            <div style="flex:1;min-width:0;">
+                                <h2 class="app-title-compact" data-i18n="page_start_routine"></h2>
+                            </div>
                         </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -375,9 +378,8 @@
             <div class="top-card-inner">
                 <div class="topbar">
                     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                        <a href="livesession.html" class="back-btn" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                         <div style="flex:1;min-width:0;">
-                            <h2 id="playerWorkoutTitle"></h2>
+                            <h2 id="playerWorkoutTitle" class="app-title-compact"></h2>
                         </div>
                     </div>
                     <div class="header-timer" onclick="startTimer()">
@@ -438,7 +440,7 @@
                 <div class="top-card-inner">
                     <div class="topbar">
                         <div style="flex:1;min-width:0; text-align:center;">
-                            <h2 data-i18n="routine_done"></h2>
+                            <h2 class="app-title-compact" data-i18n="routine_done"></h2>
                         </div>
                     </div>
                 </div>
@@ -1755,9 +1757,11 @@
                     return acc;
                 }, {});
 
+                // All logs belonging to this finish operation share the same sessionId
+                const sessionId = now.getTime();
                 for (const id in groups) {
                     const g = groups[id];
-                    logs.push({ exerciseId: g.exId, isCustom: g.isCustom, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
+                    logs.push({ exerciseId: g.exId, isCustom: g.isCustom, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count, sessionId });
                 }
 
                 // Persist logs (no deduplication)
@@ -1799,7 +1803,7 @@
                         ? GN_I18N.t('sync_failed_try_home')
                         : (lastSyncError && lastSyncError.message ? lastSyncError.message : 'Sync failed - please try again.');
                     alert(alertMsg);
-                    location.href = 'home.html';
+                    try { const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/'); location.href = basePath + 'index.html?start=home'; } catch (e) { try { location.href = 'index.html?start=home'; } catch(_){} }
                     return;
                 }
 
@@ -1809,10 +1813,11 @@
                     const tpl = GN_I18N.t('new_streak_record');
                     alert(tpl.replace('{n}', String(newRecord)));
                 }
-                location.href = "statistics.html";
+                goBack();
             } catch (err) {
                 alert(GN_I18N.t('debug_error_prefix') + err.message + "\n" + err.stack);
                 console.error(err);
+                try { const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/'); location.href = basePath + 'index.html?start=home'; } catch (e) { try { location.href = 'index.html?start=home'; } catch(_){} }
             } finally {
                 try { await releaseWakeResources(); } catch(e) { console.warn('releaseWakeResources failed in finishSession', e); }
             }
@@ -1997,6 +2002,23 @@
         <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
+        }
+        </script>
+
+        <script>
+        function goBack() {
+            try {
+                if (window.history) {
+                    // Prefer back(), which behaves like a user-initiated back action in most browsers/webviews.
+                    window.history.back();
+                    // As a secondary attempt, call go(-1) in case some environments handle it better.
+                    try { window.history.go(-1); } catch (e) { /* ignore */ }
+                } else {
+                    console.warn('goBack: no history object available');
+                }
+            } catch (e) {
+                console.warn('goBack failed', e);
+            }
         }
         </script>
 </body>
