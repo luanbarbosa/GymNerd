@@ -30,7 +30,82 @@
 
 				if (typeof DriveStorage === 'undefined') {
 					console.warn('[StartupWatchdog] DriveStorage not available');
-					try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+					}
+
+				// Render the most-frequent exercise TYPE over a selected range
+				async function renderFavoriteType(range = 'year') {
+					try {
+						if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+						const widget = document.getElementById('fav-type-widget');
+						if (!widget) return;
+						// hide widget while we compute to avoid transient renders
+						try { widget.style.display = 'none'; } catch(e){}
+						let items = await db.history.toArray();
+						if (!items || items.length === 0) {
+							widget.style.display = 'none';
+							return;
+						}
+						const now = new Date(); now.setHours(0,0,0,0);
+						if (range === 'year') {
+							const start = new Date(now);
+							start.setFullYear(start.getFullYear() - 1);
+							const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+							items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
+							try { console.debug('[renderFavoriteType-startup] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+							try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'startup-type', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+						} else if (range === 'month') {
+							const start = new Date(now.getFullYear(), now.getMonth(), 1);
+							const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+							items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
+							try { console.debug('[renderFavoriteType-startup] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+							try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'startup-type', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+						}
+						if (!items || items.length === 0) {
+							// try broader range (month -> year -> all) before showing empty message
+							try {
+								const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
+								if (broader) {
+									const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
+									try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
+									try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
+									return;
+								}
+							} catch(e){}
+							// show localized empty message instead of hiding widget
+							try { widget.style.display = 'flex'; } catch(e){}
+							try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+							try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
+							try { widget.style.display = 'flex'; } catch(e){}
+							return;
+						}
+						const counts = {};
+						for (const it of items) {
+							let ex = null;
+							try {
+								if (it.isCustom === true) ex = await db.custom_exercises.get(it.exerciseId);
+								else if (it.isCustom === false) ex = await db.catalog_exercises.get(it.exerciseId);
+								else {
+									ex = await db.catalog_exercises.get(it.exerciseId);
+									if (!ex) ex = await db.custom_exercises.get(it.exerciseId);
+								}
+							} catch (e) { ex = null; }
+							const type = (ex && ex.type) ? ex.type : 'other';
+							counts[type] = (counts[type] || 0) + 1;
+						}
+						let bestType = null, bestCount = 0;
+						for (const k of Object.keys(counts)) {
+							if (counts[k] > bestCount) { bestCount = counts[k]; bestType = k; }
+						}
+						if (!bestType) { widget.style.display = 'none'; return; }
+						// Localize label if helper available
+						let label = bestType;
+						try { if (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') label = GN_I18N.localizeExerciseType(bestType); else label = bestType.charAt(0).toUpperCase() + bestType.slice(1); } catch(e){}
+						try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = label; } catch(e){}
+						try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ` (${bestCount}x)`; } catch(e){}
+						try { widget.style.display = 'flex'; } catch(e){}
+					} catch (err) { console.error('renderFavoriteType failed', err); }
+				}
+
 					try { if (window.hideLoading) window.hideLoading(); } catch(e){}
 					return;
 				}
@@ -321,8 +396,22 @@
 			.streak-banner .streak-days { font-size:1rem; font-weight:800; opacity:0.9; }
 			.streak-banner .streak-text { color: var(--text-dim); font-weight:700; }
 			.streak-banner .streak-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-bottom:4px; }
+			/* Make streak-title available globally so other widgets can match the same style */
+			.streak-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-bottom:4px; }
 			.streak-banner .streak-record { font-size:0.85rem; color: var(--text-dim); font-weight:400; font-style:italic; margin-top:4px; opacity:0.9; }
 			.streak-banner .week-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-top:18px; margin-bottom:4px; }
+			/* Favorite type widget tweaks: match streak-banner spacing and full width */
+			#fav-type-widget { width:100%; max-width:none; margin:12px 0; box-sizing:border-box; padding:14px; }
+			#fav-type-widget select { background: transparent; color: var(--text); }
+
+			/* Grid layout for favorite type + exercise */
+			.fav-grid { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; width:100%; }
+			.fav-type-cell { display:flex; flex-direction:column; gap:8px; }
+			.fav-ex-cell { display:flex; flex-direction:column; gap:8px; }
+			.fav-ex-row { display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+			#fav-ex-preview { width:100%; height:auto; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.02); display:block; }
+			#fav-ex-img { width:100%; height:100%; object-fit:cover; display:block; }
+			#fav-ex-initial { font-weight:800; color:var(--text-dim); }
 	</style>
 </head>
 <body>
@@ -390,9 +479,39 @@
 					<div id="week-dots" class="week-dots" aria-hidden="false"></div>
 				</div>
 
-			<button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
-				<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
-			</button>
+				<!-- Favorite exercise widget -->
+				<!-- Favorite exercise preview integrated into favorite-type widget below -->
+
+				<!-- Favorite exercise TYPE widget (type first, exercise below) -->
+				<div id="fav-type-widget" class="nav-card" style="display:none; width:100%; margin:12px 0; padding:14px; max-width:none; box-sizing:border-box; position:relative;">
+					<!-- Range selector removed — widget always shows Year range -->
+					<div class="fav-grid">
+						<div class="fav-ex-cell">
+							<div id="fav-ex-label" class="streak-title" data-i18n="favorite_exercise">Favorite exercise</div>
+							<div class="fav-ex-row">
+								<div id="fav-ex-preview">
+									<img id="fav-ex-img" src="" alt="" />
+									<span id="fav-ex-initial">—</span>
+								</div>
+								<div id="fav-ex-name-and-count" style="color:var(--text); font-weight:700; word-break:break-word; width:100%;">
+									<span id="fav-ex-name">—</span>
+									<span id="fav-ex-count" class="streak-record"> </span>
+								</div>
+							</div>
+						</div>
+						<div class="fav-type-cell">
+							<div id="fav-type-label" class="streak-title" data-i18n="most_frequent_type">Most frequent type</div>
+							<div style="display:flex; align-items:center; gap:8px;">
+								<div id="fav-type-name" style="color:var(--text); font-weight:700;">—</div>
+								<div id="fav-type-count" class="streak-record"> </div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
+					<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
+				</button>
 		</div>
 	</div>
 
@@ -480,7 +599,7 @@
 		try { renderCompactApp(); } catch (e) {}
 		try { renderMainUser(); } catch (e) {}
 		try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
-			try { if (renderWeekDots) { renderWeekDots().then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} }); } } catch(e){}
+				try { if (renderWeekDots) { renderWeekDots().then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch(e){} try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){} }); } } catch(e){}
         
 		function updatePendingButtonVisibility() {
 			const btn = document.getElementById('sync-pending-btn');
@@ -671,6 +790,237 @@
 								banner.style.display = 'flex';
 							} catch(err){ console.error('renderStreakBanner failed', err); }
 						}
+
+						// Global favorite-type renderer (ensures function is available outside any inner scope)
+						async function renderFavoriteType(range = 'year') {
+							try {
+								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+								const widget = document.getElementById('fav-type-widget');
+								if (!widget) return;
+								let items = await db.history.toArray();
+								if (!items || items.length === 0) {
+									// try broader range before showing empty message
+									try {
+										const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
+										if (broader) {
+											const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
+											try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
+											try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
+											return;
+										}
+									} catch(e){}
+									try { widget.style.display = 'flex'; } catch(e){}
+									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
+									return;
+								}
+								const now = new Date(); now.setHours(0,0,0,0);
+								if (range === 'year') {
+									const start = new Date(now);
+									start.setFullYear(start.getFullYear() - 1);
+									items = items.filter(it => { const d = new Date(it.date); d.setHours(0,0,0,0); return d >= start; });
+									try { console.debug('[renderFavoriteType-global] range=', range, 'start=', start.toISOString(), 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+								} else if (range === 'month') {
+									const start = new Date(now.getFullYear(), now.getMonth(), 1);
+									items = items.filter(it => { const d = new Date(it.date); d.setHours(0,0,0,0); return d >= start; });
+									try { console.debug('[renderFavoriteType-global] range=', range, 'start=', start.toISOString(), 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+								}
+								if (!items || items.length === 0) {
+									try { widget.style.display = 'flex'; } catch(e){}
+									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
+									return;
+								}
+								const counts = {};
+								for (const it of items) {
+									let ex = null;
+									try {
+										if (it.isCustom === true) ex = await db.custom_exercises.get(it.exerciseId);
+										else if (it.isCustom === false) ex = await db.catalog_exercises.get(it.exerciseId);
+										else {
+											ex = await db.catalog_exercises.get(it.exerciseId);
+											if (!ex) ex = await db.custom_exercises.get(it.exerciseId);
+										}
+									} catch (e) { ex = null; }
+									const type = (ex && ex.type) ? ex.type : 'other';
+									counts[type] = (counts[type] || 0) + 1;
+								}
+								let bestType = null, bestCount = 0;
+								for (const k of Object.keys(counts)) {
+									if (counts[k] > bestCount) { bestCount = counts[k]; bestType = k; }
+								}
+								if (!bestType) {
+									try { widget.style.display = 'flex'; } catch(e){}
+									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
+									return;
+								}
+								let label = bestType;
+								try { if (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') label = GN_I18N.localizeExerciseType(bestType); else label = bestType.charAt(0).toUpperCase() + bestType.slice(1); } catch(e){}
+								try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = label; } catch(e){}
+								try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ` (${bestCount}x)`; } catch(e){}
+								widget.style.display = 'flex';
+							} catch (err) { console.error('renderFavoriteType failed', err); }
+						}
+
+						// range selector removed — no runtime listener required
+
+					// Global favorite-exercise renderer (uses the same parent widget as favorite-type)
+					async function renderFavoriteExercise(range = 'year') {
+						try {
+							if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+							const parent = document.getElementById('fav-type-widget');
+							if (!parent) return;
+							let items = await db.history.toArray();
+							if (!items || items.length === 0) {
+								// try broader range before showing empty message
+								try {
+									const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
+									if (broader) {
+										const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
+										try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
+										try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
+										return;
+									}
+								} catch(e){}
+								try { parent.style.display = 'flex'; } catch(e){}
+								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
+								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
+								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
+								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
+								try { parent.style.display = 'flex'; } catch(e){}
+								return;
+							}
+							const now = new Date(); now.setHours(0,0,0,0);
+							if (range === 'year') {
+								const start = new Date(now);
+								start.setFullYear(start.getFullYear() - 1);
+								const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+								items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
+								try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+								try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+							} else if (range === 'month') {
+								const start = new Date(now.getFullYear(), now.getMonth(), 1);
+								const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+								items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
+								try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+								try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+							}
+							if (!items || items.length === 0) {
+								try { parent.style.display = 'flex'; } catch(e){}
+								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
+								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
+								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
+								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
+								return;
+							}
+							const counts = {};
+							const totals = {}; // totals[key] = { reps: number, weight: number }
+							function addTotalsForKey(key, repsToAdd, weightToAdd) {
+								if (!totals[key]) totals[key] = { reps: 0, weight: 0 };
+								totals[key].reps += repsToAdd;
+								totals[key].weight += weightToAdd;
+							}
+							for (const it of items) {
+								const key = (it.isCustom === true ? 'c' : 'k') + '|' + it.exerciseId;
+								counts[key] = (counts[key] || 0) + 1;
+								// attempt to extract reps/weight information from the history entry
+								try {
+									let entryReps = 0, entryWeight = 0;
+									if (Array.isArray(it.sets) && it.sets.length > 0) {
+										for (const s of it.sets) {
+											// s may be {sets, reps, weight} or {reps, weight}
+											const setsCount = (s && s.sets !== undefined && s.sets !== '') ? Number(s.sets) : (s && (s.reps !== undefined || s.weight !== undefined) ? 1 : 0);
+											const repsPer = (s && s.reps !== undefined && s.reps !== '') ? Number(s.reps) : 0;
+											const weightPer = (s && s.weight !== undefined && s.weight !== '') ? Number(s.weight) : 0;
+											const repsDone = (isFinite(setsCount) ? setsCount : 0) * (isFinite(repsPer) ? repsPer : 0);
+											entryReps += repsDone;
+											entryWeight += repsDone * (isFinite(weightPer) ? weightPer : 0);
+										}
+									} else if (it.reps !== undefined || it.weight !== undefined) {
+										const reps = (it.reps !== undefined && it.reps !== '') ? Number(it.reps) : 0;
+										const weight = (it.weight !== undefined && it.weight !== '') ? Number(it.weight) : 0;
+										entryReps += isFinite(reps) ? reps : 0;
+										entryWeight += (isFinite(reps) ? reps : 0) * (isFinite(weight) ? weight : 0);
+									}
+									if (entryReps > 0 || entryWeight > 0) addTotalsForKey(key, entryReps, entryWeight);
+								} catch (e) { /* ignore parse errors */ }
+							}
+							let bestKey = null, bestCount = 0, bestAvg = 0;
+							for (const k of Object.keys(counts)) {
+								const c = counts[k] || 0;
+								if (c > bestCount) {
+									bestCount = c; bestKey = k; bestAvg = ((totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0);
+								} else if (c === bestCount) {
+									// tie-breaker: pick the one with higher average weight per rep
+									const avg = (totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0;
+									if (avg > bestAvg) {
+										bestKey = k; bestAvg = avg;
+									}
+								}
+							}
+							if (!bestKey) {
+								try { parent.style.display = 'flex'; } catch(e){}
+								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
+								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
+								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
+								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
+								return;
+							}
+							const parts = bestKey.split('|');
+							const isCustom = parts[0] === 'c';
+							const exId = parts[1];
+							let ex = null;
+							try {
+								if (isCustom) ex = await db.custom_exercises.get(Number(exId));
+								else ex = await db.catalog_exercises.get(Number(exId));
+								if (!ex && !isCustom) ex = await db.custom_exercises.get(Number(exId));
+							} catch(e) { ex = null; }
+							if (!ex) { parent.style.display = 'none'; return; }
+							// Determine localized name
+							let lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : ((navigator.language||'').toLowerCase().startsWith('pt') ? 'pt' : 'en');
+							let name = '';
+							if (lang === 'pt') {
+								name = ex.namePT || ex.name_pt || ex.ptName || ex.name || '';
+							} else {
+								name = ex.name || ex.namePT || ex.name_pt || ex.ptName || '';
+							}
+							if (!name) name = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('unknown_exercise') : 'Unknown Exercise';
+							const nameEl = document.getElementById('fav-ex-name');
+							if (nameEl) nameEl.textContent = name;
+							try {
+								const exCountEl = document.getElementById('fav-ex-count');
+								if (exCountEl) exCountEl.textContent = `\u00A0(${bestCount}x)`;
+							} catch(e) {}
+							// Ensure preview container is visible, then try to show image preview if available
+							const previewEl = document.getElementById('fav-ex-preview');
+							if (previewEl) previewEl.style.display = 'flex';
+							const imgEl = document.getElementById('fav-ex-img');
+							const initEl = document.getElementById('fav-ex-initial');
+							let shownImage = false;
+							try {
+								if (ex.imageId && imgEl && db.catalog_images) {
+									const img = await db.catalog_images.get(Number(ex.imageId));
+									if (img && img.data) {
+										imgEl.src = img.data;
+										imgEl.style.display = 'block';
+										if (initEl) initEl.style.display = 'none';
+										shownImage = true;
+									}
+								}
+							} catch(e) { shownImage = false; }
+							if (!shownImage) {
+								if (imgEl) imgEl.style.display = 'none';
+								if (initEl) { initEl.style.display = 'block'; initEl.textContent = name ? name.charAt(0).toUpperCase() : '—'; }
+							}
+							try { parent.style.display = 'flex'; } catch(e){}
+						} catch (err) { console.error('renderFavoriteExercise failed', err); }
+					}
+					// Ensure the range selector calls both renderers (single robust listener)
+					// range selector removed; no listener required
 	</script>
 	<script>
 		if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
@@ -679,5 +1029,45 @@
 			console.warn('Service worker registration skipped: insecure origin or file protocol');
 		}
 	</script>
+
+		<script>
+			// Extra init to ensure favorite renderers run and to surface debug logs reliably
+			document.addEventListener('DOMContentLoaded', () => {
+				// Helper: update the on-page favorites debug panel
+				function updateFavDebug(obj) {
+					try {
+						const el = document.getElementById('fav-debug-content');
+						if (!el) return;
+						const parts = [];
+						if (obj && obj.renderer) parts.push('renderer: ' + obj.renderer);
+						if (obj && obj.range) parts.push('range: ' + obj.range);
+						if (obj && obj.startYMD) parts.push('startYMD: ' + obj.startYMD);
+						if (obj && typeof obj.filtered !== 'undefined') parts.push('filtered: ' + obj.filtered);
+						if (obj && obj.sample) parts.push('sample: ' + (Array.isArray(obj.sample) ? obj.sample.join(', ') : String(obj.sample)));
+						el.textContent = parts.join(' | ');
+					} catch (e) {}
+				}
+
+				// Expose globally so inner startup scope can call it if needed
+				try { window.updateFavDebug = updateFavDebug; } catch(e) {}
+				try { console.debug('[fav-init] DOMContentLoaded — invoking favorite renderers'); } catch(e){}
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined'); } catch(e) { console.error('[fav-init] renderFavoriteType error', e); }
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined'); } catch(e) { console.error('[fav-init] renderFavoriteExercise error', e); }
+			});
+
+			// SPA hook: when the app is shown (fragment injected), ensure renderers run
+			window.addEventListener('app-shown', () => {
+				try { console.debug('[fav-init] app-shown — invoking favorite renderers'); } catch(e){}
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined on app-shown'); } catch(e) { console.error('[fav-init] renderFavoriteType error', e); }
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined on app-shown'); } catch(e) { console.error('[fav-init] renderFavoriteExercise error', e); }
+			});
+
+			// Fallback: call after a short delay in case neither event fires in the SPA environment
+			setTimeout(() => {
+				try { console.debug('[fav-init] timeout fallback — invoking favorite renderers'); } catch(e){}
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch(e){}
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){}
+			}, 800);
+		</script>
 </body>
 </html>

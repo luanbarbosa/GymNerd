@@ -154,8 +154,21 @@
             try {
                 if (typeof renderWeekDots === 'function') {
                     const p = renderWeekDots();
-                    if (p && p.then) p.then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} });
-                    else try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
+                    if (p && p.then) p.then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
+                        try {
+                            const sel = document.getElementById('fav-type-range'); const range = sel ? sel.value : 'year';
+                            try { if (typeof renderFavoriteType === 'function') renderFavoriteType(range); } catch(e){}
+                            try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(range); } catch(e){}
+                        } catch(e) {}
+                    });
+                    else {
+                        try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
+                        try {
+                            const sel = document.getElementById('fav-type-range'); const range = sel ? sel.value : 'year';
+                            try { if (typeof renderFavoriteType === 'function') renderFavoriteType(range); } catch(e){}
+                            try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(range); } catch(e){}
+                        } catch(e) {}
+                    }
                 }
             } catch(e) {}
             try { if (typeof updatePendingButtonVisibility === 'function') updatePendingButtonVisibility(); } catch(e) {}
