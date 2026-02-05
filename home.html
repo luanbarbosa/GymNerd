@@ -417,6 +417,20 @@
 <body>
 
 	<script>
+		// If this physical page is loaded directly (e.g. /home.html), redirect
+		// to the SPA root with a hash so the SPA handles navigation: /#home.
+		(function(){
+			try {
+				const name = (location.pathname || '').split('/').pop() || '';
+				if (name === 'home.html') {
+					const base = location.pathname.replace(/\/[^\/]*$/, '/');
+					try { location.replace(base + '#home'); } catch(e) { location.href = base + '#home'; }
+				}
+			} catch (e) {}
+		})();
+	</script>
+
+	<script>
 		// Keep the main UI hidden until auth + initial sync complete
 		window.showApp = function() {
 			// Emit an event so pages or other scripts can react instead of directly

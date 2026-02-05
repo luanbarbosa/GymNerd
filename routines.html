@@ -217,6 +217,17 @@
     </style>
 </head>
 <body>
+    <script>
+        (function(){
+            try {
+                const name = (location.pathname || '').split('/').pop() || '';
+                if (name === 'routines.html') {
+                    const base = location.pathname.replace(/\/[^\/]*$/, '/');
+                    try { location.replace(base + '#routines'); } catch(e) { location.href = base + '#routines'; }
+                }
+            } catch (e) {}
+        })();
+    </script>
     <div class="top-card">
         <div class="top-card-inner">
             <div style="display:flex;align-items:center;width:100%;gap:12px;">

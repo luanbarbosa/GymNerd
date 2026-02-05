@@ -100,6 +100,17 @@
     </style>
 </head>
 <body>
+    <script>
+        (function(){
+            try {
+                const name = (location.pathname || '').split('/').pop() || '';
+                if (name === 'statistics.html') {
+                    const base = location.pathname.replace(/\/[^\/]*$/, '/');
+                    try { location.replace(base + '#statistics'); } catch(e) { location.href = base + '#statistics'; }
+                }
+            } catch (e) {}
+        })();
+    </script>
     <div class="main-content">
     <div class="top-card">
         <div class="top-card-inner">

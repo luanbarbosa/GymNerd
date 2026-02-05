@@ -109,8 +109,11 @@
                     let resolved = null;
                     try { resolved = new URL(s.src, href).href; } catch(e) { resolved = s.src; }
                     if (window.__spa_loaded_scripts.has(resolved)) continue;
+                    // Mark as loading/loaded immediately to avoid race where
+                    // concurrent navigations append the same script twice.
+                    try { window.__spa_loaded_scripts.add(resolved); } catch(e){}
                     const ns = document.createElement('script'); ns.src = resolved; ns.async = false; document.body.appendChild(ns);
-                    await new Promise((res) => { ns.onload = () => { window.__spa_loaded_scripts.add(resolved); res(); }; ns.onerror = () => { res(); }; });
+                    await new Promise((res) => { ns.onload = () => { res(); }; ns.onerror = () => { res(); }; });
                 } else {
                     const key = (s.textContent || '').trim();
                     if (!key) continue;
@@ -172,6 +175,19 @@
                 }
             } catch(e) {}
             try { if (typeof updatePendingButtonVisibility === 'function') updatePendingButtonVisibility(); } catch(e) {}
+
+            // If navigating to home and an initial Drive restore was requested
+            try {
+                const pageName = (href.split('/').pop() || 'index.html');
+                if (pageName === 'home.html' && localStorage.getItem && localStorage.getItem('needs_initial_download') === 'true') {
+                    if (typeof window.autoRestoreFromDrive === 'function') {
+                        try { if (typeof window.showLoading === 'function') window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') : 'Welcome back! Syncing your data...'); } catch(e){}
+                        await window.autoRestoreFromDrive(true);
+                        // autoRestoreFromDrive will reload when done; stop further SPA init
+                        return;
+                    }
+                }
+            } catch(e) {}
 
             // Page-specific init: some pages declare generic `init()` which collides
             // across pages. Call unique per-page helpers to ensure correct
@@ -247,8 +263,9 @@
                                                     let resolved = null;
                                                     try { resolved = new URL(s.src, href).href; } catch(e) { resolved = s.src; }
                                                     if (window.__spa_loaded_scripts.has(resolved)) continue;
+                                                    try { window.__spa_loaded_scripts.add(resolved); } catch(e){}
                                                     const ns = document.createElement('script'); ns.src = resolved; ns.async = false; document.body.appendChild(ns);
-                                                    await new Promise((res) => { ns.onload = () => { window.__spa_loaded_scripts.add(resolved); res(); }; ns.onerror = () => { res(); }; });
+                                                    await new Promise((res) => { ns.onload = () => { res(); }; ns.onerror = () => { res(); }; });
                                                     } else {
                                                                 const key2 = (s.textContent || '').trim();
                                                                 if (!key2) continue;
@@ -279,6 +296,24 @@
                     } catch(e) {}
             } catch(e) {}
             try { if (!document.body.style.visibility || document.body.style.visibility === 'hidden') document.body.style.visibility = 'visible'; } catch(e){}
+            // Clean up any leftover global loader created by auth.js (gn-global-loader)
+            try {
+                const g = document.getElementById('gn-global-loader');
+                if (g) {
+                    try { g.style.display = 'none'; } catch(e){}
+                    try { g.parentNode && g.parentNode.removeChild(g); } catch(e){}
+                }
+                if (document.body && document.body.dataset && document.body.dataset.gnHidden) {
+                    try {
+                        const children = Array.from(document.body.children);
+                        for (const c of children) {
+                            if (c.id === 'gn-global-loader') continue;
+                            try { c.style.display = c.dataset.gnPrevDisplay || ''; delete c.dataset.gnPrevDisplay; } catch(e){}
+                        }
+                        delete document.body.dataset.gnHidden;
+                    } catch(e){}
+                }
+            } catch(e) {}
             hideLoader();
         } catch (err) {
             hideLoader();
@@ -317,10 +352,34 @@
         } catch(e){}
     });
 
-    // expose API
+    // Ensure SPA reacts to hash changes (e.g. auth.js redirects to '/#home')
+    if (!window.__spa_hash_listener) {
+        window.__spa_hash_listener = true;
+        window.addEventListener('hashchange', function(){
+            try {
+                const hash = (location.hash && location.hash.length > 1) ? location.hash.slice(1) : null;
+                if (!hash) return;
+                let candidate = hash;
+                if (!candidate.endsWith('.html')) candidate = candidate + '.html';
+                const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','login.html'];
+                if (spaTargets.includes(candidate)) {
+                    // If this hashchange originated from an auth redirect (e.g. '/#home'),
+                    // prefer a full navigation to avoid re-injecting scripts into the
+                    // existing page context which can cause duplicate-declaration errors.
+                    if (candidate === 'home.html' || candidate === 'index.html') {
+                        try { window.location.href = candidate; } catch(e) { window.location.assign(candidate); }
+                    } else {
+                        spaNavigate(candidate).catch(() => {});
+                    }
+                }
+            } catch(e) {}
+        });
+    }
+
+    // expose API (do not overwrite global full-screen loaders from auth.js)
     window.spaNavigate = spaNavigate;
-    window.showLoading = showLoader;
-    window.hideLoading = hideLoader;
+    window.spaShowLoader = showLoader;
+    window.spaHideLoader = hideLoader;
 
     // On initial load, if the shell is opened at root, render `login.html` into the container.
     (function initRouteOnLoad(){
