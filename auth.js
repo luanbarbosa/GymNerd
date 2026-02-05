@@ -273,7 +273,7 @@
                         token = localStorage.getItem('google_token');
                         expiresAt = localStorage.getItem('google_token_expires_at');
                         // If running on the login page, navigate to the app home
-                        try { if (window.location && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) { window.location.href = 'home.html'; } else { try { location.reload(); } catch(e){} } } catch(e) {}
+                        try { if (window.location && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) { window.location.href = '/#home'; } else { try { location.reload(); } catch(e){} } } catch(e) {}
                     } else {
                         if (hadRefresh) {
                             renderRefreshError();
@@ -554,7 +554,7 @@
                     // If we're on the login page, navigate to home so the app proceeds.
                     try {
                         if (window && window.location && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
-                            try { window.location.href = 'home.html'; } catch(e) { /* ignore */ }
+                            try { window.location.href = '/#home'; } catch(e) { /* ignore */ }
                         }
                     } catch (e) {}
                     return true;
@@ -712,7 +712,7 @@
                 // Do not hide the loader here; the upcoming reload/navigation
                 // will replace this page. Use replace to avoid keeping this
                 // intermediate state in history.
-                try { window.location.replace('home.html'); } catch(e) { location.reload(); }
+                try { window.location.replace('/#home'); } catch(e) { location.reload(); }
                 return;
             } else {
                 try { console.error('Token exchange failed', tokenData); } catch(e){}

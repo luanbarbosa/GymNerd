@@ -341,7 +341,7 @@
 
                     try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                     alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!");
-                    try { history.back(); } catch(e) { location.href = 'home.html'; }
+                    try { history.back(); } catch(e) { location.href = '/#home'; }
                     return;
                 }
 
@@ -393,7 +393,7 @@
 
                 try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_success') : "Import successful!"); 
-                try { history.back(); } catch(e) { location.href = 'home.html'; }
+                try { history.back(); } catch(e) { location.href = '/#home'; }
             } catch (err) {
                 console.error("Import error:", err);
                 alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('import_error') : "Error importing data. Check console for details.");

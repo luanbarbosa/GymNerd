@@ -1803,7 +1803,7 @@
                         ? GN_I18N.t('sync_failed_try_home')
                         : (lastSyncError && lastSyncError.message ? lastSyncError.message : 'Sync failed - please try again.');
                     alert(alertMsg);
-                    location.href = 'home.html';
+                    try { location.href = '/#home'; } catch (e) { /* ignore */ }
                     return;
                 }
 
@@ -1813,10 +1813,11 @@
                     const tpl = GN_I18N.t('new_streak_record');
                     alert(tpl.replace('{n}', String(newRecord)));
                 }
-                location.href = "statistics.html";
+                goBack();
             } catch (err) {
                 alert(GN_I18N.t('debug_error_prefix') + err.message + "\n" + err.stack);
                 console.error(err);
+                try { location.href = '/#home'; } catch (e) { /* ignore */ }
             } finally {
                 try { await releaseWakeResources(); } catch(e) { console.warn('releaseWakeResources failed in finishSession', e); }
             }
@@ -2001,6 +2002,23 @@
         <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
+        }
+        </script>
+
+        <script>
+        function goBack() {
+            try {
+                if (window.history) {
+                    // Prefer back(), which behaves like a user-initiated back action in most browsers/webviews.
+                    window.history.back();
+                    // As a secondary attempt, call go(-1) in case some environments handle it better.
+                    try { window.history.go(-1); } catch (e) { /* ignore */ }
+                } else {
+                    console.warn('goBack: no history object available');
+                }
+            } catch (e) {
+                console.warn('goBack failed', e);
+            }
         }
         </script>
 </body>

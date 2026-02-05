@@ -101,7 +101,7 @@
 
                 // If we have a valid (non-expired) token, go straight to the app.
                 if (token && !isExpired) {
-                    try { window.location.replace('home.html'); return; } catch(e){}
+                    try { window.location.replace('/#home'); return; } catch(e){}
                 }
 
                 // If token is expired but we have a refresh token, show a
@@ -216,7 +216,7 @@
 
         document.getElementById('signin-google').addEventListener('click', function () {
             if (typeof handleAuth === 'function') return handleAuth();
-            try { window.location.replace('home.html'); } catch(e) { window.location.href = 'home.html'; }
+            try { window.location.replace('/#home'); } catch(e) { window.location.href = '/#home'; }
         });
         const demoBtn = document.getElementById('demo-mode');
         if (demoBtn) {
@@ -240,7 +240,7 @@
                 // If running on the login page and we have a valid session, navigate to home
                 try {
                     if (state && state.token && !state.isExpired && (window.location.pathname === '/' || window.location.pathname.endsWith('index.html'))) {
-                        try { window.location.replace('home.html'); return; } catch(e) { try { window.location.href = 'home.html'; } catch(e2){} }
+                        try { window.location.replace('/#home'); return; } catch(e) { try { window.location.href = '/#home'; } catch(e2){} }
                     }
                 } catch(e) {}
                 try {
