@@ -8,6 +8,34 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.json" />
+    <script>
+        (function(){
+            // Compute a sensible base href:
+            // - If running under a GitHub Pages repo path (e.g. /GymNerd/), use that segment.
+            // - Otherwise use a relative `./` base so local servers resolve files correctly.
+            var baseHref = './';
+            try {
+                var pathname = location.pathname || '/';
+                // If path starts with a non-root segment, assume that segment is the repo name
+                var parts = pathname.split('/').filter(function(p){ return p && p.length; });
+                if (parts.length > 0) {
+                    // Common case: GitHub Pages project site -> first segment is repo
+                    baseHref = '/' + parts[0] + '/';
+                } else {
+                    baseHref = './';
+                }
+                // If running on a custom domain or the site is served from root, keep './'
+                if (location.hostname && !location.hostname.endsWith('github.io')) {
+                    baseHref = './';
+                }
+            } catch (e) { baseHref = './'; }
+            var b = document.createElement('base');
+            b.setAttribute('href', baseHref);
+            // Insert as the first element in <head> so subsequent <link>/<script> resolve correctly
+            var head = document.getElementsByTagName('head')[0];
+            if (head.firstChild) head.insertBefore(b, head.firstChild); else head.appendChild(b);
+        })();
+    </script>
     <title>GymNerd</title>
     <link rel="icon" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -125,7 +153,7 @@
             <span class="material-symbols-outlined nav-icon">exercise</span>
             <span data-i18n="menu_routines">Routines</span>
         </a>
-        <a id="nav-play" href="/livesession.html" aria-label="Play">
+        <a id="nav-play" href="livesession.html" aria-label="Play">
             <span class="material-symbols-outlined nav-icon">play_arrow</span>
             <span data-i18n="menu_start_routine">Play</span>
         </a>
