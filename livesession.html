@@ -1757,9 +1757,11 @@
                     return acc;
                 }, {});
 
+                // All logs belonging to this finish operation share the same sessionId
+                const sessionId = now.getTime();
                 for (const id in groups) {
                     const g = groups[id];
-                    logs.push({ exerciseId: g.exId, isCustom: g.isCustom, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count });
+                    logs.push({ exerciseId: g.exId, isCustom: g.isCustom, weight: g.weight, reps: g.reps, date: todayStr, sets: g.count, sessionId });
                 }
 
                 // Persist logs (no deduplication)

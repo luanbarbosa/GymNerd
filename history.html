@@ -268,8 +268,14 @@
         }
 
         function openEditDate(date) {
+            // Backwards-compatible: open by date when needed
             if (!date) return;
             location.href = 'historycrud.html?mode=routine&editDate=' + encodeURIComponent(date);
+        }
+
+        function openEditSession(sessionId) {
+            if (!sessionId && sessionId !== 0) return;
+            location.href = 'historycrud.html?mode=routine&editSession=' + encodeURIComponent(sessionId);
         }
 
         async function renderHistory() {
@@ -286,11 +292,37 @@
                     container.innerHTML = `<div style="padding:12px;color:var(--text-dim)">${msg}</div>`;
                 return;
             }
+            // Normalize date strings to YYYY-MM-DD to avoid duplicates caused
+            // by mixed formats (e.g., '2026-2-05' vs '2026-02-05' or timestamps).
+            function normDateStr(d) {
+                if (!d) return d;
+                if (typeof d !== 'string') d = String(d);
+                // If ISO with time, take first 10 chars
+                if (d.indexOf('T') !== -1) return d.split('T')[0];
+                // Quick match YYYY-M-D or YYYY-MM-DD
+                const m = d.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+                if (m) {
+                    const yy = m[1];
+                    const mm = String(Number(m[2])).padStart(2, '0');
+                    const dd = String(Number(m[3])).padStart(2, '0');
+                    return `${yy}-${mm}-${dd}`;
+                }
+                // Fallback: try Date parse
+                const dt = new Date(d);
+                if (!isNaN(dt.getTime())) {
+                    return dt.toISOString().split('T')[0];
+                }
+                return d;
+            }
+
+            // Group logs by sessionId (fallback to date-based session key when missing)
             const groups = logs.reduce((acc, l) => {
-                const month = l.date.substring(0, 7); // YYYY-MM
-                if (!acc[month]) acc[month] = {};
-                if (!acc[month][l.date]) acc[month][l.date] = [];
-                acc[month][l.date].push(l);
+                const sessionKey = (l.sessionId !== undefined && l.sessionId !== null) ? String(l.sessionId) : normDateStr(l.date) || String(l.id || Date.now());
+                if (!acc[sessionKey]) acc[sessionKey] = { items: [], sessionDate: null };
+                const copy = Object.assign({}, l, { date: normDateStr(l.date) });
+                acc[sessionKey].items.push(copy);
+                // set sessionDate to the first item's normalized date (used for grouping/filtering/display)
+                if (!acc[sessionKey].sessionDate && copy.date) acc[sessionKey].sessionDate = copy.date;
                 return acc;
             }, {});
 
@@ -299,18 +331,19 @@
             const locale = lang === 'pt' ? 'pt' : 'en';
             container.innerHTML = "";
 
-            // Flattened view: render every date as a top-level collapsed entry (no month groups)
-            const flatDates = [];
-            for (const month of Object.keys(groups)) {
-                for (const date of Object.keys(groups[month])) {
-                    flatDates.push({ date, items: groups[month][date] });
-                }
-            }
-            // sort dates descending
-            flatDates.sort((a, b) => (a.date < b.date ? 1 : -1));
+            // Flatten sessions into an array for rendering
+            const flatSessions = Object.keys(groups).map(k => ({ sessionId: k, date: groups[k].sessionDate, items: groups[k].items }));
+            // sort sessions by date descending (fallback to sessionId when date missing)
+            flatSessions.sort((a, b) => {
+                if (a.date && b.date) return a.date < b.date ? 1 : -1;
+                return (b.sessionId || '') < (a.sessionId || '') ? 1 : -1;
+            });
 
-            // Populate filters (month/year) once based on available data
-            try { populateFilters(Object.keys(groups)); } catch(e) {}
+            // Populate filters (month/year) once based on available session dates
+            try {
+                const monthKeys = Object.values(groups).map(g => g.sessionDate).filter(Boolean).map(d => d.substring(0,7));
+                populateFilters(Array.from(new Set(monthKeys)));
+            } catch(e) {}
 
             // read selected filter values (if selects present)
             const monthSel = document.getElementById('filterMonth');
@@ -325,15 +358,36 @@
             // track how many date groups are rendered (used to show filtered empty state)
             let renderedCount = 0;
 
-            for (const entry of flatDates) {
-                if (selectedPrefix && !entry.date.startsWith(selectedPrefix)) continue;
-                const date = entry.date;
+            for (const entry of flatSessions) {
+                if (!entry) continue;
+                const sessionId = entry.sessionId;
+                const sessionDate = entry.date;
+                if (selectedPrefix && !(sessionDate && sessionDate.startsWith(selectedPrefix))) continue;
                 const dateDet = document.createElement('details');
                 dateDet.className = "history-group";
                 const delTitle = GN_I18N && GN_I18N.safeT ? GN_I18N.safeT('history_delete_session') : 'Delete Session';
-                const formattedDate = formatDateDisplay(date);
+                const formattedDate = sessionDate ? formatDateDisplay(sessionDate) : '';
                 dateDet.innerHTML = `<summary class="date-header"><span>${formattedDate}</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
+                // Merge items by exercise so a single exercise isn't rendered multiple times
+                const merged = {};
                 for (const l of entry.items) {
+                    const key = `${l.exerciseId || l.exerciseName || 'unknown'}::${String(!!l.isCustom)}`;
+                    if (!merged[key]) merged[key] = Object.assign({}, l);
+                    else {
+                        // sum sets when possible
+                        const a = merged[key];
+                        const setsA = Number(a.sets || 0);
+                        const setsB = Number(l.sets || 0);
+                        a.sets = (setsA + setsB) || a.sets || l.sets;
+                        // prefer the most-recent non-empty reps/weight
+                        if ((l.reps || l.reps === 0) && !a.reps) a.reps = l.reps;
+                        if ((l.weight || l.weight === 0) && !a.weight) a.weight = l.weight;
+                        if ((l.imageId || l.imageId === 0) && !a.imageId) a.imageId = l.imageId;
+                    }
+                }
+
+                const dedupedItems = Object.keys(merged).map(k => merged[k]);
+                for (const l of dedupedItems) {
                         // Prefer DB lookup so we can show localized names dynamically
                         const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
                         let imageId = l.imageId;
@@ -365,12 +419,16 @@
 
                         dateDet.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${displayName}</div><div class="data-row">${l.sets || 3} ${setsText} x ${l.weight}${kgSuffix} x ${l.reps}</div></div></div>`;
                 }
-                // add date-level text delete/edit buttons at the bottom of the date box (localized)
+                    // add session-level edit/delete buttons at the bottom of the session box (localized)
                 const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : (navigator.language || 'en');
                 const editText = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_edit_session') : (pageLang && pageLang.startsWith('pt') ? 'Editar' : 'Edit');
                 const delText = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_delete') : (pageLang && pageLang.startsWith('pt') ? 'Deletar' : 'Delete');
-                dateDet.innerHTML += `<div style="padding:10px 12px;display:flex;justify-content:flex-end;gap:8px"><button class="date-edit-btn" aria-label="${editText}" title="${editText}" onclick="event.stopPropagation(); openEditDate('${date}')">${editText}</button><button class="date-delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteDateLogs('${date}')">${delText}</button></div>`;
-                container.appendChild(dateDet);
+                    dateDet.innerHTML += `<div style="padding:10px 12px;display:flex;justify-content:flex-end;gap:8px"><button class="date-edit-btn" aria-label="${editText}" title="${editText}" onclick="event.stopPropagation(); openEditSession('${sessionId}')">${editText}</button><button class="date-delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteSession('${sessionId}')">${delText}</button></div>`;
+                // Ensure we don't render the same session twice (protect against previous render anomalies)
+                dateDet.setAttribute('data-session-id', sessionId);
+                if (!container.querySelector(`.history-group[data-session-id="${sessionId}"]`)) {
+                    container.appendChild(dateDet);
+                }
                 renderedCount++;
 
                 // apply translations to this newly created block if GN_I18N is present
@@ -466,6 +524,25 @@
                 renderWeightHistory();
             } catch (e) {
                 console.error('Failed to delete weight', e);
+            }
+        }
+
+        async function deleteSession(sessionId) {
+            if (!sessionId && sessionId !== 0) return;
+            const fmt = '';
+            if (window.GN_I18N && typeof GN_I18N.t === 'function') {
+                const tmpl = GN_I18N.t('history_confirm_delete') || 'Delete this session?';
+                if (confirm(tmpl.replace ? tmpl.replace('{date}', fmt) : tmpl)) {
+                    await db.history.where('sessionId').equals(Number(sessionId)).delete();
+                    localStorage.setItem('has_local_changes', 'true');
+                    renderHistory();
+                }
+            } else {
+                if (confirm('Delete this session?')) {
+                    await db.history.where('sessionId').equals(Number(sessionId)).delete();
+                    localStorage.setItem('has_local_changes', 'true');
+                    renderHistory();
+                }
             }
         }
         if (window.GN_I18N) {

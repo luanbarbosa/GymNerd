@@ -90,7 +90,22 @@
 
 							if (db.history) {
 								await db.history.clear();
-								if (data.history) await db.history.bulkAdd(data.history);
+								if (data.history) {
+									const normalized = data.history.map(h => {
+										const copy = { ...h };
+										if (copy.sessionId === undefined || copy.sessionId === null) {
+											let sid = null;
+											if (typeof copy.date === 'string') {
+												const parsed = Date.parse(copy.date);
+												if (!isNaN(parsed)) sid = parsed;
+											} else if (copy.date instanceof Date) sid = copy.date.getTime();
+											if (sid === null || isNaN(sid)) sid = Date.now();
+											copy.sessionId = sid;
+										}
+										return copy;
+									});
+									await db.history.bulkAdd(normalized);
+								}
 							}
 
 							if (db.weights) {

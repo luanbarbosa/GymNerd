@@ -114,6 +114,7 @@
     let isEditMode = false;
     let editLogId = null;
     let editDate = null;
+    let editSession = null;
 
     async function init() {
         await ensureDbOpen();
@@ -166,6 +167,19 @@
                         document.getElementById('routinePicker').style.display = 'none';
                         await buildSheetFromLogs(logs || []);
                     } catch (e) { console.error('Failed to load logs for editDate', e); }
+                }
+                // if an editSession param is present, load all logs for that sessionId
+                const editSessionParam = params.get('editSession');
+                if (editSessionParam) {
+                    isEditMode = true;
+                    editSession = editSessionParam;
+                    try {
+                        const sid = Number(editSessionParam);
+                        const logs = await db.history.where('sessionId').equals(sid).toArray();
+                        if (logs && logs.length > 0 && logs[0].date) document.getElementById('logDate').value = logs[0].date;
+                        document.getElementById('routinePicker').style.display = 'none';
+                        await buildSheetFromLogs(logs || []);
+                    } catch (e) { console.error('Failed to load logs for editSession', e); }
                 }
                 if (titleEl) {
                     if (isEditMode) {
@@ -434,6 +448,24 @@
     async function saveSession() {
         const date = document.getElementById('logDate').value;
         const logs = [];
+        // Determine sessionId: reuse existing sessionId when editing, otherwise generate a new one
+        let sessionId = Date.now();
+        if (isEditMode) {
+            try {
+                if (editDate) {
+                    const existing = await db.history.where('date').equals(editDate).first();
+                    if (existing && existing.sessionId) sessionId = existing.sessionId;
+                } else if (editLogId) {
+                    const existing = await db.history.get(editLogId);
+                    if (existing && existing.sessionId) sessionId = existing.sessionId;
+                } else if (editSession) {
+                    try {
+                        const existing = await db.history.where('sessionId').equals(Number(editSession)).first();
+                        if (existing && existing.sessionId) sessionId = existing.sessionId;
+                    } catch (e) { /* ignore */ }
+                }
+            } catch (e) { /* ignore and use generated sessionId */ }
+        }
         const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
         document.querySelectorAll('.exercise-row').forEach(r => {
             // Aggregate sets from any .set-row.data-row inside the exercise
@@ -464,7 +496,8 @@
                 sets: parseInt(totalSets) || 1, 
                 weight: parseFloat(pickedWeight), 
                 reps: parseInt(pickedReps), 
-                date 
+                date,
+                sessionId
             });
         });
         if (isEditMode) {
@@ -485,8 +518,16 @@
                         await db.history.bulkAdd(logs);
                     }
                 } else {
-                    // fallback: just add
-                    if (logs.length > 0) await db.history.bulkAdd(logs);
+                        // If editing by sessionId, replace all logs for that session
+                        if (editSession) {
+                            try {
+                                await db.history.where('sessionId').equals(Number(editSession)).delete();
+                                if (logs.length > 0) await db.history.bulkAdd(logs);
+                            } catch (e) { console.error('Failed to update logs for session edit', e); }
+                        } else {
+                            // fallback: just add
+                            if (logs.length > 0) await db.history.bulkAdd(logs);
+                        }
                 }
             } catch (e) { console.error('Failed to update log in edit mode', e); }
         } else {
