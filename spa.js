@@ -151,7 +151,13 @@
             // init helpers (if present) so injected pages initialize correctly.
             try { if (typeof renderCompactApp === 'function') renderCompactApp(); } catch(e) {}
             try { if (typeof renderMainUser === 'function') renderMainUser(); } catch(e) {}
-            try { if (typeof renderWeekDots === 'function') renderWeekDots(); } catch(e) {}
+            try {
+                if (typeof renderWeekDots === 'function') {
+                    const p = renderWeekDots();
+                    if (p && p.then) p.then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} });
+                    else try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
+                }
+            } catch(e) {}
             try { if (typeof updatePendingButtonVisibility === 'function') updatePendingButtonVisibility(); } catch(e) {}
 
             // Page-specific init: some pages declare generic `init()` which collides
@@ -244,8 +250,14 @@
                                                     }
                                             }
                                             try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(curMain); } catch(e){}
-                                            try { if (typeof renderWeekDots === 'function') renderWeekDots(); } catch(e){}
-                                            try { if (typeof renderMainUser === 'function') renderMainUser(); } catch(e){}
+                                                try {
+                                                    if (typeof renderWeekDots === 'function') {
+                                                        const p2 = renderWeekDots();
+                                                        if (p2 && p2.then) p2.then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} });
+                                                        else try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
+                                                    }
+                                                } catch(e){}
+                                                try { if (typeof renderMainUser === 'function') renderMainUser(); } catch(e){}
                                         }
                                     }
                                 } catch(e) { /* ignore fragment fallback errors */ }

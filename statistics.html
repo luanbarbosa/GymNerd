@@ -209,7 +209,15 @@
                 const dayIndex = (startIndex + i) % 7;
                 // 2021-01-03 is a Sunday; add offset to get correct weekday
                 const d = new Date(2021, 0, 3 + dayIndex);
-                const short = d.toLocaleString(locale, { weekday: 'short' });
+                // Ensure short weekday labels are 3 letters with no trailing dot for pt
+                let short = '';
+                if (locale === 'pt') {
+                    const ptShort = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+                    short = ptShort[d.getDay()];
+                } else {
+                    short = d.toLocaleString(locale, { weekday: 'short' }).replace(/\.$/, '');
+                    if (short.length > 3) short = short.slice(0,3);
+                }
                 dayNamesContainer.innerHTML += `<div class="day-name">${short}</div>`;
             }
             grid.innerHTML = "";

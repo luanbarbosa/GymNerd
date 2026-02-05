@@ -295,8 +295,8 @@
 		.export-btn { background: var(--success); color: white; }
 		.import-btn { background: #6366f1; color: white; }
 		label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
-		/* Week dots (GitHub-style) */
-		.week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); max-width: 460px; }
+			/* Week dots (GitHub-style) */
+			.week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: transparent; max-width: 460px; }
 		.week-dots .days { display:grid; grid-template-columns: repeat(7, 1fr); gap: clamp(6px, 1.6vw, 12px); align-items:center; width:100%; }
 		.week-dots .day { display:flex; flex-direction:column; align-items:center; gap:6px; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); }
 		.week-dots .dot { width: clamp(14px, 5.5vw, 32px); height: clamp(14px, 5.5vw, 32px); box-shadow: none; border: none; display:flex; align-items:center; justify-content:center; }
@@ -307,6 +307,22 @@
 		/* Demo mode banner */
 		#demo-banner { display: none; margin: 4px 20px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, #e6f0ff, #dbeafe); color: #0f172a; font-weight: 700; text-align: center; box-shadow: none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
 		#demo-banner small { display:block; font-weight:500; color: #334155; opacity:0.9; font-size:0.75rem; margin-top:1px; }
+
+			/* Streak banner (structure only; colors intentionally neutral)
+			   Fill the available content width and respect the page padding
+			*/
+			.streak-banner { display:flex; flex-direction:column; width:100%; max-width:none; margin:12px 0; box-sizing:border-box; background: var(--card); color: var(--text); padding: 14px; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,6,23,0.06); align-items:flex-start; }
+			.streak-banner .streak-inner { display:flex; gap:12px; align-items:center; width:100%; }
+			.streak-banner .week-dots { margin:0; align-self:center; width:100%; }
+			.streak-banner .streak-icon-wrap { width:72px; height:72px; border-radius:12px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.02); }
+			.streak-banner .streak-icon-wrap img { width:56px; height:56px; object-fit:contain; display:block; }
+			.streak-banner .streak-body { display:flex; flex-direction:column; justify-content:center; gap:6px; }
+			.streak-banner .streak-count { font-weight:900; font-size:2.2rem; line-height:1; display:flex; align-items:baseline; gap:8px; }
+			.streak-banner .streak-days { font-size:1rem; font-weight:800; opacity:0.9; }
+			.streak-banner .streak-text { color: var(--text-dim); font-weight:700; }
+			.streak-banner .streak-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-bottom:4px; }
+			.streak-banner .streak-record { font-size:0.85rem; color: var(--text-dim); font-weight:400; font-style:italic; margin-top:4px; opacity:0.9; }
+			.streak-banner .week-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-top:18px; margin-bottom:4px; }
 	</style>
 </head>
 <body>
@@ -358,8 +374,21 @@
 
 		<div id="body">
 			<div style="padding: 0 20px;">
-				<div id="week-dots" class="week-dots" aria-hidden="false"></div>
-			</div>
+				<!-- Streak banner: shows current consecutive-day streak. Ordered as column per design -->
+				<div id="streak-banner" class="streak-banner" role="region" aria-live="polite" style="display:none;">
+					<div class="streak-title" data-i18n="streak_title">Your streak</div>
+					<div class="streak-inner">
+						<div class="streak-icon-wrap">
+							<img id="streak-icon-img" src="" alt="streak icon" />
+						</div>
+						<div class="streak-body">
+							<div class="streak-count"><span id="streak-number">0</span> <span class="streak-days">DAYS</span></div>
+							<div id="streak-record" class="streak-record" style="display:none;"></div>
+						</div>
+					</div>
+					<div class="week-title" data-i18n="your_week">Your week</div>
+					<div id="week-dots" class="week-dots" aria-hidden="false"></div>
+				</div>
 
 			<button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
 				<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
@@ -451,7 +480,7 @@
 		try { renderCompactApp(); } catch (e) {}
 		try { renderMainUser(); } catch (e) {}
 		try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
-		try { renderWeekDots && renderWeekDots(); } catch(e){}
+			try { if (renderWeekDots) { renderWeekDots().then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} }); } } catch(e){}
         
 		function updatePendingButtonVisibility() {
 			const btn = document.getElementById('sync-pending-btn');
@@ -504,7 +533,16 @@
 							try { count = await db.history.where('date').equals(dateStr).count(); } catch (e) { count = 0; }
 
 							const level = (count === 0) ? 0 : Math.min(4, 1 + Math.floor(Math.log2(count)));
-							const weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' });
+							// Ensure short weekday labels are 3 letters with no trailing dot.
+							// PT locale often returns 'seg.' etc.; normalize to 'Seg'/'Ter'... without dot.
+							let weekdayShort = '';
+							if (locale === 'pt') {
+								const ptShort = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+								weekdayShort = ptShort[d.getDay()];
+							} else {
+								weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, '');
+								if (weekdayShort.length > 3) weekdayShort = weekdayShort.slice(0,3);
+							}
 							const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
 
 							const el = document.createElement('div');
@@ -537,7 +575,102 @@
 							daysContainer.appendChild(el);
 						}
 					} catch (err) { console.error('renderWeekDots failed', err); }
-				}
+						}
+
+						// Render the streak banner (consecutive days ending today)
+						async function renderStreakBanner(){
+							try{
+								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+								const banner = document.getElementById('streak-banner');
+								if (!banner) return;
+								const numEl = document.getElementById('streak-number');
+								const iconImg = document.getElementById('streak-icon-img');
+								const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+								function dateToYMD(d){ const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+								let streak = 0;
+								const today = new Date(); today.setHours(0,0,0,0);
+								const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+								let todayCount = 0;
+								let yesterdayCount = 0;
+								try{ todayCount = await db.history.where('date').equals(dateToYMD(today)).count(); } catch(e){ todayCount = 0; }
+								try{ yesterdayCount = await db.history.where('date').equals(dateToYMD(yesterday)).count(); } catch(e){ yesterdayCount = 0; }
+								// Determine anchor day: prefer today if there's an entry, otherwise keep streak valid through today if yesterday has an entry.
+								let anchor = null;
+								if (todayCount > 0) anchor = new Date(today);
+								else if (yesterdayCount > 0) anchor = new Date(yesterday);
+								if (!anchor) {
+									// No active streak
+									streak = 0;
+									// show the missed-day icon instead of the inline ZZZ SVG
+									iconImg.src = basePath + 'icons/day-missed.svg';
+									iconImg.alt = 'no streak';
+								} else {
+									// Count consecutive days backwards from the anchor (today or yesterday)
+									streak = 0;
+									let cursor = new Date(anchor);
+									while (true) {
+										let c = 0;
+										try{ c = await db.history.where('date').equals(dateToYMD(cursor)).count(); } catch(e){ c = 0; }
+										if (c > 0) { streak++; cursor.setDate(cursor.getDate()-1); } else break;
+									}
+									iconImg.src = basePath + 'icons/day-done.svg';
+									iconImg.alt = 'streak active';
+									// (Visible caption removed — only the counter and icon are shown)
+								}
+								numEl.textContent = String(streak);
+								// Ensure the streak title is translated (or has a sensible default)
+								const titleEl = banner.querySelector('[data-i18n="streak_title"]');
+								if (titleEl) {
+									if (typeof GN_I18N !== 'undefined' && GN_I18N.t) titleEl.textContent = GN_I18N.t('streak_title') || 'Your streak';
+									else titleEl.textContent = 'Your streak';
+								}
+								// Pluralization: show singular for 1, plural otherwise (localized when available)
+								const daysEl = banner.querySelector('.streak-days');
+								if (daysEl) {
+									try {
+										if (typeof GN_I18N !== 'undefined' && GN_I18N.t) {
+											daysEl.textContent = (streak === 1) ? (GN_I18N.t('day_singular') || 'DAY') : (GN_I18N.t('day_plural') || 'DAYS');
+										} else {
+											daysEl.textContent = (streak === 1) ? 'DAY' : 'DAYS';
+										}
+									} catch (e) { daysEl.textContent = (streak === 1) ? 'DAY' : 'DAYS'; }
+								}
+								// Compute best (record) consecutive streak from history and show it
+								const recordEl = document.getElementById('streak-record');
+								if (recordEl) {
+									try {
+										let best = 0;
+										try {
+											const items = await db.history.toArray();
+											const uniq = Array.from(new Set(items.map(it => it.date))).filter(Boolean).map(s => {
+												const d = new Date(s);
+												d.setHours(0,0,0,0);
+												return d.getTime();
+											}).sort((a,b) => a - b);
+											if (uniq.length > 0) {
+												let run = 1;
+												for (let i = 1; i < uniq.length; i++) {
+													const diffDays = Math.round((uniq[i] - uniq[i-1]) / (24*3600*1000));
+													if (diffDays === 1) run++;
+													else run = 1;
+													best = Math.max(best, run);
+												}
+												best = Math.max(best, run);
+											}
+										} catch(e) { best = 0; }
+										if (best > 0) {
+											const recLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('best_record') || 'Best Record') : 'Best Record';
+											const dayLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? ((best === 1) ? (GN_I18N.t('day_singular') || 'DAY') : (GN_I18N.t('day_plural') || 'DAYS')) : ((best === 1) ? 'DAY' : 'DAYS');
+											recordEl.textContent = `${recLabel}: ${best} ${dayLabel}`;
+											recordEl.style.display = 'block';
+										} else {
+											recordEl.style.display = 'none';
+										}
+									} catch (e) { recordEl.style.display = 'none'; }
+								}
+								banner.style.display = 'flex';
+							} catch(err){ console.error('renderStreakBanner failed', err); }
+						}
 	</script>
 	<script>
 		if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
