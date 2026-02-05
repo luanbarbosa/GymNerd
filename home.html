@@ -15,8 +15,7 @@
 	<link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120.png">
 	<link rel="mask-icon" href="icons/safari-pinned-tab.svg" color="#2563eb">
 	<link rel="manifest" href="./manifest.json">
-	<link href="https://fonts.googleapis.com" rel="stylesheet">
-	<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 	<script>
 		window.EXCHANGE_TOKEN_URL = '';
 	</script>
@@ -31,7 +30,82 @@
 
 				if (typeof DriveStorage === 'undefined') {
 					console.warn('[StartupWatchdog] DriveStorage not available');
-					try { localStorage.removeItem('needs_initial_download'); } catch(e){}
+					}
+
+				// Render the most-frequent exercise TYPE over a selected range
+				async function renderFavoriteType(range = 'year') {
+					try {
+						if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+						const widget = document.getElementById('fav-type-widget');
+						if (!widget) return;
+						// hide widget while we compute to avoid transient renders
+						try { widget.style.display = 'none'; } catch(e){}
+						let items = await db.history.toArray();
+						if (!items || items.length === 0) {
+							widget.style.display = 'none';
+							return;
+						}
+						const now = new Date(); now.setHours(0,0,0,0);
+						if (range === 'year') {
+							const start = new Date(now);
+							start.setFullYear(start.getFullYear() - 1);
+							const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+							items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
+							try { console.debug('[renderFavoriteType-startup] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+							try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'startup-type', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+						} else if (range === 'month') {
+							const start = new Date(now.getFullYear(), now.getMonth(), 1);
+							const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+							items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
+							try { console.debug('[renderFavoriteType-startup] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+							try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'startup-type', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+						}
+						if (!items || items.length === 0) {
+							// try broader range (month -> year -> all) before showing empty message
+							try {
+								const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
+								if (broader) {
+									const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
+									try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
+									try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
+									return;
+								}
+							} catch(e){}
+							// show localized empty message instead of hiding widget
+							try { widget.style.display = 'flex'; } catch(e){}
+							try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+							try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
+							try { widget.style.display = 'flex'; } catch(e){}
+							return;
+						}
+						const counts = {};
+						for (const it of items) {
+							let ex = null;
+							try {
+								if (it.isCustom === true) ex = await db.custom_exercises.get(it.exerciseId);
+								else if (it.isCustom === false) ex = await db.catalog_exercises.get(it.exerciseId);
+								else {
+									ex = await db.catalog_exercises.get(it.exerciseId);
+									if (!ex) ex = await db.custom_exercises.get(it.exerciseId);
+								}
+							} catch (e) { ex = null; }
+							const type = (ex && ex.type) ? ex.type : 'other';
+							counts[type] = (counts[type] || 0) + 1;
+						}
+						let bestType = null, bestCount = 0;
+						for (const k of Object.keys(counts)) {
+							if (counts[k] > bestCount) { bestCount = counts[k]; bestType = k; }
+						}
+						if (!bestType) { widget.style.display = 'none'; return; }
+						// Localize label if helper available
+						let label = bestType;
+						try { if (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') label = GN_I18N.localizeExerciseType(bestType); else label = bestType.charAt(0).toUpperCase() + bestType.slice(1); } catch(e){}
+						try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = label; } catch(e){}
+						try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ` (${bestCount}x)`; } catch(e){}
+						try { widget.style.display = 'flex'; } catch(e){}
+					} catch (err) { console.error('renderFavoriteType failed', err); }
+				}
+
 					try { if (window.hideLoading) window.hideLoading(); } catch(e){}
 					return;
 				}
@@ -91,7 +165,22 @@
 
 							if (db.history) {
 								await db.history.clear();
-								if (data.history) await db.history.bulkAdd(data.history);
+								if (data.history) {
+									const normalized = data.history.map(h => {
+										const copy = { ...h };
+										if (copy.sessionId === undefined || copy.sessionId === null) {
+											let sid = null;
+											if (typeof copy.date === 'string') {
+												const parsed = Date.parse(copy.date);
+												if (!isNaN(parsed)) sid = parsed;
+											} else if (copy.date instanceof Date) sid = copy.date.getTime();
+											if (sid === null || isNaN(sid)) sid = Date.now();
+											copy.sessionId = sid;
+										}
+										return copy;
+									});
+									await db.history.bulkAdd(normalized);
+								}
 							}
 
 							if (db.weights) {
@@ -223,14 +312,15 @@
 			}
 		})();
 	</script>
+	<link rel="stylesheet" href="styles/app-titles.css">
 	<style>
-		:root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #00e676; --danger: #ff5252; }
+		:root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #101729; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #00e676; --danger: #ff5252; }
 		body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
 		@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-		.main-content { padding: 20px; display: none; margin-top: 12px; }
-		h1 { text-align: center; font-weight: 900; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: italic; }
-		.app-title-compact { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; color: var(--bg); font-style: italic; white-space:nowrap; overflow:visible; }
+		.main-content { padding: 0; display: none; margin-top: 12px; }
+		h1 { text-align: center; font-weight: 600; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: normal; }
+		
         
 		.menu-grid { display: grid; gap: 15px; margin-top: 0px; }
 		/* Top card that holds the topbar + user info (scrolls with page) */
@@ -250,7 +340,7 @@
 			z-index: 1100;
 			pointer-events: none;
 		}
-		.top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:4px; }
+		.top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
 		.top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; }
 		/* Ensure back/settings icons (and back links) are vertically centered */
 		.top-card .back-btn, .top-card .back-btn .material-symbols-outlined, .top-card a#topbar-settings { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
@@ -260,12 +350,12 @@
 		.top-card a#topbar-settings { color: var(--bg) !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
 		.top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:1 !important; display:block; stroke: var(--bg) !important; fill: none !important; filter: none !important; }
 		.top-card a#topbar-settings svg * { stroke: var(--bg) !important; fill: none !important; stroke-opacity:1 !important; fill-opacity:0 !important; }
-		.user-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin:8px 0 12px; }
-		.user-avatar { width:96px; height:96px; border-radius:50%; object-fit:cover; border:3px solid rgba(37,99,235,0.14); box-shadow: 0 8px 20px rgba(37,99,235,0.12), 0 1px 0 rgba(255,255,255,0.04) inset; }
+		.user-card { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; gap:12px; margin:8px 0 12px; width:100%; max-width:460px; }
+		.user-avatar { width:96px; height:96px; border-radius:12px; object-fit:cover; border:3px solid rgba(37,99,235,0.14); box-shadow: 0 8px 20px rgba(37,99,235,0.12), 0 1px 0 rgba(255,255,255,0.04) inset; }
 		.user-line { display:flex; align-items:center; justify-content:center; gap:10px; }
 		/* Same (larger) font-size for both greeting and name, styles differ */
-		.user-greeting { font-weight:600; font-size:2.2rem; color: var(--text-dim); }
-		.user-name { font-weight:900; font-size:2.2rem; letter-spacing:-0.6px; text-align:center; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(37,99,235,0.32)); }
+		.user-greeting { font-weight:600; font-size:1.05rem; color: var(--text-dim); margin:0; line-height:1; }
+		.user-name { font-weight:900; font-size:2.8rem; letter-spacing:-0.6px; text-align:left; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(37,99,235,0.32)); margin:0; line-height:1; }
 		/* motivational-text removed */
 		.nav-card { background: var(--card); padding: 24px; border-radius: 16px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.05); }
 		.nav-card:active { transform: scale(0.97); }
@@ -280,8 +370,8 @@
 		.export-btn { background: var(--success); color: white; }
 		.import-btn { background: #6366f1; color: white; }
 		label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
-		/* Week dots (GitHub-style) */
-		.week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); max-width: 460px; }
+			/* Week dots (GitHub-style) */
+			.week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: transparent; max-width: 460px; }
 		.week-dots .days { display:grid; grid-template-columns: repeat(7, 1fr); gap: clamp(6px, 1.6vw, 12px); align-items:center; width:100%; }
 		.week-dots .day { display:flex; flex-direction:column; align-items:center; gap:6px; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); }
 		.week-dots .dot { width: clamp(14px, 5.5vw, 32px); height: clamp(14px, 5.5vw, 32px); box-shadow: none; border: none; display:flex; align-items:center; justify-content:center; }
@@ -292,9 +382,52 @@
 		/* Demo mode banner */
 		#demo-banner { display: none; margin: 4px 20px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, #e6f0ff, #dbeafe); color: #0f172a; font-weight: 700; text-align: center; box-shadow: none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
 		#demo-banner small { display:block; font-weight:500; color: #334155; opacity:0.9; font-size:0.75rem; margin-top:1px; }
+
+			/* Streak banner (structure only; colors intentionally neutral)
+			   Fill the available content width and respect the page padding
+			*/
+			.streak-banner { display:flex; flex-direction:column; width:100%; max-width:none; margin:12px 0; box-sizing:border-box; background: var(--card); color: var(--text); padding: 14px; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,6,23,0.06); align-items:flex-start; }
+			.streak-banner .streak-inner { display:flex; gap:12px; align-items:center; width:100%; }
+			.streak-banner .week-dots { margin:0; align-self:center; width:100%; }
+			.streak-banner .streak-icon-wrap { width:72px; height:72px; border-radius:12px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.02); }
+			.streak-banner .streak-icon-wrap img { width:56px; height:56px; object-fit:contain; display:block; }
+			.streak-banner .streak-body { display:flex; flex-direction:column; justify-content:center; gap:6px; }
+			.streak-banner .streak-count { font-weight:900; font-size:2.2rem; line-height:1; display:flex; align-items:baseline; gap:8px; }
+			.streak-banner .streak-days { font-size:1rem; font-weight:800; opacity:0.9; }
+			.streak-banner .streak-text { color: var(--text-dim); font-weight:700; }
+			.streak-banner .streak-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-bottom:4px; }
+			/* Make streak-title available globally so other widgets can match the same style */
+			.streak-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-bottom:4px; }
+			.streak-banner .streak-record { font-size:0.85rem; color: var(--text-dim); font-weight:400; font-style:italic; margin-top:4px; opacity:0.9; }
+			.streak-banner .week-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-top:18px; margin-bottom:4px; }
+			/* Favorite type widget tweaks: match streak-banner spacing and full width */
+			#fav-type-widget { width:100%; max-width:none; margin:12px 0; box-sizing:border-box; padding:14px; }
+			#fav-type-widget select { background: transparent; color: var(--text); }
+
+			/* Grid layout for favorite type + exercise */
+			.fav-grid { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; width:100%; }
+			.fav-type-cell { display:flex; flex-direction:column; gap:8px; }
+			.fav-ex-cell { display:flex; flex-direction:column; gap:8px; }
+			.fav-ex-row { display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+			#fav-ex-preview { width:100%; height:auto; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.02); display:block; }
+			#fav-ex-img { width:100%; height:100%; object-fit:cover; display:block; }
+			#fav-ex-initial { font-weight:800; color:var(--text-dim); }
 	</style>
 </head>
 <body>
+
+	<script>
+		// If this physical page is loaded directly (e.g. /home.html), redirect
+		// to the SPA root with a hash so the SPA handles navigation: /#home.
+		(function(){
+			try {
+				const name = (location.pathname || '').split('/').pop() || '';
+				if (name === 'home.html') {
+					try { location.replace('/index.html?start=home'); } catch(e) { location.href = '/index.html?start=home'; }
+				}
+			} catch (e) {}
+		})();
+	</script>
 
 	<script>
 		// Keep the main UI hidden until auth + initial sync complete
@@ -315,45 +448,83 @@
 		};
 	</script>
 
-	<div class="top-card">
-		<div class="topbar">
-			<div id="topbar-title">
-				<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
-			</div>
-			<div id="topbar-actions">
-				<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;margin-right:8px;">
-					<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300; font-size:20px; line-height:1;">monitor_weight</span>
-				</a>
-				<a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
-					<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300; font-size:20px; line-height:1;">settings</span>
-				</a>
-			</div>
-		</div>
-		<div class="top-card-inner">
-			<div id="home-user-main"></div>
-			<!-- Demo mode banner (shown when no session token present) -->
-			<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
-				Demo Mode — you are using the app without signing in. Your data will be stored locally only.
-				<small>Sign in to enable cloud sync and restore from Google Drive.</small>
-			</div>
-		</div>
-	</div>
-
-	<div style="padding: 0 20px;">
-		<div id="week-dots" class="week-dots" aria-hidden="false"></div>
-	</div>
-
 	<div class="main-content">
 
-		<button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
-			<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
-		</button>
+		<div class="top-card">
+			<div class="topbar">
+				<div id="topbar-title">
+					<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
+				</div>
+				<div id="topbar-actions">
+					<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;margin-right:8px;">
+						<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">square_foot</span>
+					</a>
+					<a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
+						<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">settings</span>
+					</a>
+				</div>
+			</div>
+			<div class="top-card-inner">
+				<div id="home-user-main"></div>
+				<!-- Demo mode banner (shown when no session token present) -->
+				<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
+					Demo Mode — you are using the app without signing in. Your data will be stored locally only.
+					<small>Sign in to enable cloud sync and restore from Google Drive.</small>
+				</div>
+			</div>
+		</div>
 
-		<div class="menu-grid">
-			<a href="livesession.html" class="nav-card" style="background: var(--primary-grad); color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);"><span data-i18n="menu_start_routine">🚀 Start Routine</span><span>→</span></a>
-			<a href="routines.html" class="nav-card"><span data-i18n="menu_routines">🏋 Routines</span><span>→</span></a>
-			<a href="history.html" class="nav-card"><span data-i18n="menu_history">📋 History</span><span>→</span></a>
-			<a href="statistics.html" class="nav-card"><span data-i18n="menu_statistics">📊 Statistics</span><span>→</span></a>
+		<div id="body">
+			<div style="padding: 0 20px;">
+				<!-- Streak banner: shows current consecutive-day streak. Ordered as column per design -->
+				<div id="streak-banner" class="streak-banner" role="region" aria-live="polite" style="display:none;">
+					<div class="streak-title" data-i18n="streak_title">Your streak</div>
+					<div class="streak-inner">
+						<div class="streak-icon-wrap">
+							<img id="streak-icon-img" src="" alt="streak icon" />
+						</div>
+						<div class="streak-body">
+							<div class="streak-count"><span id="streak-number">0</span> <span class="streak-days">DAYS</span></div>
+							<div id="streak-record" class="streak-record" style="display:none;"></div>
+						</div>
+					</div>
+					<div class="week-title" data-i18n="your_week">Your week</div>
+					<div id="week-dots" class="week-dots" aria-hidden="false"></div>
+				</div>
+
+				<!-- Favorite exercise widget -->
+				<!-- Favorite exercise preview integrated into favorite-type widget below -->
+
+				<!-- Favorite exercise TYPE widget (type first, exercise below) -->
+				<div id="fav-type-widget" class="nav-card" style="display:none; width:100%; margin:12px 0; padding:14px; max-width:none; box-sizing:border-box; position:relative;">
+					<!-- Range selector removed — widget always shows Year range -->
+					<div class="fav-grid">
+						<div class="fav-ex-cell">
+							<div id="fav-ex-label" class="streak-title" data-i18n="favorite_exercise">Favorite exercise</div>
+							<div class="fav-ex-row">
+								<div id="fav-ex-preview">
+									<img id="fav-ex-img" src="" alt="" />
+									<span id="fav-ex-initial">—</span>
+								</div>
+								<div id="fav-ex-name-and-count" style="color:var(--text); font-weight:700; word-break:break-word; width:100%;">
+									<span id="fav-ex-name">—</span>
+									<span id="fav-ex-count" class="streak-record"> </span>
+								</div>
+							</div>
+						</div>
+						<div class="fav-type-cell">
+							<div id="fav-type-label" class="streak-title" data-i18n="most_frequent_type">Most frequent type</div>
+							<div style="display:flex; align-items:center; gap:8px;">
+								<div id="fav-type-name" style="color:var(--text); font-weight:700;">—</div>
+								<div id="fav-type-count" class="streak-record"> </div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<button id="sync-pending-btn" class="nav-card" style="display:none; width:100%; background: #f59e0b; color: white; margin-bottom: 15px; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
+					<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
+				</button>
 		</div>
 	</div>
 
@@ -401,16 +572,38 @@
 			const fallbackAvatar = origin ? (origin + basePath + 'icons/icon-512.svg') : 'icons/icon-512.svg';
 			const effectiveAvatar = (window && window.DEMO_MODE) ? fallbackAvatar : (avatar || fallbackAvatar);
 			if (window && window.DEMO_MODE) try { console.info('[DemoMode] using demo avatar', fallbackAvatar); } catch(e){}
-			const greeting = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('greeting_hi') : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'Olá' : 'Hi');
+			// Time-of-day localized greeting
+			(function(){
+				try {
+					const hour = (new Date()).getHours();
+					let key = 'greeting_morning';
+					if (hour >= 12 && hour < 18) key = 'greeting_afternoon';
+					else if (hour >= 18 && hour < 22) key = 'greeting_evening';
+					else if (hour >= 22 || hour < 5) key = 'greeting_evening';
+					const defaultMap = {
+						morning: 'Good morning',
+						afternoon: 'Good afternoon',
+						evening: 'Good evening'
+					};
+					if (typeof GN_I18N !== 'undefined' && GN_I18N.t) {
+						window.__computed_greeting = GN_I18N.t(key) || defaultMap[key.split('_')[1]] || defaultMap.morning;
+					} else {
+						// Fallback by locale
+						const isPt = (navigator.language || '').toLowerCase().startsWith('pt');
+						if (key === 'greeting_morning') window.__computed_greeting = isPt ? 'Bom dia' : 'Good morning';
+						else if (key === 'greeting_afternoon') window.__computed_greeting = isPt ? 'Boa tarde' : 'Good afternoon';
+						else window.__computed_greeting = isPt ? 'Boa noite' : 'Good evening';
+					}
+				} catch (e) { window.__computed_greeting = 'Hi'; }
+			})();
+			const greeting = window.__computed_greeting || 'Hi';
 
 			container.innerHTML = `
 				<div class="user-card">
-					<div class="user-line" style="flex-direction:column; gap:8px;">
-						<img src="${effectiveAvatar}" alt="avatar" class="user-avatar" onerror="this.onerror=null;this.src='${fallbackAvatar}'" />
-						<div style="display:flex; flex-direction:row; align-items:center; gap:8px;">
-							<div class="user-greeting">${greeting}</div>
-							<div class="user-name">${firstName || 'GymNerd'}</div>
-						</div>
+					<img src="${effectiveAvatar}" alt="avatar" class="user-avatar" onerror="this.onerror=null;this.src='${fallbackAvatar}'" />
+					<div style="display:flex; flex-direction:column; align-items:flex-start; gap:0;">
+						<div class="user-greeting">${greeting}</div>
+						<div class="user-name">${firstName || (window.DEMO_MODE ? 'Maria' : 'GymNerd')}</div>
 					</div>
 				</div>
 			`;
@@ -419,7 +612,7 @@
 		try { renderCompactApp(); } catch (e) {}
 		try { renderMainUser(); } catch (e) {}
 		try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
-		try { renderWeekDots && renderWeekDots(); } catch(e){}
+				try { if (renderWeekDots) { renderWeekDots().then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch(e){} try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){} }); } } catch(e){}
         
 		function updatePendingButtonVisibility() {
 			const btn = document.getElementById('sync-pending-btn');
@@ -456,7 +649,9 @@
 						const today = new Date();
 						const start = new Date(today);
 						start.setHours(0,0,0,0);
-						start.setDate(start.getDate() - start.getDay());
+						// shift so week starts on Monday instead of Sunday
+						const daysSinceMonday = (start.getDay() + 6) % 7; // 0=Monday, ..., 6=Sunday
+						start.setDate(start.getDate() - daysSinceMonday);
 
 						for (let i = 0; i < 7; i++) {
 							const d = new Date(start);
@@ -470,7 +665,16 @@
 							try { count = await db.history.where('date').equals(dateStr).count(); } catch (e) { count = 0; }
 
 							const level = (count === 0) ? 0 : Math.min(4, 1 + Math.floor(Math.log2(count)));
-							const weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' });
+							// Ensure short weekday labels are 3 letters with no trailing dot.
+							// PT locale often returns 'seg.' etc.; normalize to 'Seg'/'Ter'... without dot.
+							let weekdayShort = '';
+							if (locale === 'pt') {
+								const ptShort = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+								weekdayShort = ptShort[d.getDay()];
+							} else {
+								weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, '');
+								if (weekdayShort.length > 3) weekdayShort = weekdayShort.slice(0,3);
+							}
 							const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
 
 							const el = document.createElement('div');
@@ -503,7 +707,333 @@
 							daysContainer.appendChild(el);
 						}
 					} catch (err) { console.error('renderWeekDots failed', err); }
-				}
+						}
+
+						// Render the streak banner (consecutive days ending today)
+						async function renderStreakBanner(){
+							try{
+								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+								const banner = document.getElementById('streak-banner');
+								if (!banner) return;
+								const numEl = document.getElementById('streak-number');
+								const iconImg = document.getElementById('streak-icon-img');
+								const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+								function dateToYMD(d){ const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+								let streak = 0;
+								const today = new Date(); today.setHours(0,0,0,0);
+								const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+								let todayCount = 0;
+								let yesterdayCount = 0;
+								try{ todayCount = await db.history.where('date').equals(dateToYMD(today)).count(); } catch(e){ todayCount = 0; }
+								try{ yesterdayCount = await db.history.where('date').equals(dateToYMD(yesterday)).count(); } catch(e){ yesterdayCount = 0; }
+								// Determine anchor day: prefer today if there's an entry, otherwise keep streak valid through today if yesterday has an entry.
+								let anchor = null;
+								if (todayCount > 0) anchor = new Date(today);
+								else if (yesterdayCount > 0) anchor = new Date(yesterday);
+								if (!anchor) {
+									// No active streak
+									streak = 0;
+									// show the missed-day icon instead of the inline ZZZ SVG
+									iconImg.src = basePath + 'icons/day-missed.svg';
+									iconImg.alt = 'no streak';
+								} else {
+									// Count consecutive days backwards from the anchor (today or yesterday)
+									streak = 0;
+									let cursor = new Date(anchor);
+									while (true) {
+										let c = 0;
+										try{ c = await db.history.where('date').equals(dateToYMD(cursor)).count(); } catch(e){ c = 0; }
+										if (c > 0) { streak++; cursor.setDate(cursor.getDate()-1); } else break;
+									}
+									iconImg.src = basePath + 'icons/day-done.svg';
+									iconImg.alt = 'streak active';
+									// (Visible caption removed — only the counter and icon are shown)
+								}
+								numEl.textContent = String(streak);
+								// Ensure the streak title is translated (or has a sensible default)
+								const titleEl = banner.querySelector('[data-i18n="streak_title"]');
+								if (titleEl) {
+									if (typeof GN_I18N !== 'undefined' && GN_I18N.t) titleEl.textContent = GN_I18N.t('streak_title') || 'Your streak';
+									else titleEl.textContent = 'Your streak';
+								}
+								// Pluralization: show singular for 1, plural otherwise (localized when available)
+								const daysEl = banner.querySelector('.streak-days');
+								if (daysEl) {
+									try {
+										if (typeof GN_I18N !== 'undefined' && GN_I18N.t) {
+											daysEl.textContent = (streak === 1) ? (GN_I18N.t('day_singular') || 'DAY') : (GN_I18N.t('day_plural') || 'DAYS');
+										} else {
+											daysEl.textContent = (streak === 1) ? 'DAY' : 'DAYS';
+										}
+									} catch (e) { daysEl.textContent = (streak === 1) ? 'DAY' : 'DAYS'; }
+								}
+								// Compute best (record) consecutive streak from history and show it
+								const recordEl = document.getElementById('streak-record');
+								if (recordEl) {
+									try {
+										let best = 0;
+										try {
+											const items = await db.history.toArray();
+											const uniq = Array.from(new Set(items.map(it => it.date))).filter(Boolean).map(s => {
+												const d = new Date(s);
+												d.setHours(0,0,0,0);
+												return d.getTime();
+											}).sort((a,b) => a - b);
+											if (uniq.length > 0) {
+												let run = 1;
+												for (let i = 1; i < uniq.length; i++) {
+													const diffDays = Math.round((uniq[i] - uniq[i-1]) / (24*3600*1000));
+													if (diffDays === 1) run++;
+													else run = 1;
+													best = Math.max(best, run);
+												}
+												best = Math.max(best, run);
+											}
+										} catch(e) { best = 0; }
+										if (best > 0) {
+											const recLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('best_record') || 'Best Record') : 'Best Record';
+											const dayLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? ((best === 1) ? (GN_I18N.t('day_singular') || 'DAY') : (GN_I18N.t('day_plural') || 'DAYS')) : ((best === 1) ? 'DAY' : 'DAYS');
+											recordEl.textContent = `${recLabel}: ${best} ${dayLabel}`;
+											recordEl.style.display = 'block';
+										} else {
+											recordEl.style.display = 'none';
+										}
+									} catch (e) { recordEl.style.display = 'none'; }
+								}
+								banner.style.display = 'flex';
+							} catch(err){ console.error('renderStreakBanner failed', err); }
+						}
+
+						// Global favorite-type renderer (ensures function is available outside any inner scope)
+						async function renderFavoriteType(range = 'year') {
+							try {
+								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+								const widget = document.getElementById('fav-type-widget');
+								if (!widget) return;
+								let items = await db.history.toArray();
+								if (!items || items.length === 0) {
+									// try broader range before showing empty message
+									try {
+										const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
+										if (broader) {
+											const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
+											try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
+											try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
+											return;
+										}
+									} catch(e){}
+									try { widget.style.display = 'flex'; } catch(e){}
+									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
+									return;
+								}
+								const now = new Date(); now.setHours(0,0,0,0);
+								if (range === 'year') {
+									const start = new Date(now);
+									start.setFullYear(start.getFullYear() - 1);
+									items = items.filter(it => { const d = new Date(it.date); d.setHours(0,0,0,0); return d >= start; });
+									try { console.debug('[renderFavoriteType-global] range=', range, 'start=', start.toISOString(), 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+								} else if (range === 'month') {
+									const start = new Date(now.getFullYear(), now.getMonth(), 1);
+									items = items.filter(it => { const d = new Date(it.date); d.setHours(0,0,0,0); return d >= start; });
+									try { console.debug('[renderFavoriteType-global] range=', range, 'start=', start.toISOString(), 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+								}
+								if (!items || items.length === 0) {
+									try { widget.style.display = 'flex'; } catch(e){}
+									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
+									return;
+								}
+								const counts = {};
+								for (const it of items) {
+									let ex = null;
+									try {
+										if (it.isCustom === true) ex = await db.custom_exercises.get(it.exerciseId);
+										else if (it.isCustom === false) ex = await db.catalog_exercises.get(it.exerciseId);
+										else {
+											ex = await db.catalog_exercises.get(it.exerciseId);
+											if (!ex) ex = await db.custom_exercises.get(it.exerciseId);
+										}
+									} catch (e) { ex = null; }
+									const type = (ex && ex.type) ? ex.type : 'other';
+									counts[type] = (counts[type] || 0) + 1;
+								}
+								let bestType = null, bestCount = 0;
+								for (const k of Object.keys(counts)) {
+									if (counts[k] > bestCount) { bestCount = counts[k]; bestType = k; }
+								}
+								if (!bestType) {
+									try { widget.style.display = 'flex'; } catch(e){}
+									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
+									return;
+								}
+								let label = bestType;
+								try { if (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') label = GN_I18N.localizeExerciseType(bestType); else label = bestType.charAt(0).toUpperCase() + bestType.slice(1); } catch(e){}
+								try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = label; } catch(e){}
+								try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ` (${bestCount}x)`; } catch(e){}
+								widget.style.display = 'flex';
+							} catch (err) { console.error('renderFavoriteType failed', err); }
+						}
+
+						// range selector removed — no runtime listener required
+
+					// Global favorite-exercise renderer (uses the same parent widget as favorite-type)
+					async function renderFavoriteExercise(range = 'year') {
+						try {
+							if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+							const parent = document.getElementById('fav-type-widget');
+							if (!parent) return;
+							let items = await db.history.toArray();
+							if (!items || items.length === 0) {
+								// try broader range before showing empty message
+								try {
+									const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
+									if (broader) {
+										const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
+										try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
+										try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
+										return;
+									}
+								} catch(e){}
+								try { parent.style.display = 'flex'; } catch(e){}
+								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
+								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
+								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
+								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
+								try { parent.style.display = 'flex'; } catch(e){}
+								return;
+							}
+							const now = new Date(); now.setHours(0,0,0,0);
+							if (range === 'year') {
+								const start = new Date(now);
+								start.setFullYear(start.getFullYear() - 1);
+								const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+								items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
+								try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+								try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+							} else if (range === 'month') {
+								const start = new Date(now.getFullYear(), now.getMonth(), 1);
+								const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+								items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
+								try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
+								try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+							}
+							if (!items || items.length === 0) {
+								try { parent.style.display = 'flex'; } catch(e){}
+								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
+								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
+								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
+								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
+								return;
+							}
+							const counts = {};
+							const totals = {}; // totals[key] = { reps: number, weight: number }
+							function addTotalsForKey(key, repsToAdd, weightToAdd) {
+								if (!totals[key]) totals[key] = { reps: 0, weight: 0 };
+								totals[key].reps += repsToAdd;
+								totals[key].weight += weightToAdd;
+							}
+							for (const it of items) {
+								const key = (it.isCustom === true ? 'c' : 'k') + '|' + it.exerciseId;
+								counts[key] = (counts[key] || 0) + 1;
+								// attempt to extract reps/weight information from the history entry
+								try {
+									let entryReps = 0, entryWeight = 0;
+									if (Array.isArray(it.sets) && it.sets.length > 0) {
+										for (const s of it.sets) {
+											// s may be {sets, reps, weight} or {reps, weight}
+											const setsCount = (s && s.sets !== undefined && s.sets !== '') ? Number(s.sets) : (s && (s.reps !== undefined || s.weight !== undefined) ? 1 : 0);
+											const repsPer = (s && s.reps !== undefined && s.reps !== '') ? Number(s.reps) : 0;
+											const weightPer = (s && s.weight !== undefined && s.weight !== '') ? Number(s.weight) : 0;
+											const repsDone = (isFinite(setsCount) ? setsCount : 0) * (isFinite(repsPer) ? repsPer : 0);
+											entryReps += repsDone;
+											entryWeight += repsDone * (isFinite(weightPer) ? weightPer : 0);
+										}
+									} else if (it.reps !== undefined || it.weight !== undefined) {
+										const reps = (it.reps !== undefined && it.reps !== '') ? Number(it.reps) : 0;
+										const weight = (it.weight !== undefined && it.weight !== '') ? Number(it.weight) : 0;
+										entryReps += isFinite(reps) ? reps : 0;
+										entryWeight += (isFinite(reps) ? reps : 0) * (isFinite(weight) ? weight : 0);
+									}
+									if (entryReps > 0 || entryWeight > 0) addTotalsForKey(key, entryReps, entryWeight);
+								} catch (e) { /* ignore parse errors */ }
+							}
+							let bestKey = null, bestCount = 0, bestAvg = 0;
+							for (const k of Object.keys(counts)) {
+								const c = counts[k] || 0;
+								if (c > bestCount) {
+									bestCount = c; bestKey = k; bestAvg = ((totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0);
+								} else if (c === bestCount) {
+									// tie-breaker: pick the one with higher average weight per rep
+									const avg = (totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0;
+									if (avg > bestAvg) {
+										bestKey = k; bestAvg = avg;
+									}
+								}
+							}
+							if (!bestKey) {
+								try { parent.style.display = 'flex'; } catch(e){}
+								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
+								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
+								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
+								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
+								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
+								return;
+							}
+							const parts = bestKey.split('|');
+							const isCustom = parts[0] === 'c';
+							const exId = parts[1];
+							let ex = null;
+							try {
+								if (isCustom) ex = await db.custom_exercises.get(Number(exId));
+								else ex = await db.catalog_exercises.get(Number(exId));
+								if (!ex && !isCustom) ex = await db.custom_exercises.get(Number(exId));
+							} catch(e) { ex = null; }
+							if (!ex) { parent.style.display = 'none'; return; }
+							// Determine localized name
+							let lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : ((navigator.language||'').toLowerCase().startsWith('pt') ? 'pt' : 'en');
+							let name = '';
+							if (lang === 'pt') {
+								name = ex.namePT || ex.name_pt || ex.ptName || ex.name || '';
+							} else {
+								name = ex.name || ex.namePT || ex.name_pt || ex.ptName || '';
+							}
+							if (!name) name = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('unknown_exercise') : 'Unknown Exercise';
+							const nameEl = document.getElementById('fav-ex-name');
+							if (nameEl) nameEl.textContent = name;
+							try {
+								const exCountEl = document.getElementById('fav-ex-count');
+								if (exCountEl) exCountEl.textContent = `\u00A0(${bestCount}x)`;
+							} catch(e) {}
+							// Ensure preview container is visible, then try to show image preview if available
+							const previewEl = document.getElementById('fav-ex-preview');
+							if (previewEl) previewEl.style.display = 'flex';
+							const imgEl = document.getElementById('fav-ex-img');
+							const initEl = document.getElementById('fav-ex-initial');
+							let shownImage = false;
+							try {
+								if (ex.imageId && imgEl && db.catalog_images) {
+									const img = await db.catalog_images.get(Number(ex.imageId));
+									if (img && img.data) {
+										imgEl.src = img.data;
+										imgEl.style.display = 'block';
+										if (initEl) initEl.style.display = 'none';
+										shownImage = true;
+									}
+								}
+							} catch(e) { shownImage = false; }
+							if (!shownImage) {
+								if (imgEl) imgEl.style.display = 'none';
+								if (initEl) { initEl.style.display = 'block'; initEl.textContent = name ? name.charAt(0).toUpperCase() : '—'; }
+							}
+							try { parent.style.display = 'flex'; } catch(e){}
+						} catch (err) { console.error('renderFavoriteExercise failed', err); }
+					}
+					// Ensure the range selector calls both renderers (single robust listener)
+					// range selector removed; no listener required
 	</script>
 	<script>
 		if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
@@ -512,5 +1042,45 @@
 			console.warn('Service worker registration skipped: insecure origin or file protocol');
 		}
 	</script>
+
+		<script>
+			// Extra init to ensure favorite renderers run and to surface debug logs reliably
+			document.addEventListener('DOMContentLoaded', () => {
+				// Helper: update the on-page favorites debug panel
+				function updateFavDebug(obj) {
+					try {
+						const el = document.getElementById('fav-debug-content');
+						if (!el) return;
+						const parts = [];
+						if (obj && obj.renderer) parts.push('renderer: ' + obj.renderer);
+						if (obj && obj.range) parts.push('range: ' + obj.range);
+						if (obj && obj.startYMD) parts.push('startYMD: ' + obj.startYMD);
+						if (obj && typeof obj.filtered !== 'undefined') parts.push('filtered: ' + obj.filtered);
+						if (obj && obj.sample) parts.push('sample: ' + (Array.isArray(obj.sample) ? obj.sample.join(', ') : String(obj.sample)));
+						el.textContent = parts.join(' | ');
+					} catch (e) {}
+				}
+
+				// Expose globally so inner startup scope can call it if needed
+				try { window.updateFavDebug = updateFavDebug; } catch(e) {}
+				try { console.debug('[fav-init] DOMContentLoaded — invoking favorite renderers'); } catch(e){}
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined'); } catch(e) { console.error('[fav-init] renderFavoriteType error', e); }
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined'); } catch(e) { console.error('[fav-init] renderFavoriteExercise error', e); }
+			});
+
+			// SPA hook: when the app is shown (fragment injected), ensure renderers run
+			window.addEventListener('app-shown', () => {
+				try { console.debug('[fav-init] app-shown — invoking favorite renderers'); } catch(e){}
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined on app-shown'); } catch(e) { console.error('[fav-init] renderFavoriteType error', e); }
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined on app-shown'); } catch(e) { console.error('[fav-init] renderFavoriteExercise error', e); }
+			});
+
+			// Fallback: call after a short delay in case neither event fires in the SPA environment
+			setTimeout(() => {
+				try { console.debug('[fav-init] timeout fallback — invoking favorite renderers'); } catch(e){}
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch(e){}
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){}
+			}, 800);
+		</script>
 </body>
 </html>
