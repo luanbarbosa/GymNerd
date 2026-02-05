@@ -13,6 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0&icon_names=finance" />
     <script src="gn-i18n.js"></script>
     <style>
         body {
@@ -118,25 +119,44 @@
     <nav id="bottom-nav" aria-hidden="true" role="navigation">
         <a id="nav-home" href="home.html" aria-label="Home">
             <span class="material-symbols-outlined nav-icon">home</span>
-            <span>Home</span>
+            <span data-i18n="menu_home">Home</span>
         </a>
         <a id="nav-routines" href="routines.html" aria-label="Routines">
             <span class="material-symbols-outlined nav-icon">exercise</span>
-            <span>Routines</span>
+            <span data-i18n="menu_routines">Routines</span>
         </a>
         <a id="nav-play" href="/livesession.html" aria-label="Play">
             <span class="material-symbols-outlined nav-icon">play_arrow</span>
-            <span>Play</span>
+            <span data-i18n="menu_start_routine">Play</span>
         </a>
         <a id="nav-history" href="history.html" aria-label="History">
             <span class="material-symbols-outlined nav-icon">history</span>
-            <span>History</span>
+            <span data-i18n="menu_history">History</span>
         </a>
         <a id="nav-statistics" href="statistics.html" aria-label="Statistics">
-            <span class="material-symbols-outlined nav-icon">finance_mode</span>
-            <span>Stats</span>
+            <span class="material-symbols-outlined nav-icon">finance</span>
+            <span data-i18n="menu_statistics">Stats</span>
         </a>
     </nav>
+
+    <script>
+        try {
+            // Apply translations only to bottom nav labels
+            GN_I18N.safeApplyTranslations(document.getElementById('bottom-nav'));
+            // Also update aria-labels to localized text
+            var map = {
+                'nav-home': 'menu_home',
+                'nav-routines': 'menu_routines',
+                'nav-play': 'menu_start_routine',
+                'nav-history': 'menu_history',
+                'nav-statistics': 'menu_statistics'
+            };
+            Object.keys(map).forEach(function(id){
+                var el = document.getElementById(id);
+                if (el) el.setAttribute('aria-label', GN_I18N.safeT(map[id]));
+            });
+        } catch(e) { console.warn('bottom-nav i18n failed', e); }
+    </script>
 
     <script src="auth.js"></script>
     <script src="spa.js"></script>
