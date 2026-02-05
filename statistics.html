@@ -194,7 +194,8 @@
             return imgRecord ? imgRecord.data : FALLBACK_IMG;
         }
 
-        function renderCalendar(logs) {
+        async function renderCalendar(logs) {
+            if (!logs) logs = await db.history.toArray();
             const grid = document.getElementById('calendarGrid');
             const display = document.getElementById('monthDisplay');
             const dayNamesContainer = document.getElementById('dayNames');
@@ -233,6 +234,7 @@
         
 
         async function renderCharts(logs) {
+            if (!logs) logs = await db.history.toArray();
             const wrapper = document.getElementById('chartsWrapper');
 
             // exercise type localization is provided by GN_I18N.localizeExerciseType

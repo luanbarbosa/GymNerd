@@ -390,6 +390,9 @@
                 }
                 container.innerHTML = `<div class="empty-state">${msg}</div>`;
             }
+
+            // Normalize history DOM to remove accidental nested wrappers
+            try { normalizeHistoryList(); } catch (e) { console.warn('normalizeHistoryList failed', e); }
         }
 
         async function renderWeightHistory() {
@@ -408,6 +411,42 @@
                 const formatted = formatDateDisplay(w.date);
                 const delTitle = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_delete_weight') : 'Delete weight';
                 container.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row">${formatted}</div><div class="data-row">${w.weight} ${kgSuffix}</div></div><button class="delete-btn" aria-label="${delTitle}" title="${delTitle}" onclick="event.stopPropagation(); deleteWeight('${w.date}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`;
+            }
+        }
+
+        // Remove nested .history-group/.log-entry wrappers introduced by SPA re-renders
+        function normalizeHistoryList() {
+            try {
+                const container = document.getElementById('history');
+                if (!container) return;
+
+                // Unwrap any history-group accidentally nested inside another history-group
+                const nestedGroups = Array.from(container.querySelectorAll('.history-group .history-group'));
+                nestedGroups.forEach(inner => {
+                    const parentGroup = inner.closest('.history-group');
+                    if (!parentGroup) return;
+                    // move inner's children out into parentGroup before the inner
+                    while (inner.firstChild) parentGroup.insertBefore(inner.firstChild, inner);
+                    inner.remove();
+                });
+
+                // If any .log-entry is nested inside another .log-entry, lift it to be direct child of its nearest .history-group
+                const nestedLogEntries = Array.from(container.querySelectorAll('.log-entry .log-entry'));
+                nestedLogEntries.forEach(inner => {
+                    const parentGroup = inner.closest('.history-group');
+                    if (!parentGroup) return;
+                    parentGroup.appendChild(inner);
+                });
+
+                // Remove empty wrapper nodes (e.g., divs that only held entries)
+                Array.from(container.querySelectorAll('.history-group *')).forEach(node => {
+                    if (node.nodeType === 1 && !node.classList.contains('history-group') && !node.classList.contains('log-entry') && !node.classList.contains('date-header') && node.childElementCount === 1 && node.textContent.trim() === '') {
+                        const only = node.firstElementChild;
+                        node.parentNode.replaceChild(only, node);
+                    }
+                });
+            } catch (e) {
+                console.warn('normalizeHistoryList error', e);
             }
         }
 

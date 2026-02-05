@@ -166,10 +166,10 @@
                     try { if (typeof renderHistory === 'function') renderHistory(); } catch(e){}
                     try { if (typeof renderWeightHistory === 'function') renderWeightHistory(); } catch(e){}
                 } else if (pageName === 'statistics.html') {
-                    try { if (typeof renderCalendar === 'function') renderCalendar([]); } catch(e){}
-                    try { if (typeof renderCharts === 'function') renderCharts([]); } catch(e){}
-                    try { if (typeof updateFrequencyChart === 'function') updateFrequencyChart([]); } catch(e){}
-                    try { if (typeof updateRadarChart === 'function') updateRadarChart([]); } catch(e){}
+                    try { if (typeof renderCalendar === 'function') renderCalendar(); } catch(e){}
+                    try { if (typeof renderCharts === 'function') renderCharts(); } catch(e){}
+                    try { if (typeof updateFrequencyChart === 'function') updateFrequencyChart(); } catch(e){}
+                    try { if (typeof updateRadarChart === 'function') updateRadarChart(); } catch(e){}
                 }
             } catch(e) {}
             try { window.scrollTo(0,0); } catch(e){}
