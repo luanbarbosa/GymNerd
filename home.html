@@ -796,8 +796,8 @@
 								if (!anchor) {
 									// No active streak
 									streak = 0;
-									// show the missed-day icon instead of the inline ZZZ SVG
-									iconImg.src = basePath + 'icons/day-missed.svg';
+									// show a friendly sad-flame illustration instead of the default missed-day icon
+									iconImg.src = basePath + 'illustrations/sad-flame-face.svg';
 									iconImg.alt = 'no streak';
 								} else {
 									// Count consecutive days backwards from the anchor (today or yesterday)
@@ -808,7 +808,8 @@
 										try{ c = await db.history.where('date').equals(dateToYMD(cursor)).count(); } catch(e){ c = 0; }
 										if (c > 0) { streak++; cursor.setDate(cursor.getDate()-1); } else break;
 									}
-									iconImg.src = basePath + 'icons/day-done.svg';
+									// show a happy flame illustration when the streak is active
+									iconImg.src = basePath + 'illustrations/happy-flame-face.svg';
 									iconImg.alt = 'streak active';
 									// (Visible caption removed — only the counter and icon are shown)
 								}
