@@ -240,6 +240,7 @@
                 start_session: '🚀 Start Session',
                 play_exercise: '🎯 Play this exercise',
                 finish_routine: 'Finish Routine',
+                    finished_good_job: 'Good job!',
                 
                 routine_done: 'Routine done!',
                 exercises_completed: 'Exercises completed',
@@ -510,6 +511,7 @@
                 start_session: '🚀 Iniciar Sessão',
                 play_exercise: '🎯 Executar este exercício',
                 finish_routine: 'Finalizar Treino',
+                    finished_good_job: 'Bom trabalho!',
                 
                 routine_done: 'Fim do treino!',
                 exercises_completed: 'Exercícios concluídos',

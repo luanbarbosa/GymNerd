@@ -597,7 +597,6 @@
             if (!workouts || workouts.length === 0) {
                 const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_routines_placeholder') : 'Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.';
                 content.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">'
-                    + '<img src="illustration-routines-empty.svg" alt="" width="360" style="max-width:100%; height:auto; display:block; margin:0 auto;">'
                     + '<div style="margin-top:18px;">' + msg + '</div></div>';
                 return;
             }

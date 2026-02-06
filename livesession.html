@@ -230,11 +230,50 @@
         /* Let the finished view fill the viewport; image should grow to available space above content */
         /* Fix finished view to the viewport so it always fills available space */
         #finishedView { display: flex; flex-direction: column; position: fixed; inset: 0; padding: 0; margin: 0; box-sizing: border-box; overflow: hidden; z-index: 1200; }
-          /* Fullscreen illustration: position absolutely to fill viewport but stop above content
+        /* Fullscreen illustration: position absolutely to fill viewport but stop above content
               The bottom offset is controlled by the CSS variable --finished-content-height set by JS. */
-        .finished-illustration { position: absolute; top: var(--finished-top-height, 0); left: 0; right: 0; bottom: var(--finished-content-height, 96px); width: 100%; height: auto; margin: 0; display:block; box-sizing: border-box; pointer-events: none; padding: 0 var(--finished-h-gap, 20px); }
-        /* Image covers the area between top bar and content; inset horizontally to avoid touching edges */
-        .finished-illustration img, .finished-illustration-img { width: 100%; height: 100%; object-fit: contain; object-position: center center; display:block; opacity: 0.95; }
+        .finished-illustration {
+            position: absolute;
+            top: var(--finished-top-height, 0);
+            left: 0;
+            right: 0;
+            bottom: var(--finished-content-height, 96px);
+            width: 100%;
+            margin: 0;
+            display: block;
+            box-sizing: border-box;
+            pointer-events: none;
+            padding: 20px var(--finished-h-gap, 20px); /* spacing around image */
+            overflow: hidden;
+        }
+        /* Make the illustration image fill the available illustration area
+           (full width, grow in height up to available space while keeping aspect ratio). */
+        .finished-illustration img, .finished-illustration-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center center;
+            display:block;
+            opacity: 0.99;
+        }
+
+        /* Message shown below the illustration (localized) */
+        .finished-message {
+            margin-top: 20px;
+            margin-bottom: 14px;
+            /* Much larger and responsive: min 2rem, scales with viewport, max 5rem */
+            font-size: clamp(2rem, 8vw, 5rem);
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-align: center;
+            background: var(--primary-grad);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            filter: drop-shadow(0 10px 30px rgba(37,99,235,0.30));
+            line-height: 0.95;
+        }
         /* Background SVG illustration (bottom-aligned, subtle alpha) */
         .finished-illustration::before {
             content: '';
@@ -243,7 +282,6 @@
             right: var(--finished-h-gap, 20px);
             bottom: 0;
             top: 0;
-            background-image: url('illustration-livesession-end.svg');
             background-repeat: no-repeat;
             background-position: bottom center;
             background-size: contain;
@@ -269,7 +307,9 @@
         }
 
         /* New top-positioned large title for finished view */
-        .finished-top { display: none; }
+        .finished-top { display: none !important; }
+        /* Remove the finished top-card/topbar entirely (don't render space) */
+        .finished-top-card { display: none !important; }
         /* Top-card variant for finished view: reuse top-card visual style but positioned inside finishedView */
         .finished-top-card {
             position: static; /* keep it in flow so it pushes content down */
@@ -435,7 +475,9 @@
 
         <!-- Finished view shown when all exercises are completed (minimalized) -->
         <div id="finishedView" style="display:none;">
-            <div class="finished-illustration" aria-hidden="true"></div>
+            <div class="finished-illustration" aria-hidden="true">
+                <img src="/illustrations/happy-flame.svg" alt="celebration" class="finished-illustration-img" />
+            </div>
             <div class="top-card finished-top-card">
                 <div class="top-card-inner">
                     <div class="topbar">
@@ -445,11 +487,12 @@
                     </div>
                 </div>
             </div>
-            <div class="finished-content">
-                <div style="display:flex; gap:10px; justify-content:center; align-items:center; flex-direction:column;">
-                    <button id="finishRoutineBtn" class="finish-btn" style="min-width:140px; width:100%;" onclick="finishSession()" data-i18n="finish_routine"></button>
+                <div class="finished-content">
+                    <div class="finished-message" aria-live="polite"></div>
+                    <div style="display:flex; gap:10px; justify-content:center; align-items:center; flex-direction:column;">
+                        <button id="finishRoutineBtn" class="finish-btn" style="min-width:140px; width:100%;" onclick="finishSession()" data-i18n="finish_routine"></button>
+                    </div>
                 </div>
-            </div>
         </div>
 
         <script>
@@ -680,6 +723,14 @@
                 }
 
                 // ensure layout adaptation: set finishedView CSS var for content height
+                // set localized congratulatory message below the illustration
+                try {
+                    const msgEl = finishedView.querySelector('.finished-message');
+                    if (msgEl) {
+                        msgEl.textContent = (GN_I18N && GN_I18N.t) ? (GN_I18N.t('finished_good_job') || 'Good job!') : 'Good job!';
+                    }
+                } catch (e) { /* ignore */ }
+
                 updateFinishedIllustration();
             } catch (e) { console.warn('renderFinishedStats failed', e); }
         }

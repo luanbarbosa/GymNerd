@@ -337,7 +337,6 @@
             window.addEventListener('userchange', (ev) => { try { if (typeof renderAuthStatus === 'function') renderAuthStatus().then(render); } catch(e){} });
         })();
     </script>
-    <img src="illustration-login.svg" alt="" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:320px; max-width:90%; height:auto; opacity:0.95; pointer-events:none; z-index:50;" />
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered from index')).catch(err => console.warn('SW registration failed', err));
