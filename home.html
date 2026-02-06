@@ -379,10 +379,11 @@
 		.import-btn { background: #6366f1; color: white; }
 		label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
 			/* Week dots (GitHub-style) */
-			.week-dots { display:flex; gap:12px; align-items:center; justify-content:center; margin:12px auto; padding:8px 12px; border-radius:12px; background: transparent; max-width: 460px; }
-		.week-dots .days { display:grid; grid-template-columns: repeat(7, 1fr); gap: clamp(6px, 1.6vw, 12px); align-items:center; width:100%; }
-		.week-dots .day { display:flex; flex-direction:column; align-items:center; gap:6px; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); }
-		.week-dots .dot { width: clamp(28px, 10vw, 72px); height: clamp(28px, 10vw, 72px); box-shadow: none; border: none; display:flex; align-items:center; justify-content:center; }
+			.week-dots { display:flex; gap:0; align-items:center; justify-content:center; margin:12px auto; padding:8px 0; border-radius:12px; background: transparent; max-width: 460px; box-sizing: border-box; overflow: hidden; }
+			.week-dots .days { display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; align-items:center; justify-items:center; width:100%; }
+			.week-dots .day { display:flex; flex-direction:column; align-items:center; gap:0; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); min-width: 0; }
+			/* Constrain dot sizes so 7 items + gaps never overflow their container on desktop */
+			.week-dots .dot { width: clamp(34px, 6.5vw, 64px); height: clamp(34px, 6.5vw, 64px); max-width: 100%; box-shadow: none; border: none; display:flex; align-items:center; justify-content:center; box-sizing: border-box; }
 		.week-dots .dot img { width: 100%; height: 100%; object-fit: contain; display:block; }
 		/* Backwards-compatible classes retained but visuals are handled by images */
 		.week-dots .dot.fill-0, .week-dots .dot.fill-1, .week-dots .dot.fill-2, .week-dots .dot.fill-3, .week-dots .dot.fill-4, .week-dots .dot.no-workout, .week-dots .dot.future { background: transparent; }
