@@ -230,6 +230,8 @@
                 history_edit_session: 'Edit session',
                 history_delete: 'Delete',
 
+                statistics_no_history: 'No history data yet',
+
                 history_disclaimer_stats_only: 'The values changed here will not be applied to the routines. Only to the statistics.'
                 ,
                 /* Livesession specific */
@@ -502,6 +504,8 @@
                 history_no_routine: 'Nenhum treino encontrado',
                 history_edit_session: 'Editar sessão',
                 history_delete: 'Deletar',
+
+                statistics_no_history: 'Não há dados de histórico ainda',
 
                 history_disclaimer_stats_only: 'Os valores alterados aqui não serão aplicados aos treinos. Somente às estatísticas.'
                 ,

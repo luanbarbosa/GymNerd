@@ -123,6 +123,11 @@
     <div class="page-content">
     <div id="stats-overview" class="stats-overview"></div>
 
+    <div id="statsEmpty" style="display:none;color:var(--text-dim);padding:20px;text-align:center;background:transparent;">
+        <img src="illustrations/empty-statistics.svg" alt="" style="width:200px;max-width:100%;height:auto;margin:0 auto 12px;display:block;" />
+        <div data-i18n="statistics_no_history"></div>
+    </div>
+
 
     <div class="main-grid">
         <div class="card calendar-card">
@@ -183,6 +188,57 @@
 
         async function init() {
             const logs = await db.history.toArray();
+            // If there is no history data, hide the stats sections but keep the top-card/topbar visible
+            try {
+                if (!logs || logs.length === 0) {
+                    const main = document.querySelector('.main-content');
+                    const empty = document.getElementById('statsEmpty');
+                    if (main) {
+                        // keep top-card visible
+                        const top = main.querySelector('.top-card');
+                        try { if (top) top.style.display = ''; } catch(e) {}
+
+                        // hide all other children of .main-content except the top-card
+                        try {
+                            Array.from(main.children).forEach(ch => {
+                                if (ch === top) return;
+                                if (ch === empty) return;
+                                ch.style.display = 'none';
+                            });
+                        } catch(e) {}
+
+                        // ensure the empty placeholder is a direct child right after the top-card
+                        try {
+                            if (empty) {
+                                main.insertBefore(empty, top.nextSibling);
+                                empty.style.display = '';
+                                // compute available space between bottom of top-card and top of bottom-nav
+                                try {
+                                    const bottomNav = document.getElementById('bottom-nav') || document.getElementById('gn-bottom-nav');
+                                    const topBottom = top ? Math.ceil(top.getBoundingClientRect().bottom) : 0;
+                                    const bottomHeight = bottomNav ? Math.ceil(bottomNav.getBoundingClientRect().height) : 0;
+                                    const avail = Math.max(0, window.innerHeight - topBottom - bottomHeight);
+                                    empty.style.display = 'flex';
+                                    empty.style.flexDirection = 'column';
+                                    empty.style.justifyContent = 'center';
+                                    empty.style.alignItems = 'center';
+                                    empty.style.height = avail + 'px';
+                                    empty.style.padding = '12px 20px';
+                                    empty.style.boxSizing = 'border-box';
+                                    empty.style.background = 'transparent';
+                                } catch (e) {}
+                            }
+                        } catch(e) {}
+                    } else {
+                        // fallback: ensure body isn't hidden entirely
+                        try { document.body.style.display = ''; } catch(e) {}
+                        try { if (empty) empty.style.display = ''; } catch(e) {}
+                    }
+                    return;
+                }
+                // Ensure empty placeholder hidden when data exists
+            } catch (e) { /* ignore */ }
+            try { const empty = document.getElementById('statsEmpty'); if (empty) empty.style.display = 'none'; } catch(e) {}
             renderCalendar(logs);
             renderCharts(logs);
             updateStreakBadge();
