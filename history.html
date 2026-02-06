@@ -304,7 +304,31 @@
 
         async function renderHistory() {
             const logs = await db.history.orderBy('date').reverse().toArray();
-            if (!logs || logs.length === 0) {
+            // Hide filter controls when there is no history data in the DB
+            try {
+                const filtersWrap = document.querySelector('.filters-wrap');
+                if (filtersWrap) filtersWrap.style.display = (logs && logs.length > 0) ? '' : 'none';
+            } catch (e) {}
+
+            // compute available height between bottom of `.top-card` and the top of bottom nav (if present)
+            function computeAvailableHeight() {
+                try {
+                    const topCard = document.querySelector('.top-card');
+                    const filtersWrap = document.querySelector('.filters-wrap');
+                    const bottomNav = document.getElementById('bottom-nav') || document.getElementById('gn-bottom-nav');
+                    // Prefer bottom of filters when visible, otherwise bottom of top-card
+                    let topRef = 0;
+                    if (filtersWrap && filtersWrap.offsetParent !== null) {
+                        topRef = Math.ceil(filtersWrap.getBoundingClientRect().bottom);
+                    } else if (topCard) {
+                        topRef = Math.ceil(topCard.getBoundingClientRect().bottom);
+                    }
+                    const bottomHeight = bottomNav ? Math.ceil(bottomNav.getBoundingClientRect().height) : 0;
+                    const avail = Math.max(0, window.innerHeight - topRef - bottomHeight);
+                    return avail;
+                } catch (e) { return 0; }
+            }
+                if (!logs || logs.length === 0) {
                 const container = document.getElementById('history');
                     let msg = '';
                     if (window.GN_I18N && GN_I18N.safeT) {
@@ -313,7 +337,12 @@
                         const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : (navigator.language || 'en');
                         msg = (pageLang && pageLang.startsWith('pt')) ? 'Nenhum treino encontrado' : 'No routine entry found';
                     }
-                    container.innerHTML = `<div style="padding:12px;color:var(--text-dim)">${msg}</div>`;
+                    const avail = computeAvailableHeight();
+                    container.innerHTML = `
+                        <div class="empty-state" style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:${avail}px;padding:12px;box-sizing:border-box;">
+                            <img src="illustrations/empty-history.svg" alt="" style="width:200px;height:auto;margin:0 auto 10px;display:block;" />
+                            <div>${msg}</div>
+                        </div>`;
                 return;
             }
             // Normalize date strings to YYYY-MM-DD to avoid duplicates caused
@@ -470,7 +499,12 @@
                     const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : (navigator.language || 'en');
                     msg = (pageLang && pageLang.startsWith('pt')) ? 'Nenhum treino encontrado' : 'No routine entry found';
                 }
-                container.innerHTML = `<div class="empty-state">${msg}</div>`;
+                const avail = computeAvailableHeight();
+                container.innerHTML = `
+                    <div class="empty-state" style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:${avail}px;padding:12px;box-sizing:border-box;">
+                        <img src="illustrations/empty-history.svg" alt="" style="width:200px;height:auto;margin:0 auto 10px;display:block;" />
+                        <div>${msg}</div>
+                    </div>`;
             }
 
             // Normalize history DOM to remove accidental nested wrappers
