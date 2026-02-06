@@ -12,6 +12,8 @@
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
     <script src="gn-i18n.js"></script>
+    <script src="auth.js"></script>
+    <script src="drive-storage.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <script src="db.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -366,12 +368,20 @@
         try {
             console.log('[measure] saving weight', value);
             if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-            if (window.db && window.db.weights) {
+                if (window.db && window.db.weights) {
                 const date = new Date();
                 const dateStr = date.toISOString().slice(0,10);
                 console.log('[measure] putting to db.weights', dateStr, value);
                 await db.weights.put({ date: dateStr, weight: Number(value.toFixed(1)) });
                 console.log('[measure] db.weights.put complete');
+                    try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
+                    // Perform blocking Drive sync showing full-screen loader
+                    try {
+                        try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
+                        if (typeof DriveStorage !== 'undefined' && db) {
+                            try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after weight save failed', e); }
+                        }
+                    } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
             }
         } catch (err) { console.error('[measure] save error', err); }
         // refresh the chart after saving so the UI updates immediately
@@ -509,6 +519,13 @@ async function deleteWeight(date) {
         localStorage.setItem('has_local_changes', 'true');
         await renderWeightHistory();
         try { if (typeof renderMeasureWeightChart === 'function') await renderMeasureWeightChart(); } catch(e){}
+        // Perform blocking Drive sync for weight deletion
+        try {
+            try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
+            if (typeof DriveStorage !== 'undefined' && db) {
+                try { await DriveStorage.sync(db); } catch (err) { console.error('Drive sync after deleteWeight failed', err); }
+            }
+        } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
     } catch (e) {
         console.error('Failed to delete weight', e);
     }

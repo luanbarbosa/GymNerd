@@ -325,7 +325,7 @@
     }
 
     // Intercept clicks for same-origin navigation
-    document.addEventListener('click', function(e){
+    document.addEventListener('click', async function(e){
         const a = e.target.closest('a');
         if (!a) return;
         const href = a.getAttribute('href'); if (!href) return;
@@ -338,7 +338,24 @@
             const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html'];
             if (spaTargets.includes(name)) {
                 e.preventDefault();
-                spaNavigate(url.pathname);
+                // Navigate the SPA and then update the browser URL to include a start hint
+                try {
+                    await spaNavigate(url.pathname);
+                } catch (err) {
+                    // fallback: log navigation error
+                    console.error('spaNavigate error while handling click', err);
+                }
+                try {
+                    // Only add a `?start=` hint when the click came from the bottom-nav
+                    const idMap = { 'nav-home':'home', 'nav-routines':'routines', 'nav-history':'history', 'nav-statistics':'statistics', 'nav-play':'livesession' };
+                    if (a && a.id && idMap[a.id]) {
+                        const short = idMap[a.id];
+                        const pushUrl = url.pathname + '?start=' + encodeURIComponent(short);
+                        history.pushState({ spa:true, url: url.pathname }, document.title || '', pushUrl);
+                    }
+                } catch (e) {
+                    // ignore pushState failures
+                }
             }
         } catch(e){}
     });

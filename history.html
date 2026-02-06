@@ -245,6 +245,13 @@
                     await db.history.where('date').equals(date).delete();
                     localStorage.setItem('has_local_changes', 'true');
                     renderHistory();
+                    // Perform blocking Drive sync for delete action
+                    try {
+                        try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
+                        if (typeof DriveStorage !== 'undefined' && db) {
+                            try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after deleteDateLogs failed', e); }
+                        }
+                    } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
                 }
             } else {
                 if(confirm(`Delete all entries for ${fmt}?`)) {
@@ -267,6 +274,13 @@
                 await db.history.delete(id);
                 localStorage.setItem('has_local_changes', 'true');
                 renderHistory();
+                // Perform blocking Drive sync for delete action
+                try {
+                    try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
+                    if (typeof DriveStorage !== 'undefined' && db) {
+                        try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after deleteLog failed', e); }
+                    }
+                } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
             } catch (e) {
                 console.error('Failed to delete log', e);
             }
@@ -546,6 +560,13 @@
                     await db.history.where('sessionId').equals(Number(sessionId)).delete();
                     localStorage.setItem('has_local_changes', 'true');
                     renderHistory();
+                    // Perform blocking Drive sync for delete action
+                    try {
+                        try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
+                        if (typeof DriveStorage !== 'undefined' && db) {
+                            try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after deleteSession failed', e); }
+                        }
+                    } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
                 }
             } else {
                 if (confirm('Delete this session?')) {

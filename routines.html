@@ -739,6 +739,13 @@
                 await db.routines.delete(id);
                 localStorage.setItem('has_local_changes', 'true');
                 renderTabs();
+                // Perform blocking Drive sync for routine deletion
+                try {
+                    try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
+                    if (typeof DriveStorage !== 'undefined' && db) {
+                        try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after deleteRoutine failed', e); }
+                    }
+                } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
             }
         }
 
