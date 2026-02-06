@@ -596,8 +596,11 @@
             tabsContainer.innerHTML = '';
             if (!workouts || workouts.length === 0) {
                 const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_routines_placeholder') : 'Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.';
-                content.innerHTML = '<div style="color:var(--text-dim); padding:20px; text-align:center;">'
-                    + '<div style="margin-top:18px;">' + msg + '</div></div>';
+                content.innerHTML = `
+                    <div class="empty-state" style="color:var(--text-dim); padding:20px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <img src="illustrations/empty-routine.svg" alt="" style="width:100%;height:auto;max-width:100%;margin:0 0 12px;display:block;" />
+                        <div style="margin-top:6px;">${msg}</div>
+                    </div>`;
                 return;
             }
             workouts.forEach((w, i) => {
