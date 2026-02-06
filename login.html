@@ -20,72 +20,121 @@
             background: #0f172a;
             padding-top: constant(safe-area-inset-top);
             padding-top: env(safe-area-inset-top);
+            color: #0f172a;
         }
 
         .wrap {
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             background: #0f172a;
-            color: #0f172a;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 36px 16px;
         }
 
-        
-
-        .card {
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-            padding: 28px;
-            box-sizing: border-box;
+        .hero {
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:8px;
+            flex: 1 1 auto;
+            justify-content: center;
+            width:100%;
         }
 
         .brand {
-            width: 96px;
-            height: 96px;
+            width: 84px;
+            height: 84px;
             object-fit: contain;
-            border-radius: 16px;
+            border-radius: 18px;
+            background: transparent;
         }
 
-        h1 {
-            margin: 12px 0;
+        .app-title {
+            margin: 8px 0 0 0;
             font-size: 2.2rem;
             font-weight: 900;
-            background: linear-gradient(135deg, #60a5fa, #2563eb);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: 0;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 1rem;
-        }
-
-        .btn-primary {
-            background: #3b82f6;
             color: #fff;
+            letter-spacing: -0.02em;
         }
 
-        .muted {
-            color: #94a3b8;
-            margin-top: 12px;
+        .tagline {
+            color: #9aa4b6;
+            margin-top: 6px;
+            font-weight: 600;
         }
 
-        .row {
-            display: flex;
-            gap: 10px;
-            margin-top: 12px;
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 26px;
+            box-sizing: border-box;
+            box-shadow: 0 12px 30px rgba(2,6,23,0.45);
+            margin-bottom: calc(constant(safe-area-inset-bottom) + 16px);
+            margin-bottom: calc(env(safe-area-inset-bottom) + 16px);
+            text-align: center;
         }
 
-        .col {
-            flex: 1;
+        .auth-card h2 {
+            margin: 6px 0 14px 0;
+            font-size: 1.6rem;
+            color: #0b1220;
+            font-weight: 900;
         }
+
+        .google-btn {
+            display:flex;
+            align-items:center;
+            gap:12px;
+            justify-content:center;
+            width:100%;
+            padding:12px 14px;
+            border-radius:12px;
+            border:1px solid rgba(0,0,0,0.06);
+            background: #fff;
+            box-shadow: 0 8px 18px rgba(3,7,18,0.06);
+            cursor:pointer;
+            font-weight:700;
+            color:#0b1220;
+            font-size:1rem;
+        }
+
+        .google-logo { width:20px; height:20px; display:inline-block; }
+
+        .auth-subtext {
+            color:#94a3b8;
+            font-size:0.92rem;
+            margin-top:12px;
+            margin-bottom:12px;
+        }
+
+        .divider {
+            display:flex;align-items:center;gap:12px;margin:18px 0;color:#0f172a;font-size:0.9rem;
+        }
+
+        .divider .line { flex:1;height:1px;background:#e5e7eb;opacity:0.8 }
+
+        .demo-btn {
+            width:100%;
+            padding:14px;
+            border-radius:12px;
+            border:0;
+            cursor:pointer;
+            font-weight:700;
+            font-size:1rem;
+            background: linear-gradient(180deg,#5b95ff,#3b82f6);
+            color:white;
+            box-shadow: 0 12px 30px rgba(59,130,246,0.18);
+        }
+
+        .small-muted { color:#94a3b8; margin-top:12px; font-size:0.9rem }
+
+        a.lang-link { color:#94a3b8 }
     </style>
 
 </head>
@@ -164,59 +213,45 @@
             } catch(e) { document.documentElement.style.visibility = 'visible'; }
         })();
     </script>
-    <div style="position:absolute; top: calc(constant(safe-area-inset-top) + 20px); top: calc(env(safe-area-inset-top) + 20px); right:20px; z-index:1000; display:flex; align-items:center; gap:8px;">
-        <label for="gn-lang-select" style="color:#94a3b8; font-weight:600; font-size:0.9rem; margin:0;">Language</label>
-        <select id="gn-lang-select" style="padding:8px 10px; border-radius:10px; background: rgba(255,255,255,0.02); color: white; border:1px solid rgba(255,255,255,0.06); font-weight:700; cursor:pointer;">
-            <option value="en">🇬🇧 English</option>
-            <option value="pt">🇧🇷 Português</option>
-        </select>
-    </div>
+    <!-- language selector removed -->
     <div class="wrap">
-        <div class="card">
+        <div class="hero">
             <img src="favicon.svg" alt="App icon" class="brand" />
-            <h1>GymNerd</h1>
-            <div id="auth-status-container" class="muted" data-i18n="signin_subtext"></div>
-            <div class="row" style="margin-top:24px">
-                <button id="signin-google" class="col btn btn-primary" data-i18n="sign_in_with_google"></button>
-            </div>
-            <div class="row" style="margin-top:16px">
-                <div class="col" style="display:flex;justify-content:center;">
-                    <a id="demo-mode" href="#" style="color:#60a5fa;font-weight:600;font-size:0.82rem;text-decoration:none;cursor:pointer;align-self:center;text-transform:uppercase">Demo mode</a>
-                </div>
-            </div>
+            <div class="app-title" data-i18n="title_main"></div>
+            <div class="tagline" data-i18n="tagline"></div>
+        </div>
+
+        <div class="auth-card">
+            
+            <button id="signin-google" class="google-btn" aria-label="Continue with Google">
+                <span class="google-logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" width="20" height="20" aria-hidden="true">
+                        <path fill="#4285F4" d="M533.5 278.4c0-17.4-1.4-34-4.1-50.2H272v95h147.1c-6.3 34-25 62.9-53.4 82v68h86.2c50.4-46.4 80.6-115 80.6-194.8z"/>
+                        <path fill="#34A853" d="M272 544.3c72.7 0 133.7-24.1 178.3-65.4l-86.2-68c-24 16.1-55 25.4-92.1 25.4-70.8 0-130.8-47.7-152.2-111.6H32.8v69.9C77.2 482 167 544.3 272 544.3z"/>
+                        <path fill="#FBBC05" d="M119.8 328.7c-10.9-32.9-10.9-68.8 0-101.7V157.1H32.8c-39.5 78.9-39.5 171.1 0 250l87-78.4z"/>
+                        <path fill="#EA4335" d="M272 107.7c39.6-.6 77.7 14.3 106.7 40.6l80-80C403.4 24.5 344.6 0 272 0 167 0 77.2 62.3 32.8 157.1l87 69.9c21.4-63.9 81.4-111.6 152.2-111.6z"/>
+                    </svg>
+                </span>
+                <span data-i18n="sign_in_with_google"></span>
+            </button>
+
+            <div id="auth-status-container" class="auth-subtext" data-i18n="signin_subtext"></div>
+
+            <div class="divider"><div class="line"></div><div data-i18n="or"></div><div class="line"></div></div>
+
+            <button id="demo-mode" class="demo-btn"><span data-i18n="demo_mode"></span></button>
+
+            <div class="small-muted" data-i18n="demo_mode_warning"></div>
         </div>
     </div>
 
+    <script>
+        try { if (typeof GN_I18N !== 'undefined' && typeof GN_I18N.applyTranslations === 'function') GN_I18N.applyTranslations(document); } catch(e){}
+    </script>
+
     <script src="auth.js"></script>
     <script>
-        // Language selector handlers (moved from auth.js)
-        (function attachLangHandlers(){
-            try {
-                const sel = document.getElementById('gn-lang-select');
-                const key = 'gn_lang';
-                const detectBrowser = () => {
-                    try {
-                        const nl = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
-                        return nl.startsWith('pt') ? 'pt' : 'en';
-                    } catch(e) { return 'en'; }
-                };
-
-                const getCookieSafe = (name) => {
-                    try { if (typeof getCookie === 'function') return getCookie(name); } catch(e){}
-                    try { const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : null; } catch(e) { return null; }
-                };
-
-                const initial = (function(){ try { return localStorage.getItem(key) || getCookieSafe(key) || detectBrowser(); } catch(e){ return detectBrowser(); } })();
-                if (sel) sel.value = initial;
-                try { localStorage.setItem(key, initial); } catch(e){}
-
-                try { if (typeof GN_I18N !== 'undefined' && typeof GN_I18N.applyTranslations === 'function') GN_I18N.applyTranslations(document); } catch(e){}
-
-                if (sel) sel.addEventListener('change', (ev) => {
-                    try { localStorage.setItem(key, ev.target.value); location.reload(); } catch(e){}
-                });
-            } catch(e) { console.warn('lang selector init failed', e); }
-        })();
+        <!-- language selector initialization removed -->
 
         document.getElementById('signin-google').addEventListener('click', function () {
             if (typeof handleAuth === 'function') return handleAuth();
