@@ -38,6 +38,11 @@
 						if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 						const widget = document.getElementById('fav-type-widget');
 						if (!widget) return;
+						// If there's no history at all, keep the favorites widget hidden
+						try {
+							const total = await db.history.count();
+							if (!total) { try { widget.style.display = 'none'; } catch(e){}; return; }
+						} catch(e) {}
 						// hide widget while we compute to avoid transient renders
 						try { widget.style.display = 'none'; } catch(e){}
 						let items = await db.history.toArray();
@@ -481,6 +486,12 @@
 			</div>
 		</div>
 
+					<!-- Empty-home illustration: shown when user has no history -->
+					<div id="home-empty-illustration" style="display:none; width:100%; box-sizing:border-box; padding:28px 0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; position:relative; z-index:2;">
+						<img id="home-empty-illustration-img" src="illustrations/empty-home.svg" alt="No history" role="img" style="width:320px; max-width:80vw; height:auto; display:block; margin:0 auto 12px; opacity:0.99; box-shadow:0 8px 24px rgba(0,0,0,0.08);" />
+								<div id="home-empty-cta" data-i18n="empty_home_cta" style="color:var(--text-dim); padding:20px; text-align:center; margin-top:0; font-weight:400; font-size:1.15rem; background:transparent;">
+						</div>
+					</div>
 		<button id="sync-pending-btn" class="nav-card" style="display:none; width:calc(100% - 40px); margin:12px 20px; background: #f59e0b; color: white; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
 			<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
 		</button>
@@ -517,6 +528,7 @@
 									<img id="fav-ex-img" src="" alt="" />
 									<span id="fav-ex-initial">—</span>
 								</div>
+
 								<div id="fav-ex-name-and-count" style="color:var(--text); font-weight:700; word-break:break-word; width:100%;">
 									<span id="fav-ex-name">—</span>
 									<span id="fav-ex-count" class="streak-record"> </span>
@@ -532,6 +544,27 @@
 						</div>
 					</div>
 				</div>
+
+			<script>
+			// Ensure the empty-home illustration is vertically centered between the top card and bottom nav
+			window.centerEmptyIllustration = function() {
+			    try {
+			        const el = document.getElementById('home-empty-illustration');
+			        if (!el) return;
+			        const topCard = document.querySelector('.top-card');
+			        const bottomNav = document.getElementById('gn-bottom-nav') || document.getElementById('bottom-nav');
+					// measure top card and bottom nav heights to compute available area
+					const topHeight = topCard ? Math.ceil(topCard.getBoundingClientRect().height) : 0;
+					const bottomHeight = bottomNav ? Math.ceil(bottomNav.getBoundingClientRect().height) : 0;
+					const avail = Math.max(0, window.innerHeight - topHeight - bottomHeight);
+					// leave some breathing room but ensure a sensible minimum
+					const minH = Math.max(200, avail - 40);
+			        el.style.minHeight = minH + 'px';
+			        // center content vertically via flex alignment already set in markup
+			    } catch (e) { /* ignore */ }
+			};
+			window.addEventListener('resize', function(){ try { window.centerEmptyIllustration(); } catch(e){} });
+			</script>
 
 
 		</div>
@@ -621,7 +654,28 @@
 		try { renderCompactApp(); } catch (e) {}
 		try { renderMainUser(); } catch (e) {}
 		try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
-				try { if (renderWeekDots) { renderWeekDots().then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch(e){} try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){} }); } } catch(e){}
+				try {
+					if (typeof renderWeekDots === 'function') {
+						(async () => {
+							try {
+								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+								let historyCount = 0;
+								try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
+								await renderWeekDots();
+								if (historyCount > 0) {
+									try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
+									try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch(e){}
+									try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){}
+									try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'none'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'none'; } } catch(e){}
+								} else {
+									try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch(e){}
+									try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch(e){}
+									try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'flex'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'block'; try { if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration(); } catch(e){} } } catch(e){}
+								}
+							} catch(e) { /* ignore */ }
+						})();
+					}
+				} catch(e){}
         
 		function updatePendingButtonVisibility() {
 			const btn = document.getElementById('sync-pending-btn');
@@ -742,8 +796,8 @@
 								if (!anchor) {
 									// No active streak
 									streak = 0;
-									// show the missed-day icon instead of the inline ZZZ SVG
-									iconImg.src = basePath + 'icons/day-missed.svg';
+									// show a friendly sad-flame illustration instead of the default missed-day icon
+									iconImg.src = basePath + 'illustrations/sad-flame-face.svg';
 									iconImg.alt = 'no streak';
 								} else {
 									// Count consecutive days backwards from the anchor (today or yesterday)
@@ -754,7 +808,8 @@
 										try{ c = await db.history.where('date').equals(dateToYMD(cursor)).count(); } catch(e){ c = 0; }
 										if (c > 0) { streak++; cursor.setDate(cursor.getDate()-1); } else break;
 									}
-									iconImg.src = basePath + 'icons/day-done.svg';
+									// show a happy flame illustration when the streak is active
+									iconImg.src = basePath + 'illustrations/happy-flame-face.svg';
 									iconImg.alt = 'streak active';
 									// (Visible caption removed — only the counter and icon are shown)
 								}
@@ -819,6 +874,11 @@
 								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 								const widget = document.getElementById('fav-type-widget');
 								if (!widget) return;
+								// If there's no history at all, keep the favorites widget hidden
+								try {
+									const total = await db.history.count();
+									if (!total) { try { widget.style.display = 'none'; } catch(e){}; return; }
+								} catch(e) {}
 								let items = await db.history.toArray();
 								if (!items || items.length === 0) {
 									// try broader range before showing empty message
@@ -893,6 +953,11 @@
 							if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 							const parent = document.getElementById('fav-type-widget');
 							if (!parent) return;
+							// If there's no history at all, keep the favorites widget hidden
+							try {
+								const total = await db.history.count();
+								if (!total) { try { parent.style.display = 'none'; } catch(e){}; return; }
+							} catch(e) {}
 							let items = await db.history.toArray();
 							if (!items || items.length === 0) {
 								// try broader range before showing empty message

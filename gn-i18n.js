@@ -166,6 +166,7 @@
                 day_plural: 'DAYS',
                 days: 'Days',
                 start_your_journey: 'Start your journey!',
+                empty_home_cta: "Let's start working out!",
                 best_record: 'Your record',
                 no_records_yet: 'No records yet',
                 keep_it_up: 'Keep it up!',
@@ -229,6 +230,8 @@
                 history_edit_session: 'Edit session',
                 history_delete: 'Delete',
 
+                statistics_no_history: 'No history data yet',
+
                 history_disclaimer_stats_only: 'The values changed here will not be applied to the routines. Only to the statistics.'
                 ,
                 /* Livesession specific */
@@ -237,9 +240,11 @@
                 resume_discard: 'Discard',
                 label_select_routine: 'Select a Routine',
                 choose_routine_placeholder: '-- Choose Routine --',
+                livesession_no_routines: 'You need to create a routine first',
                 start_session: '🚀 Start Session',
                 play_exercise: '🎯 Play this exercise',
                 finish_routine: 'Finish Routine',
+                    finished_good_job: 'Good job!',
                 
                 routine_done: 'Routine done!',
                 exercises_completed: 'Exercises completed',
@@ -436,6 +441,7 @@
                 day_plural: 'DIAS',
                 days: 'Dias',
                 start_your_journey: 'Comece sua jornada!',
+                empty_home_cta: 'Vamos começar a treinar!',
                 best_record: 'Seu recorde',
                 no_records_yet: 'Nenhum registro ainda',
                 keep_it_up: 'Mantenha assim!',
@@ -499,6 +505,8 @@
                 history_edit_session: 'Editar sessão',
                 history_delete: 'Deletar',
 
+                statistics_no_history: 'Não há dados de histórico ainda',
+
                 history_disclaimer_stats_only: 'Os valores alterados aqui não serão aplicados aos treinos. Somente às estatísticas.'
                 ,
                 /* Livesession specific */
@@ -507,9 +515,11 @@
                 resume_discard: 'Descartar',
                 label_select_routine: 'Selecione um Treino',
                 choose_routine_placeholder: '-- Escolha o Treino --',
+                livesession_no_routines: 'Você precisa criar um treino primeiro',
                 start_session: '🚀 Iniciar Sessão',
                 play_exercise: '🎯 Executar este exercício',
                 finish_routine: 'Finalizar Treino',
+                    finished_good_job: 'Bom trabalho!',
                 
                 routine_done: 'Fim do treino!',
                 exercises_completed: 'Exercícios concluídos',

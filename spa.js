@@ -155,23 +155,33 @@
             try { if (typeof renderCompactApp === 'function') renderCompactApp(); } catch(e) {}
             try { if (typeof renderMainUser === 'function') renderMainUser(); } catch(e) {}
             try {
+                // Helper: only render streak/favorite widgets when there is history
+                async function maybeRenderHistoryWidgets() {
+                    try {
+                        if (!window.db || !db.history) return;
+                        const cnt = await db.history.count();
+                        if (cnt > 0) {
+                            try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
+                            try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'none'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'none'; } } catch(e){}
+                            try {
+                                const sel = document.getElementById('fav-type-range'); const range = sel ? sel.value : 'year';
+                                try { if (typeof renderFavoriteType === 'function') renderFavoriteType(range); } catch(e){}
+                                try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(range); } catch(e){}
+                            } catch(e) {}
+                        } else {
+                            try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch(e){}
+                            try { const ft = document.getElementById('fav-type-widget'); if (ft) ft.style.display = 'none'; } catch(e){}
+                            try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'flex'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'block'; try { if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration(); } catch(e){} } } catch(e){}
+                        }
+                    } catch(e) {
+                        // noop
+                    }
+                }
+
                 if (typeof renderWeekDots === 'function') {
                     const p = renderWeekDots();
-                    if (p && p.then) p.then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
-                        try {
-                            const sel = document.getElementById('fav-type-range'); const range = sel ? sel.value : 'year';
-                            try { if (typeof renderFavoriteType === 'function') renderFavoriteType(range); } catch(e){}
-                            try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(range); } catch(e){}
-                        } catch(e) {}
-                    });
-                    else {
-                        try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
-                        try {
-                            const sel = document.getElementById('fav-type-range'); const range = sel ? sel.value : 'year';
-                            try { if (typeof renderFavoriteType === 'function') renderFavoriteType(range); } catch(e){}
-                            try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(range); } catch(e){}
-                        } catch(e) {}
-                    }
+                    if (p && p.then) p.then(() => { try { maybeRenderHistoryWidgets(); } catch(e){} });
+                    else try { maybeRenderHistoryWidgets(); } catch(e){}
                 }
             } catch(e) {}
             try { if (typeof updatePendingButtonVisibility === 'function') updatePendingButtonVisibility(); } catch(e) {}
@@ -285,8 +295,8 @@
                                                 try {
                                                     if (typeof renderWeekDots === 'function') {
                                                         const p2 = renderWeekDots();
-                                                        if (p2 && p2.then) p2.then(() => { try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){} });
-                                                        else try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
+                                                        if (p2 && p2.then) p2.then(() => { try { maybeRenderHistoryWidgets(); } catch(e){} });
+                                                        else try { maybeRenderHistoryWidgets(); } catch(e){}
                                                     }
                                                 } catch(e){}
                                                 try { if (typeof renderMainUser === 'function') renderMainUser(); } catch(e){}
