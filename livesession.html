@@ -400,6 +400,11 @@
                     <option value="" data-i18n="choose_routine_placeholder"></option>
                 </select>
 
+                <div id="noRoutinesEmpty" style="display:none;color:var(--text-dim);padding:12px 0 20px;text-align:center;background:transparent;">
+                    <img src="illustrations/empty-livesession.svg" alt="" style="width:200px;max-width:100%;height:auto;margin:0 auto 12px;display:block;" />
+                    <div data-i18n="livesession_no_routines"></div>
+                </div>
+
                 <div style="display:flex; gap:8px; margin-top:8px;">
                     <button id="toggleSortBtn" type="button" class="reorder-btn" style="display:none" onclick="toggleSortMode()" title="Ordenar">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="14" y2="12"></line><line x1="4" y1="17" x2="10" y2="17"></line></svg>
@@ -749,13 +754,33 @@
             // Default images will use `defaultImage` defined in `db.js` when specific images are missing.
             const workouts = await db.routines.toArray();
             const select = document.getElementById('workoutSelect');
+            const noRoutinesEmpty = document.getElementById('noRoutinesEmpty');
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-            workouts.forEach(w => {
-                const opt = document.createElement('option');
-                opt.value = w.id;
-                opt.textContent = (lang.startsWith('pt') && w.namePT) ? w.namePT : w.name;
-                select.appendChild(opt);
-            });
+            const cardEl = document.querySelector('.card');
+            if (!workouts || workouts.length === 0) {
+                // hide select and related controls, show illustrative empty state
+                try { select.style.display = 'none'; } catch (e) {}
+                try { const lbl = select.previousElementSibling; if (lbl && lbl.tagName === 'LABEL') lbl.style.display = 'none'; } catch (e) {}
+                try { document.getElementById('toggleSortBtn').style.display = 'none'; } catch (e) {}
+                try { document.getElementById('exerciseContainer').style.display = 'none'; } catch (e) {}
+                try { document.getElementById('startBtn').style.display = 'none'; } catch (e) {}
+                if (noRoutinesEmpty) noRoutinesEmpty.style.display = '';
+                // make the enclosing card transparent so the illustration appears on the page background
+                try { if (cardEl) { cardEl.style.background = 'transparent'; cardEl.style.border = 'none'; cardEl.style.boxShadow = 'none'; } } catch(e) {}
+            } else {
+                workouts.forEach(w => {
+                    const opt = document.createElement('option');
+                    opt.value = w.id;
+                    opt.textContent = (lang.startsWith('pt') && w.namePT) ? w.namePT : w.name;
+                    select.appendChild(opt);
+                });
+                if (noRoutinesEmpty) noRoutinesEmpty.style.display = 'none';
+                try { select.style.display = ''; } catch (e) {}
+                try { const lbl = select.previousElementSibling; if (lbl && lbl.tagName === 'LABEL') lbl.style.display = ''; } catch (e) {}
+                try { document.getElementById('exerciseContainer').style.display = ''; } catch (e) {}
+                // restore card visual style
+                try { if (cardEl) { cardEl.style.background = ''; cardEl.style.border = ''; cardEl.style.boxShadow = ''; } } catch(e) {}
+            }
             // apply static translations from GN_I18N
             try { GN_I18N.applyTranslations(document); } catch(e){}
             // set document title
