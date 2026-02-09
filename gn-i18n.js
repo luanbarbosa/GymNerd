@@ -1,4 +1,4 @@
-(function(){
+(function () {
     window.GN_I18N = {
         translations: {
             en: {
@@ -118,7 +118,7 @@
                 exercise_updated: 'Exercise updated!',
                 exercise_saved_local: 'Exercise saved to your local collection!',
                 failed_to_save_exercise_prefix: 'Failed to save exercise: ',
-                you_can_also_clear_local_data: 'You can also clear local data from the settings if you prefer.' ,
+                you_can_also_clear_local_data: 'You can also clear local data from the settings if you prefer.',
 
                 demo_mode: 'Demo mode',
                 demo_mode_warning: 'The data will be stored locally and might be cleared by the system at any point',
@@ -170,6 +170,8 @@
                 start_your_journey: 'Start your journey!',
                 empty_home_cta: "Let's start working out!",
                 best_record: 'Your record',
+                exercise_type_mix_title: 'Type distribution',
+                home_data_disclaimer: 'All data shown is based on the last 12 months of history.',
                 no_records_yet: 'No records yet',
                 keep_it_up: 'Keep it up!',
                 days_since_last: 'days since last',
@@ -246,8 +248,8 @@
                 start_session: '🚀 Start Session',
                 play_exercise: '🎯 Play this exercise',
                 finish_routine: 'Finish Routine',
-                    finished_good_job: 'Good job!',
-                
+                finished_good_job: 'Good job!',
+
                 routine_done: 'Routine done!',
                 exercises_completed: 'Exercises completed',
                 kg_per_rep: 'kg per rep',
@@ -396,7 +398,7 @@
                 exercise_updated: 'Exercício atualizado!',
                 exercise_saved_local: 'Exercício salvo na sua coleção local!',
                 failed_to_save_exercise_prefix: 'Falha ao salvar exercício: ',
-                you_can_also_clear_local_data: 'Você também pode limpar os dados locais nas configurações se preferir.' ,
+                you_can_also_clear_local_data: 'Você também pode limpar os dados locais nas configurações se preferir.',
 
                 local_mode: 'Modo Local',
                 running_local_mode_msg: 'Rodando em modo local.',
@@ -452,6 +454,8 @@
                 days_since_last: 'dias desde o último treino',
                 personal_best: 'Recorde Pessoal'
                 ,
+                exercise_type_mix_title: 'Distribuição por tipo',
+                home_data_disclaimer: 'Todos os dados exibidos são baseados nos últimos 12 meses de histórico.',
                 /* Exercise types */
                 exercise_type_shoulder: 'Ombros',
                 exercise_type_chest: 'Peito',
@@ -523,8 +527,8 @@
                 start_session: '🚀 Iniciar Sessão',
                 play_exercise: '🎯 Executar este exercício',
                 finish_routine: 'Finalizar Treino',
-                    finished_good_job: 'Bom trabalho!',
-                
+                finished_good_job: 'Bom trabalho!',
+
                 routine_done: 'Fim do treino!',
                 exercises_completed: 'Exercícios concluídos',
                 kg_per_rep: 'kg por repetição',
@@ -555,7 +559,7 @@
                 general: 'Geral'
             }
         },
-        getLang: function(){
+        getLang: function () {
             try {
                 // URL override (useful for testing): ?lang=en or ?lang=pt
                 try {
@@ -565,13 +569,13 @@
                         localStorage.setItem('gn_lang', q);
                         return q;
                     }
-                } catch(e) {}
+                } catch (e) { }
 
                 // Prefer explicit localStorage preference (set by UI) over cookies
                 try {
                     const stored = localStorage.getItem('gn_lang');
                     if (stored) return stored;
-                } catch(e){}
+                } catch (e) { }
 
                 // Check cookies for language (some pages store pref in cookies)
                 try {
@@ -583,32 +587,32 @@
                             if (val) return decodeURIComponent(val);
                         }
                     }
-                } catch(e){}
+                } catch (e) { }
                 return (navigator.language || navigator.userLanguage || 'en').toLowerCase().startsWith('pt') ? 'pt' : 'en';
-            } catch(e){ return 'en'; }
+            } catch (e) { return 'en'; }
         },
-        setLang: function(lang){
-            try { localStorage.setItem('gn_lang', lang); } catch(e){}
+        setLang: function (lang) {
+            try { localStorage.setItem('gn_lang', lang); } catch (e) { }
             try {
-                const d = new Date(); d.setTime(d.getTime() + (365*24*60*60*1000));
+                const d = new Date(); d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000));
                 document.cookie = `gn_lang=${encodeURIComponent(lang)};expires=${d.toUTCString()};path=/`;
-            } catch(e){}
+            } catch (e) { }
         },
-        t: function(key){
+        t: function (key) {
             const lang = this.getLang();
             return (this.translations[lang] && this.translations[lang][key]) || key;
         },
-        localizeExerciseType: function(type){
+        localizeExerciseType: function (type) {
             if (!type) return type;
             try {
                 const key = 'exercise_type_' + type.replace(/\s+/g, '_').toLowerCase();
                 const translated = this.t(key);
                 if (translated && translated !== key) return translated;
-            } catch(e){}
+            } catch (e) { }
             return type;
         },
         // Returns the localized label for a canonical exercise type key (e.g. 'abs', '"legs"')
-        getLocalizedTypeLabel: function(type){
+        getLocalizedTypeLabel: function (type) {
             if (!type) return type;
             try {
                 const normalized = type.toString().toLowerCase().replace(/\s+/g, '');
@@ -620,28 +624,28 @@
                 // Fallback to availableExerciseTypes labels if provided
                 const lang = this.getLang();
                 const translations = this.translations[lang] || this.translations['en'] || {};
-                if (Array.isArray(translations.availableExerciseTypes)){
-                    const found = translations.availableExerciseTypes.find(l => l.toString().toLowerCase().replace(/\s+/g,'') === normalized);
+                if (Array.isArray(translations.availableExerciseTypes)) {
+                    const found = translations.availableExerciseTypes.find(l => l.toString().toLowerCase().replace(/\s+/g, '') === normalized);
                     if (found) return found.toString();
                 }
-            } catch(e){}
+            } catch (e) { }
             return type;
         },
         // Returns an array of { key, label } for available exercise types in the current locale
-        getAvailableExerciseTypes: function(){
+        getAvailableExerciseTypes: function () {
             try {
                 const lang = this.getLang();
                 const translations = this.translations[lang] || this.translations['en'] || {};
                 if (Array.isArray(translations.availableExerciseTypes) && translations.availableExerciseTypes.length > 0) {
-                    return translations.availableExerciseTypes.map(l => ({ key: l.toString().toLowerCase().replace(/\s+/g,''), label: l.toString() }));
+                    return translations.availableExerciseTypes.map(l => ({ key: l.toString().toLowerCase().replace(/\s+/g, ''), label: l.toString() }));
                 }
                 // otherwise derive from exercise_type_* keys
                 const keys = Object.keys(translations).filter(k => k.indexOf('exercise_type_') === 0);
                 return keys.map(k => ({ key: k.replace('exercise_type_', ''), label: translations[k] }));
-            } catch(e) { return []; }
+            } catch (e) { return []; }
         },
-        applyTranslations: function(root){
-            try{
+        applyTranslations: function (root) {
+            try {
                 root = root || document;
                 const nodes = root.querySelectorAll('[data-i18n]');
                 nodes.forEach(n => {
@@ -660,18 +664,18 @@
                     const key = n.getAttribute('data-i18n-placeholder');
                     n.placeholder = this.t(key);
                 });
-            }catch(e){ console.warn('i18n apply failed', e); }
+            } catch (e) { console.warn('i18n apply failed', e); }
         }
         ,
         // Safe helper wrappers to avoid repeated defensive checks across files
-        safeGetLang: function(){
-            try { return this.getLang(); } catch(e){ return 'en'; }
+        safeGetLang: function () {
+            try { return this.getLang(); } catch (e) { return 'en'; }
         },
-        safeT: function(key){
-            try { return this.t(key); } catch(e){ return key; }
+        safeT: function (key) {
+            try { return this.t(key); } catch (e) { return key; }
         },
-        safeApplyTranslations: function(root){
-            try { this.applyTranslations(root); } catch(e){}
+        safeApplyTranslations: function (root) {
+            try { this.applyTranslations(root); } catch (e) { }
         }
     };
 })();

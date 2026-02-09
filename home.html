@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport"
@@ -821,6 +820,110 @@
 			color: var(--text);
 		}
 
+		#type-distribution-widget {
+			width: 100%;
+			max-width: none;
+			margin: 12px 0;
+			box-sizing: border-box;
+			padding: 16px;
+			border-radius: 12px;
+			background: var(--card);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			align-items: flex-start;
+		}
+
+		#type-distribution-widget .streak-title {
+			text-align: left;
+		}
+
+		#type-distribution-list {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			width: 100%;
+		}
+
+		.type-distribution-row {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			width: 100%;
+		}
+
+		.type-distribution-row-main {
+			display: flex;
+			justify-content: space-between;
+			align-items: baseline;
+			gap: 12px;
+			flex-wrap: wrap;
+		}
+
+		.type-distribution-row-label {
+			font-weight: 700;
+			font-size: 1rem;
+			color: var(--text);
+		}
+
+		.type-distribution-row-stats {
+			display: flex;
+			gap: 8px;
+			align-items: baseline;
+			font-size: 0.85rem;
+			color: var(--text-dim);
+		}
+
+		.type-distribution-bar {
+			position: relative;
+			height: 16px;
+			width: 100%;
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.04);
+			overflow: hidden;
+		}
+
+		.type-distribution-bar::after {
+			content: '';
+			display: block;
+			width: 100%;
+			height: 100%;
+			background: rgba(255, 255, 255, 0.06);
+			position: absolute;
+			top: 0;
+			left: 0;
+		}
+
+		.type-distribution-bar-fill {
+			display: block;
+			height: 100%;
+			border-radius: inherit;
+			background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%);
+			box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+			position: relative;
+			z-index: 1;
+			width: var(--fill, 0%);
+			min-width: 6px;
+		}
+
+		.data-disclaimer {
+			font-size: 0.75rem;
+			color: rgba(248, 250, 252, 0.7);
+			font-style: italic;
+			margin: 32px auto 40px;
+			width: calc(100% - 40px);
+			max-width: 520px;
+			display: flex;
+			justify-content: center;
+			text-align: center;
+			white-space: normal;
+			line-height: 1.2;
+			letter-spacing: 0.02em;
+			word-spacing: 0.1rem;
+		}
+
 		/* Grid layout for favorite type + exercise */
 		.fav-grid {
 			display: grid;
@@ -973,6 +1076,11 @@
 				<!-- Favorite exercise preview integrated into favorite-type widget below -->
 
 				<!-- Favorite exercise TYPE widget (type first, exercise below) -->
+				<div id="type-distribution-widget" class="nav-card" role="region" aria-live="polite" style="display:none;" aria-label="Exercise type mix">
+					<div class="streak-title" data-i18n="exercise_type_mix_title">Exercise type mix (last 12 months)</div>
+					<div id="type-distribution-list"></div>
+				</div>
+
 				<div id="fav-type-widget" class="nav-card"
 					style="display:none; width:100%; margin:12px 0; padding:14px; max-width:none; box-sizing:border-box; position:relative;">
 					<!-- Range selector removed — widget always shows Year range -->
@@ -1112,14 +1220,17 @@
 							if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 							let historyCount = 0;
 							try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
+							updateDataDisclaimerVisibility(historyCount);
 							await renderWeekDots();
 							if (historyCount > 0) {
 								try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch (e) { }
 								try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch (e) { }
+								try { if (typeof renderTypeDistribution === 'function') renderTypeDistribution(); } catch (e) { }
 								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'none'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'none'; } } catch (e) { }
 							} else {
 								try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
 								try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
+								try { const dist = document.getElementById('type-distribution-widget'); if (dist) dist.style.display = 'none'; } catch (e) { }
 								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'flex'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'block'; try { if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration(); } catch (e) { } } } catch (e) { }
 							}
 						} catch (e) { /* ignore */ }
@@ -1135,6 +1246,14 @@
 					const hasChanges = localStorage.getItem('has_local_changes') === 'true';
 					btn.style.display = hasChanges ? 'block' : 'none';
 				} catch (e) { console.error('Error reading has_local_changes', e); }
+			}
+
+			function updateDataDisclaimerVisibility(historyCount) {
+				const el = document.getElementById('home-data-disclaimer');
+				if (!el) return;
+				try {
+					el.style.display = (historyCount && historyCount > 0) ? 'flex' : 'none';
+				} catch (e) { }
 			}
 
 			window.syncToDrive = async function () {
@@ -1477,9 +1596,97 @@
 					try { parent.style.display = 'flex'; } catch (e) { }
 				} catch (err) { console.error('renderFavoriteExercise failed', err); }
 			}
+
+			async function renderTypeDistribution() {
+				try {
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const widget = document.getElementById('type-distribution-widget');
+					const list = document.getElementById('type-distribution-list');
+					if (!widget || !list) return;
+					let historyCount = 0;
+					try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
+					if (!historyCount) { widget.style.display = 'none'; return; }
+					const now = new Date();
+					now.setHours(0, 0, 0, 0);
+					const start = new Date(now);
+					start.setFullYear(start.getFullYear() - 1);
+					const startYMD = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+					let entries = await db.history.toArray();
+					if (!entries || entries.length === 0) { widget.style.display = 'none'; return; }
+					entries = entries.filter(it => {
+						try { return it && it.date && String(it.date) >= startYMD; } catch (e) { return false; }
+					});
+					if (!entries.length) { widget.style.display = 'none'; return; }
+					const [catalogEx, customEx] = await Promise.all([
+						db.catalog_exercises.toArray(),
+						db.custom_exercises.toArray()
+					]);
+					const allExercises = [
+						...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+						...customEx.map(ex => ({ ...ex, isCustom: true }))
+					];
+					const exMap = allExercises.reduce((acc, ex) => { acc[`${ex.id}-${!!ex.isCustom}`] = ex; return acc; }, {});
+					const typeCounts = {};
+					for (const entry of entries) {
+						const key = `${entry.exerciseId}-${entry.isCustom !== undefined ? !!entry.isCustom : entry.exerciseId > 0}`;
+						const ex = exMap[key];
+						const typeKey = (ex && ex.type) ? ex.type : 'other';
+						typeCounts[typeKey] = (typeCounts[typeKey] || 0) + 1;
+					}
+					const total = entries.length;
+					const sessionWord = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t('sessions') || 'sessions') : 'sessions';
+					const rows = Object.entries(typeCounts)
+						.filter(([, count]) => count > 0)
+						.map(([typeKey, count]) => {
+							const percentRaw = total ? (count / total) * 100 : 0;
+							const percentRounded = Math.round(percentRaw * 10) / 10;
+							const percentLabel = (percentRounded % 1 === 0) ? percentRounded.toFixed(0) : percentRounded.toFixed(1);
+							const label = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? (GN_I18N.localizeExerciseType(typeKey) || typeKey) : typeKey;
+							return { typeKey, label, count, percentRounded, percentLabel };
+						})
+						.sort((a, b) => b.percentRounded - a.percentRounded);
+					if (!rows.length) { widget.style.display = 'none'; return; }
+					list.innerHTML = '';
+					for (const row of rows) {
+						const wrapper = document.createElement('div');
+						wrapper.className = 'type-distribution-row';
+						const main = document.createElement('div');
+						main.className = 'type-distribution-row-main';
+						const labelEl = document.createElement('span');
+						labelEl.className = 'type-distribution-row-label';
+						labelEl.textContent = row.label;
+						const stats = document.createElement('span');
+						stats.className = 'type-distribution-row-stats';
+						const percentSpan = document.createElement('span');
+						percentSpan.textContent = `${row.percentLabel}%`;
+						const countSpan = document.createElement('span');
+						countSpan.textContent = `${row.count} ${sessionWord}`;
+						stats.appendChild(percentSpan);
+						stats.appendChild(countSpan);
+						main.appendChild(labelEl);
+						main.appendChild(stats);
+						const bar = document.createElement('div');
+						bar.className = 'type-distribution-bar';
+						const fill = document.createElement('span');
+						fill.className = 'type-distribution-bar-fill';
+						fill.style.setProperty('--fill', `${row.percentRounded}%`);
+						bar.appendChild(fill);
+						wrapper.appendChild(main);
+						wrapper.appendChild(bar);
+						list.appendChild(wrapper);
+					}
+					widget.style.display = 'flex';
+				} catch (err) {
+					console.error('renderTypeDistribution failed', err);
+				}
+			}
 			// Ensure the range selector calls both renderers (single robust listener)
 			// range selector removed; no listener required
 		</script>
+
+		<div id="home-data-disclaimer" class="data-disclaimer" style="display:none;">
+			<em data-i18n="home_data_disclaimer">all data shown is based on data from the last 12 months</em>
+		</div>
 		<script>
 			if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
 				navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
@@ -1511,6 +1718,7 @@
 				try { console.debug('[fav-init] DOMContentLoaded — invoking favorite renderers'); } catch (e) { }
 				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined'); } catch (e) { console.error('[fav-init] renderFavoriteType error', e); }
 				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined'); } catch (e) { console.error('[fav-init] renderFavoriteExercise error', e); }
+				try { if (typeof renderTypeDistribution === 'function') renderTypeDistribution(); } catch (e) { console.error('[fav-init] renderTypeDistribution error', e); }
 			});
 
 			// SPA hook: when the app is shown (fragment injected), ensure renderers run
@@ -1518,6 +1726,7 @@
 				try { console.debug('[fav-init] app-shown — invoking favorite renderers'); } catch (e) { }
 				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined on app-shown'); } catch (e) { console.error('[fav-init] renderFavoriteType error', e); }
 				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined on app-shown'); } catch (e) { console.error('[fav-init] renderFavoriteExercise error', e); }
+				try { if (typeof renderTypeDistribution === 'function') renderTypeDistribution(); } catch (e) { console.error('[fav-init] renderTypeDistribution error', e); }
 			});
 
 			// Fallback: call after a short delay in case neither event fires in the SPA environment
@@ -1525,6 +1734,7 @@
 				try { console.debug('[fav-init] timeout fallback — invoking favorite renderers'); } catch (e) { }
 				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch (e) { }
 				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch (e) { }
+				try { if (typeof renderTypeDistribution === 'function') renderTypeDistribution(); } catch (e) { }
 			}, 800);
 		</script>
 		<script>
@@ -1535,11 +1745,13 @@
 					try { renderMainUser(); } catch (e) { }
 					let historyCount = 0;
 					try { historyCount = await db.history.count(); } catch (e) { }
+					updateDataDisclaimerVisibility(historyCount);
 					try { await renderWeekDots(); } catch (e) { }
 					if (historyCount > 0) {
 						try { if (typeof renderStreakBanner === 'function') await renderStreakBanner(); } catch (e) { }
 						try { if (typeof renderFavoriteType === 'function') await renderFavoriteType('year'); } catch (e) { }
 						try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise('year'); } catch (e) { }
+						try { if (typeof renderTypeDistribution === 'function') await renderTypeDistribution(); } catch (e) { }
 						try {
 							const emptyEl = document.getElementById('home-empty-illustration');
 							if (emptyEl) {
@@ -1551,6 +1763,7 @@
 					} else {
 						try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
 						try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
+						try { const dist = document.getElementById('type-distribution-widget'); if (dist) dist.style.display = 'none'; } catch (e) { }
 						try {
 							const emptyEl = document.getElementById('home-empty-illustration');
 							if (emptyEl) {
