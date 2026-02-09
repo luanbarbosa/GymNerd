@@ -1157,5 +1157,53 @@
 				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){}
 			}, 800);
 		</script>
+		<script>
+			(function(){
+				const HOME_REFRESH_FLAG = 'home_force_refresh';
+				async function refreshHomeData(){
+					try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch(e){}
+					try { renderMainUser(); } catch(e){}
+					let historyCount = 0;
+					try { historyCount = await db.history.count(); } catch(e){}
+					try { await renderWeekDots(); } catch(e){}
+					if (historyCount > 0) {
+						try { if (typeof renderStreakBanner === 'function') await renderStreakBanner(); } catch(e){}
+						try { if (typeof renderFavoriteType === 'function') await renderFavoriteType('year'); } catch(e){}
+						try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise('year'); } catch(e){}
+						try {
+							const emptyEl = document.getElementById('home-empty-illustration');
+							if (emptyEl) {
+								emptyEl.style.display = 'none';
+								const img = document.getElementById('home-empty-illustration-img');
+								if (img) img.style.display = 'none';
+							}
+						} catch(e){}
+					} else {
+						try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch(e){}
+						try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch(e){}
+						try {
+							const emptyEl = document.getElementById('home-empty-illustration');
+							if (emptyEl) {
+								emptyEl.style.display = 'flex';
+								const img = document.getElementById('home-empty-illustration-img');
+								if (img) img.style.display = 'block';
+								if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration();
+							}
+						} catch(e){}
+					}
+					try { updatePendingButtonVisibility(); } catch(e){}
+				}
+				window.refreshHomeData = refreshHomeData;
+				window.addEventListener('pageshow', (event) => {
+					const flagged = localStorage.getItem(HOME_REFRESH_FLAG) === '1';
+					const shouldRefresh = flagged || (event && event.persisted);
+					if (!shouldRefresh) return;
+					if (flagged) {
+						try { localStorage.removeItem(HOME_REFRESH_FLAG); } catch(e){}
+					}
+					refreshHomeData();
+				});
+			})();
+		</script>
 </body>
 </html>

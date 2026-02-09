@@ -562,6 +562,7 @@
 
         <script>
 
+        const HOME_REFRESH_FLAG = 'home_force_refresh';
         let sessionSets = [];
         let currentIdx = 0;
         let viewingIdx = 0;
@@ -1947,6 +1948,7 @@
                 }
 
                 if (!syncOk) {
+                    try { localStorage.setItem(HOME_REFRESH_FLAG, '1'); } catch(e){}
                     // Mark that local changes are pending and navigate home so
                     // the existing sync-warning button is shown there. Keep the
                     // alert so the user sees the failure first.
@@ -1960,6 +1962,8 @@
                 }
 
                 // Sync succeeded
+
+                try { localStorage.setItem(HOME_REFRESH_FLAG, '1'); } catch(e){}
 
                 if (newRecord > oldRecord && newRecord > 1) {
                     const tpl = GN_I18N.t('new_streak_record');
