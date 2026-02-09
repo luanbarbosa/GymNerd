@@ -568,6 +568,7 @@
         let currentWorkoutId = null;
         let timerInterval = null;
         let timerStartMs = null; // timestamp (ms) when current timer started
+        let lastActiveTimerSignature = null;
         let sessionStartMs = null; // timestamp (ms) when session started
         let routineModified = false;
         let _finishingSession = false;
@@ -880,6 +881,7 @@
             currentIdx = state.currentIdx;
             viewingIdx = state.viewingIdx || state.currentIdx;
             currentWorkoutId = state.currentWorkoutId;
+            lastActiveTimerSignature = null;
 
             // restore session elapsed ms so duration continues from where the user left off
             try {
@@ -1332,6 +1334,7 @@
             if (visibleItems.length === 0) return alert(GN_I18N.t('please_select_exercise'));
 
             sessionSets = [];
+            lastActiveTimerSignature = null;
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             document.getElementById('playerWorkoutTitle').innerText = (lang.startsWith('pt') && workout.namePT) ? workout.namePT : workout.name;
 
@@ -1533,7 +1536,19 @@
 
         async function renderSet() {
             saveSessionState();
-            startTimer();
+            const activeSet = sessionSets[currentIdx];
+            if (!activeSet) {
+                stopTimer();
+                lastActiveTimerSignature = null;
+            } else {
+                const signature = `${activeSet.occurrenceId}:${activeSet.setNum}`;
+                if (signature !== lastActiveTimerSignature) {
+                    startTimer();
+                    lastActiveTimerSignature = signature;
+                } else {
+                    updateTimerDisplay();
+                }
+            }
             
             const progressEl = document.getElementById('progressBar');
             if (progressEl) {
@@ -1634,6 +1649,7 @@
             const bottomBarEl = document.getElementById('bottomBar');
             if (allDone) {
                 stopTimer();
+                lastActiveTimerSignature = null;
                 if (playerViewEl) playerViewEl.style.display = 'none';
                 if (bottomBarEl) bottomBarEl.style.display = 'none';
                 if (finishedView) {
