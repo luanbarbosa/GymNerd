@@ -222,7 +222,9 @@
             try {
                 const name = (location.pathname || '').split('/').pop() || '';
                 if (name === 'routines.html') {
-                    try { location.replace('/index.html?start=routines'); } catch(e) { location.href = '/index.html?start=routines'; }
+                    const basePath = (location.pathname || '/').replace(/\/[^\/]*$/, '/') || '/';
+                    const target = basePath + 'index.html?start=routines';
+                    try { location.replace(target); } catch(e) { location.href = target; }
                 }
             } catch (e) {}
         })();
