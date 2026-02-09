@@ -144,7 +144,6 @@
                 ,
                 /* Statistics page */
                 workout_frequency: 'Workout Frequency',
-                most_frequent_type: 'Favorite type',
                 favorite_exercise: 'Favorite exercise',
                 session: 'session',
                 sessions: 'sessions',
@@ -422,7 +421,6 @@
                 ,
                 /* Statistics page */
                 workout_frequency: 'Frequência de Treinos',
-                most_frequent_type: 'Tipo favorito',
                 favorite_exercise: 'Exercício favorito',
                 session: 'sessão',
                 sessions: 'sessões',

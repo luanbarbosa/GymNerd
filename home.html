@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 	<meta name="theme-color" content="#ffffff">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -26,11 +28,11 @@
 				const needs = localStorage.getItem && localStorage.getItem('needs_initial_download');
 				if (needs !== 'true') return;
 				console.info('[StartupWatchdog] needs_initial_download detected — starting auto-restore');
-				try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') : 'Welcome back! Syncing your data...'); } catch(e){}
+				try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') : 'Welcome back! Syncing your data...'); } catch (e) { }
 
 				if (typeof DriveStorage === 'undefined') {
 					console.warn('[StartupWatchdog] DriveStorage not available');
-					}
+				}
 
 				// Render the most-frequent exercise TYPE over a selected range
 				async function renderFavoriteType(range = 'year') {
@@ -41,29 +43,29 @@
 						// If there's no history at all, keep the favorites widget hidden
 						try {
 							const total = await db.history.count();
-							if (!total) { try { widget.style.display = 'none'; } catch(e){}; return; }
-						} catch(e) {}
+							if (!total) { try { widget.style.display = 'none'; } catch (e) { }; return; }
+						} catch (e) { }
 						// hide widget while we compute to avoid transient renders
-						try { widget.style.display = 'none'; } catch(e){}
+						try { widget.style.display = 'none'; } catch (e) { }
 						let items = await db.history.toArray();
 						if (!items || items.length === 0) {
 							widget.style.display = 'none';
 							return;
 						}
-						const now = new Date(); now.setHours(0,0,0,0);
+						const now = new Date(); now.setHours(0, 0, 0, 0);
 						if (range === 'year') {
 							const start = new Date(now);
 							start.setFullYear(start.getFullYear() - 1);
-							const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
-							items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
-							try { console.debug('[renderFavoriteType-startup] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
-							try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'startup-type', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+							const startYMD = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+							items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch (e) { return false; } });
+							try { console.debug('[renderFavoriteType-startup] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch (e) { }
+							try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'startup-type', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0, 5).map(i => i && i.date) }); } catch (e) { }
 						} else if (range === 'month') {
 							const start = new Date(now.getFullYear(), now.getMonth(), 1);
-							const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
-							items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
-							try { console.debug('[renderFavoriteType-startup] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
-							try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'startup-type', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
+							const startYMD = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+							items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch (e) { return false; } });
+							try { console.debug('[renderFavoriteType-startup] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch (e) { }
+							try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'startup-type', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0, 5).map(i => i && i.date) }); } catch (e) { }
 						}
 						if (!items || items.length === 0) {
 							// try broader range (month -> year -> all) before showing empty message
@@ -71,16 +73,16 @@
 								const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
 								if (broader) {
 									const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
-									try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
-									try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
+									try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch (e) { }
+									try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch (e) { }
 									return;
 								}
-							} catch(e){}
+							} catch (e) { }
 							// show localized empty message instead of hiding widget
-							try { widget.style.display = 'flex'; } catch(e){}
-							try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
-							try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
-							try { widget.style.display = 'flex'; } catch(e){}
+							try { widget.style.display = 'flex'; } catch (e) { }
+							try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch (e) { }
+							try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch (e) { }
+							try { widget.style.display = 'flex'; } catch (e) { }
 							return;
 						}
 						const counts = {};
@@ -104,147 +106,147 @@
 						if (!bestType) { widget.style.display = 'none'; return; }
 						// Localize label if helper available
 						let label = bestType;
-						try { if (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') label = GN_I18N.localizeExerciseType(bestType); else label = bestType.charAt(0).toUpperCase() + bestType.slice(1); } catch(e){}
-						try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = label; } catch(e){}
-						try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ` (${bestCount}x)`; } catch(e){}
-						try { widget.style.display = 'flex'; } catch(e){}
+						try { if (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') label = GN_I18N.localizeExerciseType(bestType); else label = bestType.charAt(0).toUpperCase() + bestType.slice(1); } catch (e) { }
+						try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = label; } catch (e) { }
+						try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ` (${bestCount}x)`; } catch (e) { }
+						try { widget.style.display = 'flex'; } catch (e) { }
 					} catch (err) { console.error('renderFavoriteType failed', err); }
 				}
 
-					try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-					return;
-				}
-
-				try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch(e){ console.warn('[StartupWatchdog] ensureDbOpen failed', e); }
-
-				console.info('[StartupWatchdog] calling DriveStorage.load');
-				const data = await DriveStorage.load();
-				console.info('[StartupWatchdog] DriveStorage.load returned', { hasData: !!data, keys: data ? Object.keys(data) : [] });
-
-				if (!data) {
-					try { localStorage.removeItem('needs_initial_download'); } catch(e){}
-					try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-					try { if (window.showApp) window.showApp(); } catch(e){}
-					return;
-				}
-
-				if (typeof db !== 'undefined') {
-					try {
-						await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
-							if (db.catalog_images) {
-								await db.catalog_images.clear();
-								if (data.catalog_images) {
-									const normalizedCatalogImages = data.catalog_images.map(img => ({
-										...img,
-										data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
-									}));
-									await db.catalog_images.bulkAdd(normalizedCatalogImages);
-								}
-							}
-
-							if (db.catalog_exercises) {
-								await db.catalog_exercises.clear();
-								if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
-							}
-
-							if (db.custom_images) {
-								await db.custom_images.clear();
-								if (data.custom_images) {
-									const normalizedCustomImages = data.custom_images.map(img => ({
-										...img,
-										data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
-									}));
-									await db.custom_images.bulkAdd(normalizedCustomImages);
-								}
-							}
-
-							if (db.custom_exercises) {
-								await db.custom_exercises.clear();
-								if (data.custom_exercises) await db.custom_exercises.bulkAdd(data.custom_exercises);
-							}
-
-							if (db.routines) {
-								await db.routines.clear();
-								if (data.routines) await db.routines.bulkAdd(data.routines);
-							}
-
-							if (db.history) {
-								await db.history.clear();
-								if (data.history) {
-									const normalized = data.history.map(h => {
-										const copy = { ...h };
-										if (copy.sessionId === undefined || copy.sessionId === null) {
-											let sid = null;
-											if (typeof copy.date === 'string') {
-												const parsed = Date.parse(copy.date);
-												if (!isNaN(parsed)) sid = parsed;
-											} else if (copy.date instanceof Date) sid = copy.date.getTime();
-											if (sid === null || isNaN(sid)) sid = Date.now();
-											copy.sessionId = sid;
-										}
-										return copy;
-									});
-									await db.history.bulkAdd(normalized);
-								}
-							}
-
-							if (db.weights) {
-								console.info('[StartupWatchdog] writing weights to DB', { count: Array.isArray(data.weights) ? data.weights.length : 0, sample: Array.isArray(data.weights) && data.weights.length ? data.weights[0] : null });
-								await db.weights.clear();
-								if (data.weights) await db.weights.bulkPut(data.weights);
-								let newCount = await db.weights.count();
-								if (newCount === 0 && Array.isArray(data.weights) && data.weights.length) {
-									console.warn('[StartupWatchdog] bulkPut wrote 0 items, falling back to per-item put()');
-									for (const w of data.weights) {
-										try { await db.weights.put(w); } catch (e) { console.error('[StartupWatchdog] failed to put weight item', { item: w, error: e }); }
-									}
-									newCount = await db.weights.count();
-								}
-								console.info('[StartupWatchdog] weights write complete', { newCount });
-							}
-						});
-					} catch (e) {
-						console.error('[StartupWatchdog] applying data to DB failed', e);
-					}
-				} else {
-					console.warn('[StartupWatchdog] db not available; skipping DB write');
-				}
-
-				if (data.lastSync) try { localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync); } catch(e){}
-				try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
-				try { localStorage.removeItem('needs_initial_download'); } catch(e){}
-
-				console.info('[StartupWatchdog] completed — reloading');
-				try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-				try { location.reload(); } catch(e){}
-			} catch (err) {
-				console.error('[StartupWatchdog] failed', err);
-				try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+				try { if (window.hideLoading) window.hideLoading(); } catch (e) { }
+				return;
 			}
+
+				try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { console.warn('[StartupWatchdog] ensureDbOpen failed', e); }
+
+			console.info('[StartupWatchdog] calling DriveStorage.load');
+			const data = await DriveStorage.load();
+			console.info('[StartupWatchdog] DriveStorage.load returned', { hasData: !!data, keys: data ? Object.keys(data) : [] });
+
+			if (!data) {
+				try { localStorage.removeItem('needs_initial_download'); } catch (e) { }
+				try { if (window.hideLoading) window.hideLoading(); } catch (e) { }
+				try { if (window.showApp) window.showApp(); } catch (e) { }
+				return;
+			}
+
+			if (typeof db !== 'undefined') {
+				try {
+					await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+						if (db.catalog_images) {
+							await db.catalog_images.clear();
+							if (data.catalog_images) {
+								const normalizedCatalogImages = data.catalog_images.map(img => ({
+									...img,
+									data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+								}));
+								await db.catalog_images.bulkAdd(normalizedCatalogImages);
+							}
+						}
+
+						if (db.catalog_exercises) {
+							await db.catalog_exercises.clear();
+							if (data.catalog_exercises) await db.catalog_exercises.bulkAdd(data.catalog_exercises);
+						}
+
+						if (db.custom_images) {
+							await db.custom_images.clear();
+							if (data.custom_images) {
+								const normalizedCustomImages = data.custom_images.map(img => ({
+									...img,
+									data: img.data ? (img.data.startsWith('data:') ? img.data : `data:image/png;base64,${img.data}`) : img.data
+								}));
+								await db.custom_images.bulkAdd(normalizedCustomImages);
+							}
+						}
+
+						if (db.custom_exercises) {
+							await db.custom_exercises.clear();
+							if (data.custom_exercises) await db.custom_exercises.bulkAdd(data.custom_exercises);
+						}
+
+						if (db.routines) {
+							await db.routines.clear();
+							if (data.routines) await db.routines.bulkAdd(data.routines);
+						}
+
+						if (db.history) {
+							await db.history.clear();
+							if (data.history) {
+								const normalized = data.history.map(h => {
+									const copy = { ...h };
+									if (copy.sessionId === undefined || copy.sessionId === null) {
+										let sid = null;
+										if (typeof copy.date === 'string') {
+											const parsed = Date.parse(copy.date);
+											if (!isNaN(parsed)) sid = parsed;
+										} else if (copy.date instanceof Date) sid = copy.date.getTime();
+										if (sid === null || isNaN(sid)) sid = Date.now();
+										copy.sessionId = sid;
+									}
+									return copy;
+								});
+								await db.history.bulkAdd(normalized);
+							}
+						}
+
+						if (db.weights) {
+							console.info('[StartupWatchdog] writing weights to DB', { count: Array.isArray(data.weights) ? data.weights.length : 0, sample: Array.isArray(data.weights) && data.weights.length ? data.weights[0] : null });
+							await db.weights.clear();
+							if (data.weights) await db.weights.bulkPut(data.weights);
+							let newCount = await db.weights.count();
+							if (newCount === 0 && Array.isArray(data.weights) && data.weights.length) {
+								console.warn('[StartupWatchdog] bulkPut wrote 0 items, falling back to per-item put()');
+								for (const w of data.weights) {
+									try { await db.weights.put(w); } catch (e) { console.error('[StartupWatchdog] failed to put weight item', { item: w, error: e }); }
+								}
+								newCount = await db.weights.count();
+							}
+							console.info('[StartupWatchdog] weights write complete', { newCount });
+						}
+					});
+				} catch (e) {
+					console.error('[StartupWatchdog] applying data to DB failed', e);
+				}
+			} else {
+				console.warn('[StartupWatchdog] db not available; skipping DB write');
+			}
+
+			if (data.lastSync) try { localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync); } catch (e) { }
+			try { localStorage.setItem('has_local_changes', 'false'); } catch (e) { }
+			try { localStorage.removeItem('needs_initial_download'); } catch (e) { }
+
+			console.info('[StartupWatchdog] completed — reloading');
+			try { if (window.hideLoading) window.hideLoading(); } catch (e) { }
+			try { location.reload(); } catch (e) { }
+		} catch (err) {
+			console.error('[StartupWatchdog] failed', err);
+			try { if (window.hideLoading) window.hideLoading(); } catch (e) { }
+		}
 		});
 	</script>
 	<script src="gn-i18n.js"></script>
 	<script>
 		// Early demo-mode flag: set before auth.js runs so other scripts can read it.
-		(function(){
+		(function () {
 			function cookieHas(name) {
-				try { if (!document || !document.cookie) return false; const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + '=([^;]+)')); return !!m; } catch(e){return false;}
+				try { if (!document || !document.cookie) return false; const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + '=([^;]+)')); return !!m; } catch (e) { return false; }
 			}
 			const hasCookieToken = cookieHas('google_token');
 			const hasLocalToken = !!localStorage.getItem('google_token');
 			window.DEMO_MODE = (!hasCookieToken && !hasLocalToken);
 			// Ensure banner and demo setup run after DOM is ready, in case auth runs earlier.
-			document.addEventListener('DOMContentLoaded', function() {
+			document.addEventListener('DOMContentLoaded', function () {
 				if (!window.DEMO_MODE) return;
-				try { window.authNeedsLogin = false; } catch(e){}
-				try { localStorage.removeItem('needs_initial_download'); } catch(e){}
-				try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+				try { window.authNeedsLogin = false; } catch (e) { }
+				try { localStorage.removeItem('needs_initial_download'); } catch (e) { }
+				try { localStorage.setItem('has_local_changes', 'false'); } catch (e) { }
 				// Ensure DriveStorage stubs exist
 				window.DriveStorage = window.DriveStorage || {};
 				const _stub = {
-					sync: async function() { console.info('[DemoMode] DriveStorage.sync ignored'); return false; },
-					load: async function() { console.info('[DemoMode] DriveStorage.load ignored'); return null; },
-					deleteFile: async function() { console.info('[DemoMode] DriveStorage.deleteFile ignored'); return false; }
+					sync: async function () { console.info('[DemoMode] DriveStorage.sync ignored'); return false; },
+					load: async function () { console.info('[DemoMode] DriveStorage.load ignored'); return null; },
+					deleteFile: async function () { console.info('[DemoMode] DriveStorage.deleteFile ignored'); return false; }
 				};
 				for (const k of Object.keys(_stub)) { if (!window.DriveStorage[k]) window.DriveStorage[k] = _stub[k]; }
 				// Show or create banner
@@ -266,7 +268,7 @@
 				} else {
 					// keep default display (controlled by CSS)
 				}
-				try { if (typeof window.showApp === 'function') window.showApp(); } catch(e){}
+				try { if (typeof window.showApp === 'function') window.showApp(); } catch (e) { }
 			});
 		})();
 	</script>
@@ -277,7 +279,7 @@
 	<script>
 		// Demo mode detection: if there's no session token in cookies or localStorage,
 		// enable demo mode which disables token refresh and Drive sync.
-		(function(){
+		(function () {
 			function cookieHas(name) {
 				try {
 					if (!document || !document.cookie) return false;
@@ -291,23 +293,23 @@
 			if (!hasCookieToken && !hasLocalToken) {
 				window.DEMO_MODE = true;
 				console.info('[DemoMode] enabled: no session token in cookies or localStorage');
-				try { window.authNeedsLogin = false; } catch(e){}
-				try { if (typeof window.showApp === 'function') window.showApp(); } catch(e){}
-				try { localStorage.removeItem('needs_initial_download'); } catch(e){}
-				try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+				try { window.authNeedsLogin = false; } catch (e) { }
+				try { if (typeof window.showApp === 'function') window.showApp(); } catch (e) { }
+				try { localStorage.removeItem('needs_initial_download'); } catch (e) { }
+				try { localStorage.setItem('has_local_changes', 'false'); } catch (e) { }
 
 				// Prevent token refresh attempts by stubbing ensureGoogleAccessToken
 				try {
 					window.__orig_ensureGoogleAccessToken = window.ensureGoogleAccessToken;
-				} catch(e){}
-				window.ensureGoogleAccessToken = async function() { return true; };
+				} catch (e) { }
+				window.ensureGoogleAccessToken = async function () { return true; };
 
 				// Provide harmless DriveStorage stubs if DriveStorage isn't present yet
 				window.DriveStorage = window.DriveStorage || {};
 				const _stub = {
-					sync: async function() { console.info('[DemoMode] DriveStorage.sync ignored'); return false; },
-					load: async function() { console.info('[DemoMode] DriveStorage.load ignored'); return null; },
-					deleteFile: async function() { console.info('[DemoMode] DriveStorage.deleteFile ignored'); return false; }
+					sync: async function () { console.info('[DemoMode] DriveStorage.sync ignored'); return false; },
+					load: async function () { console.info('[DemoMode] DriveStorage.load ignored'); return null; },
+					deleteFile: async function () { console.info('[DemoMode] DriveStorage.deleteFile ignored'); return false; }
 				};
 				for (const k of Object.keys(_stub)) {
 					if (!window.DriveStorage[k]) window.DriveStorage[k] = _stub[k];
@@ -319,18 +321,80 @@
 	</script>
 	<link rel="stylesheet" href="styles/app-titles.css">
 	<style>
-		:root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #101729; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #00e676; --danger: #ff5252; }
-		body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; line-height: 1.5; animation: fadeIn 0.5s ease-out; }
-		@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+		:root {
+			--primary: #3b82f6;
+			--primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+			--bg: #101729;
+			--card: #1e293b;
+			--text: #f8fafc;
+			--text-dim: #94a3b8;
+			--success: #00e676;
+			--danger: #ff5252;
+		}
 
-		.main-content { padding: 0; display: none; margin-top: 12px; }
-		h1 { text-align: center; font-weight: 600; margin-bottom: 40px; margin-top: 20px; letter-spacing: -2px; font-size: 3.5rem; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); font-style: normal; }
-		
-        
-		.menu-grid { display: grid; gap: 15px; margin-top: 0px; }
+		body {
+			font-family: 'Inter', system-ui, sans-serif;
+			background: var(--bg);
+			color: var(--text);
+			max-width: 500px;
+			margin: 0 auto;
+			padding: 0;
+			line-height: 1.5;
+			animation: fadeIn 0.5s ease-out;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(10px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.main-content {
+			padding: 0;
+			display: none;
+			margin-top: 12px;
+		}
+
+		h1 {
+			text-align: center;
+			font-weight: 600;
+			margin-bottom: 40px;
+			margin-top: 20px;
+			letter-spacing: -2px;
+			font-size: 3.5rem;
+			background: var(--primary-grad);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));
+			font-style: normal;
+		}
+
+
+		.menu-grid {
+			display: grid;
+			gap: 15px;
+			margin-top: 0px;
+		}
+
 		/* Top card that holds the topbar + user info (scrolls with page) */
 		/* Use safe-area insets so on edge-to-edge devices the status bar area stays white */
-		.top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 20px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+		.top-card {
+			position: static;
+			background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%);
+			color: #0f172a;
+			border-bottom-left-radius: 20px;
+			border-bottom-right-radius: 20px;
+			padding: 10px 16px 20px;
+			box-shadow: 0 6px 16px rgba(2, 6, 23, 0.06);
+			padding-top: calc(10px + constant(safe-area-inset-top));
+			padding-top: calc(10px + env(safe-area-inset-top));
+		}
 
 		/* Full-width safe-area overlay so mobile Safari shows white behind status bar */
 		body::before {
@@ -345,110 +409,490 @@
 			z-index: 1100;
 			pointer-events: none;
 		}
-		.top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+
+		.top-card-inner {
+			max-width: 100%;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 4px;
+		}
+
 		/* Ensure the home user container fills the top-card width so child
 		   elements (avatar + texts + spacer) can use available space. */
-		#home-user-main { width: 100%; max-width: none; box-sizing: border-box; display: block; }
-		.top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; }
+		#home-user-main {
+			width: 100%;
+			max-width: none;
+			box-sizing: border-box;
+			display: block;
+		}
+
+		.top-card .topbar {
+			background: transparent;
+			padding: 6px 0;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+
 		/* Ensure back/settings icons (and back links) are vertically centered */
-		.top-card .back-btn, .top-card .back-btn .material-symbols-outlined, .top-card a#topbar-settings { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+		.top-card .back-btn,
+		.top-card .back-btn .material-symbols-outlined,
+		.top-card a#topbar-settings {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			line-height: 1;
+		}
+
 		/* Ensure title can grow without being clipped */
-		#topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
+		#topbar-title {
+			flex: 1;
+			min-width: 0;
+			display: flex;
+			align-items: center;
+		}
+
 		/* Remove bounds for the settings action and make the icon a bit smaller/lighter */
-		.top-card a#topbar-settings { color: var(--bg) !important; border: none !important; background: transparent !important; padding: 4px; border-radius: 0; }
-		.top-card a#topbar-settings svg { width:16px; height:16px; stroke-width:1.4; opacity:1 !important; display:block; stroke: var(--bg) !important; fill: none !important; filter: none !important; }
-		.top-card a#topbar-settings svg * { stroke: var(--bg) !important; fill: none !important; stroke-opacity:1 !important; fill-opacity:0 !important; }
-		.user-card { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; gap:12px; margin:8px 0 12px; width:100%; max-width:460px; }
-		.user-avatar { width:96px; height:96px; border-radius:12px; object-fit:cover; border:3px solid rgba(37,99,235,0.14); box-shadow: 0 8px 20px rgba(37,99,235,0.12), 0 1px 0 rgba(255,255,255,0.04) inset; }
-		.user-line { display:flex; align-items:center; justify-content:center; gap:10px; }
+		.top-card a#topbar-settings {
+			color: var(--bg) !important;
+			border: none !important;
+			background: transparent !important;
+			padding: 4px;
+			border-radius: 0;
+		}
+
+		.top-card a#topbar-settings svg {
+			width: 16px;
+			height: 16px;
+			stroke-width: 1.4;
+			opacity: 1 !important;
+			display: block;
+			stroke: var(--bg) !important;
+			fill: none !important;
+			filter: none !important;
+		}
+
+		.top-card a#topbar-settings svg * {
+			stroke: var(--bg) !important;
+			fill: none !important;
+			stroke-opacity: 1 !important;
+			fill-opacity: 0 !important;
+		}
+
+		.user-card {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: flex-start;
+			gap: 12px;
+			margin: 8px 0 12px;
+			width: 100%;
+			max-width: 460px;
+		}
+
+		.user-avatar {
+			width: 96px;
+			height: 96px;
+			border-radius: 12px;
+			object-fit: cover;
+			border: 3px solid rgba(37, 99, 235, 0.14);
+			box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+		}
+
+		.user-line {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 10px;
+		}
+
 		/* Same (larger) font-size for both greeting and name, styles differ */
-		.user-greeting { font-weight:600; font-size:1.05rem; color: var(--text-dim); margin:0; line-height:1; }
-		.user-name { font-weight:900; font-size:2.8rem; letter-spacing:-0.6px; text-align:left; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 18px rgba(37,99,235,0.32)); margin:0; line-height:1; }
+		.user-greeting {
+			font-weight: 600;
+			font-size: 1.05rem;
+			color: var(--text-dim);
+			margin: 0;
+			line-height: 1;
+		}
+
+		.user-name {
+			font-weight: 900;
+			font-size: 2.8rem;
+			letter-spacing: -0.6px;
+			text-align: left;
+			background: var(--primary-grad);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			filter: drop-shadow(0 0 18px rgba(37, 99, 235, 0.32));
+			margin: 0;
+			line-height: 1;
+		}
+
 		/* motivational-text removed */
-		.nav-card { background: var(--card); padding: 24px; border-radius: 16px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255,255,255,0.05); }
-		.nav-card:active { transform: scale(0.97); }
-        
-		details { background: var(--card); border-radius: 16px; margin-top: 40px; border: 1px solid rgba(255,255,255,0.05); }
-		summary { font-weight: bold; cursor: pointer; padding: 15px 20px; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); }
-		summary .chevron { transition: transform 0.2s; color: var(--text-dim); }
-		details[open] summary .chevron { transform: rotate(180deg); }
-		.content-box { padding: 0 20px 20px 20px; border-top: 1px solid rgba(255,255,255,0.05); }
-        
-		.sync-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
-		.export-btn { background: var(--success); color: white; }
-		.import-btn { background: #6366f1; color: white; }
-		label { font-size: 0.75rem; font-weight: bold; color: #64748b; display: block; margin-top: 10px; }
-			/* Week dots (GitHub-style) */
-			.week-dots { display:flex; gap:0; align-items:center; justify-content:center; margin:12px auto; padding:8px 0; border-radius:12px; background: transparent; max-width: 460px; box-sizing: border-box; overflow: hidden; }
-			.week-dots .days { display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; align-items:center; justify-items:center; width:100%; }
-			.week-dots .day { display:flex; flex-direction:column; align-items:center; gap:0; font-size: clamp(10px, 1.6vw, 12px); color:var(--text-dim); min-width: 0; }
-			/* Constrain dot sizes so 7 items + gaps never overflow their container on desktop */
-			.week-dots .dot { width: clamp(34px, 6.5vw, 64px); height: clamp(34px, 6.5vw, 64px); max-width: 100%; box-shadow: none; border: none; display:flex; align-items:center; justify-content:center; box-sizing: border-box; }
-		.week-dots .dot img { width: 100%; height: 100%; object-fit: contain; display:block; }
+		.nav-card {
+			background: var(--card);
+			padding: 24px;
+			border-radius: 16px;
+			text-decoration: none;
+			color: inherit;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-weight: 700;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.nav-card:active {
+			transform: scale(0.97);
+		}
+
+		details {
+			background: var(--card);
+			border-radius: 16px;
+			margin-top: 40px;
+			border: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		summary {
+			font-weight: bold;
+			cursor: pointer;
+			padding: 15px 20px;
+			list-style: none;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			color: var(--text-dim);
+		}
+
+		summary .chevron {
+			transition: transform 0.2s;
+			color: var(--text-dim);
+		}
+
+		details[open] summary .chevron {
+			transform: rotate(180deg);
+		}
+
+		.content-box {
+			padding: 0 20px 20px 20px;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.sync-btn {
+			width: 100%;
+			padding: 12px;
+			border: none;
+			border-radius: 8px;
+			cursor: pointer;
+			font-weight: bold;
+			margin-bottom: 10px;
+		}
+
+		.export-btn {
+			background: var(--success);
+			color: white;
+		}
+
+		.import-btn {
+			background: #6366f1;
+			color: white;
+		}
+
+		label {
+			font-size: 0.75rem;
+			font-weight: bold;
+			color: #64748b;
+			display: block;
+			margin-top: 10px;
+		}
+
+		/* Week dots (GitHub-style) */
+		.week-dots {
+			display: flex;
+			gap: 0;
+			align-items: center;
+			justify-content: center;
+			margin: 12px auto;
+			padding: 8px 0;
+			border-radius: 12px;
+			background: transparent;
+			max-width: 460px;
+			box-sizing: border-box;
+			overflow: hidden;
+		}
+
+		.week-dots .days {
+			display: grid;
+			grid-template-columns: repeat(7, minmax(0, 1fr));
+			gap: 0;
+			align-items: center;
+			justify-items: center;
+			width: 100%;
+		}
+
+		.week-dots .day {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0;
+			font-size: clamp(10px, 1.6vw, 12px);
+			color: var(--text-dim);
+			min-width: 0;
+		}
+
+		/* Constrain dot sizes so 7 items + gaps never overflow their container on desktop */
+		.week-dots .dot {
+			width: clamp(34px, 6.5vw, 64px);
+			height: clamp(34px, 6.5vw, 64px);
+			max-width: 100%;
+			box-shadow: none;
+			border: none;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-sizing: border-box;
+		}
+
+		.week-dots .dot img {
+			width: 100%;
+			height: 100%;
+			object-fit: contain;
+			display: block;
+		}
+
 		/* Backwards-compatible classes retained but visuals are handled by images */
-		.week-dots .dot.fill-0, .week-dots .dot.fill-1, .week-dots .dot.fill-2, .week-dots .dot.fill-3, .week-dots .dot.fill-4, .week-dots .dot.no-workout, .week-dots .dot.future { background: transparent; }
+		.week-dots .dot.fill-0,
+		.week-dots .dot.fill-1,
+		.week-dots .dot.fill-2,
+		.week-dots .dot.fill-3,
+		.week-dots .dot.fill-4,
+		.week-dots .dot.no-workout,
+		.week-dots .dot.future {
+			background: transparent;
+		}
 
 		/* Demo mode banner */
-		#demo-banner { display: none; margin: 4px 20px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, #e6f0ff, #dbeafe); color: #0f172a; font-weight: 700; text-align: center; box-shadow: none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
-		#demo-banner small { display:block; font-weight:500; color: #334155; opacity:0.9; font-size:0.75rem; margin-top:1px; }
+		#demo-banner {
+			display: none;
+			margin: 4px 20px;
+			padding: 10px 12px;
+			border-radius: 12px;
+			background: linear-gradient(90deg, #e6f0ff, #dbeafe);
+			color: #0f172a;
+			font-weight: 700;
+			text-align: center;
+			box-shadow: none;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 2px;
+		}
 
-			/* Streak banner (structure only; colors intentionally neutral)
+		#demo-banner small {
+			display: block;
+			font-weight: 500;
+			color: #334155;
+			opacity: 0.9;
+			font-size: 0.75rem;
+			margin-top: 1px;
+		}
+
+		/* Streak banner (structure only; colors intentionally neutral)
 			   Fill the available content width and respect the page padding
 			*/
-			.streak-banner { display:flex; flex-direction:column; width:100%; max-width:none; margin:12px 0; box-sizing:border-box; background: var(--card); color: var(--text); padding: 14px; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,6,23,0.06); align-items:flex-start; }
-			.streak-banner .streak-inner { display:flex; gap:12px; align-items:center; width:100%; }
-			.streak-banner .week-dots { margin:0; align-self:center; width:100%; }
-			.streak-banner .streak-icon-wrap { width:96px; height:96px; border-radius:12px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.02); }
-			.streak-banner .streak-icon-wrap img { width:80px; height:80px; object-fit:contain; display:block; }
-			.streak-banner .streak-body { display:flex; flex-direction:column; justify-content:center; gap:6px; }
-			.streak-banner .streak-count { font-weight:900; font-size:2.2rem; line-height:1; display:flex; align-items:baseline; gap:8px; }
-			.streak-banner .streak-days { font-size:1rem; font-weight:800; opacity:0.9; }
-			.streak-banner .streak-text { color: var(--text-dim); font-weight:700; }
-			.streak-banner .streak-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-bottom:4px; }
-			/* Make streak-title available globally so other widgets can match the same style */
-			.streak-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-bottom:4px; }
-			.streak-banner .streak-record { font-size:0.85rem; color: var(--text-dim); font-weight:400; font-style:italic; margin-top:4px; opacity:0.9; }
-			.streak-banner .week-title { font-weight:800; color: var(--text-dim); font-size:0.95rem; margin-top:18px; margin-bottom:4px; }
-			/* Favorite type widget tweaks: match streak-banner spacing and full width */
-			#fav-type-widget { width:100%; max-width:none; margin:12px 0; box-sizing:border-box; padding:14px; }
-			#fav-type-widget select { background: transparent; color: var(--text); }
+		.streak-banner {
+			display: flex;
+			flex-direction: column;
+			width: 100%;
+			max-width: none;
+			margin: 12px 0;
+			box-sizing: border-box;
+			background: var(--card);
+			color: var(--text);
+			padding: 14px;
+			border-radius: 12px;
+			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+			align-items: flex-start;
+		}
 
-			/* Grid layout for favorite type + exercise */
-			.fav-grid { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; width:100%; }
-			.fav-type-cell { display:flex; flex-direction:column; gap:8px; }
-			.fav-ex-cell { display:flex; flex-direction:column; gap:8px; }
-			.fav-ex-row { display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
-			#fav-ex-preview { width:100%; height:auto; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.02); display:block; }
-			#fav-ex-img { width:100%; height:100%; object-fit:cover; display:block; }
-			#fav-ex-initial { font-weight:800; color:var(--text-dim); }
+		.streak-banner .streak-inner {
+			display: flex;
+			gap: 12px;
+			align-items: center;
+			width: 100%;
+		}
+
+		.streak-banner .week-dots {
+			margin: 0;
+			align-self: center;
+			width: 100%;
+		}
+
+		.streak-banner .streak-icon-wrap {
+			width: 96px;
+			height: 96px;
+			border-radius: 12px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: rgba(255, 255, 255, 0.02);
+		}
+
+		.streak-banner .streak-icon-wrap img {
+			width: 80px;
+			height: 80px;
+			object-fit: contain;
+			display: block;
+		}
+
+		.streak-banner .streak-body {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			gap: 6px;
+		}
+
+		.streak-banner .streak-count {
+			font-weight: 900;
+			font-size: 2.2rem;
+			line-height: 1;
+			display: flex;
+			align-items: baseline;
+			gap: 8px;
+		}
+
+		.streak-banner .streak-days {
+			font-size: 1rem;
+			font-weight: 800;
+			opacity: 0.9;
+		}
+
+		.streak-banner .streak-text {
+			color: var(--text-dim);
+			font-weight: 700;
+		}
+
+		.streak-banner .streak-title {
+			font-weight: 800;
+			color: var(--text-dim);
+			font-size: 0.95rem;
+			margin-bottom: 4px;
+		}
+
+		/* Make streak-title available globally so other widgets can match the same style */
+		.streak-title {
+			font-weight: 800;
+			color: var(--text-dim);
+			font-size: 0.95rem;
+			margin-bottom: 4px;
+		}
+
+		.streak-banner .streak-record {
+			font-size: 0.85rem;
+			color: var(--text-dim);
+			font-weight: 400;
+			font-style: italic;
+			margin-top: 4px;
+			opacity: 0.9;
+		}
+
+		.streak-banner .week-title {
+			font-weight: 800;
+			color: var(--text-dim);
+			font-size: 0.95rem;
+			margin-top: 18px;
+			margin-bottom: 4px;
+		}
+
+		/* Favorite type widget tweaks: match streak-banner spacing and full width */
+		#fav-type-widget {
+			width: 100%;
+			max-width: none;
+			margin: 12px 0;
+			box-sizing: border-box;
+			padding: 14px;
+		}
+
+		#fav-type-widget select {
+			background: transparent;
+			color: var(--text);
+		}
+
+		/* Grid layout for favorite type + exercise */
+		.fav-grid {
+			display: grid;
+			grid-template-columns: 1fr;
+			gap: 14px;
+			align-items: start;
+			width: 100%;
+		}
+
+		.fav-ex-cell {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.fav-ex-row {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 8px;
+		}
+
+		#fav-ex-preview {
+			width: 100%;
+			height: auto;
+			aspect-ratio: 16/9;
+			border-radius: 10px;
+			overflow: hidden;
+			background: rgba(255, 255, 255, 0.02);
+			display: block;
+		}
+
+		#fav-ex-img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+		}
+
+		#fav-ex-initial {
+			font-weight: 800;
+			color: var(--text-dim);
+		}
 	</style>
 </head>
+
 <body>
 
 	<script>
 		// If this physical page is loaded directly (e.g. /home.html), redirect
 		// to the SPA root with a hash so the SPA handles navigation: /#home.
-		(function(){
+		(function () {
 			try {
 				const name = (location.pathname || '').split('/').pop() || '';
 				if (name === 'home.html') {
 					try {
 						const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
 						const target = basePath + 'index.html?start=home';
-						try { location.replace(target); } catch(e) { location.href = 'index.html?start=home'; }
-					} catch (e) { try { location.replace('index.html?start=home'); } catch(e2) { location.href = 'index.html?start=home'; } }
+						try { location.replace(target); } catch (e) { location.href = 'index.html?start=home'; }
+					} catch (e) { try { location.replace('index.html?start=home'); } catch (e2) { location.href = 'index.html?start=home'; } }
 				}
-			} catch (e) {}
+			} catch (e) { }
 		})();
 	</script>
 
 	<script>
 		// Keep the main UI hidden until auth + initial sync complete
-		window.showApp = function() {
+		window.showApp = function () {
 			// Emit an event so pages or other scripts can react instead of directly
 			// manipulating visibility. Also ensure the main content is visible
 			// in cases (like demo mode) where no other listener will unhide it.
-			try { window.dispatchEvent(new CustomEvent('app-shown')); } catch(e){}
+			try { window.dispatchEvent(new CustomEvent('app-shown')); } catch (e) { }
 			try {
 				const mc = document.querySelector('.main-content');
 				if (mc) {
@@ -457,7 +901,7 @@
 					mc.style.transition = 'opacity 260ms ease-out';
 					requestAnimationFrame(() => { mc.style.opacity = '1'; });
 				}
-			} catch(e) {}
+			} catch (e) { }
 		};
 	</script>
 
@@ -469,11 +913,15 @@
 					<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
 				</div>
 				<div id="topbar-actions">
-					<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;margin-right:8px;">
-						<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">square_foot</span>
+					<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure"
+						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;margin-right:8px;">
+						<span class="material-symbols-outlined" aria-hidden="true"
+							style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">square_foot</span>
 					</a>
-					<a id="topbar-settings" href="settings.html" aria-label="Settings" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
-						<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">settings</span>
+					<a id="topbar-settings" href="settings.html" aria-label="Settings"
+						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
+						<span class="material-symbols-outlined" aria-hidden="true"
+							style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">settings</span>
 					</a>
 				</div>
 			</div>
@@ -487,13 +935,18 @@
 			</div>
 		</div>
 
-					<!-- Empty-home illustration: shown when user has no history -->
-					<div id="home-empty-illustration" style="display:none; width:100%; box-sizing:border-box; padding:28px 0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; position:relative; z-index:2;">
-						<img id="home-empty-illustration-img" src="illustrations/empty-home.svg" alt="No history" role="img" style="width:320px; max-width:80vw; height:auto; display:block; margin:0 auto 12px; opacity:0.99; box-shadow:0 8px 24px rgba(0,0,0,0.08);" />
-								<div id="home-empty-cta" data-i18n="empty_home_cta" style="color:var(--text-dim); padding:20px; text-align:center; margin-top:0; font-weight:400; font-size:1.15rem; background:transparent;">
-						</div>
-					</div>
-		<button id="sync-pending-btn" class="nav-card" style="display:none; width:calc(100% - 40px); margin:12px 20px; background: #f59e0b; color: white; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);" onclick="syncToDrive()">
+		<!-- Empty-home illustration: shown when user has no history -->
+		<div id="home-empty-illustration"
+			style="display:none; width:100%; box-sizing:border-box; padding:28px 0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; position:relative; z-index:2;">
+			<img id="home-empty-illustration-img" src="illustrations/empty-home.svg" alt="No history" role="img"
+				style="width:320px; max-width:80vw; height:auto; display:block; margin:0 auto 12px; opacity:0.99; box-shadow:0 8px 24px rgba(0,0,0,0.08);" />
+			<div id="home-empty-cta" data-i18n="empty_home_cta"
+				style="color:var(--text-dim); padding:20px; text-align:center; margin-top:0; font-weight:400; font-size:1.15rem; background:transparent;">
+			</div>
+		</div>
+		<button id="sync-pending-btn" class="nav-card"
+			style="display:none; width:calc(100% - 40px); margin:12px 20px; background: #f59e0b; color: white; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);"
+			onclick="syncToDrive()">
 			<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
 		</button>
 
@@ -507,7 +960,8 @@
 							<img id="streak-icon-img" src="" alt="streak icon" />
 						</div>
 						<div class="streak-body">
-							<div class="streak-count"><span id="streak-number">0</span> <span class="streak-days">DAYS</span></div>
+							<div class="streak-count"><span id="streak-number">0</span> <span
+									class="streak-days">DAYS</span></div>
 							<div id="streak-record" class="streak-record" style="display:none;"></div>
 						</div>
 					</div>
@@ -519,129 +973,125 @@
 				<!-- Favorite exercise preview integrated into favorite-type widget below -->
 
 				<!-- Favorite exercise TYPE widget (type first, exercise below) -->
-				<div id="fav-type-widget" class="nav-card" style="display:none; width:100%; margin:12px 0; padding:14px; max-width:none; box-sizing:border-box; position:relative;">
+				<div id="fav-type-widget" class="nav-card"
+					style="display:none; width:100%; margin:12px 0; padding:14px; max-width:none; box-sizing:border-box; position:relative;">
 					<!-- Range selector removed — widget always shows Year range -->
 					<div class="fav-grid">
 						<div class="fav-ex-cell">
-							<div id="fav-ex-label" class="streak-title" data-i18n="favorite_exercise">Favorite exercise</div>
+							<div id="fav-ex-label" class="streak-title" data-i18n="favorite_exercise">Favorite exercise
+							</div>
 							<div class="fav-ex-row">
 								<div id="fav-ex-preview">
 									<img id="fav-ex-img" src="" alt="" />
 									<span id="fav-ex-initial">—</span>
 								</div>
 
-								<div id="fav-ex-name-and-count" style="color:var(--text); font-weight:700; word-break:break-word; width:100%;">
+								<div id="fav-ex-name-and-count"
+									style="color:var(--text); font-weight:700; word-break:break-word; width:100%;">
 									<span id="fav-ex-name">—</span>
 									<span id="fav-ex-count" class="streak-record"> </span>
 								</div>
 							</div>
 						</div>
-						<div class="fav-type-cell">
-							<div id="fav-type-label" class="streak-title" data-i18n="most_frequent_type">Most frequent type</div>
-							<div style="display:flex; align-items:center; gap:8px;">
-								<div id="fav-type-name" style="color:var(--text); font-weight:700;">—</div>
-								<div id="fav-type-count" class="streak-record"> </div>
-							</div>
-						</div>
 					</div>
 				</div>
 
-			<script>
-			// Ensure the empty-home illustration is vertically centered between the top card and bottom nav
-			window.centerEmptyIllustration = function() {
-			    try {
-			        const el = document.getElementById('home-empty-illustration');
-			        if (!el) return;
-			        const topCard = document.querySelector('.top-card');
-			        const bottomNav = document.getElementById('gn-bottom-nav') || document.getElementById('bottom-nav');
-					// measure top card and bottom nav heights to compute available area
-					const topHeight = topCard ? Math.ceil(topCard.getBoundingClientRect().height) : 0;
-					const bottomHeight = bottomNav ? Math.ceil(bottomNav.getBoundingClientRect().height) : 0;
-					const avail = Math.max(0, window.innerHeight - topHeight - bottomHeight);
-					// leave some breathing room but ensure a sensible minimum
-					const minH = Math.max(200, avail - 40);
-			        el.style.minHeight = minH + 'px';
-			        // center content vertically via flex alignment already set in markup
-			    } catch (e) { /* ignore */ }
-			};
-			window.addEventListener('resize', function(){ try { window.centerEmptyIllustration(); } catch(e){} });
-			</script>
+				<script>
+					// Ensure the empty-home illustration is vertically centered between the top card and bottom nav
+					window.centerEmptyIllustration = function () {
+						try {
+							const el = document.getElementById('home-empty-illustration');
+							if (!el) return;
+							const topCard = document.querySelector('.top-card');
+							const bottomNav = document.getElementById('gn-bottom-nav') || document.getElementById('bottom-nav');
+							// measure top card and bottom nav heights to compute available area
+							const topHeight = topCard ? Math.ceil(topCard.getBoundingClientRect().height) : 0;
+							const bottomHeight = bottomNav ? Math.ceil(bottomNav.getBoundingClientRect().height) : 0;
+							const avail = Math.max(0, window.innerHeight - topHeight - bottomHeight);
+							// leave some breathing room but ensure a sensible minimum
+							const minH = Math.max(200, avail - 40);
+							el.style.minHeight = minH + 'px';
+							// center content vertically via flex alignment already set in markup
+						} catch (e) { /* ignore */ }
+					};
+					window.addEventListener('resize', function () { try { window.centerEmptyIllustration(); } catch (e) { } });
+				</script>
 
 
+			</div>
 		</div>
-	</div>
 
-	<script>
+		<script>
 
-		// Render compact app title into the sticky topbar
-		function renderCompactApp() {
-			const container = document.getElementById('topbar-title');
-			if (!container) return;
-			container.innerHTML = `
+			// Render compact app title into the sticky topbar
+			function renderCompactApp() {
+				const container = document.getElementById('topbar-title');
+				if (!container) return;
+				container.innerHTML = `
 				<div style="display:flex; align-items:center; gap:12px;">
 					<div style="flex:1; min-width:0;">
 						<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
 					</div>
 				</div>
 			`;
-			try {
-				const s = document.getElementById('topbar-settings');
-				if (s) s.setAttribute('aria-label', (typeof GN_I18N !== 'undefined') ? GN_I18N.t('menu_settings') : 'Settings');
-			} catch(e){}
-		}
-		function renderMainUser() {
-			const container = document.getElementById('home-user-main');
-			if (!container) return;
-			let user = null;
-			try {
-				if (typeof getGoogleUser === 'function') user = getGoogleUser();
-				else {
-					const u = localStorage.getItem('google_user'); if (u) user = JSON.parse(u);
-				}
-			} catch (e) { user = null; }
-
-			const name = user ? (user.name || user.email || '') : '';
-			let firstName = '';
-			if (name) {
-				if (name.includes('@')) {
-					firstName = name.split('@')[0].split(/[.\-_+]/)[0];
-				} else {
-					firstName = name.trim().split(/\s+/)[0];
-				}
-			}
-			const avatar = user ? (user.picture || '') : '';
-			const origin = (window && window.location && window.location.origin && window.location.origin !== 'null' && !String(window.location.origin).startsWith('file:')) ? window.location.origin : '';
-			const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
-			const fallbackAvatar = origin ? (origin + basePath + 'icons/icon-512.svg') : 'icons/icon-512.svg';
-			const effectiveAvatar = (window && window.DEMO_MODE) ? fallbackAvatar : (avatar || fallbackAvatar);
-			if (window && window.DEMO_MODE) try { console.info('[DemoMode] using demo avatar', fallbackAvatar); } catch(e){}
-			// Time-of-day localized greeting
-			(function(){
 				try {
-					const hour = (new Date()).getHours();
-					let key = 'greeting_morning';
-					if (hour >= 12 && hour < 18) key = 'greeting_afternoon';
-					else if (hour >= 18 && hour < 22) key = 'greeting_evening';
-					else if (hour >= 22 || hour < 5) key = 'greeting_evening';
-					const defaultMap = {
-						morning: 'Good morning',
-						afternoon: 'Good afternoon',
-						evening: 'Good evening'
-					};
-					if (typeof GN_I18N !== 'undefined' && GN_I18N.t) {
-						window.__computed_greeting = GN_I18N.t(key) || defaultMap[key.split('_')[1]] || defaultMap.morning;
-					} else {
-						// Fallback by locale
-						const isPt = (navigator.language || '').toLowerCase().startsWith('pt');
-						if (key === 'greeting_morning') window.__computed_greeting = isPt ? 'Bom dia' : 'Good morning';
-						else if (key === 'greeting_afternoon') window.__computed_greeting = isPt ? 'Boa tarde' : 'Good afternoon';
-						else window.__computed_greeting = isPt ? 'Boa noite' : 'Good evening';
+					const s = document.getElementById('topbar-settings');
+					if (s) s.setAttribute('aria-label', (typeof GN_I18N !== 'undefined') ? GN_I18N.t('menu_settings') : 'Settings');
+				} catch (e) { }
+			}
+			function renderMainUser() {
+				const container = document.getElementById('home-user-main');
+				if (!container) return;
+				let user = null;
+				try {
+					if (typeof getGoogleUser === 'function') user = getGoogleUser();
+					else {
+						const u = localStorage.getItem('google_user'); if (u) user = JSON.parse(u);
 					}
-				} catch (e) { window.__computed_greeting = 'Hi'; }
-			})();
-			const greeting = window.__computed_greeting || 'Hi';
+				} catch (e) { user = null; }
 
-			container.innerHTML = `
+				const name = user ? (user.name || user.email || '') : '';
+				let firstName = '';
+				if (name) {
+					if (name.includes('@')) {
+						firstName = name.split('@')[0].split(/[.\-_+]/)[0];
+					} else {
+						firstName = name.trim().split(/\s+/)[0];
+					}
+				}
+				const avatar = user ? (user.picture || '') : '';
+				const origin = (window && window.location && window.location.origin && window.location.origin !== 'null' && !String(window.location.origin).startsWith('file:')) ? window.location.origin : '';
+				const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+				const fallbackAvatar = origin ? (origin + basePath + 'icons/icon-512.svg') : 'icons/icon-512.svg';
+				const effectiveAvatar = (window && window.DEMO_MODE) ? fallbackAvatar : (avatar || fallbackAvatar);
+				if (window && window.DEMO_MODE) try { console.info('[DemoMode] using demo avatar', fallbackAvatar); } catch (e) { }
+				// Time-of-day localized greeting
+				(function () {
+					try {
+						const hour = (new Date()).getHours();
+						let key = 'greeting_morning';
+						if (hour >= 12 && hour < 18) key = 'greeting_afternoon';
+						else if (hour >= 18 && hour < 22) key = 'greeting_evening';
+						else if (hour >= 22 || hour < 5) key = 'greeting_evening';
+						const defaultMap = {
+							morning: 'Good morning',
+							afternoon: 'Good afternoon',
+							evening: 'Good evening'
+						};
+						if (typeof GN_I18N !== 'undefined' && GN_I18N.t) {
+							window.__computed_greeting = GN_I18N.t(key) || defaultMap[key.split('_')[1]] || defaultMap.morning;
+						} else {
+							// Fallback by locale
+							const isPt = (navigator.language || '').toLowerCase().startsWith('pt');
+							if (key === 'greeting_morning') window.__computed_greeting = isPt ? 'Bom dia' : 'Good morning';
+							else if (key === 'greeting_afternoon') window.__computed_greeting = isPt ? 'Boa tarde' : 'Good afternoon';
+							else window.__computed_greeting = isPt ? 'Boa noite' : 'Good evening';
+						}
+					} catch (e) { window.__computed_greeting = 'Hi'; }
+				})();
+				const greeting = window.__computed_greeting || 'Hi';
+
+				container.innerHTML = `
 				<div class="user-card">
 					<img src="${effectiveAvatar}" alt="avatar" class="user-avatar" onerror="this.onerror=null;this.src='${fallbackAvatar}'" />
 					<div style="display:flex; flex-direction:column; align-items:flex-start; gap:0;">
@@ -650,473 +1100,393 @@
 					</div>
 				</div>
 			`;
-		}
-
-		try { renderCompactApp(); } catch (e) {}
-		try { renderMainUser(); } catch (e) {}
-		try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) {}
-				try {
-					if (typeof renderWeekDots === 'function') {
-						(async () => {
-							try {
-								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-								let historyCount = 0;
-								try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
-								await renderWeekDots();
-								if (historyCount > 0) {
-									try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch(e){}
-									try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch(e){}
-									try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){}
-									try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'none'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'none'; } } catch(e){}
-								} else {
-									try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch(e){}
-									try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch(e){}
-									try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'flex'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'block'; try { if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration(); } catch(e){} } } catch(e){}
-								}
-							} catch(e) { /* ignore */ }
-						})();
-					}
-				} catch(e){}
-        
-		function updatePendingButtonVisibility() {
-			const btn = document.getElementById('sync-pending-btn');
-			if (!btn) return;
-			try {
-				if (window.DEMO_MODE) { btn.style.display = 'none'; return; }
-				const hasChanges = localStorage.getItem('has_local_changes') === 'true';
-				btn.style.display = hasChanges ? 'block' : 'none';
-			} catch (e) { console.error('Error reading has_local_changes', e); }
-		}
-
-		window.syncToDrive = async function() {
-			try {
-				if (window.DEMO_MODE) { console.info('[DemoMode] syncToDrive skipped'); return false; }
-				if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-				const ok = await DriveStorage.sync(db);
-				if (ok) updatePendingButtonVisibility();
-			} catch (e) {
-				console.error('Sync to Drive failed:', e);
 			}
-		};
 
-		try { updatePendingButtonVisibility(); } catch(e){}
-                
-				async function renderWeekDots(){
-					try{
-						if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-						const container = document.getElementById('week-dots');
-						if (!container) return;
-						container.innerHTML = `<div class="days" role="list"></div>`;
-						const daysContainer = container.querySelector('.days');
-						const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
-						const locale = (lang === 'pt') ? 'pt' : 'en';
-						const today = new Date();
-						const start = new Date(today);
-						start.setHours(0,0,0,0);
-						// shift so week starts on Monday instead of Sunday
-						const daysSinceMonday = (start.getDay() + 6) % 7; // 0=Monday, ..., 6=Sunday
-						start.setDate(start.getDate() - daysSinceMonday);
-
-						for (let i = 0; i < 7; i++) {
-							const d = new Date(start);
-							d.setDate(start.getDate() + i);
-							const y = d.getFullYear();
-							const m = String(d.getMonth() + 1).padStart(2, '0');
-							const day = String(d.getDate()).padStart(2, '0');
-							const dateStr = `${y}-${m}-${day}`;
-
-							let count = 0;
-							try { count = await db.history.where('date').equals(dateStr).count(); } catch (e) { count = 0; }
-
-							const level = (count === 0) ? 0 : Math.min(4, 1 + Math.floor(Math.log2(count)));
-							// Ensure short weekday labels are 3 letters with no trailing dot.
-							// PT locale often returns 'seg.' etc.; normalize to 'Seg'/'Ter'... without dot.
-							let weekdayShort = '';
-							if (locale === 'pt') {
-								const ptShort = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
-								weekdayShort = ptShort[d.getDay()];
-							} else {
-								weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, '');
-								if (weekdayShort.length > 3) weekdayShort = weekdayShort.slice(0,3);
-							}
-							const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
-
-							const el = document.createElement('div');
-							el.className = 'day';
-							const titleCount = (window.GN_I18N && GN_I18N.safeT) ? `${weekdayFull}: ${count}` : `${weekdayFull}: ${count}`;
-							el.title = titleCount;
-							const dateObj = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-							const todayMid = new Date(); todayMid.setHours(0,0,0,0);
-							let dotClass = '';
-							let imgName = '';
-							let statusText = '';
-							const isFuture = (dateObj.getTime() > todayMid.getTime()) || (dateObj.getTime() === todayMid.getTime() && count === 0);
-							if (isFuture) {
-								dotClass = 'future';
-								imgName = 'icons/day-future.svg';
-								statusText = 'Future';
-							} else if (count === 0) {
-								dotClass = 'missed';
-								imgName = 'icons/day-missed.svg';
-								statusText = 'Missed';
-							} else {
-								dotClass = 'done';
-								imgName = 'icons/day-done.svg';
-								statusText = 'Done';
-							}
-							const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
-							const imgPath = basePath + imgName;
-							const altText = `${weekdayFull} - ${statusText}: ${count}`;
-							el.innerHTML = `<div class="dot ${dotClass}" data-count="${count}"><img src="${imgPath}" alt="${altText}" loading="lazy" /></div><div class="label">${weekdayShort}</div>`;
-							daysContainer.appendChild(el);
-						}
-					} catch (err) { console.error('renderWeekDots failed', err); }
-						}
-
-						// Render the streak banner (consecutive days ending today)
-						async function renderStreakBanner(){
-							try{
-								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-								const banner = document.getElementById('streak-banner');
-								if (!banner) return;
-								const numEl = document.getElementById('streak-number');
-								const iconImg = document.getElementById('streak-icon-img');
-								const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
-								function dateToYMD(d){ const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
-								let streak = 0;
-								const today = new Date(); today.setHours(0,0,0,0);
-								const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
-								let todayCount = 0;
-								let yesterdayCount = 0;
-								try{ todayCount = await db.history.where('date').equals(dateToYMD(today)).count(); } catch(e){ todayCount = 0; }
-								try{ yesterdayCount = await db.history.where('date').equals(dateToYMD(yesterday)).count(); } catch(e){ yesterdayCount = 0; }
-								// Determine anchor day: prefer today if there's an entry, otherwise keep streak valid through today if yesterday has an entry.
-								let anchor = null;
-								if (todayCount > 0) anchor = new Date(today);
-								else if (yesterdayCount > 0) anchor = new Date(yesterday);
-								if (!anchor) {
-									// No active streak
-									streak = 0;
-									// show a friendly sad-flame illustration instead of the default missed-day icon
-									iconImg.src = basePath + 'illustrations/sad-flame-face.svg';
-									iconImg.alt = 'no streak';
-								} else {
-									// Count consecutive days backwards from the anchor (today or yesterday)
-									streak = 0;
-									let cursor = new Date(anchor);
-									while (true) {
-										let c = 0;
-										try{ c = await db.history.where('date').equals(dateToYMD(cursor)).count(); } catch(e){ c = 0; }
-										if (c > 0) { streak++; cursor.setDate(cursor.getDate()-1); } else break;
-									}
-									// show a happy flame illustration when the streak is active
-									iconImg.src = basePath + 'illustrations/happy-flame-face.svg';
-									iconImg.alt = 'streak active';
-									// (Visible caption removed — only the counter and icon are shown)
-								}
-								numEl.textContent = String(streak);
-								// Ensure the streak title is translated (or has a sensible default)
-								const titleEl = banner.querySelector('[data-i18n="streak_title"]');
-								if (titleEl) {
-									if (typeof GN_I18N !== 'undefined' && GN_I18N.t) titleEl.textContent = GN_I18N.t('streak_title') || 'Your streak';
-									else titleEl.textContent = 'Your streak';
-								}
-								// Pluralization: show singular for 1, plural otherwise (localized when available)
-								const daysEl = banner.querySelector('.streak-days');
-								if (daysEl) {
-									try {
-										if (typeof GN_I18N !== 'undefined' && GN_I18N.t) {
-											daysEl.textContent = (streak === 1) ? (GN_I18N.t('day_singular') || 'DAY') : (GN_I18N.t('day_plural') || 'DAYS');
-										} else {
-											daysEl.textContent = (streak === 1) ? 'DAY' : 'DAYS';
-										}
-									} catch (e) { daysEl.textContent = (streak === 1) ? 'DAY' : 'DAYS'; }
-								}
-								// Compute best (record) consecutive streak from history and show it
-								const recordEl = document.getElementById('streak-record');
-								if (recordEl) {
-									try {
-										let best = 0;
-										try {
-											const items = await db.history.toArray();
-											const uniq = Array.from(new Set(items.map(it => it.date))).filter(Boolean).map(s => {
-												const d = new Date(s);
-												d.setHours(0,0,0,0);
-												return d.getTime();
-											}).sort((a,b) => a - b);
-											if (uniq.length > 0) {
-												let run = 1;
-												for (let i = 1; i < uniq.length; i++) {
-													const diffDays = Math.round((uniq[i] - uniq[i-1]) / (24*3600*1000));
-													if (diffDays === 1) run++;
-													else run = 1;
-													best = Math.max(best, run);
-												}
-												best = Math.max(best, run);
-											}
-										} catch(e) { best = 0; }
-										if (best > 0) {
-											const recLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('best_record') || 'Best Record') : 'Best Record';
-											const dayLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? ((best === 1) ? (GN_I18N.t('day_singular') || 'DAY') : (GN_I18N.t('day_plural') || 'DAYS')) : ((best === 1) ? 'DAY' : 'DAYS');
-											recordEl.textContent = `${recLabel}: ${best} ${dayLabel}`;
-											recordEl.style.display = 'block';
-										} else {
-											recordEl.style.display = 'none';
-										}
-									} catch (e) { recordEl.style.display = 'none'; }
-								}
-								banner.style.display = 'flex';
-							} catch(err){ console.error('renderStreakBanner failed', err); }
-						}
-
-						// Global favorite-type renderer (ensures function is available outside any inner scope)
-						async function renderFavoriteType(range = 'year') {
-							try {
-								if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-								const widget = document.getElementById('fav-type-widget');
-								if (!widget) return;
-								// If there's no history at all, keep the favorites widget hidden
-								try {
-									const total = await db.history.count();
-									if (!total) { try { widget.style.display = 'none'; } catch(e){}; return; }
-								} catch(e) {}
-								let items = await db.history.toArray();
-								if (!items || items.length === 0) {
-									// try broader range before showing empty message
-									try {
-										const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
-										if (broader) {
-											const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
-											try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
-											try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
-											return;
-										}
-									} catch(e){}
-									try { widget.style.display = 'flex'; } catch(e){}
-									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
-									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
-									return;
-								}
-								const now = new Date(); now.setHours(0,0,0,0);
-								if (range === 'year') {
-									const start = new Date(now);
-									start.setFullYear(start.getFullYear() - 1);
-									items = items.filter(it => { const d = new Date(it.date); d.setHours(0,0,0,0); return d >= start; });
-									try { console.debug('[renderFavoriteType-global] range=', range, 'start=', start.toISOString(), 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
-								} else if (range === 'month') {
-									const start = new Date(now.getFullYear(), now.getMonth(), 1);
-									items = items.filter(it => { const d = new Date(it.date); d.setHours(0,0,0,0); return d >= start; });
-									try { console.debug('[renderFavoriteType-global] range=', range, 'start=', start.toISOString(), 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
-								}
-								if (!items || items.length === 0) {
-									try { widget.style.display = 'flex'; } catch(e){}
-									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
-									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
-									return;
-								}
-								const counts = {};
-								for (const it of items) {
-									let ex = null;
-									try {
-										if (it.isCustom === true) ex = await db.custom_exercises.get(it.exerciseId);
-										else if (it.isCustom === false) ex = await db.catalog_exercises.get(it.exerciseId);
-										else {
-											ex = await db.catalog_exercises.get(it.exerciseId);
-											if (!ex) ex = await db.custom_exercises.get(it.exerciseId);
-										}
-									} catch (e) { ex = null; }
-									const type = (ex && ex.type) ? ex.type : 'other';
-									counts[type] = (counts[type] || 0) + 1;
-								}
-								let bestType = null, bestCount = 0;
-								for (const k of Object.keys(counts)) {
-									if (counts[k] > bestCount) { bestCount = counts[k]; bestType = k; }
-								}
-								if (!bestType) {
-									try { widget.style.display = 'flex'; } catch(e){}
-									try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
-									try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ''; } catch(e){}
-									return;
-								}
-								let label = bestType;
-								try { if (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') label = GN_I18N.localizeExerciseType(bestType); else label = bestType.charAt(0).toUpperCase() + bestType.slice(1); } catch(e){}
-								try { const nameEl = document.getElementById('fav-type-name'); if (nameEl) nameEl.textContent = label; } catch(e){}
-								try { const countEl = document.getElementById('fav-type-count'); if (countEl) countEl.textContent = ` (${bestCount}x)`; } catch(e){}
-								widget.style.display = 'flex';
-							} catch (err) { console.error('renderFavoriteType failed', err); }
-						}
-
-						// range selector removed — no runtime listener required
-
-					// Global favorite-exercise renderer (uses the same parent widget as favorite-type)
-					async function renderFavoriteExercise(range = 'year') {
+			try { renderCompactApp(); } catch (e) { }
+			try { renderMainUser(); } catch (e) { }
+			try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) { }
+			try {
+				if (typeof renderWeekDots === 'function') {
+					(async () => {
 						try {
 							if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-							const parent = document.getElementById('fav-type-widget');
-							if (!parent) return;
-							// If there's no history at all, keep the favorites widget hidden
-							try {
-								const total = await db.history.count();
-								if (!total) { try { parent.style.display = 'none'; } catch(e){}; return; }
-							} catch(e) {}
-							let items = await db.history.toArray();
-							if (!items || items.length === 0) {
-								// try broader range before showing empty message
-								try {
-									const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
-									if (broader) {
-										const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
-										try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch(e){}
-										try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch(e){}
-										return;
-									}
-								} catch(e){}
-								try { parent.style.display = 'flex'; } catch(e){}
-								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
-								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
-								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
-								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
-								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
-								try { parent.style.display = 'flex'; } catch(e){}
-								return;
-							}
-							const now = new Date(); now.setHours(0,0,0,0);
-							if (range === 'year') {
-								const start = new Date(now);
-								start.setFullYear(start.getFullYear() - 1);
-								const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
-								items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
-								try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
-								try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
-							} else if (range === 'month') {
-								const start = new Date(now.getFullYear(), now.getMonth(), 1);
-								const startYMD = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
-								items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch(e){ return false;} });
-								try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch(e){}
-								try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0,5).map(i => i && i.date) }); } catch(e){}
-							}
-							if (!items || items.length === 0) {
-								try { parent.style.display = 'flex'; } catch(e){}
-								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
-								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
-								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
-								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
-								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
-								return;
-							}
-							const counts = {};
-							const totals = {}; // totals[key] = { reps: number, weight: number }
-							function addTotalsForKey(key, repsToAdd, weightToAdd) {
-								if (!totals[key]) totals[key] = { reps: 0, weight: 0 };
-								totals[key].reps += repsToAdd;
-								totals[key].weight += weightToAdd;
-							}
-							for (const it of items) {
-								const key = (it.isCustom === true ? 'c' : 'k') + '|' + it.exerciseId;
-								counts[key] = (counts[key] || 0) + 1;
-								// attempt to extract reps/weight information from the history entry
-								try {
-									let entryReps = 0, entryWeight = 0;
-									if (Array.isArray(it.sets) && it.sets.length > 0) {
-										for (const s of it.sets) {
-											// s may be {sets, reps, weight} or {reps, weight}
-											const setsCount = (s && s.sets !== undefined && s.sets !== '') ? Number(s.sets) : (s && (s.reps !== undefined || s.weight !== undefined) ? 1 : 0);
-											const repsPer = (s && s.reps !== undefined && s.reps !== '') ? Number(s.reps) : 0;
-											const weightPer = (s && s.weight !== undefined && s.weight !== '') ? Number(s.weight) : 0;
-											const repsDone = (isFinite(setsCount) ? setsCount : 0) * (isFinite(repsPer) ? repsPer : 0);
-											entryReps += repsDone;
-											entryWeight += repsDone * (isFinite(weightPer) ? weightPer : 0);
-										}
-									} else if (it.reps !== undefined || it.weight !== undefined) {
-										const reps = (it.reps !== undefined && it.reps !== '') ? Number(it.reps) : 0;
-										const weight = (it.weight !== undefined && it.weight !== '') ? Number(it.weight) : 0;
-										entryReps += isFinite(reps) ? reps : 0;
-										entryWeight += (isFinite(reps) ? reps : 0) * (isFinite(weight) ? weight : 0);
-									}
-									if (entryReps > 0 || entryWeight > 0) addTotalsForKey(key, entryReps, entryWeight);
-								} catch (e) { /* ignore parse errors */ }
-							}
-							let bestKey = null, bestCount = 0, bestAvg = 0;
-							for (const k of Object.keys(counts)) {
-								const c = counts[k] || 0;
-								if (c > bestCount) {
-									bestCount = c; bestKey = k; bestAvg = ((totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0);
-								} else if (c === bestCount) {
-									// tie-breaker: pick the one with higher average weight per rep
-									const avg = (totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0;
-									if (avg > bestAvg) {
-										bestKey = k; bestAvg = avg;
-									}
-								}
-							}
-							if (!bestKey) {
-								try { parent.style.display = 'flex'; } catch(e){}
-								try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch(e){}
-								try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch(e){}
-								try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch(e){}
-								try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch(e){}
-								try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch(e){}
-								return;
-							}
-							const parts = bestKey.split('|');
-							const isCustom = parts[0] === 'c';
-							const exId = parts[1];
-							let ex = null;
-							try {
-								if (isCustom) ex = await db.custom_exercises.get(Number(exId));
-								else ex = await db.catalog_exercises.get(Number(exId));
-								if (!ex && !isCustom) ex = await db.custom_exercises.get(Number(exId));
-							} catch(e) { ex = null; }
-							if (!ex) { parent.style.display = 'none'; return; }
-							// Determine localized name
-							let lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : ((navigator.language||'').toLowerCase().startsWith('pt') ? 'pt' : 'en');
-							let name = '';
-							if (lang === 'pt') {
-								name = ex.namePT || ex.name_pt || ex.ptName || ex.name || '';
+							let historyCount = 0;
+							try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
+							await renderWeekDots();
+							if (historyCount > 0) {
+								try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch (e) { }
+								try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch (e) { }
+								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'none'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'none'; } } catch (e) { }
 							} else {
-								name = ex.name || ex.namePT || ex.name_pt || ex.ptName || '';
+								try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
+								try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
+								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'flex'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'block'; try { if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration(); } catch (e) { } } } catch (e) { }
 							}
-							if (!name) name = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('unknown_exercise') : 'Unknown Exercise';
-							const nameEl = document.getElementById('fav-ex-name');
-							if (nameEl) nameEl.textContent = name;
-							try {
-								const exCountEl = document.getElementById('fav-ex-count');
-								if (exCountEl) exCountEl.textContent = `\u00A0(${bestCount}x)`;
-							} catch(e) {}
-							// Ensure preview container is visible, then try to show image preview if available
-							const previewEl = document.getElementById('fav-ex-preview');
-							if (previewEl) previewEl.style.display = 'flex';
-							const imgEl = document.getElementById('fav-ex-img');
-							const initEl = document.getElementById('fav-ex-initial');
-							let shownImage = false;
-							try {
-								if (ex.imageId && imgEl && db.catalog_images) {
-									const img = await db.catalog_images.get(Number(ex.imageId));
-									if (img && img.data) {
-										imgEl.src = img.data;
-										imgEl.style.display = 'block';
-										if (initEl) initEl.style.display = 'none';
-										shownImage = true;
-									}
-								}
-							} catch(e) { shownImage = false; }
-							if (!shownImage) {
-								if (imgEl) imgEl.style.display = 'none';
-								if (initEl) { initEl.style.display = 'block'; initEl.textContent = name ? name.charAt(0).toUpperCase() : '—'; }
-							}
-							try { parent.style.display = 'flex'; } catch(e){}
-						} catch (err) { console.error('renderFavoriteExercise failed', err); }
+						} catch (e) { /* ignore */ }
+					})();
+				}
+			} catch (e) { }
+
+			function updatePendingButtonVisibility() {
+				const btn = document.getElementById('sync-pending-btn');
+				if (!btn) return;
+				try {
+					if (window.DEMO_MODE) { btn.style.display = 'none'; return; }
+					const hasChanges = localStorage.getItem('has_local_changes') === 'true';
+					btn.style.display = hasChanges ? 'block' : 'none';
+				} catch (e) { console.error('Error reading has_local_changes', e); }
+			}
+
+			window.syncToDrive = async function () {
+				try {
+					if (window.DEMO_MODE) { console.info('[DemoMode] syncToDrive skipped'); return false; }
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const ok = await DriveStorage.sync(db);
+					if (ok) updatePendingButtonVisibility();
+				} catch (e) {
+					console.error('Sync to Drive failed:', e);
+				}
+			};
+
+			try { updatePendingButtonVisibility(); } catch (e) { }
+
+			async function renderWeekDots() {
+				try {
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const container = document.getElementById('week-dots');
+					if (!container) return;
+					container.innerHTML = `<div class="days" role="list"></div>`;
+					const daysContainer = container.querySelector('.days');
+					const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
+					const locale = (lang === 'pt') ? 'pt' : 'en';
+					const today = new Date();
+					const start = new Date(today);
+					start.setHours(0, 0, 0, 0);
+					// shift so week starts on Monday instead of Sunday
+					const daysSinceMonday = (start.getDay() + 6) % 7; // 0=Monday, ..., 6=Sunday
+					start.setDate(start.getDate() - daysSinceMonday);
+
+					for (let i = 0; i < 7; i++) {
+						const d = new Date(start);
+						d.setDate(start.getDate() + i);
+						const y = d.getFullYear();
+						const m = String(d.getMonth() + 1).padStart(2, '0');
+						const day = String(d.getDate()).padStart(2, '0');
+						const dateStr = `${y}-${m}-${day}`;
+
+						let count = 0;
+						try { count = await db.history.where('date').equals(dateStr).count(); } catch (e) { count = 0; }
+
+						const level = (count === 0) ? 0 : Math.min(4, 1 + Math.floor(Math.log2(count)));
+						// Ensure short weekday labels are 3 letters with no trailing dot.
+						// PT locale often returns 'seg.' etc.; normalize to 'Seg'/'Ter'... without dot.
+						let weekdayShort = '';
+						if (locale === 'pt') {
+							const ptShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+							weekdayShort = ptShort[d.getDay()];
+						} else {
+							weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, '');
+							if (weekdayShort.length > 3) weekdayShort = weekdayShort.slice(0, 3);
+						}
+						const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
+
+						const el = document.createElement('div');
+						el.className = 'day';
+						const titleCount = (window.GN_I18N && GN_I18N.safeT) ? `${weekdayFull}: ${count}` : `${weekdayFull}: ${count}`;
+						el.title = titleCount;
+						const dateObj = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+						const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+						let dotClass = '';
+						let imgName = '';
+						let statusText = '';
+						const isFuture = (dateObj.getTime() > todayMid.getTime()) || (dateObj.getTime() === todayMid.getTime() && count === 0);
+						if (isFuture) {
+							dotClass = 'future';
+							imgName = 'icons/day-future.svg';
+							statusText = 'Future';
+						} else if (count === 0) {
+							dotClass = 'missed';
+							imgName = 'icons/day-missed.svg';
+							statusText = 'Missed';
+						} else {
+							dotClass = 'done';
+							imgName = 'icons/day-done.svg';
+							statusText = 'Done';
+						}
+						const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+						const imgPath = basePath + imgName;
+						const altText = `${weekdayFull} - ${statusText}: ${count}`;
+						el.innerHTML = `<div class="dot ${dotClass}" data-count="${count}"><img src="${imgPath}" alt="${altText}" loading="lazy" /></div><div class="label">${weekdayShort}</div>`;
+						daysContainer.appendChild(el);
 					}
-					// Ensure the range selector calls both renderers (single robust listener)
-					// range selector removed; no listener required
-	</script>
-	<script>
-		if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-			navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
-		} else if ('serviceWorker' in navigator) {
-			console.warn('Service worker registration skipped: insecure origin or file protocol');
-		}
-	</script>
+				} catch (err) { console.error('renderWeekDots failed', err); }
+			}
+
+			// Render the streak banner (consecutive days ending today)
+			async function renderStreakBanner() {
+				try {
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const banner = document.getElementById('streak-banner');
+					if (!banner) return;
+					const numEl = document.getElementById('streak-number');
+					const iconImg = document.getElementById('streak-icon-img');
+					const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+					function dateToYMD(d) { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; }
+					let streak = 0;
+					const today = new Date(); today.setHours(0, 0, 0, 0);
+					const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+					let todayCount = 0;
+					let yesterdayCount = 0;
+					try { todayCount = await db.history.where('date').equals(dateToYMD(today)).count(); } catch (e) { todayCount = 0; }
+					try { yesterdayCount = await db.history.where('date').equals(dateToYMD(yesterday)).count(); } catch (e) { yesterdayCount = 0; }
+					// Determine anchor day: prefer today if there's an entry, otherwise keep streak valid through today if yesterday has an entry.
+					let anchor = null;
+					if (todayCount > 0) anchor = new Date(today);
+					else if (yesterdayCount > 0) anchor = new Date(yesterday);
+					if (!anchor) {
+						// No active streak
+						streak = 0;
+						// show a friendly sad-flame illustration instead of the default missed-day icon
+						iconImg.src = basePath + 'illustrations/sad-flame-face.svg';
+						iconImg.alt = 'no streak';
+					} else {
+						// Count consecutive days backwards from the anchor (today or yesterday)
+						streak = 0;
+						let cursor = new Date(anchor);
+						while (true) {
+							let c = 0;
+							try { c = await db.history.where('date').equals(dateToYMD(cursor)).count(); } catch (e) { c = 0; }
+							if (c > 0) { streak++; cursor.setDate(cursor.getDate() - 1); } else break;
+						}
+						// show a happy flame illustration when the streak is active
+						iconImg.src = basePath + 'illustrations/happy-flame-face.svg';
+						iconImg.alt = 'streak active';
+						// (Visible caption removed — only the counter and icon are shown)
+					}
+					numEl.textContent = String(streak);
+					// Ensure the streak title is translated (or has a sensible default)
+					const titleEl = banner.querySelector('[data-i18n="streak_title"]');
+					if (titleEl) {
+						if (typeof GN_I18N !== 'undefined' && GN_I18N.t) titleEl.textContent = GN_I18N.t('streak_title') || 'Your streak';
+						else titleEl.textContent = 'Your streak';
+					}
+					// Pluralization: show singular for 1, plural otherwise (localized when available)
+					const daysEl = banner.querySelector('.streak-days');
+					if (daysEl) {
+						try {
+							if (typeof GN_I18N !== 'undefined' && GN_I18N.t) {
+								daysEl.textContent = (streak === 1) ? (GN_I18N.t('day_singular') || 'DAY') : (GN_I18N.t('day_plural') || 'DAYS');
+							} else {
+								daysEl.textContent = (streak === 1) ? 'DAY' : 'DAYS';
+							}
+						} catch (e) { daysEl.textContent = (streak === 1) ? 'DAY' : 'DAYS'; }
+					}
+					// Compute best (record) consecutive streak from history and show it
+					const recordEl = document.getElementById('streak-record');
+					if (recordEl) {
+						try {
+							let best = 0;
+							try {
+								const items = await db.history.toArray();
+								const uniq = Array.from(new Set(items.map(it => it.date))).filter(Boolean).map(s => {
+									const d = new Date(s);
+									d.setHours(0, 0, 0, 0);
+									return d.getTime();
+								}).sort((a, b) => a - b);
+								if (uniq.length > 0) {
+									let run = 1;
+									for (let i = 1; i < uniq.length; i++) {
+										const diffDays = Math.round((uniq[i] - uniq[i - 1]) / (24 * 3600 * 1000));
+										if (diffDays === 1) run++;
+										else run = 1;
+										best = Math.max(best, run);
+									}
+									best = Math.max(best, run);
+								}
+							} catch (e) { best = 0; }
+							if (best > 0) {
+								const recLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('best_record') || 'Best Record') : 'Best Record';
+								const dayLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? ((best === 1) ? (GN_I18N.t('day_singular') || 'DAY') : (GN_I18N.t('day_plural') || 'DAYS')) : ((best === 1) ? 'DAY' : 'DAYS');
+								recordEl.textContent = `${recLabel}: ${best} ${dayLabel}`;
+								recordEl.style.display = 'block';
+							} else {
+								recordEl.style.display = 'none';
+							}
+						} catch (e) { recordEl.style.display = 'none'; }
+					}
+					banner.style.display = 'flex';
+				} catch (err) { console.error('renderStreakBanner failed', err); }
+			}
+
+			// Global favorite-exercise renderer (uses the same parent widget as favorite-type)
+			async function renderFavoriteExercise(range = 'year') {
+				try {
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const parent = document.getElementById('fav-type-widget');
+					if (!parent) return;
+					// If there's no history at all, keep the favorites widget hidden
+					try {
+						const total = await db.history.count();
+						if (!total) { try { parent.style.display = 'none'; } catch (e) { }; return; }
+					} catch (e) { }
+					let items = await db.history.toArray();
+					if (!items || items.length === 0) {
+						// try broader range before showing empty message
+						try {
+							const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
+							if (broader) {
+								const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
+								try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch (e) { }
+								try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch (e) { }
+								return;
+							}
+						} catch (e) { }
+						try { parent.style.display = 'flex'; } catch (e) { }
+						try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch (e) { }
+						try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch (e) { }
+						try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch (e) { }
+						try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch (e) { }
+						try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch (e) { }
+						try { parent.style.display = 'flex'; } catch (e) { }
+						return;
+					}
+					const now = new Date(); now.setHours(0, 0, 0, 0);
+					if (range === 'year') {
+						const start = new Date(now);
+						start.setFullYear(start.getFullYear() - 1);
+						const startYMD = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+						items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch (e) { return false; } });
+						try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch (e) { }
+						try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0, 5).map(i => i && i.date) }); } catch (e) { }
+					} else if (range === 'month') {
+						const start = new Date(now.getFullYear(), now.getMonth(), 1);
+						const startYMD = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+						items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch (e) { return false; } });
+						try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch (e) { }
+						try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0, 5).map(i => i && i.date) }); } catch (e) { }
+					}
+					if (!items || items.length === 0) {
+						try { parent.style.display = 'flex'; } catch (e) { }
+						try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch (e) { }
+						try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch (e) { }
+						try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch (e) { }
+						try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch (e) { }
+						try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch (e) { }
+						return;
+					}
+					const counts = {};
+					const totals = {}; // totals[key] = { reps: number, weight: number }
+					function addTotalsForKey(key, repsToAdd, weightToAdd) {
+						if (!totals[key]) totals[key] = { reps: 0, weight: 0 };
+						totals[key].reps += repsToAdd;
+						totals[key].weight += weightToAdd;
+					}
+					for (const it of items) {
+						const key = (it.isCustom === true ? 'c' : 'k') + '|' + it.exerciseId;
+						counts[key] = (counts[key] || 0) + 1;
+						// attempt to extract reps/weight information from the history entry
+						try {
+							let entryReps = 0, entryWeight = 0;
+							if (Array.isArray(it.sets) && it.sets.length > 0) {
+								for (const s of it.sets) {
+									// s may be {sets, reps, weight} or {reps, weight}
+									const setsCount = (s && s.sets !== undefined && s.sets !== '') ? Number(s.sets) : (s && (s.reps !== undefined || s.weight !== undefined) ? 1 : 0);
+									const repsPer = (s && s.reps !== undefined && s.reps !== '') ? Number(s.reps) : 0;
+									const weightPer = (s && s.weight !== undefined && s.weight !== '') ? Number(s.weight) : 0;
+									const repsDone = (isFinite(setsCount) ? setsCount : 0) * (isFinite(repsPer) ? repsPer : 0);
+									entryReps += repsDone;
+									entryWeight += repsDone * (isFinite(weightPer) ? weightPer : 0);
+								}
+							} else if (it.reps !== undefined || it.weight !== undefined) {
+								const reps = (it.reps !== undefined && it.reps !== '') ? Number(it.reps) : 0;
+								const weight = (it.weight !== undefined && it.weight !== '') ? Number(it.weight) : 0;
+								entryReps += isFinite(reps) ? reps : 0;
+								entryWeight += (isFinite(reps) ? reps : 0) * (isFinite(weight) ? weight : 0);
+							}
+							if (entryReps > 0 || entryWeight > 0) addTotalsForKey(key, entryReps, entryWeight);
+						} catch (e) { /* ignore parse errors */ }
+					}
+					let bestKey = null, bestCount = 0, bestAvg = 0;
+					for (const k of Object.keys(counts)) {
+						const c = counts[k] || 0;
+						if (c > bestCount) {
+							bestCount = c; bestKey = k; bestAvg = ((totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0);
+						} else if (c === bestCount) {
+							// tie-breaker: pick the one with higher average weight per rep
+							const avg = (totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0;
+							if (avg > bestAvg) {
+								bestKey = k; bestAvg = avg;
+							}
+						}
+					}
+					if (!bestKey) {
+						try { parent.style.display = 'flex'; } catch (e) { }
+						try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch (e) { }
+						try { const exCountEl = document.getElementById('fav-ex-count'); if (exCountEl) exCountEl.textContent = ''; } catch (e) { }
+						try { const imgEl = document.getElementById('fav-ex-img'); if (imgEl) imgEl.style.display = 'none'; } catch (e) { }
+						try { const initEl = document.getElementById('fav-ex-initial'); if (initEl) { initEl.style.display = 'block'; initEl.textContent = '—'; } } catch (e) { }
+						try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch (e) { }
+						return;
+					}
+					const parts = bestKey.split('|');
+					const isCustom = parts[0] === 'c';
+					const exId = parts[1];
+					let ex = null;
+					try {
+						if (isCustom) ex = await db.custom_exercises.get(Number(exId));
+						else ex = await db.catalog_exercises.get(Number(exId));
+						if (!ex && !isCustom) ex = await db.custom_exercises.get(Number(exId));
+					} catch (e) { ex = null; }
+					if (!ex) { parent.style.display = 'none'; return; }
+					// Determine localized name
+					let lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : ((navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en');
+					let name = '';
+					if (lang === 'pt') {
+						name = ex.namePT || ex.name_pt || ex.ptName || ex.name || '';
+					} else {
+						name = ex.name || ex.namePT || ex.name_pt || ex.ptName || '';
+					}
+					if (!name) name = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('unknown_exercise') : 'Unknown Exercise';
+					const nameEl = document.getElementById('fav-ex-name');
+					if (nameEl) nameEl.textContent = name;
+					try {
+						const exCountEl = document.getElementById('fav-ex-count');
+						if (exCountEl) exCountEl.textContent = `\u00A0(${bestCount}x)`;
+					} catch (e) { }
+					// Ensure preview container is visible, then try to show image preview if available
+					const previewEl = document.getElementById('fav-ex-preview');
+					if (previewEl) previewEl.style.display = 'flex';
+					const imgEl = document.getElementById('fav-ex-img');
+					const initEl = document.getElementById('fav-ex-initial');
+					let shownImage = false;
+					try {
+						if (ex.imageId && imgEl && db.catalog_images) {
+							const img = await db.catalog_images.get(Number(ex.imageId));
+							if (img && img.data) {
+								imgEl.src = img.data;
+								imgEl.style.display = 'block';
+								if (initEl) initEl.style.display = 'none';
+								shownImage = true;
+							}
+						}
+					} catch (e) { shownImage = false; }
+					if (!shownImage) {
+						if (imgEl) imgEl.style.display = 'none';
+						if (initEl) { initEl.style.display = 'block'; initEl.textContent = name ? name.charAt(0).toUpperCase() : '—'; }
+					}
+					try { parent.style.display = 'flex'; } catch (e) { }
+				} catch (err) { console.error('renderFavoriteExercise failed', err); }
+			}
+			// Ensure the range selector calls both renderers (single robust listener)
+			// range selector removed; no listener required
+		</script>
+		<script>
+			if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+				navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
+			} else if ('serviceWorker' in navigator) {
+				console.warn('Service worker registration skipped: insecure origin or file protocol');
+			}
+		</script>
 
 		<script>
 			// Extra init to ensure favorite renderers run and to surface debug logs reliably
@@ -1133,43 +1503,43 @@
 						if (obj && typeof obj.filtered !== 'undefined') parts.push('filtered: ' + obj.filtered);
 						if (obj && obj.sample) parts.push('sample: ' + (Array.isArray(obj.sample) ? obj.sample.join(', ') : String(obj.sample)));
 						el.textContent = parts.join(' | ');
-					} catch (e) {}
+					} catch (e) { }
 				}
 
 				// Expose globally so inner startup scope can call it if needed
-				try { window.updateFavDebug = updateFavDebug; } catch(e) {}
-				try { console.debug('[fav-init] DOMContentLoaded — invoking favorite renderers'); } catch(e){}
-				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined'); } catch(e) { console.error('[fav-init] renderFavoriteType error', e); }
-				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined'); } catch(e) { console.error('[fav-init] renderFavoriteExercise error', e); }
+				try { window.updateFavDebug = updateFavDebug; } catch (e) { }
+				try { console.debug('[fav-init] DOMContentLoaded — invoking favorite renderers'); } catch (e) { }
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined'); } catch (e) { console.error('[fav-init] renderFavoriteType error', e); }
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined'); } catch (e) { console.error('[fav-init] renderFavoriteExercise error', e); }
 			});
 
 			// SPA hook: when the app is shown (fragment injected), ensure renderers run
 			window.addEventListener('app-shown', () => {
-				try { console.debug('[fav-init] app-shown — invoking favorite renderers'); } catch(e){}
-				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined on app-shown'); } catch(e) { console.error('[fav-init] renderFavoriteType error', e); }
-				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined on app-shown'); } catch(e) { console.error('[fav-init] renderFavoriteExercise error', e); }
+				try { console.debug('[fav-init] app-shown — invoking favorite renderers'); } catch (e) { }
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined on app-shown'); } catch (e) { console.error('[fav-init] renderFavoriteType error', e); }
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined on app-shown'); } catch (e) { console.error('[fav-init] renderFavoriteExercise error', e); }
 			});
 
 			// Fallback: call after a short delay in case neither event fires in the SPA environment
 			setTimeout(() => {
-				try { console.debug('[fav-init] timeout fallback — invoking favorite renderers'); } catch(e){}
-				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch(e){}
-				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch(e){}
+				try { console.debug('[fav-init] timeout fallback — invoking favorite renderers'); } catch (e) { }
+				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch (e) { }
+				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch (e) { }
 			}, 800);
 		</script>
 		<script>
-			(function(){
+			(function () {
 				const HOME_REFRESH_FLAG = 'home_force_refresh';
-				async function refreshHomeData(){
-					try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch(e){}
-					try { renderMainUser(); } catch(e){}
+				async function refreshHomeData() {
+					try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { }
+					try { renderMainUser(); } catch (e) { }
 					let historyCount = 0;
-					try { historyCount = await db.history.count(); } catch(e){}
-					try { await renderWeekDots(); } catch(e){}
+					try { historyCount = await db.history.count(); } catch (e) { }
+					try { await renderWeekDots(); } catch (e) { }
 					if (historyCount > 0) {
-						try { if (typeof renderStreakBanner === 'function') await renderStreakBanner(); } catch(e){}
-						try { if (typeof renderFavoriteType === 'function') await renderFavoriteType('year'); } catch(e){}
-						try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise('year'); } catch(e){}
+						try { if (typeof renderStreakBanner === 'function') await renderStreakBanner(); } catch (e) { }
+						try { if (typeof renderFavoriteType === 'function') await renderFavoriteType('year'); } catch (e) { }
+						try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise('year'); } catch (e) { }
 						try {
 							const emptyEl = document.getElementById('home-empty-illustration');
 							if (emptyEl) {
@@ -1177,10 +1547,10 @@
 								const img = document.getElementById('home-empty-illustration-img');
 								if (img) img.style.display = 'none';
 							}
-						} catch(e){}
+						} catch (e) { }
 					} else {
-						try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch(e){}
-						try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch(e){}
+						try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
+						try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
 						try {
 							const emptyEl = document.getElementById('home-empty-illustration');
 							if (emptyEl) {
@@ -1189,9 +1559,9 @@
 								if (img) img.style.display = 'block';
 								if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration();
 							}
-						} catch(e){}
+						} catch (e) { }
 					}
-					try { updatePendingButtonVisibility(); } catch(e){}
+					try { updatePendingButtonVisibility(); } catch (e) { }
 				}
 				window.refreshHomeData = refreshHomeData;
 				window.addEventListener('pageshow', (event) => {
@@ -1199,11 +1569,12 @@
 					const shouldRefresh = flagged || (event && event.persisted);
 					if (!shouldRefresh) return;
 					if (flagged) {
-						try { localStorage.removeItem(HOME_REFRESH_FLAG); } catch(e){}
+						try { localStorage.removeItem(HOME_REFRESH_FLAG); } catch (e) { }
 					}
 					refreshHomeData();
 				});
 			})();
 		</script>
 </body>
+
 </html>
