@@ -114,6 +114,7 @@
 
             // execute all scripts from the fetched document (head and body)
             const scripts = Array.from(doc.querySelectorAll('script'));
+            const allowInlineRepeat = (href && href.endsWith('measurements.html')) || (href && href.endsWith('/measurements'));
             for (const s of scripts) {
                 if (s.src) {
                     let resolved = null;
@@ -132,13 +133,13 @@
                     // when those pages are navigated to (avoids missing
                     // per-page initialization after SPA navigations).
                     const scopedKey = (pageKey || href || '') + '::' + key;
-                    if (window.__spa_loaded_inline_scripts.has(scopedKey)) continue;
+                    if (window.__spa_loaded_inline_scripts.has(scopedKey) && !allowInlineRepeat) continue;
                     try {
                         const ns = document.createElement('script');
                         ns.textContent = s.textContent;
                         document.body.appendChild(ns);
                         try { document.body.removeChild(ns); } catch(e){}
-                        window.__spa_loaded_inline_scripts.add(scopedKey);
+                        if (!allowInlineRepeat) window.__spa_loaded_inline_scripts.add(scopedKey);
                     } catch (err) {
                         try { console.warn('Failed to execute injected inline script', err); } catch(e){}
                     }
@@ -217,6 +218,9 @@
                 if (pageName === 'routines.html') {
                     try { if (typeof renderTabs === 'function') renderTabs(); } catch(e){}
                     try { if (typeof renderWorkouts === 'function') renderWorkouts(); } catch(e){}
+                } else if (pageName === 'measurements.html') {
+                    try { if (typeof renderMeasureWeightChart === 'function') renderMeasureWeightChart(); } catch(e){}
+                    try { if (typeof renderWeightHistory === 'function') renderWeightHistory(); } catch(e){}
                 } else if (pageName === 'history.html') {
                     try { if (typeof renderHistory === 'function') renderHistory(); } catch(e){}
                     try { if (typeof renderWeightHistory === 'function') renderWeightHistory(); } catch(e){}
@@ -256,7 +260,7 @@
                 const nav = document.getElementById('bottom-nav') || document.getElementById('gn-bottom-nav');
                 if (nav) {
                     // Hide nav on the login/index shell pages; show for app pages
-                    if (key === 'index.html' || key === '' || key === 'login.html' || key === 'settings.html') {
+                        if (key === 'index.html' || key === '' || key === 'login.html' || key === 'settings.html' || key === 'measurements.html') {
                         nav.style.display = 'none';
                         try { nav.setAttribute('aria-hidden', 'true'); } catch(e){}
                     } else {
@@ -357,7 +361,7 @@
             const url = new URL(href, location.href);
             if (url.origin !== location.origin) return;
             const name = url.pathname.split('/').pop() || 'index.html';
-            const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','settings'];
+            const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','settings','measurements.html','measurements'];
             if (spaTargets.includes(name)) {
                 e.preventDefault();
                 // Navigate the SPA and then update the browser URL to include a start hint
@@ -370,6 +374,10 @@
                 try {
                     if (name === 'settings.html' || name === 'settings') {
                         const pushUrl = '/#settings';
+                        history.pushState({ spa:true, url: url.pathname }, document.title || '', pushUrl);
+                    }
+                    if (name === 'measurements.html' || name === 'measurements') {
+                        const pushUrl = '/#measurements';
                         history.pushState({ spa:true, url: url.pathname }, document.title || '', pushUrl);
                     }
                 } catch (e) {
@@ -420,7 +428,7 @@
                 if (!hash) return;
                 let candidate = hash;
                 if (!candidate.endsWith('.html')) candidate = candidate + '.html';
-                const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','login.html'];
+                const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','measurements.html','login.html'];
                 if (spaTargets.includes(candidate)) {
                     // Do not navigate away — inject the page into the current
                     // index shell so the visible URL remains unchanged.
@@ -445,7 +453,7 @@
             const startParam = params.get('start') || null;
             const hashParam = (location.hash && location.hash.length > 1) ? location.hash.slice(1) : null;
             const startHint = startParam || hashParam;
-            const allowedNames = ['home','home.html','routines','routines.html','history','history.html','statistics','statistics.html','settings','settings.html','login','login.html'];
+            const allowedNames = ['home','home.html','routines','routines.html','history','history.html','statistics','statistics.html','settings','settings.html','measurements','measurements.html','login','login.html'];
 
             // If a clean path (e.g. /home or /home.html) was requested and the
             // shell was served, inject that page without changing the URL.
