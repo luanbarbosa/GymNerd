@@ -425,5 +425,12 @@
     "name": "Hanging leg raise",
     "namePT": "Elevação de pernas suspenso",
     "type": "abs"
+  },
+  {
+    "id": 62,
+    "imageId": 62,
+    "name": "Dumbbell front raise",
+    "namePT": "Elevação frontal com halteres",
+    "type": "shoulder"
   }
 ]
