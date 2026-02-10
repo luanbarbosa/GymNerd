@@ -30,4 +30,6 @@ const displayName2 = (GN_I18N.getLang() === 'pt' && exercise.namePT) ? exercise.
    - All user-visible strings use `GN_I18N.t` or `data-i18n`.
    - Portuguese name (`namePT`) used when `GN_I18N.getLang()` returns `pt`.
 
+5. Do not propose me running a zhs shel command or any command that would execute code on the user's machine.
+
 ---

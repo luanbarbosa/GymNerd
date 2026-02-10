@@ -183,16 +183,17 @@
         <div class="top-card-inner">
             <div style="display:flex;align-items:center;width:100%;gap:12px;">
                 <a href="#" class="back-btn" style="outline:none; box-shadow:none; border:none; background:none;" aria-label="Back" onclick="event.preventDefault(); history.back();"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
-                    <div style="flex:1;min-width:0;">
-                        <h2 id="pageTitle" class="app-title-compact" style="margin:20px 0; text-align:left;" data-i18n="page_routine_new">Nova Rotina</h2>
-                    </div>
+                <div style="flex:1;min-width:0;">
+                    <h2 id="pageTitle" class="app-title-compact" style="margin:20px 0; text-align:left;" data-i18n="page_routine_new">Nova Rotina</h2>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="page-content">
-    <div class="card">
-        <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="main-content">
+            <div class="card">
+                <div style="display:flex; flex-direction:column; gap:12px;">
             <label style="font-size:0.8rem; font-weight:800" data-i18n="routine_name_label">Nome da Rotina</label>
             <input id="routineName" data-i18n-placeholder="routine_name_placeholder" placeholder="ex.: Empurrão Superior" />
             <div id="formErrors" class="form-errors hidden" aria-live="polite"></div>
@@ -204,8 +205,6 @@
                 <button class="primary" id="saveRoutineBtn" onclick="saveRoutine()" data-i18n="save_routine" style="flex:1; width:100%;">Salvar Rotina</button>
             </div>
         </div>
-    </div>
-
     </div>
     <!-- Search Modal (copied from routines.html) -->
         <div id="searchModal" class="modal hidden">
@@ -280,6 +279,8 @@
                 <button class="primary" style="flex:1;" onclick="saveCustomExercise()" data-i18n="save_exercise_btn">Salvar Exercício</button>
             </div>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -917,15 +918,21 @@
             document.getElementById('customExModal').classList.remove('hidden'); 
         }
 
-        // Apply translations and localized title
-        try {
-            if (window.GN_I18N) {
-                GN_I18N.applyTranslations(document);
-                document.title = GN_I18N.t('title_main') + ' | ' + (new URLSearchParams(window.location.search).get('id') ? GN_I18N.t('page_routine_edit') : GN_I18N.t('page_routine_new'));
-            }
-        } catch(e){}
+        function routineCrudOnReady() {
+            try {
+                if (window.GN_I18N) {
+                    GN_I18N.applyTranslations(document);
+                    document.title = GN_I18N.t('title_main') + ' | ' + (new URLSearchParams(window.location.search).get('id') ? GN_I18N.t('page_routine_edit') : GN_I18N.t('page_routine_new'));
+                }
+            } catch(e){}
+            init();
+        }
 
-        window.addEventListener('load', init);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', routineCrudOnReady);
+        } else {
+            routineCrudOnReady();
+        }
     </script>
 </body>
 </html>
