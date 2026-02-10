@@ -25,44 +25,9 @@ const displayName2 = (GN_I18N.getLang() === 'pt' && exercise.namePT) ? exercise.
    - Never hard-code visible text. Use `GN_I18N.t('key')` for all labels, button text, placeholders and messages.
    - Add `data-i18n` attributes to static HTML where appropriate so `gn-i18n.js` can translate automatically.
 
-4. Backwards compatibility
-   - Logs (`db.logs`) may contain older entries without `exerciseName` or `isCustom`. When rendering history or logs, resolve names by looking up `db.custom_exercises` and `db.catalog_exercises` using `exerciseId`.
 
-5. Images
-   - Resolve images via `db.custom_images` or `db.catalog_images`. Use a `defaultImage` fallback when missing.
-
-6. Error handling & fallbacks
-   - If a localized string is missing, fall back to an English key or a safe default.
-   - If an exercise name cannot be resolved, display `#<exerciseId>` rather than `undefined`.
-
-7. Examples for usage in History rendering
-
-- Localize strings:
-```javascript
-const setsText = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_fmt_sets_short') : 'sets';
-```
- - Localize strings with the helper:
- -```javascript
- +const setsText = GN_I18N.t('history_fmt_sets_short');
- +// or safely:
- +const setsTextSafe = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('history_fmt_sets_short') : 'sets';
- -```
-
-- Choose name based on language:
-```javascript
-const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
-const displayName = (lang === 'pt' && exercise.namePT) ? exercise.namePT : (exercise.name || `#${exercise.id}`);
-```
- - Choose name based on language (use `GN_I18N.getLang()`):
- -```javascript
- +const displayName = (GN_I18N.getLang() === 'pt' && exercise.namePT) ? exercise.namePT : (exercise.name || `#${exercise.id}`);
- +// when rendering many elements, use GN_I18N.applyTranslations(document) after inserting nodes
- -```
-
-8. Review checklist for edits
+4. Review checklist for edits
    - All user-visible strings use `GN_I18N.t` or `data-i18n`.
    - Portuguese name (`namePT`) used when `GN_I18N.getLang()` returns `pt`.
-   - Fallbacks present for missing exercise names/images/strings.
-   - Tests or manual verification steps described in PR or commit message.
 
 ---
