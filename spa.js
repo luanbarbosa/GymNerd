@@ -363,6 +363,7 @@
             const name = url.pathname.split('/').pop() || 'index.html';
             const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','settings','measurements.html','measurements'];
             if (spaTargets.includes(name)) {
+                const basePath = ((location.pathname || '/').replace(/\/[^\/]*$/, '/') || '/');
                 e.preventDefault();
                 // Navigate the SPA and then update the browser URL to include a start hint
                 try {
@@ -373,11 +374,11 @@
                 }
                 try {
                     if (name === 'settings.html' || name === 'settings') {
-                        const pushUrl = '/#settings';
+                        const pushUrl = basePath + 'settings.html';
                         history.pushState({ spa:true, url: url.pathname }, document.title || '', pushUrl);
                     }
                     if (name === 'measurements.html' || name === 'measurements') {
-                        const pushUrl = '/#measurements';
+                        const pushUrl = basePath + 'measurements.html';
                         history.pushState({ spa:true, url: url.pathname }, document.title || '', pushUrl);
                     }
                 } catch (e) {
