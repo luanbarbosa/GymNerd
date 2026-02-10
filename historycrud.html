@@ -116,6 +116,22 @@
     let editDate = null;
     let editSession = null;
 
+    function getCurrentLang() {
+        if (window.GN_I18N) {
+            if (GN_I18N.safeGetLang) return GN_I18N.safeGetLang();
+            if (GN_I18N.getLang) return GN_I18N.getLang();
+        }
+        const navLang = (window.navigator && window.navigator.language) ? window.navigator.language : 'en';
+        return navLang.startsWith('pt') ? 'pt' : 'en';
+    }
+
+    function getExerciseDisplayName(source, fallback) {
+        const lang = getCurrentLang();
+        if (lang === 'pt' && source && source.namePT) return source.namePT;
+        if (source && source.name) return source.name;
+        return fallback || '';
+    }
+
     async function init() {
         await ensureDbOpen();
         const [catalogEx, customEx] = await Promise.all([
@@ -220,6 +236,7 @@
                 const imgRec = await imgTable.get(ex.imageId);
                 if (imgRec && imgRec.data) imgSrc = imgRec.data;
             }
+            const displayName = getExerciseDisplayName(ex, `#${id}`);
             
             // Normalize incoming sets into an array of groups: {sets, reps, weight}
             const normalizeIncomingSets = (raw) => {
@@ -268,11 +285,11 @@
                     </div>
             `).join('');
 
-            sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name}" data-name-pt="${ex.namePT || ''}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}">
+            sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name || ''}" data-name-pt="${ex.namePT || ''}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}">
                 <div class="exercise-header">
                     <div class="exercise-left">
                         <img src="${imgSrc}" class="ex-thumb">
-                        <strong>${ex.name}</strong>
+                        <strong>${displayName}</strong>
                     </div>
                     <button onclick="this.closest('.exercise-row').remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
@@ -329,12 +346,14 @@
                 </div>
         `).join('');
 
-        const name = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
-        sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${name}" data-name-pt="${ex && ex.namePT || ''}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}">
+        const storedName = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
+        const displayName = getExerciseDisplayName(ex || { name: log.exerciseName, namePT: log.exerciseNamePT }, storedName);
+        const localizedNamePT = (ex && ex.namePT) || (log.exerciseNamePT || '');
+        sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${storedName}" data-name-pt="${localizedNamePT}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}">
             <div class="exercise-header">
                 <div class="exercise-left">
                     <img src="${imgSrc}" class="ex-thumb">
-                    <strong>${name}</strong>
+                    <strong>${displayName}</strong>
                 </div>
                 <button onclick="this.closest('.exercise-row').remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div>
@@ -388,12 +407,14 @@
                     </div>
             `).join('');
 
-            const name = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
-            sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${name}" data-name-pt="${ex && ex.namePT || ''}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}">
+            const storedName = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
+            const displayName = getExerciseDisplayName(ex || { name: log.exerciseName, namePT: log.exerciseNamePT }, storedName);
+            const localizedNamePT = (ex && ex.namePT) || (log.exerciseNamePT || '');
+            sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${storedName}" data-name-pt="${localizedNamePT}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}">
                 <div class="exercise-header">
                     <div class="exercise-left">
                         <img src="${imgSrc}" class="ex-thumb">
-                        <strong>${name}</strong>
+                        <strong>${displayName}</strong>
                     </div>
                     <button onclick="this.closest('.exercise-row').remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
