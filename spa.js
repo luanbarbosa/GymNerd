@@ -4,6 +4,7 @@
     const LOADER_ID = 'spa-loader-global';
     window.__spa_loaded_scripts = window.__spa_loaded_scripts || new Set();
     window.__spa_loaded_styles = window.__spa_loaded_styles || new Set();
+    window.__spa_inline_style_nodes = window.__spa_inline_style_nodes || [];
     window.__spa_loaded_inline_scripts = window.__spa_loaded_inline_scripts || new Set();
 
     function ensureContainer(){
@@ -62,6 +63,12 @@
 
             // import styles
             try {
+                if (window.__spa_inline_style_nodes.length) {
+                    for (const entry of window.__spa_inline_style_nodes) {
+                        try { if (entry && entry.parentNode) entry.parentNode.removeChild(entry); } catch(e) {}
+                    }
+                    window.__spa_inline_style_nodes.length = 0;
+                }
                 const styles = Array.from(doc.querySelectorAll('link[rel="stylesheet"], style'));
                 for (const st of styles) {
                     if (st.tagName && st.tagName.toLowerCase() === 'link') {
@@ -82,8 +89,11 @@
                         await new Promise((res) => { ln.onload = () => { window.__spa_loaded_styles.add(resolved); res(); }; ln.onerror = () => { res(); }; });
                     } else if (st.tagName && st.tagName.toLowerCase() === 'style') {
                         const key = (st.textContent || '').trim();
-                        if (!key || window.__spa_loaded_styles.has(key)) continue;
-                        const ns = document.createElement('style'); ns.textContent = key; document.head.appendChild(ns); window.__spa_loaded_styles.add(key);
+                        if (!key) continue;
+                        const ns = document.createElement('style');
+                        ns.textContent = key;
+                        document.head.appendChild(ns);
+                        window.__spa_inline_style_nodes.push(ns);
                     }
                 }
             } catch(e){}
@@ -237,13 +247,16 @@
                 const map = { 'home.html':'nav-home','index.html':'nav-home','routines.html':'nav-routines','routinecrud.html':'nav-routines','history.html':'nav-history','historycrud.html':'nav-history','statistics.html':'nav-statistics' };
                 const key = (href.split('/').pop() || 'index.html');
                 Object.values(map).forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
-                const aid = map[key] || 'nav-home';
-                const ael = document.getElementById(aid); if (ael) ael.classList.add('active');
+                const aid = map[key];
+                if (aid) {
+                    const ael = document.getElementById(aid);
+                    if (ael) ael.classList.add('active');
+                }
                 // toggle visibility: hide on index/login, show on app pages
                 const nav = document.getElementById('bottom-nav') || document.getElementById('gn-bottom-nav');
                 if (nav) {
                     // Hide nav on the login/index shell pages; show for app pages
-                    if (key === 'index.html' || key === '' || key === 'login.html') {
+                    if (key === 'index.html' || key === '' || key === 'login.html' || key === 'settings.html') {
                         nav.style.display = 'none';
                         try { nav.setAttribute('aria-hidden', 'true'); } catch(e){}
                     } else {
@@ -344,8 +357,7 @@
             const url = new URL(href, location.href);
             if (url.origin !== location.origin) return;
             const name = url.pathname.split('/').pop() || 'index.html';
-            // `settings.html` is a standalone page and should not be embedded into the SPA.
-            const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html'];
+            const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','settings'];
             if (spaTargets.includes(name)) {
                 e.preventDefault();
                 // Navigate the SPA and then update the browser URL to include a start hint
@@ -354,6 +366,14 @@
                 } catch (err) {
                     // fallback: log navigation error
                     console.error('spaNavigate error while handling click', err);
+                }
+                try {
+                    if (name === 'settings.html' || name === 'settings') {
+                        const pushUrl = '/#settings';
+                        history.pushState({ spa:true, url: url.pathname }, document.title || '', pushUrl);
+                    }
+                } catch (e) {
+                    // ignore pushState failures
                 }
                 try {
                     // Only add a `?start=` hint when the click came from the bottom-nav
@@ -372,12 +392,22 @@
 
     window.addEventListener('popstate', function(e){
         try {
-            // Prefer the stored SPA URL (original fetched path) when available
+            let target = null;
             if (e && e.state && e.state.url) {
-                spaNavigate(e.state.url, false);
+                target = e.state.url;
             } else {
-                spaNavigate(location.pathname, false);
+                const hash = (location.hash && location.hash.length > 1) ? location.hash.slice(1) : null;
+                if (hash) {
+                    target = hash.endsWith('.html') ? hash : `${hash}.html`;
+                } else {
+                    const path = (location.pathname || '').split('/').pop();
+                    if (path && path !== '' && path !== 'index.html') {
+                        target = path;
+                    }
+                }
             }
+            if (!target) target = 'home.html';
+            spaNavigate(target, false);
         } catch(e){}
     });
 
@@ -390,7 +420,7 @@
                 if (!hash) return;
                 let candidate = hash;
                 if (!candidate.endsWith('.html')) candidate = candidate + '.html';
-                const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','login.html'];
+                const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','login.html'];
                 if (spaTargets.includes(candidate)) {
                     // Do not navigate away — inject the page into the current
                     // index shell so the visible URL remains unchanged.
