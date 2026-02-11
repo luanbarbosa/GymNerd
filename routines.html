@@ -605,10 +605,17 @@
         function formatCardioSetLabel(distance, time) {
             const normalizedDistance = normalizeCardioMeasurement(distance);
             const normalizedTime = normalizeCardioMeasurement(time);
-            if (normalizedDistance === null || normalizedTime === null) return null;
+            if (normalizedDistance === null && normalizedTime === null) return null;
             const distanceUnit = resolveLocalizedCardioUnit('cardio_distance_unit', 'km');
             const timeUnit = resolveLocalizedCardioUnit('cardio_time_unit', 'min');
-            return `${normalizedDistance}${distanceUnit} - ${normalizedTime}${timeUnit}`;
+            const parts = [];
+            if (normalizedDistance !== null) {
+                parts.push(`${normalizedDistance}${distanceUnit}`);
+            }
+            if (normalizedTime !== null) {
+                parts.push(`${normalizedTime}${timeUnit}`);
+            }
+            return parts.join(' - ');
         }
 
         async function renderWorkouts() {
@@ -691,10 +698,10 @@
                         if (isCardioExercise) {
                             const distance = normalizeCardioMeasurement(s.distance);
                             const time = normalizeCardioMeasurement(s.time);
-                            if (distance === null || time === null) return acc;
-                            const key = `${distance}|${time}`;
-                            if (!acc[key]) acc[key] = { distance, time, count: 0 };
-                            acc[key].count++;
+                            const label = formatCardioSetLabel(distance, time);
+                            if (!label) return acc;
+                            if (!acc[label]) acc[label] = { distance, time, label, count: 0 };
+                            acc[label].count++;
                             return acc;
                         }
                         const key = `${s.reps}|${s.weight}`;
@@ -704,7 +711,7 @@
                     }, {});
                     const groupArr = Object.values(groups).filter(g => {
                         if (isCardioExercise) {
-                            return g.distance !== undefined && g.distance !== null && g.time !== undefined && g.time !== null;
+                            return typeof g.label === 'string' && g.label.length > 0;
                         }
                         const repsValid = (g.reps !== undefined && g.reps !== null && g.reps !== '' && !isNaN(Number(g.reps)));
                         const weightValid = (g.weight !== undefined && g.weight !== null && g.weight !== '' && !isNaN(Number(g.weight)));
@@ -713,7 +720,7 @@
                     if (groupArr.length > 0) {
                         const pills = groupArr.map(g => {
                             if (isCardioExercise) {
-                                const cardioLabel = formatCardioSetLabel(g.distance, g.time);
+                                const cardioLabel = g.label;
                                 if (!cardioLabel) return '';
                                 return (g.count === 1)
                                     ? `<span class="set-pill">${cardioLabel}</span>`

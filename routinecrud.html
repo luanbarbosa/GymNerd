@@ -291,6 +291,42 @@
         let selectedExercises = new Set();
         let currentImageData = null;
         let editingId = null;
+        const CARDIO_TYPE = 'cardio';
+
+        function isCardioType(type) {
+            return typeof type === 'string' && type.toLowerCase() === CARDIO_TYPE;
+        }
+
+        function normalizeCardioMeasurement(value) {
+            if (value === undefined || value === null || value === '') return null;
+            const num = Number(value);
+            if (!Number.isFinite(num) || num <= 0) return null;
+            return Math.round(num * 100) / 100;
+        }
+
+        function resolveLabel(key, fallback) {
+            if (window.GN_I18N && GN_I18N.t) {
+                const translated = GN_I18N.t(key);
+                if (translated) return translated;
+            }
+            return fallback;
+        }
+
+        function getSetFieldDefinitions(isCardio) {
+            const labelSets = resolveLabel('history_sets', 'Sets');
+            if (isCardio) {
+                return [
+                    { key: 'sets', label: labelSets, type: 'number', min: '0', step: '1' },
+                    { key: 'distance', label: resolveLabel('cardio_distance_label', 'Distance'), type: 'number', min: '0', step: '0.01' },
+                    { key: 'time', label: resolveLabel('cardio_time_label', 'Time'), type: 'number', min: '0', step: '0.01' }
+                ];
+            }
+            return [
+                { key: 'sets', label: labelSets, type: 'number', min: '0', step: '1' },
+                { key: 'reps', label: resolveLabel('history_reps', 'Reps'), type: 'number', min: '0', step: '1' },
+                { key: 'weight', label: resolveLabel('weight_kg', 'Weight (kg)'), type: 'text' }
+            ];
+        }
 
         function getDisplayedName(ex) {
             try {
@@ -584,6 +620,7 @@
             card.className = 'selected-ex-card';
             card.dataset.id = exId;
             card.dataset.isCustom = isCustom;
+            card.dataset.exerciseType = ex.type || '';
             card.innerHTML = `
                 <img src="${images[ex.imageId] || defaultImage}" class="ex-thumb">
                 <button type="button" class="remove-set-btn" onclick="removeSelectedCard(this)" aria-label="Remove">
@@ -598,30 +635,41 @@
                 // sets UI (table-like)
                 const setsContainer = document.createElement('div');
                 setsContainer.className = 'sets-container';
+                setsContainer.dataset.exerciseType = ex.type || '';
+                const isCardioExercise = isCardioType(ex.type);
                 // Normalize incoming `sets` for backward compatibility:
                 // Older versions stored expanded arrays like [{reps,weight}, {reps,weight}, ...]
                 // Compress runs of identical reps+weight into objects with a `sets` count.
                 const normalizeIncomingSets = (raw) => {
                     if (!Array.isArray(raw) || raw.length === 0) return null;
-                    // detect expanded format: items have reps/weight but no `sets`
-                    const looksExpanded = raw.every(it => it && (it.reps !== undefined || it.weight !== undefined) && it.sets === undefined);
+                    const fieldKeys = isCardioExercise ? ['distance', 'time'] : ['reps', 'weight'];
+                    const hasSetsField = raw.every(it => it && it.sets !== undefined);
+                    if (hasSetsField) return raw;
+                    const looksExpanded = raw.every(it => it && fieldKeys.some(k => k in it) && it.sets === undefined);
                     if (!looksExpanded) return null;
                     const compressed = [];
-                    let prevKey = null; let prevReps = null; let prevWeight = null; let count = 0;
+                    let prevKey = null;
+                    let prevValues = null;
+                    let count = 0;
+                    const sanitizeValue = (value) => (value === null || value === undefined ? '' : value);
                     for (const it of raw) {
-                        const r = (it.reps === null || it.reps === undefined) ? '' : it.reps;
-                        const w = (it.weight === null || it.weight === undefined) ? '' : it.weight;
-                        const key = `${r}:::${w}`;
+                        const first = sanitizeValue(it[fieldKeys[0]]);
+                        const second = sanitizeValue(it[fieldKeys[1]]);
+                        const key = `${first}:::${second}`;
                         if (key === prevKey) {
                             count++;
                         } else {
                             if (prevKey !== null) {
-                                compressed.push({ sets: count, reps: prevReps, weight: prevWeight });
+                                compressed.push({ sets: count, ...prevValues });
                             }
-                            prevKey = key; prevReps = r; prevWeight = w; count = 1;
+                            prevKey = key;
+                            prevValues = { [fieldKeys[0]]: first, [fieldKeys[1]]: second };
+                            count = 1;
                         }
                     }
-                    if (prevKey !== null) compressed.push({ sets: count, reps: prevReps, weight: prevWeight });
+                    if (prevKey !== null) {
+                        compressed.push({ sets: count, ...prevValues });
+                    }
                     return compressed;
                 };
 
@@ -631,15 +679,15 @@
                     if (norm) processedSets = norm;
                 }
 
-                // populate existing sets or add a default single set (all fields blank by default)
-                const initialSets = Array.isArray(processedSets) && processedSets.length ? processedSets : [{ sets: '', reps: '', weight: '' }];
+                const makeEmptySetData = () => isCardioExercise ? { sets: '', distance: '', time: '' } : { sets: '', reps: '', weight: '' };
+                const initialSets = Array.isArray(processedSets) && processedSets.length ? processedSets : [makeEmptySetData()];
                 initialSets.forEach(s => addSetRowToContainer(setsContainer, s));
 
                 const addSetBtn = document.createElement('button');
                 addSetBtn.type = 'button';
                 addSetBtn.className = 'add-set-inline';
                 addSetBtn.textContent = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('add_set') || 'Add set' : 'Add set';
-                addSetBtn.onclick = (ev) => { ev.stopPropagation(); addSetRowToContainer(setsContainer, { sets: '', reps: '', weight: '' }); };
+                addSetBtn.onclick = (ev) => { ev.stopPropagation(); addSetRowToContainer(setsContainer, makeEmptySetData()); };
 
                 card.appendChild(setsContainer);
                 card.appendChild(addSetBtn);
@@ -653,41 +701,33 @@
         // per-set helpers removed
 
         function addSetRowToContainer(container, setData) {
-            // create header row once
-            const labelSets = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('history_sets') : 'Sets';
-            const labelReps = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('history_reps') : 'Reps';
-            const labelWeight = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('weight_kg') : 'Weight';
+            const isCardioExercise = isCardioType(container.dataset.exerciseType || '');
+            const fieldDefs = getSetFieldDefinitions(isCardioExercise);
 
             if (!container.querySelector('.header-row')) {
                 const headerRow = document.createElement('div');
                 headerRow.className = 'set-row header-row';
-                const makeHeaderField = (labelText) => {
-                    const f = document.createElement('div'); f.className = 'field';
-                    const l = document.createElement('label'); l.textContent = labelText; f.appendChild(l); return f;
-                };
-                headerRow.appendChild(makeHeaderField(labelSets));
-                headerRow.appendChild(makeHeaderField(labelReps));
-                headerRow.appendChild(makeHeaderField(labelWeight));
-                // spacer for remove column
-                const spacer = document.createElement('div'); spacer.style.width = '36px'; headerRow.appendChild(spacer);
+                fieldDefs.forEach(def => {
+                    const field = document.createElement('div');
+                    field.className = 'field';
+                    const label = document.createElement('label');
+                    label.textContent = def.label;
+                    field.appendChild(label);
+                    headerRow.appendChild(field);
+                });
+                const spacer = document.createElement('div');
+                spacer.style.width = '36px';
+                headerRow.appendChild(spacer);
                 container.appendChild(headerRow);
             }
 
             const row = document.createElement('div');
             row.className = 'set-row data-row';
 
-            const setsInput = document.createElement('input'); setsInput.type = 'number'; setsInput.min = '0';
-            const repsInput = document.createElement('input'); repsInput.type = 'number'; repsInput.min = '0';
-            const weightInput = document.createElement('input'); weightInput.type = 'text';
-
             const applyDefaultValue = (inputEl, val) => {
                 if (val === undefined || val === null || val === '') inputEl.value = '';
                 else inputEl.value = val;
             };
-
-            applyDefaultValue(setsInput, setData && setData.sets);
-            applyDefaultValue(repsInput, setData && setData.reps);
-            applyDefaultValue(weightInput, setData && setData.weight);
 
             const makeField = (inputEl) => {
                 const f = document.createElement('div'); f.className = 'field';
@@ -695,13 +735,23 @@
                 return f;
             };
 
-            const removeBtn = document.createElement('button'); removeBtn.type = 'button'; removeBtn.className = 'remove-set-btn'; removeBtn.setAttribute('aria-label','Remove set');
+            fieldDefs.forEach(def => {
+                const inputEl = document.createElement('input');
+                inputEl.type = def.type;
+                if (def.min) inputEl.min = def.min;
+                if (def.step) inputEl.step = def.step;
+                if (def.type === 'number') inputEl.inputMode = 'decimal';
+                applyDefaultValue(inputEl, setData && setData[def.key]);
+                row.appendChild(makeField(inputEl));
+            });
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-set-btn';
+            removeBtn.setAttribute('aria-label','Remove set');
             removeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
             removeBtn.onclick = (e) => { e.stopPropagation(); row.remove(); };
 
-            row.appendChild(makeField(setsInput));
-            row.appendChild(makeField(repsInput));
-            row.appendChild(makeField(weightInput));
             row.appendChild(removeBtn);
             container.appendChild(row);
         }
@@ -734,6 +784,8 @@
             return Array.from(document.querySelectorAll('.selected-ex-card')).map(card => {
                 const id = parseInt(card.dataset.id);
                 const isCustom = card.dataset.isCustom === 'true';
+                const exerciseType = card.dataset.exerciseType || '';
+                const isCardioExercise = isCardioType(exerciseType);
                 const sets = [];
                 // only iterate data rows (skip header-row)
                 const rows = card.querySelectorAll('.set-row.data-row');
@@ -741,17 +793,35 @@
                     const inputs = r.querySelectorAll('input');
                     if (!inputs || inputs.length < 3) return;
                     const sRaw = inputs[0].value.trim();
-                    const rRaw = inputs[1].value.trim();
-                    const wRaw = inputs[2].value.trim();
+                    const primaryRaw = inputs[1].value.trim();
+                    const secondaryRaw = inputs[2].value.trim();
 
                     // skip completely empty rows
-                    if (sRaw === '' && rRaw === '' && wRaw === '') return;
+                    if (sRaw === '' && primaryRaw === '' && secondaryRaw === '') return;
 
-                    // determine how many repetitions this row represents
-                    const count = (sRaw === '' ? 1 : (isNaN(Number(sRaw)) ? 1 : parseInt(sRaw, 10)));
+                    let count = 1;
+                    if (sRaw !== '') {
+                        const parsed = parseInt(sRaw, 10);
+                        if (!isNaN(parsed) && parsed > 0) count = parsed;
+                    }
 
-                    const repsVal = (rRaw === '' ? null : parseInt(rRaw, 10));
-                    const weightVal = (wRaw === '' ? null : (isNaN(Number(wRaw)) ? wRaw : Number(wRaw)));
+                    if (isCardioExercise) {
+                        const hasDistanceInput = primaryRaw !== '';
+                        const hasTimeInput = secondaryRaw !== '';
+                        const distanceVal = hasDistanceInput ? normalizeCardioMeasurement(primaryRaw) : null;
+                        const timeVal = hasTimeInput ? normalizeCardioMeasurement(secondaryRaw) : null;
+                        const hasValidInput = (hasDistanceInput && distanceVal !== null) || (hasTimeInput && timeVal !== null);
+                        if (!hasValidInput) return;
+                        const distanceForSave = distanceVal !== null ? distanceVal : 0;
+                        const timeForSave = timeVal !== null ? timeVal : 0;
+                        for (let i = 0; i < count; i++) {
+                            sets.push({ distance: distanceForSave, time: timeForSave });
+                        }
+                        return;
+                    }
+
+                    const repsVal = (primaryRaw === '' ? null : parseInt(primaryRaw, 10));
+                    const weightVal = (secondaryRaw === '' ? null : (isNaN(Number(secondaryRaw)) ? secondaryRaw : Number(secondaryRaw)));
 
                     for (let i = 0; i < count; i++) {
                         sets.push({ reps: repsVal, weight: weightVal });
@@ -777,11 +847,21 @@
                 return;
             }
 
-            // Validate that every exercise has at least one set with both reps and weight
+            // Validate that every exercise has at least one complete set (cardio only needs distance or time)
             const invalidExerciseIds = [];
             exerciseIds.forEach(ex => {
                 const sets = Array.isArray(ex.sets) ? ex.sets : [];
-                const hasValid = sets.some(s => s && s.reps !== null && s.reps !== undefined && s.weight !== null && s.weight !== undefined);
+                const match = allExercises.find(e => e.id === ex.id && !!e.isCustom === !!ex.isCustom);
+                const cardio = match ? isCardioType(match.type) : false;
+                const hasValid = sets.some(s => {
+                    if (!s) return false;
+                    if (cardio) {
+                        const hasDistance = typeof s.distance === 'number' && s.distance > 0;
+                        const hasTime = typeof s.time === 'number' && s.time > 0;
+                        return hasDistance || hasTime;
+                    }
+                    return s.reps !== null && s.reps !== undefined && s.weight !== null && s.weight !== undefined;
+                });
                 if (!hasValid) invalidExerciseIds.push(ex.id);
             });
 
