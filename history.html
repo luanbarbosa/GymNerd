@@ -130,6 +130,12 @@
                     // Return DD/MM/YY
                     return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
                 }
+                function formatCardioMeasurement(value) {
+                    const num = Number(value);
+                    if (!Number.isFinite(num)) return null;
+                    const normalized = Math.round(num * 100) / 100;
+                    return Number.isInteger(normalized) ? String(normalized) : normalized.toString();
+                }
         let allEx = [];
 
         async function init() {
@@ -386,6 +392,17 @@
             const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
             const locale = lang === 'pt' ? 'pt' : 'en';
             container.innerHTML = "";
+            const translate = (key, fallback) => {
+                if (window.GN_I18N && typeof GN_I18N.t === 'function') {
+                    const val = GN_I18N.t(key);
+                    if (typeof val === 'string' && val.trim() !== '') return val;
+                }
+                return fallback;
+            };
+            const setsText = translate('history_sets', lang === 'pt' ? 'séries' : 'sets');
+            const kgSuffix = translate('history_fmt_kg_suffix', 'kg');
+            const cardioDistanceUnit = translate('cardio_distance_unit', 'km');
+            const cardioTimeUnit = translate('cardio_time_unit', 'min');
 
             // Flatten sessions into an array for rendering
             const flatSessions = Object.keys(groups).map(k => ({ sessionId: k, date: groups[k].sessionDate, items: groups[k].items }));
@@ -469,11 +486,30 @@
                             if (imgRec && imgRec.data) imgSrc = imgRec.data;
                         }
 
-                        const setsText = (lang === 'pt') ? 'séries' : (GN_I18N.safeT ? GN_I18N.safeT('history_fmt_sets_short') : 'sets');
-                        const kgSuffix = GN_I18N.safeT ? GN_I18N.safeT('history_fmt_kg_suffix') : 'kg';
                         const displayName = (exRec ? ((lang === 'pt' && exRec.namePT) ? exRec.namePT : exRec.name) : (l.exerciseName || (l.exerciseId ? `#${l.exerciseId}` : 'Unknown')));
+                        const exerciseTypeKey = (l.exerciseType || '').toLowerCase();
+                        const isCardioExercise = exerciseTypeKey === 'cardio';
+                        const rawSets = Number(l.sets);
+                        const setsCount = Number.isFinite(rawSets) && rawSets > 0 ? rawSets : 3;
+                        const dataParts = [`${setsCount} ${setsText}`];
+                        if (isCardioExercise) {
+                            const distanceValue = Number(l.distance);
+                            if (Number.isFinite(distanceValue) && distanceValue > 0) {
+                                const formatted = formatCardioMeasurement(distanceValue);
+                                if (formatted !== null) dataParts.push(`${formatted}${cardioDistanceUnit}`);
+                            }
+                            const timeValue = Number(l.time);
+                            if (Number.isFinite(timeValue) && timeValue > 0) {
+                                const formatted = formatCardioMeasurement(timeValue);
+                                if (formatted !== null) dataParts.push(`${formatted}${cardioTimeUnit}`);
+                            }
+                        } else {
+                            dataParts.push(`${l.weight}${kgSuffix}`);
+                            dataParts.push(`${l.reps}`);
+                        }
+                        const dataRow = dataParts.join(' x ');
 
-                        dateDet.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${displayName}</div><div class="data-row">${l.sets || 3} ${setsText} x ${l.weight}${kgSuffix} x ${l.reps}</div></div></div>`;
+                        dateDet.innerHTML += `<div class="log-entry"><div class="meta"><div class="name-row"><img src="${imgSrc}" style="width:25px;height:25px;border-radius:4px;object-fit:cover"> ${displayName}</div><div class="data-row">${dataRow}</div></div></div>`;
                 }
                     // add session-level edit/delete buttons at the bottom of the session box (localized)
                 const pageLang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : (navigator.language || 'en');
