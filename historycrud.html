@@ -110,11 +110,112 @@
             document.getElementById(id).style.display = 'none';
         }
 
-    let allEx = [];
-    let isEditMode = false;
-    let editLogId = null;
-    let editDate = null;
-    let editSession = null;
+        let allEx = [];
+        let isEditMode = false;
+        let editLogId = null;
+        let editDate = null;
+        let editSession = null;
+
+        const CARDIO_TYPE = 'cardio';
+
+        function isCardioType(type) {
+            return typeof type === 'string' && type.toLowerCase() === CARDIO_TYPE;
+        }
+
+        function normalizeCardioMeasurement(value) {
+            if (value === undefined || value === null || value === '') return null;
+            const num = Number(value);
+            if (!Number.isFinite(num) || num <= 0) return null;
+            return Math.round(num * 100) / 100;
+        }
+
+        function resolveLabel(key, fallback) {
+            if (window.GN_I18N && GN_I18N.t) {
+                const translated = GN_I18N.t(key);
+                if (translated) return translated;
+            }
+            return fallback;
+        }
+
+        function getSetFieldDefinitions(isCardio) {
+            const labelSets = resolveLabel('history_sets', 'Sets');
+            if (isCardio) {
+                return [
+                    { key: 'sets', label: labelSets, type: 'number', min: '0', step: '1' },
+                    { key: 'distance', label: resolveLabel('cardio_distance_label', 'Distance'), type: 'number', min: '0', step: '0.01' },
+                    { key: 'time', label: resolveLabel('cardio_time_label', 'Time'), type: 'number', min: '0', step: '0.01' }
+                ];
+            }
+            return [
+                { key: 'sets', label: labelSets, type: 'number', min: '0', step: '1' },
+                { key: 'reps', label: resolveLabel('history_reps', 'Reps'), type: 'number', min: '0', step: '1' },
+                { key: 'weight', label: resolveLabel('weight_kg', 'Weight (kg)'), type: 'text' }
+            ];
+        }
+
+        function getEmptySetData(isCardioExercise) {
+            return isCardioExercise ? { sets: '', distance: '', time: '' } : { sets: '', reps: '', weight: '' };
+        }
+
+        function escapeAttribute(value) {
+            if (value === undefined || value === null) return '';
+            return String(value).replace(/"/g, '&quot;');
+        }
+
+        function renderSetRowHtml(fieldDefs, setValues) {
+            const cells = fieldDefs.map(def => {
+                const parts = [`type="${def.type}"`];
+                if (def.min) parts.push(`min="${def.min}"`);
+                if (def.step) parts.push(`step="${def.step}"`);
+                if (def.type === 'number') parts.push('inputmode="decimal"');
+                const value = escapeAttribute(setValues && setValues[def.key]);
+                return `<div class="field"><input ${parts.join(' ')} value="${value}"></div>`;
+            }).join('');
+            return `<div class="set-row data-row">${cells}<div><button type="button" class="remove-set-btn" onclick="this.closest('.set-row').remove()" aria-label="Remove set"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div></div>`;
+        }
+
+        function renderSetsBlock(type, setsArray) {
+            const isCardioExercise = isCardioType(type || '');
+            const fieldDefs = getSetFieldDefinitions(isCardioExercise);
+            const normalized = (Array.isArray(setsArray) && setsArray.length) ? setsArray : [getEmptySetData(isCardioExercise)];
+            const headerCells = fieldDefs.map(def => `<div class="field"><label>${def.label}</label></div>`).join('');
+            const headerHtml = `<div class="set-row header-row">${headerCells}<div></div></div>`;
+            const rowsHtml = normalized.map(set => renderSetRowHtml(fieldDefs, set)).join('');
+            const addSetLabel = resolveLabel('add_set', 'Add set');
+            const addButtonHtml = `<button type="button" class="add-set-inline" aria-label="${addSetLabel}" onclick="(function(btn){ const container = btn.parentElement; const cardio = isCardioType(container.dataset.type || ''); addSetRowToContainer(container, getEmptySetData(cardio)); })(this)"><span aria-hidden="true">+</span><span data-i18n="add_set"></span></button>`;
+            return `<div class="sets-container" data-type="${type || ''}">${headerHtml}${rowsHtml}${addButtonHtml}</div>`;
+        }
+
+        function normalizeIncomingSets(raw, isCardioExercise) {
+            if (!Array.isArray(raw) || raw.length === 0) return null;
+            const fieldKeys = isCardioExercise ? ['distance', 'time'] : ['reps', 'weight'];
+            const hasSetsField = raw.every(it => it && it.sets !== undefined);
+            if (hasSetsField) return raw;
+            const looksExpanded = raw.every(it => it && fieldKeys.some(k => k in it) && it.sets === undefined);
+            if (!looksExpanded) return null;
+            const compressed = [];
+            let prevKey = null;
+            let prevValues = null;
+            let count = 0;
+            const sanitizeValue = (value) => (value === null || value === undefined ? '' : value);
+            for (const it of raw) {
+                const first = sanitizeValue(it[fieldKeys[0]]);
+                const second = sanitizeValue(it[fieldKeys[1]]);
+                const key = `${first}:::${second}`;
+                if (key === prevKey) {
+                    count++;
+                } else {
+                    if (prevKey !== null) {
+                        compressed.push({ sets: count, ...prevValues });
+                    }
+                    prevKey = key;
+                    prevValues = { [fieldKeys[0]]: first, [fieldKeys[1]]: second };
+                    count = 1;
+                }
+            }
+            if (prevKey !== null) compressed.push({ sets: count, ...prevValues });
+            return compressed;
+        }
 
     function getCurrentLang() {
         if (window.GN_I18N) {
@@ -219,12 +320,10 @@
     async function generateSheet() {
         const id = parseInt(document.getElementById('routinePicker').value);
         const sheet = document.getElementById('workoutSheet');
-        if(!id) { sheet.innerHTML=""; return; }
+        if (!id) { sheet.innerHTML = ""; return; }
         const wk = await db.routines.get(id);
+        if (!wk || !Array.isArray(wk.exerciseIds)) { sheet.innerHTML = ""; return; }
         sheet.innerHTML = "";
-        const phSets = GN_I18N.safeT ? GN_I18N.safeT('history_sets') : 'Sets';
-        const phKg = GN_I18N.safeT ? GN_I18N.safeT('history_kg') : 'Kg';
-        const phReps = GN_I18N.safeT ? GN_I18N.safeT('history_reps') : 'Reps';
         for (const item of wk.exerciseIds) {
             const id = typeof item === 'object' ? item.id : item;
             const isCustom = typeof item === 'object' ? !!item.isCustom : false;
@@ -237,55 +336,36 @@
                 if (imgRec && imgRec.data) imgSrc = imgRec.data;
             }
             const displayName = getExerciseDisplayName(ex, `#${id}`);
-            
-            // Normalize incoming sets into an array of groups: {sets, reps, weight}
-            const normalizeIncomingSets = (raw) => {
-                if (!Array.isArray(raw) || raw.length === 0) return null;
-                // compressed format: elements already have `sets` property
-                const looksCompressed = raw.every(it => it && it.sets !== undefined);
-                if (looksCompressed) return raw.map(it => ({ sets: it.sets || '', reps: it.reps || '', weight: it.weight || '' }));
-                // expanded format: array of individual sets like [{reps,weight}, ...]
-                const looksExpanded = raw.every(it => it && (it.reps !== undefined || it.weight !== undefined));
-                if (!looksExpanded) return null;
-                const compressed = [];
-                let prevKey = null; let prevReps = null; let prevWeight = null; let count = 0;
-                for (const it of raw) {
-                    const r = (it.reps === null || it.reps === undefined) ? '' : it.reps;
-                    const w = (it.weight === null || it.weight === undefined) ? '' : it.weight;
-                    const key = `${r}:::${w}`;
-                    if (key === prevKey) { count++; }
-                    else {
-                        if (prevKey !== null) compressed.push({ sets: count, reps: prevReps, weight: prevWeight });
-                        prevKey = key; prevReps = r; prevWeight = w; count = 1;
-                    }
-                }
-                if (prevKey !== null) compressed.push({ sets: count, reps: prevReps, weight: prevWeight });
-                return compressed;
-            };
-
-            let initialSets = [];
+            const type = ex.type || '';
+            const isCardioExercise = isCardioType(type);
+            let processedSets = [];
             if (typeof item === 'object') {
-                if (Array.isArray(item.sets)) {
-                    const norm = normalizeIncomingSets(item.sets);
-                    if (norm) initialSets = norm;
-                    else initialSets = item.sets.map(s => ({ sets: s.sets || '', reps: s.reps || '', weight: s.weight || '' }));
-                } else if (item.sets !== undefined || item.reps !== undefined || item.weight !== undefined) {
-                    initialSets = [{ sets: item.sets || '', reps: item.reps || '', weight: item.weight || '' }];
+                if (Array.isArray(item.sets) && item.sets.length > 0) {
+                    const normalized = normalizeIncomingSets(item.sets, isCardioExercise);
+                    processedSets = normalized || item.sets;
+                } else if (
+                    item.sets !== undefined ||
+                    item.reps !== undefined ||
+                    item.weight !== undefined ||
+                    item.distance !== undefined ||
+                    item.time !== undefined
+                ) {
+                    const base = { sets: item.sets || '' };
+                    if (isCardioExercise) {
+                        base.distance = item.distance || '';
+                        base.time = item.time || '';
+                    } else {
+                        base.reps = item.reps || '';
+                        base.weight = item.weight || '';
+                    }
+                    processedSets = [base];
                 }
             }
-            if (!initialSets || initialSets.length === 0) initialSets = [{ sets: '', reps: '', weight: '' }];
-
-            // build rows HTML for each initial set group
-            const rowsHtml = initialSets.map(s => `
-                    <div class="set-row data-row">
-                        <div class="field"><input type="number" min="0" class="s" value="${s.sets}"></div>
-                        <div class="field"><input type="number" class="r" value="${s.reps}"></div>
-                        <div class="field"><input type="number" step="0.5" class="w" value="${s.weight}"></div>
-                        <div><button type="button" class="remove-set-btn" onclick="this.closest('.set-row').remove()" aria-label="Remove set"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>
-                    </div>
-            `).join('');
-
-            sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name || ''}" data-name-pt="${ex.namePT || ''}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}">
+            if (!Array.isArray(processedSets) || processedSets.length === 0) {
+                processedSets = [getEmptySetData(isCardioExercise)];
+            }
+            const setsBlock = renderSetsBlock(type, processedSets);
+            sheet.innerHTML += `<div class="exercise-row" data-id="${ex.id}" data-name="${ex.name || ''}" data-name-pt="${ex.namePT || ''}" data-imgid="${ex.imageId || ''}" data-iscustom="${isCustom}" data-type="${type}">
                 <div class="exercise-header">
                     <div class="exercise-left">
                         <img src="${imgSrc}" class="ex-thumb">
@@ -293,17 +373,11 @@
                     </div>
                     <button onclick="this.closest('.exercise-row').remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
-                <div class="sets-container">
-                    <div class="set-row header-row">
-                        <div class="field"><label>${phSets}</label></div>
-                        <div class="field"><label>${phReps}</label></div>
-                        <div class="field"><label>${phKg}</label></div>
-                        <div></div>
-                    </div>
-                    ${rowsHtml}
-                    <button type="button" class="add-set-inline" onclick="(function(btn){ const container = btn.parentElement; addSetRowToContainer(container, { sets: '', reps: '', weight: '' }, btn); })(this)">+ Add set</button>
-                </div>
+                ${setsBlock}
             </div>`;
+        }
+        if (window.GN_I18N) {
+            try { GN_I18N.applyTranslations(sheet); } catch (e) {}
         }
         document.getElementById('saveBtn').style.display = "block";
     }
@@ -332,24 +406,17 @@
             if (imgRec && imgRec.data) imgSrc = imgRec.data;
         }
 
-        const phSets = GN_I18N.safeT ? GN_I18N.safeT('history_sets') : 'Sets';
-        const phKg = GN_I18N.safeT ? GN_I18N.safeT('history_kg') : 'Kg';
-        const phReps = GN_I18N.safeT ? GN_I18N.safeT('history_reps') : 'Reps';
-
-        const initialSets = [{ sets: (log.sets || ''), reps: (log.reps || ''), weight: (log.weight || '') }];
-        const rowsHtml = initialSets.map(s => `
-                <div class="set-row data-row">
-                    <div class="field"><input type="number" min="0" class="s" value="${s.sets}"></div>
-                    <div class="field"><input type="number" class="r" value="${s.reps}"></div>
-                    <div class="field"><input type="number" step="0.5" class="w" value="${s.weight}"></div>
-                    <div><button type="button" class="remove-set-btn" onclick="this.closest('.set-row').remove()" aria-label="Remove set"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>
-                </div>
-        `).join('');
-
+        const type = (ex && ex.type) ? ex.type : (log.exerciseType || '');
+        const isCardioExercise = isCardioType(type);
+        const logSet = {
+            sets: (log.sets || ''),
+            ...(isCardioExercise ? { distance: (log.distance || ''), time: (log.time || '') } : { reps: (log.reps || ''), weight: (log.weight || '') })
+        };
+        const setsBlock = renderSetsBlock(type, [logSet]);
         const storedName = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
         const displayName = getExerciseDisplayName(ex || { name: log.exerciseName, namePT: log.exerciseNamePT }, storedName);
         const localizedNamePT = (ex && ex.namePT) || (log.exerciseNamePT || '');
-        sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${storedName}" data-name-pt="${localizedNamePT}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}">
+        sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${storedName}" data-name-pt="${localizedNamePT}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}" data-type="${type}">
             <div class="exercise-header">
                 <div class="exercise-left">
                     <img src="${imgSrc}" class="ex-thumb">
@@ -357,17 +424,11 @@
                 </div>
                 <button onclick="this.closest('.exercise-row').remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div>
-            <div class="sets-container">
-                <div class="set-row header-row">
-                    <div class="field"><label>${phSets}</label></div>
-                    <div class="field"><label>${phReps}</label></div>
-                    <div class="field"><label>${phKg}</label></div>
-                    <div></div>
-                </div>
-                ${rowsHtml}
-                <button type="button" class="add-set-inline" onclick="(function(btn){ const container = btn.parentElement; addSetRowToContainer(container, { sets: '', reps: '', weight: '' }, btn); })(this)">+ Add set</button>
-            </div>
+            ${setsBlock}
         </div>`;
+        if (window.GN_I18N) {
+            try { GN_I18N.applyTranslations(sheet); } catch (e) {}
+        }
         document.getElementById('saveBtn').style.display = 'block';
     }
 
@@ -375,9 +436,6 @@
     async function buildSheetFromLogs(logs) {
         const sheet = document.getElementById('workoutSheet');
         sheet.innerHTML = '';
-        const phSets = GN_I18N.safeT ? GN_I18N.safeT('history_sets') : 'Sets';
-        const phKg = GN_I18N.safeT ? GN_I18N.safeT('history_kg') : 'Kg';
-        const phReps = GN_I18N.safeT ? GN_I18N.safeT('history_reps') : 'Reps';
         for (const log of logs) {
             if (!log) continue;
             const exId = log.exerciseId;
@@ -397,20 +455,17 @@
                 if (imgRec && imgRec.data) imgSrc = imgRec.data;
             }
 
-            const initialSets = [{ sets: (log.sets || ''), reps: (log.reps || ''), weight: (log.weight || '') }];
-            const rowsHtml = initialSets.map(s => `
-                    <div class="set-row data-row">
-                        <div class="field"><input type="number" min="0" class="s" value="${s.sets}"></div>
-                        <div class="field"><input type="number" class="r" value="${s.reps}"></div>
-                        <div class="field"><input type="number" step="0.5" class="w" value="${s.weight}"></div>
-                        <div><button type="button" class="remove-set-btn" onclick="this.closest('.set-row').remove()" aria-label="Remove set"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>
-                    </div>
-            `).join('');
-
+            const type = (ex && ex.type) ? ex.type : (log.exerciseType || '');
+            const isCardioExercise = isCardioType(type);
+            const logSet = {
+                sets: (log.sets || ''),
+                ...(isCardioExercise ? { distance: (log.distance || ''), time: (log.time || '') } : { reps: (log.reps || ''), weight: (log.weight || '') })
+            };
+            const setsBlock = renderSetsBlock(type, [logSet]);
             const storedName = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
             const displayName = getExerciseDisplayName(ex || { name: log.exerciseName, namePT: log.exerciseNamePT }, storedName);
             const localizedNamePT = (ex && ex.namePT) || (log.exerciseNamePT || '');
-            sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${storedName}" data-name-pt="${localizedNamePT}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}">
+            sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${storedName}" data-name-pt="${localizedNamePT}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}" data-type="${type}">
                 <div class="exercise-header">
                     <div class="exercise-left">
                         <img src="${imgSrc}" class="ex-thumb">
@@ -418,52 +473,60 @@
                     </div>
                     <button onclick="this.closest('.exercise-row').remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
-                <div class="sets-container">
-                    <div class="set-row header-row">
-                        <div class="field"><label>${phSets}</label></div>
-                        <div class="field"><label>${phReps}</label></div>
-                        <div class="field"><label>${phKg}</label></div>
-                        <div></div>
-                    </div>
-                    ${rowsHtml}
-                    <button type="button" class="add-set-inline" onclick="(function(btn){ const container = btn.parentElement; addSetRowToContainer(container, { sets: '', reps: '', weight: '' }, btn); })(this)">+ Add set</button>
-                </div>
+                ${setsBlock}
             </div>`;
+        }
+        if (window.GN_I18N) {
+            try { GN_I18N.applyTranslations(sheet); } catch (e) {}
         }
         document.getElementById('saveBtn').style.display = 'block';
     }
 
     // helper to add a set row into an existing sets-container (used by the add button)
-    function addSetRowToContainer(container, setData, beforeNode) {
+    function addSetRowToContainer(container, setData) {
         if (!container) return;
+        const isCardioExercise = isCardioType(container.dataset.type || '');
+        const fieldDefs = getSetFieldDefinitions(isCardioExercise);
+        const data = (setData && typeof setData === 'object') ? setData : getEmptySetData(isCardioExercise);
         const makeField = (el) => { const f = document.createElement('div'); f.className = 'field'; f.appendChild(el); return f; };
-        // create header if missing
         if (!container.querySelector('.header-row')) {
-            const header = document.createElement('div'); header.className = 'set-row header-row';
-            const labSets = document.createElement('div'); labSets.className='field'; const l1=document.createElement('label'); l1.textContent = (GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_sets') : 'Sets'; labSets.appendChild(l1);
-            const labReps = document.createElement('div'); labReps.className='field'; const l2=document.createElement('label'); l2.textContent = (GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_reps') : 'Reps'; labReps.appendChild(l2);
-            const labKg = document.createElement('div'); labKg.className='field'; const l3=document.createElement('label'); l3.textContent = (GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('history_kg') : 'Kg'; labKg.appendChild(l3);
-            header.appendChild(labSets); header.appendChild(labReps); header.appendChild(labKg); header.appendChild(document.createElement('div'));
-            container.appendChild(header);
+            const headerRow = document.createElement('div'); headerRow.className = 'set-row header-row';
+            fieldDefs.forEach(def => {
+                const field = document.createElement('div'); field.className = 'field';
+                const label = document.createElement('label'); label.textContent = def.label;
+                field.appendChild(label);
+                headerRow.appendChild(field);
+            });
+            const spacer = document.createElement('div');
+            headerRow.appendChild(spacer);
+            container.insertBefore(headerRow, container.firstChild);
         }
 
         const row = document.createElement('div'); row.className = 'set-row data-row';
-        const setsInput = document.createElement('input'); setsInput.type = 'number'; setsInput.min = '0';
-        const repsInput = document.createElement('input'); repsInput.type = 'number'; repsInput.min = '0';
-        const weightInput = document.createElement('input'); weightInput.type = 'number'; weightInput.step = '0.5';
-        const apply = (el, v) => { if (v !== undefined && v !== null && v !== '') el.value = v; };
-        apply(setsInput, setData && setData.sets);
-        apply(repsInput, setData && setData.reps);
-        apply(weightInput, setData && setData.weight);
-        row.appendChild(makeField(setsInput));
-        row.appendChild(makeField(repsInput));
-        row.appendChild(makeField(weightInput));
-        const rm = document.createElement('button'); rm.type='button'; rm.className='remove-set-btn'; rm.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-        rm.onclick = (e) => { e.stopPropagation(); row.remove(); };
-        const rmWrap = document.createElement('div'); rmWrap.appendChild(rm);
-        row.appendChild(rmWrap);
-        if (beforeNode && beforeNode.parentElement === container) container.insertBefore(row, beforeNode);
-        else container.appendChild(row);
+        const applyDefaultValue = (inputEl, val) => {
+            if (val === undefined || val === null || val === '') inputEl.value = '';
+            else inputEl.value = val;
+        };
+
+        fieldDefs.forEach(def => {
+            const inputEl = document.createElement('input');
+            inputEl.type = def.type;
+            if (def.min) inputEl.min = def.min;
+            if (def.step) inputEl.step = def.step;
+            if (def.type === 'number') inputEl.inputMode = 'decimal';
+            applyDefaultValue(inputEl, data[def.key]);
+            row.appendChild(makeField(inputEl));
+        });
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-set-btn';
+        removeBtn.setAttribute('aria-label', 'Remove set');
+        removeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        removeBtn.onclick = (e) => { e.stopPropagation(); row.remove(); };
+        const removeWrapper = document.createElement('div'); removeWrapper.appendChild(removeBtn);
+        row.appendChild(removeWrapper);
+        container.appendChild(row);
     }
 
     async function saveSession() {
@@ -489,34 +552,79 @@
         }
         const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
         document.querySelectorAll('.exercise-row').forEach(r => {
-            // Aggregate sets from any .set-row.data-row inside the exercise
             const rows = r.querySelectorAll('.set-row.data-row');
             if (!rows || rows.length === 0) return;
             let totalSets = 0;
             let pickedReps = null;
             let pickedWeight = null;
+            let pickedDistance = null;
+            let pickedTime = null;
+            let cardioHasValidInput = false;
+            const exerciseType = r.dataset.type || '';
+            const isCardioExercise = isCardioType(exerciseType);
+
             rows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
                 if (!inputs || inputs.length < 3) return;
                 const sRaw = (inputs[0].value || '').toString().trim();
-                const rRaw = (inputs[1].value || '').toString().trim();
-                const wRaw = (inputs[2].value || '').toString().trim();
+                const primaryRaw = (inputs[1].value || '').toString().trim();
+                const secondaryRaw = (inputs[2].value || '').toString().trim();
                 const sCount = (sRaw === '' ? 1 : (isNaN(Number(sRaw)) ? 1 : parseInt(sRaw, 10)));
+
+                if (isCardioExercise) {
+                    const hasDistanceInput = primaryRaw !== '';
+                    const hasTimeInput = secondaryRaw !== '';
+                    const distanceVal = hasDistanceInput ? normalizeCardioMeasurement(primaryRaw) : null;
+                    const timeVal = hasTimeInput ? normalizeCardioMeasurement(secondaryRaw) : null;
+                    const hasValidInput = (hasDistanceInput && distanceVal !== null) || (hasTimeInput && timeVal !== null);
+                    if (!hasValidInput) return;
+                    totalSets += sCount;
+                    if (pickedDistance === null && distanceVal !== null) pickedDistance = distanceVal;
+                    if (pickedTime === null && timeVal !== null) pickedTime = timeVal;
+                    cardioHasValidInput = true;
+                    return;
+                }
+
                 totalSets += sCount;
-                if (!pickedReps && rRaw !== '') pickedReps = parseInt(rRaw, 10);
-                if (!pickedWeight && wRaw !== '') pickedWeight = parseFloat(wRaw);
+                if (!pickedReps && primaryRaw !== '') pickedReps = parseInt(primaryRaw, 10);
+                if (!pickedWeight && secondaryRaw !== '') pickedWeight = (isNaN(Number(secondaryRaw)) ? secondaryRaw : Number(secondaryRaw));
             });
-            // require at least reps and weight to save
+
+            if (isCardioExercise) {
+                if (!cardioHasValidInput) return;
+                const name = (lang === 'pt' && r.dataset.namePt) ? r.dataset.namePt : (r.dataset.name || null);
+                const distanceForSave = pickedDistance !== null ? pickedDistance : 0;
+                const timeForSave = pickedTime !== null ? pickedTime : 0;
+                logs.push({
+                    exerciseId: parseInt(r.dataset.id),
+                    isCustom: r.dataset.iscustom === 'true',
+                    exerciseName: name,
+                    imageId: parseInt(r.dataset.imgid) || null,
+                    sets: parseInt(totalSets) || 1,
+                    distance: distanceForSave,
+                    time: timeForSave,
+                    reps: null,
+                    weight: null,
+                    exerciseType,
+                    date,
+                    sessionId
+                });
+                return;
+            }
+
             if (pickedReps === null || pickedWeight === null) return;
             const name = (lang === 'pt' && r.dataset.namePt) ? r.dataset.namePt : (r.dataset.name || null);
-            logs.push({ 
-                exerciseId: parseInt(r.dataset.id), 
+            logs.push({
+                exerciseId: parseInt(r.dataset.id),
                 isCustom: r.dataset.iscustom === 'true',
-                exerciseName: name, 
-                imageId: parseInt(r.dataset.imgid) || null, 
-                sets: parseInt(totalSets) || 1, 
-                weight: parseFloat(pickedWeight), 
-                reps: parseInt(pickedReps), 
+                exerciseName: name,
+                imageId: parseInt(r.dataset.imgid) || null,
+                sets: parseInt(totalSets) || 1,
+                reps: parseInt(pickedReps),
+                weight: parseFloat(pickedWeight),
+                distance: null,
+                time: null,
+                exerciseType,
                 date,
                 sessionId
             });

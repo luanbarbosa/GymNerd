@@ -189,8 +189,8 @@
                 exercise_type_other: 'Other',
                 cardio_distance_unit: 'km',
                 cardio_time_unit: 'min',
-                cardio_distance_label: 'Distance',
-                cardio_time_label: 'Time',
+                cardio_distance_label: 'Distance (km)',
+                cardio_time_label: 'Time (min)',
                 /* History page specific keys (unique names) */
                 history_header: 'History',
                 measure_history_title: 'History',
@@ -471,8 +471,8 @@
                 exercise_type_other: 'Outro',
                 cardio_distance_unit: 'km',
                 cardio_time_unit: 'min',
-                cardio_distance_label: 'Distância',
-                cardio_time_label: 'Tempo',
+                cardio_distance_label: 'Distância (km)',
+                cardio_time_label: 'Tempo (min)',
                 /* History page specific keys (unique names) */
                 history_header: 'Histórico',
                 measure_history_title: 'Histórico',
