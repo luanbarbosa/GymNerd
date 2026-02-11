@@ -186,8 +186,9 @@
                 exercise_type_core: 'Core',
                 exercise_type_abs: 'Abs',
                 exercise_type_cardio: 'Cardio',
-                exercise_type_other: 'Other'
-                ,
+                exercise_type_other: 'Other',
+                cardio_distance_unit: 'km',
+                cardio_time_unit: 'min',
                 /* History page specific keys (unique names) */
                 history_header: 'History',
                 measure_history_title: 'History',
@@ -465,8 +466,9 @@
                 exercise_type_core: 'Core',
                 exercise_type_abs: 'Abdominais',
                 exercise_type_cardio: 'Cardio',
-                exercise_type_other: 'Outro'
-                ,
+                exercise_type_other: 'Outro',
+                cardio_distance_unit: 'km',
+                cardio_time_unit: 'min',
                 /* History page specific keys (unique names) */
                 history_header: 'Histórico',
                 measure_history_title: 'Histórico',
