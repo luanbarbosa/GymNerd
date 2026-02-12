@@ -352,7 +352,7 @@
         }
         /* Content constrained and pinned to bottom above safe area
            Add extra bottom spacing so the finish button isn't flush to the screen edge. */
-        .finished-content { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 12px) + var(--finished-bottom-height, 0px) + 12px); width: calc(100% - 32px); max-width: 500px; padding: 8px 12px 0; box-sizing: border-box; text-align:center; z-index: 3; display:flex; flex-direction:column; align-items:center; gap:12px; }
+        .finished-content { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--finished-bottom-height, 0px) + 12px); width: calc(100% - 32px); max-width: 500px; padding: 8px 12px 0; box-sizing: border-box; text-align:center; z-index: 3; display:flex; flex-direction:column; align-items:center; gap:12px; }
         @supports (width: min(500px, calc(100% - 32px))) {
             .finished-content { width: min(500px, calc(100% - 32px)); }
         }
@@ -414,10 +414,11 @@
         .finished-content p { margin: 0 0 12px; color: var(--text-dim); font-weight: 700; }
         .finished-bottom-actions {
             position: absolute;
-            left: 0;
-            right: 0;
             bottom: 0;
-            padding: 12px 16px calc(env(safe-area-inset-bottom, 12px) + 8px) 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(500px, calc(100% - 32px));
+            padding: 12px 0 0;
             box-sizing: border-box;
             display:flex;
             flex-direction: column;
@@ -425,9 +426,9 @@
             z-index: 4;
             align-items: stretch;
             margin: 0 auto;
-            width: 100%;
         }
-        .finished-bottom-actions .finish-btn { margin-top: 0; width: 100%; }
+        .finished-bottom-actions .finish-btn { margin-top: 0; width: 100%; margin-bottom: 16px; padding: 12px 12px; }
+        .ios-bottom-padding .finished-bottom-actions .finish-btn { margin-bottom: 0; }
         /* Exercise progress graph styles */
         .exercise-graph { padding:8px 18px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; overflow:visible; }
         /* Player card title overlay (title removed) */
@@ -595,7 +596,6 @@
             border: 1px solid rgba(239, 68, 68, 0.6);
             padding: 18px 20px;
             background: linear-gradient(180deg, rgba(248, 113, 113, 0.25), rgba(188, 35, 113, 0.2));
-            box-shadow: 0 12px 26px rgba(239, 68, 68, 0.35);
             color: #fff;
             align-items: stretch;
             justify-content: flex-start;
