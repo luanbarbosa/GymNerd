@@ -179,7 +179,7 @@
             backdrop-filter: blur(6px);
             display: flex;
             align-items: center;
-            padding: 12px 16px 22px;
+            padding: 12px 16px 12px;
             gap: 12px;
             box-sizing: border-box;
             overflow: visible;
@@ -196,6 +196,9 @@
             background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
             pointer-events: none;
             z-index: -1;
+        }
+        .ios-bottom-padding .BottomActionBar {
+            padding-bottom: 52px;
         }
         .BottomActionBar .ba-left{display:none}
         .BottomActionBar .ba-center{display:flex;gap:20px;flex:1;align-items:center;justify-content:center;position:relative;left:auto;transform:none}
@@ -939,6 +942,21 @@
 
         window.addEventListener('resize', () => requestAnimationFrame(updateFinishedIllustration));
         window.addEventListener('orientationchange', () => requestAnimationFrame(updateFinishedIllustration));
+
+        function isIosDevice() {
+            if (typeof navigator === 'undefined') return false;
+            const { userAgent = '', platform = '', maxTouchPoints = 0 } = navigator;
+            if (/iPad|iPhone|iPod/.test(userAgent)) return true;
+            return platform === 'MacIntel' && maxTouchPoints > 1;
+        }
+
+        function applyIosBottomPadding() {
+            if (isIosDevice()) {
+                document.documentElement.classList.add('ios-bottom-padding');
+            }
+        }
+
+        applyIosBottomPadding();
 
 
         async function init() {

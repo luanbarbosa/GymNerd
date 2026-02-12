@@ -71,9 +71,12 @@
             border-top: 1px solid #0b1220;
             box-shadow: 0 -6px 20px rgba(0,0,0,0.25);
             z-index: 1400;
-            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            padding-bottom: 12px;
             width: 100%;
             max-width: var(--app-max-width);
+        }
+        .ios-bottom-nav-spacing #bottom-nav {
+            padding-bottom: 24px;
         }
         #bottom-nav a { color: #94a3b8; text-decoration: none; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; padding:6px 8px; border-radius:10px; }
         #bottom-nav a .nav-icon { width:auto; height:auto; display:inline-flex; align-items:center; justify-content:center; font-size:20px; line-height:1; }
@@ -185,6 +188,22 @@
                 if (el) el.setAttribute('aria-label', GN_I18N.safeT(map[id]));
             });
         } catch(e) { console.warn('bottom-nav i18n failed', e); }
+    </script>
+
+    <script>
+        (function () {
+            function isIosDevice() {
+                if (typeof navigator === 'undefined') return false;
+                var ua = navigator.userAgent || '';
+                var platform = navigator.platform || '';
+                var maxTouchPoints = navigator.maxTouchPoints || 0;
+                if (/iPad|iPhone|iPod/.test(ua)) return true;
+                return platform === 'MacIntel' && maxTouchPoints > 1;
+            }
+            if (isIosDevice()) {
+                document.documentElement.classList.add('ios-bottom-nav-spacing');
+            }
+        })();
     </script>
 
     <script src="auth.js"></script>
