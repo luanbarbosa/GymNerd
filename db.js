@@ -42,6 +42,107 @@ db.version(12).upgrade(async (tx) => {
     }
 });
 
+const CARDIO_DEFAULT_DISTANCE = 1;
+const CARDIO_DEFAULT_TIME = 1;
+
+function resolveExerciseRecord(id, isCustom, catalogMap, customMap) {
+    if (id === undefined || id === null) return null;
+    const explicitCustom = (isCustom === true || isCustom === 'true');
+    const explicitCatalog = (isCustom === false || isCustom === 'false');
+    if (explicitCustom) return customMap.get(id) || catalogMap.get(id);
+    if (explicitCatalog) return catalogMap.get(id) || customMap.get(id);
+    return customMap.get(id) || catalogMap.get(id);
+}
+
+function normalizeRoutineEntry(entry) {
+    if (entry && typeof entry === 'object') {
+        const normalized = { ...entry };
+        if (normalized.id !== undefined && normalized.id !== null) {
+            const parsed = Number(normalized.id);
+            if (Number.isFinite(parsed)) normalized.id = parsed;
+        }
+        return normalized;
+    }
+    if (entry === undefined || entry === null) return null;
+    const idCandidate = Number(entry);
+    return Number.isFinite(idCandidate) ? { id: idCandidate } : null;
+}
+
+function determineSetCount(entry) {
+    if (!entry) return 1;
+    if (Array.isArray(entry.sets) && entry.sets.length > 0) return entry.sets.length;
+    const setsValue = entry.sets;
+    if (setsValue !== undefined && setsValue !== null) {
+        const parsed = Number(setsValue);
+        if (Number.isFinite(parsed) && parsed > 0) return Math.round(parsed);
+    }
+    return 1;
+}
+
+function buildCardioSets(count) {
+    const normalizedCount = (Number.isFinite(count) && count > 0) ? Math.max(1, Math.round(count)) : 1;
+    return Array.from({ length: normalizedCount }, () => ({
+        distance: CARDIO_DEFAULT_DISTANCE,
+        time: CARDIO_DEFAULT_TIME
+    }));
+}
+
+function migrateCardioEntry(entry, catalogMap, customMap) {
+    const normalized = normalizeRoutineEntry(entry);
+    if (!normalized || typeof normalized.id !== 'number' || isNaN(normalized.id)) return { mutated: false, value: entry };
+    if (normalized.isCustom === 'true') normalized.isCustom = true;
+    if (normalized.isCustom === 'false') normalized.isCustom = false;
+    const record = resolveExerciseRecord(normalized.id, normalized.isCustom, catalogMap, customMap);
+    if (!record || record.type !== 'cardio') return { mutated: false, value: entry };
+    const setCount = determineSetCount(normalized);
+    const cardioSets = buildCardioSets(setCount);
+    const migrated = { ...normalized, sets: cardioSets };
+    delete migrated.reps;
+    delete migrated.weight;
+    return { mutated: true, value: migrated };
+}
+
+db.version(13).stores({ 
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId', 
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight'
+});
+
+db.version(13).upgrade(async (tx) => {
+    try {
+        const catalog = await tx.table('catalog_exercises').toArray();
+        const custom = await tx.table('custom_exercises').toArray();
+        const catalogMap = new Map(catalog.map(ex => [ex.id, ex]));
+        const customMap = new Map(custom.map(ex => [ex.id, ex]));
+        const routinesTable = tx.table('routines');
+        const workouts = await routinesTable.toArray();
+        let updatedRoutines = 0;
+        for (const workout of workouts) {
+            if (!Array.isArray(workout.exerciseIds) || workout.exerciseIds.length === 0) continue;
+            let changed = false;
+            const migratedExercises = workout.exerciseIds.map(item => {
+                const { mutated, value } = migrateCardioEntry(item, catalogMap, customMap);
+                if (mutated) changed = true;
+                return value;
+            });
+            if (!changed) continue;
+            try {
+                await routinesTable.put({ ...workout, exerciseIds: migratedExercises });
+                updatedRoutines++;
+            } catch (err) {
+                console.warn('[DB Migration] cardio defaults update failed for routine', workout.id, err);
+            }
+        }
+        if (updatedRoutines > 0) console.info(`[DB Migration] added cardio defaults to ${updatedRoutines} routine(s)`);
+    } catch (err) {
+        console.warn('[DB Migration] cardio defaults migration failed', err);
+    }
+});
+
 // Canonical list of available exercise types used across the app
 const AVAILABLE_EXERCISE_TYPES = ['abs','arms','back','cardio','chest','legs','shoulder','other'];
 // Expose on db and window for easy access

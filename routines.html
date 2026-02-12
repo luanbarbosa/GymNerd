@@ -587,6 +587,37 @@
             document.getElementById('cancelEdit').style.display = 'none';
         }
 
+        function normalizeCardioMeasurement(value) {
+            if (value === undefined || value === null || value === '') return null;
+            const num = Number(value);
+            if (!Number.isFinite(num) || num <= 0) return null;
+            return Math.round(num * 100) / 100;
+        }
+
+        function resolveLocalizedCardioUnit(key, fallback) {
+            if (window.GN_I18N && GN_I18N.t) {
+                const translated = GN_I18N.t(key);
+                if (translated) return translated;
+            }
+            return fallback;
+        }
+
+        function formatCardioSetLabel(distance, time) {
+            const normalizedDistance = normalizeCardioMeasurement(distance);
+            const normalizedTime = normalizeCardioMeasurement(time);
+            if (normalizedDistance === null && normalizedTime === null) return null;
+            const distanceUnit = resolveLocalizedCardioUnit('cardio_distance_unit', 'km');
+            const timeUnit = resolveLocalizedCardioUnit('cardio_time_unit', 'min');
+            const parts = [];
+            if (normalizedDistance !== null) {
+                parts.push(`${normalizedDistance}${distanceUnit}`);
+            }
+            if (normalizedTime !== null) {
+                parts.push(`${normalizedTime}${timeUnit}`);
+            }
+            return parts.join(' - ');
+        }
+
         async function renderWorkouts() {
             // legacy entry point - delegate to the tabbed renderer
             await renderTabs();
@@ -661,37 +692,67 @@
                 const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
                 if (!ex) return "";
                 let setsHtml = '';
+                const isCardioExercise = ex.type === 'cardio';
                 if (Array.isArray(it.sets) && it.sets.length > 0) {
-                    // Group identical rep-weight combinations and show counts
                     const groups = it.sets.reduce((acc, s) => {
+                        if (isCardioExercise) {
+                            const distance = normalizeCardioMeasurement(s.distance);
+                            const time = normalizeCardioMeasurement(s.time);
+                            const label = formatCardioSetLabel(distance, time);
+                            if (!label) return acc;
+                            if (!acc[label]) acc[label] = { distance, time, label, count: 0 };
+                            acc[label].count++;
+                            return acc;
+                        }
                         const key = `${s.reps}|${s.weight}`;
                         if (!acc[key]) acc[key] = { reps: s.reps, weight: s.weight, count: 0 };
                         acc[key].count++;
                         return acc;
                     }, {});
-                    // Filter out groups with missing/invalid reps or weight
                     const groupArr = Object.values(groups).filter(g => {
+                        if (isCardioExercise) {
+                            return typeof g.label === 'string' && g.label.length > 0;
+                        }
                         const repsValid = (g.reps !== undefined && g.reps !== null && g.reps !== '' && !isNaN(Number(g.reps)));
                         const weightValid = (g.weight !== undefined && g.weight !== null && g.weight !== '' && !isNaN(Number(g.weight)));
                         return repsValid && weightValid;
                     });
                     if (groupArr.length > 0) {
-                        // Compact pills summary: show reps/weight for single sets, otherwise show count×reps/weight
-                        const pills = groupArr.map(g => (g.count === 1) ? `<span class="set-pill">${g.reps}reps - ${g.weight}kg</span>` : `<span class="set-pill">${g.count}x ${g.reps}reps - ${g.weight}kg</span>`).join('');
-                        setsHtml = `<div class="sets-compact">${pills}</div>`;
+                        const pills = groupArr.map(g => {
+                            if (isCardioExercise) {
+                                const cardioLabel = g.label;
+                                if (!cardioLabel) return '';
+                                return (g.count === 1)
+                                    ? `<span class="set-pill">${cardioLabel}</span>`
+                                    : `<span class="set-pill">${g.count}x ${cardioLabel}</span>`;
+                            }
+                            return (g.count === 1)
+                                ? `<span class="set-pill">${g.reps}reps - ${g.weight}kg</span>`
+                                : `<span class="set-pill">${g.count}x ${g.reps}reps - ${g.weight}kg</span>`;
+                        }).filter(Boolean).join('');
+                        if (pills) {
+                            setsHtml = `<div class="sets-compact">${pills}</div>`;
+                        }
                     } else {
                         setsHtml = '';
                     }
                 } else if (typeof it.sets !== 'undefined') {
-                    // Legacy format where `it.sets` is a count and `it.reps`/`it.weight` hold values
                     const count = it.sets || 1;
-                    const repsValid = (it.reps !== undefined && it.reps !== null && it.reps !== '' && !isNaN(Number(it.reps)));
-                    const weightValid = (it.weight !== undefined && it.weight !== null && it.weight !== '' && !isNaN(Number(it.weight)));
-                    if (repsValid && weightValid) {
-                        const pill = (count === 1) ? `<span class="set-pill">${it.reps}reps - ${it.weight}kg</span>` : `<span class="set-pill">${count}x ${it.reps}reps - ${it.weight}kg</span>`;
-                        setsHtml = `<div class="sets-compact">${pill}</div>`;
+                    if (isCardioExercise) {
+                        const cardioLabel = formatCardioSetLabel(it.distance, it.time);
+                        if (cardioLabel) {
+                            const prefix = (count === 1) ? '' : `${count}x `;
+                            setsHtml = `<div class="sets-compact"><span class="set-pill">${prefix + cardioLabel}</span></div>`;
+                        }
                     } else {
-                        setsHtml = '';
+                        const repsValid = (it.reps !== undefined && it.reps !== null && it.reps !== '' && !isNaN(Number(it.reps)));
+                        const weightValid = (it.weight !== undefined && it.weight !== null && it.weight !== '' && !isNaN(Number(it.weight)));
+                        if (repsValid && weightValid) {
+                            const pill = (count === 1) ? `<span class="set-pill">${it.reps}reps - ${it.weight}kg</span>` : `<span class="set-pill">${count}x ${it.reps}reps - ${it.weight}kg</span>`;
+                            setsHtml = `<div class="sets-compact">${pill}</div>`;
+                        } else {
+                            setsHtml = '';
+                        }
                     }
                 }
                 const localizedType = (window.GN_I18N && GN_I18N.localizeExerciseType) ? GN_I18N.localizeExerciseType(ex.type) : ex.type || '';

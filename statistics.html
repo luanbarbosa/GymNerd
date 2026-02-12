@@ -81,6 +81,8 @@
         .chart-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .chart-thumb { width: 64px; height: 52px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; }
         .canvas-wrapper { height: 180px; }
+        .cardio-charts { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+        .cardio-charts .canvas-wrapper { height: 150px; }
         .exercise-group .group-header { display:flex; align-items:center; gap:8px; cursor:pointer; padding: 8px 10px; justify-content: space-between; border-radius: 8px; }
         .exercise-group .group-header:hover { background: rgba(255,255,255,0.02); }
         .exercise-group .group-header .chevron { font-size: 20px; color: var(--text-dim); margin-left: 8px; }
@@ -263,6 +265,16 @@
             return imgRecord ? imgRecord.data : FALLBACK_IMG;
         }
 
+        function normalizeExerciseType(type) {
+            const raw = (type === undefined || type === null) ? '' : String(type);
+            const trimmed = raw.trim();
+            const label = trimmed || 'Other';
+            return {
+                key: label.toLowerCase(),
+                label
+            };
+        }
+
         async function renderCalendar(logs) {
             if (!logs) logs = await db.history.toArray();
             const grid = document.getElementById('calendarGrid');
@@ -311,14 +323,22 @@
         
 
         async function renderCharts(logs) {
+            const renderChartsToken = (window.__gn_stats_renderChartsToken || 0) + 1;
+            window.__gn_stats_renderChartsToken = renderChartsToken;
+            // Prevent overlapping renders from appending duplicate groups when SPA re-initializes the page.
+            const isRenderChartsStale = () => window.__gn_stats_renderChartsToken !== renderChartsToken;
+
             if (!logs) logs = await db.history.toArray();
+            if (isRenderChartsStale()) return;
             const wrapper = document.getElementById('chartsWrapper');
+            if (!wrapper) return;
 
             // exercise type localization is provided by GN_I18N.localizeExerciseType
             const [catalogEx, customEx] = await Promise.all([
                 db.catalog_exercises.toArray(),
                 db.custom_exercises.toArray()
             ]);
+            if (isRenderChartsStale()) return;
             const allExercises = [
                 ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
@@ -334,36 +354,133 @@
                     ctx.font = 'bold 10px sans-serif';
                     ctx.fillStyle = '#94a3b8';
                     ctx.textAlign = 'center';
-                    const unit = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg';
+                    const dataset = data.datasets[0];
+                    const defaultUnit = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg';
+                    const unit = (dataset && dataset.unit) ? dataset.unit : defaultUnit;
                     const meta = chart.getDatasetMeta(0);
                     const area = chart.chartArea || { left: 6, right: chart.width - 6 };
                     const minX = (area.left || 6) + 12;
                     const maxX = (area.right || (chart.width - 6)) - 12;
                     meta.data.forEach((point, index) => {
-                        const value = data.datasets[0].data[index];
+                        const value = dataset.data[index];
                         const x = Math.min(Math.max(point.x, minX), maxX);
                         ctx.fillText(value + ' ' + unit, x, point.y - 10);
                     });
                     ctx.restore();
                 }
             };
+            const translate = (key, fallback) => {
+                if (typeof GN_I18N !== 'undefined' && typeof GN_I18N.t === 'function') {
+                    try {
+                        const value = GN_I18N.t(key);
+                        if (value) return value;
+                    } catch (e) {
+                        // ignore translation errors
+                    }
+                }
+                return fallback || '';
+            };
+            const safeMetricValue = (value, precision = 2) => {
+                const num = Number(value);
+                if (!Number.isFinite(num)) return 0;
+                if (precision >= 0) return Number(num.toFixed(precision));
+                return num;
+            };
+            const getCardioDurationValue = (entry) => {
+                if (!entry) return 0;
+                if (entry.duration !== undefined && entry.duration !== null) return entry.duration;
+                if (entry.time !== undefined && entry.time !== null) return entry.time;
+                if (entry.durationMinutes !== undefined && entry.durationMinutes !== null) return entry.durationMinutes;
+                return 0;
+            };
+            const renderMetricChart = (canvasId, labels, values, opts = {}) => {
+                const canvasEl = document.getElementById(canvasId);
+                if (!canvasEl) return;
+                const axisTitle = translate(opts.axisTitleKey, opts.axisTitleFallback);
+                const unitText = translate(opts.unitKey, opts.unitFallback);
+                new Chart(canvasEl, {
+                    type: 'line',
+                    plugins: [lineDataLabelsPlugin],
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: values,
+                            borderColor: '#3b82f6',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            pointRadius: 4,
+                            pointBackgroundColor: '#3b82f6',
+                            pointHoverRadius: 6,
+                            unit: unitText || ''
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: { padding: { left: 18, right: 18 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label(ctx) {
+                                        const val = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
+                                        return val + (unitText ? ' ' + unitText : '');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                offset: true,
+                                ticks: { display: false },
+                                grid: { drawBorder: false },
+                                title: axisTitle ? { display: true, text: axisTitle } : { display: false }
+                            },
+                            y: {
+                                grace: '15%',
+                                grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                                ticks: { display: false },
+                                title: { display: false }
+                            }
+                        }
+                    }
+                });
+            };
 
             logs.forEach(l => {
                 const exKey = `${l.exerciseId}-${l.isCustom !== undefined ? !!l.isCustom : l.exerciseId > 0}`;
                 const ex = exMap[exKey];
-                const type = ex ? ex.type : 'Other';
                 const exId = exKey;
-                if (!groupedByType[type]) groupedByType[type] = {};
-                if (!groupedByType[type][exId]) groupedByType[type][exId] = [];
-                groupedByType[type][exId].push(l);
+                const typeInfo = normalizeExerciseType(ex ? ex.type : 'Other');
+                if (!groupedByType[typeInfo.key]) groupedByType[typeInfo.key] = { label: typeInfo.label, exercises: {} };
+                const bucket = groupedByType[typeInfo.key].exercises;
+                if (!bucket[exId]) bucket[exId] = [];
+                bucket[exId].push(l);
             });
+
+            const typeEntries = Object.keys(groupedByType).map(key => {
+                const entry = groupedByType[key];
+                const label = entry.label || key;
+                const localizedLabel = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? (GN_I18N.localizeExerciseType(label) || label) : label;
+                return { key, entry, localizedLabel };
+            });
+            typeEntries.sort((a, b) => {
+                const left = a.localizedLabel || a.entry.label || a.key;
+                const right = b.localizedLabel || b.entry.label || b.key;
+                return left.localeCompare(right);
+            });
+            if (isRenderChartsStale()) return;
 
             wrapper.innerHTML = "";
 
             let typeIndex = 0;
-            for (const type of Object.keys(groupedByType).sort()) {
+            for (const typeInfo of typeEntries) {
+                if (isRenderChartsStale()) return;
                 const groupId = 'grp_' + (typeIndex++);
-                const localizedType = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? GN_I18N.localizeExerciseType(type) : type;
+                const localizedType = typeInfo.localizedLabel || typeInfo.entry.label || typeInfo.key;
 
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'exercise-group';
@@ -376,77 +493,77 @@
                 `;
                 wrapper.appendChild(groupContainer);
 
-                const exercisesInType = groupedByType[type];
+                const exercisesInType = typeInfo.entry.exercises;
                 const body = groupContainer.querySelector('.group-body');
                 for (const exId of Object.keys(exercisesInType)) {
+                    if (isRenderChartsStale()) return;
                     const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
                     const lastEntry = entries[entries.length - 1];
                     const currentEx = exMap[exId];
                     const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
                     const displayName = currentEx ? ((lang === 'pt' && currentEx.namePT) ? currentEx.namePT : currentEx.name) : GN_I18N.t('unknown_exercise');
                     const imgSrc = await getImg(currentEx?.imageId, currentEx?.isCustom);
+                    if (isRenderChartsStale()) return;
 
                     const box = document.createElement('div'); 
                     box.className = 'chart-box';
                     const canvasId = `c-${lastEntry.exerciseId}-${!!lastEntry.isCustom}`.replace(/-/g, '_');
+                    const isCardioType = typeInfo.key === 'cardio';
+                    const chartLabels = entries.map(e => e.date.slice(5));
+                    const cardioCanvasIds = {
+                        distance: `${canvasId}_distance`,
+                        duration: `${canvasId}_duration`
+                    };
+                    const chartMarkup = isCardioType ? `
+                        <div class="cardio-charts">
+                            <div class="canvas-wrapper"><canvas id="${cardioCanvasIds.distance}"></canvas></div>
+                            <div class="canvas-wrapper"><canvas id="${cardioCanvasIds.duration}"></canvas></div>
+                        </div>
+                    ` : `
+                        <div class="canvas-wrapper"><canvas id="${canvasId}"></canvas></div>
+                    `;
 
                     box.innerHTML = `
                         <div class="chart-header">
                             <img src="${imgSrc}" class="chart-thumb">
                             <strong>${displayName}</strong>
                         </div>
-                        <div class="canvas-wrapper"><canvas id="${canvasId}"></canvas></div>`;
+                        ${chartMarkup}`;
                     body.appendChild(box);
 
-                    new Chart(document.getElementById(canvasId), {
-                        type: 'line', 
-                        plugins: [lineDataLabelsPlugin],
-                        data: { 
-                            labels: entries.map(e => e.date.slice(5)), 
-                            datasets: [{ 
-                                // Show weight per rep: divide total weight by number of reps when available
-                                data: entries.map(e => {
-                                    const w = Number(e.weight) || 0;
-                                    const r = (e.reps !== undefined && e.reps !== null) ? Number(e.reps) : 1;
-                                    return r > 0 ? +(w / r).toFixed(2) : +(w).toFixed(2);
-                                }), 
-                                borderColor: '#3b82f6', 
-                                borderWidth: 3,
-                                tension: 0.4, 
-                                fill: true,
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                pointRadius: 4,
-                                pointBackgroundColor: '#3b82f6',
-                                pointHoverRadius: 6
-                            }] 
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            layout: { padding: { left: 18, right: 18 } },
-                            plugins: { 
-                                legend: { display: false },
-                                tooltip: {
-                                    callbacks: {
-                                        label(ctx) {
-                                            const val = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
-                                            const unit = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg';
-                                            return val + ' ' + unit;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: { display: true, offset: true, ticks: { display: false }, grid: { drawBorder: false }, title: { display: true, text: GN_I18N ? GN_I18N.t('weight_per_rep') : 'Weight per rep' } },
-                                y: { 
-                                    grace: '15%',
-                                    grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, 
-                                    ticks: { display: false },
-                                    title: { display: false }
-                                }
-                            }
-                        }
-                    });
+                    if (isRenderChartsStale()) return;
+                    if (isCardioType) {
+                        const distanceValues = entries.map(e => safeMetricValue(e.distance));
+                        const durationValues = entries.map(e => safeMetricValue(getCardioDurationValue(e), 0));
+                        renderMetricChart(cardioCanvasIds.distance, chartLabels, distanceValues, {
+                            axisTitleKey: 'cardio_distance_label',
+                            axisTitleFallback: 'Distance (km)',
+                            unitKey: 'cardio_distance_unit',
+                            unitFallback: 'km'
+                        });
+                        if (isRenderChartsStale()) return;
+                        renderMetricChart(cardioCanvasIds.duration, chartLabels, durationValues, {
+                            axisTitleKey: 'cardio_time_label',
+                            axisTitleFallback: 'Time (min)',
+                            unitKey: 'cardio_time_unit',
+                            unitFallback: 'min'
+                        });
+                    } else {
+                        const weightValues = entries.map(e => {
+                            const w = Number(e.weight) || 0;
+                            const r = (e.reps !== undefined && e.reps !== null) ? Number(e.reps) : 1;
+                            const value = r > 0 ? w / r : w;
+                            return safeMetricValue(value);
+                        });
+                        if (isRenderChartsStale()) return;
+                        renderMetricChart(canvasId, chartLabels, weightValues, {
+                            axisTitleKey: 'weight_per_rep',
+                            axisTitleFallback: 'Weight per rep',
+                            unitKey: 'history_fmt_kg_suffix',
+                            unitFallback: 'kg'
+                        });
+                    }
+
                 }
             }
         }
