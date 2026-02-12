@@ -263,6 +263,16 @@
             return imgRecord ? imgRecord.data : FALLBACK_IMG;
         }
 
+        function normalizeExerciseType(type) {
+            const raw = (type === undefined || type === null) ? '' : String(type);
+            const trimmed = raw.trim();
+            const label = trimmed || 'Other';
+            return {
+                key: label.toLowerCase(),
+                label
+            };
+        }
+
         async function renderCalendar(logs) {
             if (!logs) logs = await db.history.toArray();
             const grid = document.getElementById('calendarGrid');
@@ -311,14 +321,22 @@
         
 
         async function renderCharts(logs) {
+            const renderChartsToken = (window.__gn_stats_renderChartsToken || 0) + 1;
+            window.__gn_stats_renderChartsToken = renderChartsToken;
+            // Prevent overlapping renders from appending duplicate groups when SPA re-initializes the page.
+            const isRenderChartsStale = () => window.__gn_stats_renderChartsToken !== renderChartsToken;
+
             if (!logs) logs = await db.history.toArray();
+            if (isRenderChartsStale()) return;
             const wrapper = document.getElementById('chartsWrapper');
+            if (!wrapper) return;
 
             // exercise type localization is provided by GN_I18N.localizeExerciseType
             const [catalogEx, customEx] = await Promise.all([
                 db.catalog_exercises.toArray(),
                 db.custom_exercises.toArray()
             ]);
+            if (isRenderChartsStale()) return;
             const allExercises = [
                 ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
@@ -351,19 +369,34 @@
             logs.forEach(l => {
                 const exKey = `${l.exerciseId}-${l.isCustom !== undefined ? !!l.isCustom : l.exerciseId > 0}`;
                 const ex = exMap[exKey];
-                const type = ex ? ex.type : 'Other';
                 const exId = exKey;
-                if (!groupedByType[type]) groupedByType[type] = {};
-                if (!groupedByType[type][exId]) groupedByType[type][exId] = [];
-                groupedByType[type][exId].push(l);
+                const typeInfo = normalizeExerciseType(ex ? ex.type : 'Other');
+                if (!groupedByType[typeInfo.key]) groupedByType[typeInfo.key] = { label: typeInfo.label, exercises: {} };
+                const bucket = groupedByType[typeInfo.key].exercises;
+                if (!bucket[exId]) bucket[exId] = [];
+                bucket[exId].push(l);
             });
+
+            const typeEntries = Object.keys(groupedByType).map(key => {
+                const entry = groupedByType[key];
+                const label = entry.label || key;
+                const localizedLabel = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? (GN_I18N.localizeExerciseType(label) || label) : label;
+                return { key, entry, localizedLabel };
+            });
+            typeEntries.sort((a, b) => {
+                const left = a.localizedLabel || a.entry.label || a.key;
+                const right = b.localizedLabel || b.entry.label || b.key;
+                return left.localeCompare(right);
+            });
+            if (isRenderChartsStale()) return;
 
             wrapper.innerHTML = "";
 
             let typeIndex = 0;
-            for (const type of Object.keys(groupedByType).sort()) {
+            for (const typeInfo of typeEntries) {
+                if (isRenderChartsStale()) return;
                 const groupId = 'grp_' + (typeIndex++);
-                const localizedType = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? GN_I18N.localizeExerciseType(type) : type;
+                const localizedType = typeInfo.localizedLabel || typeInfo.entry.label || typeInfo.key;
 
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'exercise-group';
@@ -376,15 +409,17 @@
                 `;
                 wrapper.appendChild(groupContainer);
 
-                const exercisesInType = groupedByType[type];
+                const exercisesInType = typeInfo.entry.exercises;
                 const body = groupContainer.querySelector('.group-body');
                 for (const exId of Object.keys(exercisesInType)) {
+                    if (isRenderChartsStale()) return;
                     const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
                     const lastEntry = entries[entries.length - 1];
                     const currentEx = exMap[exId];
                     const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
                     const displayName = currentEx ? ((lang === 'pt' && currentEx.namePT) ? currentEx.namePT : currentEx.name) : GN_I18N.t('unknown_exercise');
                     const imgSrc = await getImg(currentEx?.imageId, currentEx?.isCustom);
+                    if (isRenderChartsStale()) return;
 
                     const box = document.createElement('div'); 
                     box.className = 'chart-box';
