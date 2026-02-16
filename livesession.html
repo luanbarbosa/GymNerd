@@ -272,6 +272,29 @@
         /* Let the finished view fill the viewport; image should grow to available space above content */
         /* Fix finished view to the viewport so it always fills available space */
         #finishedView { display: flex; flex-direction: column; position: fixed; inset: 0; padding: 0; margin: 0; box-sizing: border-box; overflow: hidden; z-index: 1200; }
+        /* Confetti overlay that appears when a streak record is about to fall */
+        #streakConfetti {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 2200;
+            display: none;
+        }
+        .streak-confetti-piece {
+            position: absolute;
+            width: 8px;
+            height: 20px;
+            border-radius: 4px;
+            opacity: 0.9;
+            animation-name: streakConfettiFall;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
+        @keyframes streakConfettiFall {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(110vh) rotate(360deg); }
+        }
         /* Fullscreen illustration: position absolutely to fill viewport but stop above content
               The bottom offset is controlled by the CSS variable --finished-content-height set by JS. */
         .finished-illustration {
@@ -324,6 +347,12 @@
         .finished-message {
             margin-top: 20px;
             margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+        }
+        .finished-message-primary {
             /* Much larger and responsive: min 2rem, scales with viewport, max 5rem */
             font-size: clamp(2rem, 8vw, 5rem);
             font-weight: 900;
@@ -336,6 +365,13 @@
             color: transparent;
             filter: drop-shadow(0 10px 30px rgba(37,99,235,0.30));
             line-height: 0.95;
+        }
+        .finished-message-subtext {
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 0.5px;
+            text-align: center;
         }
         /* Background SVG illustration (bottom-aligned, subtle alpha) */
         .finished-illustration::before {
@@ -657,6 +693,7 @@
                     <img src="illustrations/happy-flame.svg" alt="celebration" class="finished-illustration-img" />
                 </div>
             </div>
+            <div id="streakConfetti" aria-hidden="true"></div>
             <div class="top-card finished-top-card">
                 <div class="top-card-inner">
                     <div class="topbar">
@@ -791,7 +828,89 @@
             content.style.zIndex = 4;
         }
 
-        async function renderFinishedStats() {
+        /* Helpers used for the streak celebration confetti overlay */
+        const STREAK_CONFETTI_COLORS = ['#f97316', '#34d399', '#60a5fa', '#a855f7', '#facc15', '#22d3ee'];
+        const STREAK_CONFETTI_COUNT = 36;
+        let _streakConfettiRunning = false;
+        let _streakRecordBreaking = false;
+        let _streakRecordsCache = null;
+
+        function getTodayDateKey() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        }
+
+        async function computeStreakRecords(overrideTodayStr) {
+            await ensureDbOpen();
+            const allLogs = await db.history.toArray();
+            const uniqueDates = [...new Set(allLogs.map(entry => entry.date))];
+            uniqueDates.sort();
+            const todayStr = overrideTodayStr || getTodayDateKey();
+            const oldRecord = calculateStreaks(uniqueDates).longest;
+            const newRecord = calculateStreaks([...uniqueDates, todayStr]).longest;
+            return { existingDates: uniqueDates, todayStr, oldRecord, newRecord };
+        }
+
+        async function loadStreakSnapshot(forceRefresh = false, overrideTodayStr) {
+            if (!forceRefresh && _streakRecordsCache) return _streakRecordsCache;
+            _streakRecordsCache = await computeStreakRecords(overrideTodayStr);
+            return _streakRecordsCache;
+        }
+
+        function clearStreakSnapshot() {
+            _streakRecordsCache = null;
+            _streakRecordBreaking = false;
+        }
+
+        function startStreakConfetti() {
+            if (_streakConfettiRunning) return;
+            const container = document.getElementById('streakConfetti');
+            if (!container) return;
+            container.innerHTML = '';
+            container.style.display = 'block';
+            for (let i = 0; i < STREAK_CONFETTI_COUNT; i++) {
+                const piece = document.createElement('span');
+                piece.className = 'streak-confetti-piece';
+                piece.style.left = `${Math.random() * 100}%`;
+                piece.style.top = `${-Math.random() * 15}vh`;
+                const size = 6 + Math.random() * 10;
+                piece.style.width = `${size}px`;
+                piece.style.height = `${size * 1.8}px`;
+                piece.style.background = STREAK_CONFETTI_COLORS[Math.floor(Math.random() * STREAK_CONFETTI_COLORS.length)];
+                piece.style.animationDuration = `${3 + Math.random() * 3}s`;
+                piece.style.animationDelay = `${Math.random()}s`;
+                container.appendChild(piece);
+            }
+            _streakConfettiRunning = true;
+        }
+
+        function stopStreakConfetti() {
+            const container = document.getElementById('streakConfetti');
+            if (!container) return;
+            container.innerHTML = '';
+            container.style.display = 'none';
+            _streakConfettiRunning = false;
+        }
+
+        async function evaluateStreakCelebration() {
+            try {
+                const { oldRecord, newRecord } = await loadStreakSnapshot();
+                const shouldCelebrate = newRecord > oldRecord && newRecord > 1;
+                _streakRecordBreaking = shouldCelebrate;
+                if (shouldCelebrate) {
+                    startStreakConfetti();
+                } else {
+                    stopStreakConfetti();
+                }
+                return { shouldCelebrate, streakDays: shouldCelebrate ? newRecord : 0 };
+            } catch (err) {
+                console.warn('streak celebration check failed', err);
+                stopStreakConfetti();
+                return { shouldCelebrate: false, streakDays: 0 };
+            }
+        }
+
+        async function renderFinishedStats({ shouldCelebrate = false, streakDays = 0 } = {}) {
             try {
                 const finishedView = document.getElementById('finishedView');
                 if (!finishedView) return;
@@ -940,7 +1059,22 @@
                 try {
                     const msgEl = finishedView.querySelector('.finished-message');
                     if (msgEl) {
-                        msgEl.textContent = (GN_I18N && GN_I18N.t) ? (GN_I18N.t('finished_good_job') || 'Good job!') : 'Good job!';
+                        const key = shouldCelebrate ? 'finished_new_record' : 'finished_good_job';
+                        const fallback = shouldCelebrate ? 'New record!' : 'Good job!';
+                        const mainText = (GN_I18N && GN_I18N.t) ? (GN_I18N.t(key) || fallback) : fallback;
+                        msgEl.innerHTML = '';
+                        const primary = document.createElement('span');
+                        primary.className = 'finished-message-primary';
+                        primary.textContent = mainText;
+                        msgEl.appendChild(primary);
+                        if (shouldCelebrate && streakDays > 0) {
+                            const subTemplate = (GN_I18N && GN_I18N.t) ? GN_I18N.t('finished_new_record_subtext') : 'You’re on a {n}-day streak!';
+                            const subText = subTemplate.replace('{n}', streakDays);
+                            const sub = document.createElement('span');
+                            sub.className = 'finished-message-subtext';
+                            sub.textContent = subText;
+                            msgEl.appendChild(sub);
+                        }
                     }
                 } catch (e) { /* ignore */ }
 
@@ -1845,7 +1979,8 @@
                     // wait a frame to allow layout, then adjust illustration and show save option if needed
                     await new Promise(r => requestAnimationFrame(r));
                     updateFinishedIllustration();
-                    try { await renderFinishedStats(); } catch(e) { console.warn('renderFinishedStats call failed', e); }
+                    const celebration = await evaluateStreakCelebration();
+                    try { await renderFinishedStats(celebration); } catch(e) { console.warn('renderFinishedStats call failed', e); }
                     // Show save option when session differs from the workout template or user edited values
                     try {
                         const saveOpt = document.getElementById('saveRoutineOpt');
@@ -1878,6 +2013,8 @@
                 }
                 return;
             } else {
+                stopStreakConfetti();
+                clearStreakSnapshot();
                 if (finishedView) finishedView.style.display = 'none';
                 const saveOpt = document.getElementById('saveRoutineOpt');
                 if (saveOpt) saveOpt.style.display = 'none';
@@ -2064,13 +2201,10 @@
                 await ensureDbOpen();
 
                 const now = new Date();
-                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                const todayStr = getTodayDateKey();
 
                 // Calculate streak record before saving (Avoid uniqueKeys on iOS)
-                const allLogs = await db.history.toArray();
-                const existingDates = [...new Set(allLogs.map(l => l.date))].sort();
-                const oldRecord = calculateStreaks(existingDates).longest;
-                const newRecord = calculateStreaks([...existingDates, todayStr]).longest;
+                const { oldRecord, newRecord } = await loadStreakSnapshot(true, todayStr);
 
                 // Update the workout template with the values used in this session only if user opted in
                 const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
@@ -2177,10 +2311,6 @@
 
                 try { localStorage.setItem(HOME_REFRESH_FLAG, '1'); } catch(e){}
 
-                if (newRecord > oldRecord && newRecord > 1) {
-                    const tpl = GN_I18N.t('new_streak_record');
-                    alert(tpl.replace('{n}', String(newRecord)));
-                }
                 goBack();
             } catch (err) {
                 alert(GN_I18N.t('debug_error_prefix') + err.message + "\n" + err.stack);

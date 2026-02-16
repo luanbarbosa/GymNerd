@@ -252,6 +252,8 @@
                 play_exercise: '🎯 Play this exercise',
                 finish_routine: 'Finish Routine',
                 finished_good_job: 'Good job!',
+                finished_new_record: 'New record!',
+                finished_new_record_subtext: 'You’re on a {n}-day streak!',
 
                 routine_done: 'Routine done!',
                 exercises_completed: 'Exercises completed',
@@ -538,6 +540,8 @@
                 play_exercise: '🎯 Executar este exercício',
                 finish_routine: 'Finalizar Treino',
                 finished_good_job: 'Bom trabalho!',
+                finished_new_record: 'Novo recorde!',
+                finished_new_record_subtext: 'Você está com uma sequência de {n} dias!',
 
                 routine_done: 'Fim do treino!',
                 exercises_completed: 'Exercícios concluídos',
