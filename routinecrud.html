@@ -27,7 +27,7 @@
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         /* Top-card (same style used on index.html / history) */
-        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
         .page-content { padding: 16px; padding-top: 12px; }
@@ -38,11 +38,11 @@
         /* Ensure back button icons are vertically centered inside top bars */
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         /* Slightly taller top-card for the main screen (match history) */
-        body > .top-card { padding: calc(14px + env(safe-area-inset-top)) 16px 12px; padding-top: calc(14px + constant(safe-area-inset-top)); }
+        body > .top-card { padding: calc(6px + env(safe-area-inset-top)) 16px 2px; padding-top: calc(6px + constant(safe-area-inset-top)); }
         .top-card-inner { padding-bottom: 6px; }
           /* Make top-cards inside modals extend to the modal edges (compensate modal padding)
               and match the taller height used on the main History top-card. */
-          .modal > .top-card, .modal .top-card { margin: -20px -20px 0 -20px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: calc(14px + env(safe-area-inset-top)) 16px 12px; padding-top: calc(14px + constant(safe-area-inset-top)); }
+          .modal > .top-card, .modal .top-card { margin: -20px -20px 0 -20px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: calc(6px + env(safe-area-inset-top)) 16px 2px; padding-top: calc(6px + constant(safe-area-inset-top)); }
         .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         input, button { box-sizing: border-box; max-width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.02); color: white; }
         /* Make the modal search input visually pop when unfocused (not selected) */
@@ -185,7 +185,7 @@
             <div style="display:flex;align-items:center;width:100%;gap:12px;">
                 <a href="#" class="back-btn" style="outline:none; box-shadow:none; border:none; background:none;" aria-label="Back" onclick="event.preventDefault(); history.back();"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                 <div style="flex:1;min-width:0;">
-                    <h2 id="pageTitle" class="app-title-compact" style="margin:20px 0; text-align:left;" data-i18n="page_routine_new">Nova Rotina</h2>
+                    <h2 id="pageTitle" class="app-title-compact" style="margin:12px 0; text-align:left;" data-i18n="page_routine_new">Nova Rotina</h2>
                 </div>
             </div>
         </div>
@@ -214,7 +214,7 @@
                     <div style="display:flex;align-items:center;width:100%;gap:12px;">
                         <a href="javascript:void(0)" class="back-btn" onclick="closeSearchModal()" style="outline:none; box-shadow:none; border:none; background:none; font-size:1.5rem; text-decoration:none;" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                             <div style="flex:1;min-width:0;">
-                            <h2 class="app-title-compact" style="margin:20px 0; text-align:left;" data-i18n="add_exercise_modal_title">Adicionar Exercício</h2>
+                            <h2 class="app-title-compact" style="margin:12px 0; text-align:left;" data-i18n="add_exercise_modal_title">Adicionar Exercício</h2>
                         </div>
                         <div class="top-action-wrapper" style="display:flex; gap:8px; align-items:center;">
                             <button id="newCustomBtn" type="button" class="add-set-btn prominent top-action-btn" onclick="openCreateModal()"><span data-i18n="new_custom">custom</span></button>
@@ -246,7 +246,7 @@
                 <div style="display:flex;align-items:center;width:100%;gap:12px;">
                     <a href="javascript:void(0)" class="back-btn" onclick="closeCustomModal()" style="outline:none; box-shadow:none; border:none; background:none; font-size:1.5rem; text-decoration:none;" aria-label="Back"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
                         <div style="flex:1;min-width:0;">
-                        <h2 id="customModalTitle" class="app-title-compact" style="margin:20px 0; text-align:left;" data-i18n="custom_exercise_title">Exercício Personalizado</h2>
+                        <h2 id="customModalTitle" class="app-title-compact" style="margin:12px 0; text-align:left;" data-i18n="custom_exercise_title">Exercício Personalizado</h2>
                     </div>
                 </div>
             </div>
