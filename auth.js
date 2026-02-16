@@ -474,6 +474,51 @@
         }
     };
 
+    async function maybeRestoreFromDriveIfRemoteNewer() {
+        function toUtcTimestamp(value) {
+            if (!value) return NaN;
+            const ts = new Date(value).getTime();
+            return isNaN(ts) ? NaN : ts;
+        }
+
+        try {
+            console.debug('[DriveSyncCheck] evaluating remote timestamp (Drive API timestamps are RFC3339/UTC)');
+            if (typeof DriveStorage === 'undefined' || typeof window.autoRestoreFromDrive !== 'function') {
+                console.debug('[DriveSyncCheck] DriveStorage or restore API missing');
+                return false;
+            }
+            const start = Date.now();
+            while (typeof DriveStorage === 'undefined' && (Date.now() - start) < 10000) {
+                await new Promise(r => setTimeout(r, 200));
+            }
+            if (typeof DriveStorage === 'undefined') {
+                console.debug('[DriveSyncCheck] DriveStorage still unavailable after waiting');
+                return false;
+            }
+
+            const localValue = (typeof localStorage !== 'undefined' && localStorage.getItem) ? localStorage.getItem('last_sync_time') : null;
+            const localTimestamp = toUtcTimestamp(localValue);
+
+            const remoteData = await DriveStorage.getLastSyncTime();
+            console.debug('[DriveSyncCheck] remote lastSync raw', remoteData);
+            if (!remoteData || !remoteData.time) return false;
+            const remoteTimestamp = toUtcTimestamp(remoteData.time);
+            if (isNaN(remoteTimestamp)) return false;
+            console.debug('[DriveSyncCheck] parsed timestamps', { local: localTimestamp, remote: remoteTimestamp, timezone: remoteData.timezone || 'UTC' });
+
+            if (!localValue || isNaN(localTimestamp) || remoteTimestamp > localTimestamp) {
+                console.info('[DriveSyncCheck] remote backup newer, restoring from Drive (remote timezone:', remoteData.timezone || 'UTC', ')');
+                await window.autoRestoreFromDrive(true);
+                return true;
+            }
+            console.debug('[DriveSyncCheck] remote backup not newer, skipping restore');
+            return false;
+        } catch (error) {
+            console.error('[DriveSyncCheck] failed to evaluate remote timestamp', error);
+            return false;
+        }
+    }
+
     // Helper to read a cookie value by name
     function getCookie(name) {
         try {
@@ -784,18 +829,28 @@
         // If we need to perform an initial download from Drive, don't reveal
         // the app home screen yet — run the auto-restore and keep showing
         // the global loader until it completes (or fails).
+        let needsInitialDownload = false;
         try {
-            const needsFlag = (localStorage.getItem && localStorage.getItem('needs_initial_download')) || null;
-            if (needsFlag === 'true') {
-                try {
-                    if (typeof window.autoRestoreFromDrive === 'function') {
-                        await window.autoRestoreFromDrive(true);
-                        // autoRestoreFromDrive will reload when done; ensure we stop further startup
-                        return;
-                    }
-                } catch(e) {}
+            needsInitialDownload = (localStorage.getItem && localStorage.getItem('needs_initial_download') === 'true');
+        } catch (e) {}
+
+        if (needsInitialDownload) {
+            try {
+                if (typeof window.autoRestoreFromDrive === 'function') {
+                    await window.autoRestoreFromDrive(true);
+                    // autoRestoreFromDrive will reload when done; ensure we stop further startup
+                    return;
+                }
+            } catch (e) {}
+        } else {
+            try {
+                if (await maybeRestoreFromDriveIfRemoteNewer()) {
+                    return;
+                }
+            } catch (err) {
+                console.error('[DriveSyncCheck] startup comparison failed', err);
             }
-        } catch(e){}
+        }
 
         callShowApp();
     }

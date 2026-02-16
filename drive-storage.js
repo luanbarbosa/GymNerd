@@ -22,13 +22,17 @@ const DriveStorage = {
     // to refresh the access token. This avoids immediately clearing
     // credentials when the token has just expired.
     async _authFetch(url, options = {}) {
+        const fetchOptions = { ...options };
+        const skipLoader = Boolean(fetchOptions._skipLoader);
+        delete fetchOptions._skipLoader;
+
         try {
-            try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
+            try { if (!skipLoader && window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
 
             const headers = await this._getHeaders();
-            options.headers = { ...(options.headers || {}), ...headers };
+            fetchOptions.headers = { ...(fetchOptions.headers || {}), ...headers };
 
-            let resp = await fetch(url, options);
+            let resp = await fetch(url, fetchOptions);
 
             if (resp.status === 401) {
                 // received 401, attempting refresh
@@ -37,10 +41,10 @@ const DriveStorage = {
                     if (window.ensureGoogleAccessToken) {
                         const refreshed = await window.ensureGoogleAccessToken();
                         if (refreshed) {
-                            // retry with new token
-                            const token = localStorage.getItem('google_token');
-                            options.headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
-                            resp = await fetch(url, options);
+                            // retry with refreshed headers
+                            const retryHeaders = await this._getHeaders();
+                            fetchOptions.headers = { ...(fetchOptions.headers || {}), ...retryHeaders };
+                            resp = await fetch(url, fetchOptions);
                         } else {
                             // explicit expired flow
                             console.warn('[DriveStorage] refresh failed during _authFetch');
@@ -63,7 +67,7 @@ const DriveStorage = {
 
             return resp;
         } finally {
-            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
+            try { if (!skipLoader && window.hideLoading) window.hideLoading(); } catch(e){}
         }
     },
 
@@ -80,10 +84,9 @@ const DriveStorage = {
         return response.json();
     },
 
-    async getFolderId(createIfMissing = true) {
-        const headers = await this._getHeaders();
+    async getFolderId(createIfMissing = true, { skipLoader = false } = {}) {
         const q = `name='${this.FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-        const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`);
+        const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, { _skipLoader: skipLoader });
         const data = await this._handleResponse(response);
         
         if (data.files && data.files.length > 0) return data.files[0].id;
@@ -92,16 +95,16 @@ const DriveStorage = {
         const createResponse = await this._authFetch('https://www.googleapis.com/drive/v3/files', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: this.FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' })
+            body: JSON.stringify({ name: this.FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' }),
+            _skipLoader: skipLoader
         });
         const folder = await this._handleResponse(createResponse);
         return folder.id;
     },
 
-    async findFileId(name, folderId) {
-        const headers = await this._getHeaders();
+    async findFileId(name, folderId, { skipLoader = false } = {}) {
         const q = `name='${name}' and '${folderId}' in parents and trashed=false`;
-        const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`);
+        const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, { _skipLoader: skipLoader });
         const data = await this._handleResponse(response);
         return data.files && data.files.length > 0 ? data.files[0].id : null;
     },
@@ -130,6 +133,31 @@ const DriveStorage = {
         } catch (error) {
             if (error.message === "AUTH_EXPIRED") throw error;
             console.error("Error loading from Drive:", error);
+            return null;
+        }
+    },
+
+    async getLastSyncTime() {
+        try {
+            const folderId = await this.getFolderId(false, { skipLoader: true });
+            if (!folderId) return null;
+            const fileId = await this.findFileId('lastSync.json', folderId, { skipLoader: true });
+            if (!fileId) return null;
+            const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { _skipLoader: true });
+            const data = await this._handleResponse(response);
+            if (!data) return null;
+            if (typeof data === 'string') {
+                return { time: data, timezone: 'UTC' };
+            }
+            const normalized = { ...data };
+            if (normalized.time) {
+                if (!normalized.timezone) normalized.timezone = 'UTC';
+                return normalized;
+            }
+            return null;
+        } catch (error) {
+            if (error.message === "AUTH_EXPIRED") throw error;
+            console.error('[DriveStorage] failed to read lastSync metadata', error);
             return null;
         }
     },
@@ -218,7 +246,7 @@ const DriveStorage = {
                 }
             }
             
-            data.lastSync = { time: new Date().toISOString() };
+            data.lastSync = { time: new Date().toISOString(), timezone: 'UTC' };
 
             await this.save(data);
             localStorage.setItem('last_sync_time', data.lastSync.time);
