@@ -2281,7 +2281,7 @@
                         } catch (e) {}
 
                         syncOk = await Promise.race([
-                            DriveStorage.sync(db, ['logs', 'routines']),
+                            DriveStorage.sync(db, ['history', 'routines']),
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 8000))
                         ]).then(res => !!res).catch(e => { throw e; });
                     } catch (syncErr) {
