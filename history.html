@@ -596,9 +596,13 @@
 
                 // Remove empty wrapper nodes (e.g., divs that only held entries)
                 Array.from(container.querySelectorAll('.history-group *')).forEach(node => {
-                    if (node.nodeType === 1 && !node.classList.contains('history-group') && !node.classList.contains('log-entry') && !node.classList.contains('date-header') && node.childElementCount === 1 && node.textContent.trim() === '') {
+                    if (!node || node.nodeType !== 1) return;
+                    const tag = node.tagName && node.tagName.toLowerCase();
+                    if (tag === 'svg') return;
+                    if (node.classList.contains('history-group') || node.classList.contains('log-entry') || node.classList.contains('date-header')) return;
+                    if (node.childElementCount === 1 && node.textContent.trim() === '') {
                         const only = node.firstElementChild;
-                        node.parentNode.replaceChild(only, node);
+                        if (only) node.parentNode.replaceChild(only, node);
                     }
                 });
             } catch (e) {
