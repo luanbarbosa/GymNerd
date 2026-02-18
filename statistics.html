@@ -64,6 +64,10 @@
         
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .calendar-header h3 { font-size: 0.9rem; margin: 0; text-transform: capitalize; flex: 1; text-align: center; padding: 0 8px; min-width: 0; }
+        .calendar-header h3.align-start { text-align: left; }
+        .calendar-header h3.align-start + select { margin-left: auto; }
+        .frequency-card select,
+        #radarCard select { font-size: 0.75rem; }
         /* Keep nav buttons a consistent small size and prevent flex growth that causes visual glitches on first paint */
         .nav-btn { background: rgba(255,255,255,0.05); border: none; padding: 0; width: 40px; height: 36px; min-width: 36px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; color: white; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 
@@ -148,7 +152,7 @@
 
         <div class="card frequency-card">
             <div class="calendar-header">
-            <h3 data-i18n="workout_frequency"></h3>
+            <h3 class="align-start" data-i18n="workout_frequency"></h3>
                 <select id="frequencyFilter" onchange="updateFrequencyChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
                 <option value="month" selected data-i18n="monthly">Monthly</option>
                 <option value="year" data-i18n="yearly">Yearly</option>
@@ -162,12 +166,12 @@
         
         <div class="card" id="radarCard">
             <div class="calendar-header">
-                <h3 data-i18n="exercise_frequency"></h3>
+                <h3 class="align-start" data-i18n="exercise_frequency"></h3>
                 <select id="radarFilter" onchange="updateRadarChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
-                    <option value="all" selected data-i18n="all_time">All time</option>
+                    <option value="all" data-i18n="all_time">All time</option>
                     <option value="ytd" data-i18n="year_to_date">Year to date</option>
                     <option value="6m" data-i18n="last_6_months">Last 6 months</option>
-                    <option value="month" data-i18n="this_month">This month</option>
+                    <option value="month" selected data-i18n="this_month">This month</option>
                 </select>
                 <!-- type selector moved below the chart to a checkbox list -->
             </div>
