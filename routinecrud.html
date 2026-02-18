@@ -92,12 +92,18 @@
         .selected-card-top { width:100%; overflow:hidden; background: #fff; border-radius: 20px 20px 0 0; position: relative; }
         .selected-ex-card .ex-thumb { width:100%; height:auto; max-height:150px; border-radius: 20px 20px 0 0; object-fit:contain; object-position:center; background:#fff; }
         .selected-card-meta { flex:1; display:flex; flex-direction:column; gap:6px; }
-        .selected-card-meta strong { font-size:1.05rem; font-weight:700; line-height:1.25; color:var(--text); overflow:visible; }
+        .selected-card-meta strong { font-size:1rem; font-weight:700; line-height:1.25; color:var(--text); overflow:visible; margin-bottom:12px; }
         .selected-card-body { padding:18px 18px 0; display:flex; flex-direction:column; gap:12px; }
         .card-delete-btn { position:absolute; top:8px; right:8px; width:36px; height:36px; border-radius:12px; border:none; background:rgba(0,0,0,0.4); color:white; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
         .card-delete-btn:hover { background:rgba(0,0,0,0.6); }
-        .rest-pill { align-self:flex-start; border-radius:999px; border:1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); padding:6px 14px; font-size:0.75rem; font-weight:800; letter-spacing:0.04em; text-transform:uppercase; color:var(--text-dim); cursor:pointer; transition: border-color 120ms ease, background 120ms ease; }
-        .rest-pill:hover { border-color:rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); }
+        .rest-control { display:flex; align-items:center; justify-content:flex-start; gap:12px; padding-bottom:6px; margin-bottom:18px; }
+        .rest-title { font-size:0.75rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); }
+        .rest-stepper { display:flex; align-items:center; gap:4px; padding:2px 4px; border-radius:999px; border:1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+        .rest-adjust-btn { min-width:32px; min-height:32px; width:32px; height:32px; border-radius:8px; border:none; background:transparent; color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; transition: background 120ms ease; }
+        .rest-adjust-btn:hover { background: rgba(255,255,255,0.08); }
+        .rest-adjust-btn .material-symbols-outlined { font-size:1.1rem; }
+        .rest-value-input { width:72px; border:none; background:transparent; color:var(--text); font-size:0.9rem; font-weight:600; letter-spacing:0.08em; text-align:center; font-variant-numeric: tabular-nums; }
+        .rest-value-input:focus-visible { outline:none; }
         .selected-ex-card > div:first-child { width:100%; }
         .hidden { display:none !important }
         .exercise-card { background: var(--card); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
@@ -167,13 +173,13 @@
         .select-wrapper select option { padding: 8px 12px; }
         /* Sets UI inside selected exercise cards */
         .sets-container { display:flex; flex-direction:column; gap:6px; width:100%; margin:0; padding:6px 0 0; background: rgba(15,23,42,0.6); align-self:stretch; }
-        .sets-divider { width:100%; height:1px; background: rgba(255,255,255,0.08); margin:10px 0 6px; }
+        .sets-divider { width:100%; height:1px; background: rgba(255,255,255,0.08); margin:2px 0 6px; }
         /* table-like header for set fields */
         .sets-container .header-row { display:flex; gap:8px; align-items:center; background:transparent; box-shadow:none; padding:0; margin:0; border-radius:0; }
         .set-row { display:flex; gap:8px; align-items:center; flex-wrap:nowrap; padding:6px 0; }
         .set-row.data-row { background: transparent; }
         .set-row .field { display:flex; flex-direction:column; gap:6px; width:64px; min-width:48px; align-items:flex-start; }
-        .set-row .field label { font-size:0.7rem; color:var(--text-dim); font-weight:700; display:block; text-align:left; margin-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; }
+        .set-row .field label { font-size:0.75rem; color:var(--text-dim); font-weight:700; display:block; text-align:left; margin-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-transform:uppercase; }
         .set-row.data-row .field label { display:none; }
         .set-row input[type="number"], .set-row input[type="text"] { width:100%; padding:8px; border-radius:10px; font-size:0.9rem; box-sizing:border-box; text-align:center; border:1px solid rgba(255,255,255,0.08); background: rgba(15,23,42,0.4); color:var(--text); }
         /* hide native number input spinners for a cleaner mobile UI */
@@ -306,6 +312,8 @@
         let currentImageData = null;
         let editingId = null;
         const CARDIO_TYPE = 'cardio';
+        const REST_STEP_SECONDS = 30;
+        const DEFAULT_REST_SECONDS = 0;
 
         function isCardioType(type) {
             return typeof type === 'string' && type.toLowerCase() === CARDIO_TYPE;
@@ -321,7 +329,7 @@
         function resolveLabel(key, fallback) {
             if (window.GN_I18N && GN_I18N.t) {
                 const translated = GN_I18N.t(key);
-                if (translated) return translated;
+                if (translated && translated !== key) return translated;
             }
             return fallback;
         }
@@ -348,6 +356,19 @@
                 const chosen = (lang && lang.toLowerCase().startsWith('pt') && ex.namePT) ? ex.namePT : ex.name;
                 return chosen;
             } catch (e) { return ex.name; }
+        }
+
+        function formatRestDisplay(seconds) {
+            const total = Math.max(0, Math.round(Number(seconds) || 0));
+            const mins = Math.floor(total / 60);
+            const secs = total % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function clampRestSeconds(value) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return DEFAULT_REST_SECONDS;
+            return Math.max(0, Math.round(num));
         }
 
         // long-press selection removed — selection is handled via explicit buttons/clicks
@@ -464,7 +485,8 @@
                         const exId = typeof item === 'object' ? item.id : item;
                         const isCustom = typeof item === 'object' ? !!item.isCustom : false;
                         const sets = Array.isArray(item.sets) ? item.sets : [];
-                        addExerciseToRoutine(exId, sets, isCustom);
+                        const restSeconds = (item && typeof item.restSeconds === 'number') ? item.restSeconds : undefined;
+                        addExerciseToRoutine(exId, sets, isCustom, restSeconds);
                     }
                 }
                 // If caller requested to open the Add Exercise modal immediately, trigger it after a short delay
@@ -626,7 +648,7 @@
             try { const clearBtn = document.getElementById('clearSearchBtn'); if (clearBtn) clearBtn.style.display = 'none'; } catch(e){}
         }
 
-        function addExerciseToRoutine(exId, sets = [], isCustom = false) {
+        function addExerciseToRoutine(exId, sets = [], isCustom = false, restSeconds) {
             const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom);
             if (!ex) return;
             const container = document.getElementById('selectedList');
@@ -648,8 +670,7 @@
                 </div>
             `;
             const cardBody = card.querySelector('.selected-card-body');
-            const restTimeLabel = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('add_rest_time') || 'Add rest time') : 'Add rest time';
-            const removeLabel = (window.GN_I18N && GN_I18N.t) ? (window.GN_I18N.t('remove') || 'Remove') : 'Remove';
+            const removeLabel = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('remove') || 'Remove') : 'Remove';
             const cardTop = card.querySelector('.selected-card-top');
             if (cardTop) {
                 const removeBtn = document.createElement('button');
@@ -660,79 +681,76 @@
                 removeBtn.onclick = (event) => { event.stopPropagation(); removeSelectedCard(removeBtn); };
                 cardTop.appendChild(removeBtn);
             }
-                // sets UI (table-like)
-                const setsContainer = document.createElement('div');
-                setsContainer.className = 'sets-container';
-                setsContainer.dataset.exerciseType = ex.type || '';
-                const isCardioExercise = isCardioType(ex.type);
-                // Normalize incoming `sets` for backward compatibility:
-                // Older versions stored expanded arrays like [{reps,weight}, {reps,weight}, ...]
-                // Compress runs of identical reps+weight into objects with a `sets` count.
-                const normalizeIncomingSets = (raw) => {
-                    if (!Array.isArray(raw) || raw.length === 0) return null;
-                    const fieldKeys = isCardioExercise ? ['distance', 'time'] : ['reps', 'weight'];
-                    const hasSetsField = raw.every(it => it && it.sets !== undefined);
-                    if (hasSetsField) return raw;
-                    const looksExpanded = raw.every(it => it && fieldKeys.some(k => k in it) && it.sets === undefined);
-                    if (!looksExpanded) return null;
-                    const compressed = [];
-                    let prevKey = null;
-                    let prevValues = null;
-                    let count = 0;
-                    const sanitizeValue = (value) => (value === null || value === undefined ? '' : value);
-                    for (const it of raw) {
-                        const first = sanitizeValue(it[fieldKeys[0]]);
-                        const second = sanitizeValue(it[fieldKeys[1]]);
-                        const key = `${first}:::${second}`;
-                        if (key === prevKey) {
-                            count++;
-                        } else {
-                            if (prevKey !== null) {
-                                compressed.push({ sets: count, ...prevValues });
-                            }
-                            prevKey = key;
-                            prevValues = { [fieldKeys[0]]: first, [fieldKeys[1]]: second };
-                            count = 1;
+            // sets UI (table-like)
+            const setsContainer = document.createElement('div');
+            setsContainer.className = 'sets-container';
+            setsContainer.dataset.exerciseType = ex.type || '';
+            const isCardioExercise = isCardioType(ex.type);
+            // Normalize incoming `sets` for backward compatibility:
+            // Older versions stored expanded arrays like [{reps,weight}, {reps,weight}, ...]
+            // Compress runs of identical reps+weight into objects with a `sets` count.
+            const normalizeIncomingSets = (raw) => {
+                if (!Array.isArray(raw) || raw.length === 0) return null;
+                const fieldKeys = isCardioExercise ? ['distance', 'time'] : ['reps', 'weight'];
+                const hasSetsField = raw.every(it => it && it.sets !== undefined);
+                if (hasSetsField) return raw;
+                const looksExpanded = raw.every(it => it && fieldKeys.some(k => k in it) && it.sets === undefined);
+                if (!looksExpanded) return null;
+                const compressed = [];
+                let prevKey = null;
+                let prevValues = null;
+                let count = 0;
+                const sanitizeValue = (value) => (value === null || value === undefined ? '' : value);
+                for (const it of raw) {
+                    const first = sanitizeValue(it[fieldKeys[0]]);
+                    const second = sanitizeValue(it[fieldKeys[1]]);
+                    const key = `${first}:::${second}`;
+                    if (key === prevKey) {
+                        count++;
+                    } else {
+                        if (prevKey !== null) {
+                            compressed.push({ sets: count, ...prevValues });
                         }
+                        prevKey = key;
+                        prevValues = { [fieldKeys[0]]: first, [fieldKeys[1]]: second };
+                        count = 1;
                     }
-                    if (prevKey !== null) {
-                        compressed.push({ sets: count, ...prevValues });
-                    }
-                    return compressed;
-                };
-
-                let processedSets = sets;
-                if (Array.isArray(sets) && sets.length) {
-                    const norm = normalizeIncomingSets(sets);
-                    if (norm) processedSets = norm;
                 }
+                if (prevKey !== null) {
+                    compressed.push({ sets: count, ...prevValues });
+                }
+                return compressed;
+            };
 
-                const makeEmptySetData = () => isCardioExercise ? { sets: '', distance: '', time: '' } : { sets: '', reps: '', weight: '' };
-                const initialSets = Array.isArray(processedSets) && processedSets.length ? processedSets : [makeEmptySetData()];
-                initialSets.forEach(s => addSetRowToContainer(setsContainer, s));
+            let processedSets = sets;
+            if (Array.isArray(sets) && sets.length) {
+                const norm = normalizeIncomingSets(sets);
+                if (norm) processedSets = norm;
+            }
 
-                const addSetLabel = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('add_set') || 'Add set') : 'Add set';
-                const addSetBtn = document.createElement('button');
-                addSetBtn.type = 'button';
-                addSetBtn.className = 'add-set-inline';
-                addSetBtn.textContent = addSetLabel;
-                addSetBtn.onclick = (ev) => { ev.stopPropagation(); addSetRowToContainer(setsContainer, makeEmptySetData()); };
+            const makeEmptySetData = () => isCardioExercise ? { sets: '', distance: '', time: '' } : { sets: '', reps: '', weight: '' };
+            const initialSets = Array.isArray(processedSets) && processedSets.length ? processedSets : [makeEmptySetData()];
+            initialSets.forEach(s => addSetRowToContainer(setsContainer, s));
 
-                const appendTarget = cardBody || card;
-                const restTimeBtn = document.createElement('button');
-                restTimeBtn.type = 'button';
-                restTimeBtn.className = 'rest-pill';
-                restTimeBtn.textContent = restTimeLabel;
-                restTimeBtn.onclick = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
-                appendTarget.appendChild(restTimeBtn);
-                const dividerEl = document.createElement('div');
-                dividerEl.className = 'sets-divider';
-                appendTarget.appendChild(dividerEl);
-                appendTarget.appendChild(setsContainer);
-                appendTarget.appendChild(addSetBtn);
+            const addSetLabel = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('add_set') || 'Add set') : 'Add set';
+            const addSetBtn = document.createElement('button');
+            addSetBtn.type = 'button';
+            addSetBtn.className = 'add-set-inline';
+            addSetBtn.textContent = addSetLabel;
+            addSetBtn.onclick = (ev) => { ev.stopPropagation(); addSetRowToContainer(setsContainer, makeEmptySetData()); };
 
-                container.appendChild(card);
-                ensureEmptyHint();
+            const appendTarget = cardBody || card;
+            const restControl = createRestControl(card, restSeconds);
+            appendTarget.appendChild(setsContainer);
+            appendTarget.appendChild(addSetBtn);
+            const dividerEl = document.createElement('div');
+            dividerEl.className = 'sets-divider';
+            appendTarget.appendChild(dividerEl);
+            appendTarget.appendChild(restControl);
+            try { if (window.GN_I18N) GN_I18N.applyTranslations(restControl); } catch(e) {}
+
+            container.appendChild(card);
+            ensureEmptyHint();
         }
         
 
@@ -748,6 +766,50 @@
                 }
             });
         }
+        function createRestControl(card, restSeconds) {
+            const control = document.createElement('div');
+            control.className = 'rest-control';
+            const title = document.createElement('span');
+            title.className = 'rest-title';
+            title.setAttribute('data-i18n', 'rest_label');
+            title.textContent = resolveLabel('rest_label', 'Rest:');
+            const stepper = document.createElement('div');
+            stepper.className = 'rest-stepper';
+            const valueInput = document.createElement('input');
+            valueInput.type = 'text';
+            valueInput.readOnly = true;
+            valueInput.className = 'rest-value-input';
+            valueInput.setAttribute('inputmode', 'numeric');
+            valueInput.setAttribute('aria-label', resolveLabel('rest_time_value', 'Rest time'));
+            const normalizedInitial = clampRestSeconds(restSeconds !== undefined ? restSeconds : DEFAULT_REST_SECONDS);
+            card.dataset.restSeconds = normalizedInitial;
+            valueInput.value = formatRestDisplay(normalizedInitial);
+            const adjustRest = (delta) => {
+                const current = clampRestSeconds(card.dataset.restSeconds || DEFAULT_REST_SECONDS);
+                const next = clampRestSeconds(current + delta);
+                card.dataset.restSeconds = next;
+                valueInput.value = formatRestDisplay(next);
+            };
+            const makeButton = (icon, delta, labelKey, fallback) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'rest-adjust-btn';
+                btn.setAttribute('aria-label', resolveLabel(labelKey, fallback));
+                btn.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 400;">${icon}</span>`;
+                btn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    adjustRest(delta);
+                });
+                return btn;
+            };
+            const minusBtn = makeButton('remove', -REST_STEP_SECONDS, 'rest_adjust_decrease', 'Decrease rest time');
+            const plusBtn = makeButton('add', REST_STEP_SECONDS, 'rest_adjust_increase', 'Increase rest time');
+            stepper.append(minusBtn, valueInput, plusBtn);
+            control.append(title, stepper);
+            return control;
+        }
+
 
         // per-set helpers removed
 
@@ -879,7 +941,8 @@
                         sets.push({ reps: repsVal, weight: weightVal });
                     }
                 });
-                return { id, isCustom, sets };
+                const restSeconds = parseInt(card.dataset.restSeconds || '0', 10) || 0;
+                return { id, isCustom, sets, restSeconds };
             });
         }
 
