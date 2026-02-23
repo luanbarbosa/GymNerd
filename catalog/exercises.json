@@ -432,5 +432,19 @@
     "name": "Dumbbell front raise",
     "namePT": "Elevação frontal com halteres",
     "type": "shoulder"
+  },
+  {
+    "id": 63,
+    "imageId": 63,
+    "name": "Cable rope hammer curl",
+    "namePT": "Rosca martelo com corda na polia",
+    "type": "arms"
+  },
+  {
+    "id": 64,
+    "imageId": 64,
+    "name": "Cable bar curl",
+    "namePT": "Rosca direta na polia",
+    "type": "arms"
   }
 ]
