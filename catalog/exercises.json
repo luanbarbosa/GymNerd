@@ -446,5 +446,40 @@
     "name": "Cable bar curl",
     "namePT": "Rosca direta na polia",
     "type": "arms"
+  },
+  {
+    "id": 65,
+    "imageId": 65,
+    "name": "Hip adductor machine",
+    "namePT": "Cadeira adutora",
+    "type": "legs"
+  },
+  {
+    "id": 66,
+    "imageId": 66,
+    "name": "Bike",
+    "namePT": "Bicicleta",
+    "type": "cardio"
+  },
+  {
+    "id": 67,
+    "imageId": 67,
+    "name": "Standing calf raise",
+    "namePT": "Elevação de panturrilha em pé",
+    "type": "legs"
+  },
+  {
+    "id": 68,
+    "imageId": 68,
+    "name": "Sumo squat",
+    "namePT": "Agachamento sumô",
+    "type": "legs"
+  },
+  {
+    "id": 69,
+    "imageId": 69,
+    "name": "Lying leg curl",
+    "namePT": "Flexora deitado",
+    "type": "legs"
   }
 ]
