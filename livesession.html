@@ -131,6 +131,8 @@
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .header-timer { display: flex; align-items: center; gap: 8px; background: linear-gradient(90deg, rgba(96,165,250,0.12), rgba(37,99,235,0.06)); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(59,130,246,0.12); cursor: pointer; color: #0f172a; }
         .timer-val { font-size: 1.2rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+        .timer-warning { color: var(--danger); animation: timer-blink 1s steps(2, start) infinite; }
+        @keyframes timer-blink { 50% { opacity: 0; } }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
         .progress-bar { height: 100%; background: var(--primary-grad); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         /* Exercise progress graph (balls and connectors) */
@@ -750,6 +752,8 @@
         let timerInterval = null;
         let timerStartMs = null; // timestamp (ms) when current timer started
         let lastActiveTimerSignature = null;
+        let timerMode = 'countup';
+        let timerDurationSeconds = 0;
         let sessionStartMs = null; // timestamp (ms) when session started
         let routineModified = false;
         let _finishingSession = false;
@@ -762,12 +766,18 @@
 
         /* Use GN_I18N.getLang() from gn-i18n.js for language detection. */
 
-        function stopTimer() {
+        function stopTimer(keepWarning = false) {
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
             timerStartMs = null;
+            timerMode = 'countup';
+            timerDurationSeconds = 0;
+            if (!keepWarning) {
+                const timerEl = document.getElementById('setTimer');
+                if (timerEl) timerEl.classList.remove('timer-warning');
+            }
         }
 
         function updateTimerDisplay() {
@@ -775,17 +785,45 @@
                 const timerEl = document.getElementById('setTimer');
                 if (!timerEl) return;
                 const elapsedSec = timerStartMs ? Math.floor((Date.now() - timerStartMs) / 1000) : 0;
-                timerEl.innerText = formatTime(elapsedSec);
+                let remaining = null;
+                if (timerMode === 'countdown' && timerDurationSeconds > 0) {
+                    remaining = Math.max(0, timerDurationSeconds - elapsedSec);
+                    timerEl.innerText = formatTime(remaining);
+                    if (remaining === 0) {
+                        timerEl.classList.add('timer-warning');
+                        stopTimer(true);
+                        return;
+                    }
+                } else {
+                    timerEl.innerText = formatTime(elapsedSec);
+                }
+                const isWarning = remaining !== null && remaining > 0 && remaining < 10;
+                timerEl.classList.toggle('timer-warning', isWarning);
             } catch (e) { /* ignore */ }
         }
 
-        function startTimer() {
+        function startTimer(restSeconds) {
+            const countdown = (typeof restSeconds === 'number' && restSeconds > 0) ? restSeconds : getActiveRestSeconds();
             stopTimer();
             // Use wall-clock time so elapsed keeps increasing even when page is hidden/throttled.
             timerStartMs = Date.now();
+            if (countdown > 0) {
+                timerMode = 'countdown';
+                timerDurationSeconds = Math.round(countdown);
+            } else {
+                timerMode = 'countup';
+                timerDurationSeconds = 0;
+            }
             updateTimerDisplay();
             // Update once per second when possible; when hidden the next tick will reflect full elapsed time.
             timerInterval = setInterval(updateTimerDisplay, 1000);
+        }
+
+        function getActiveRestSeconds() {
+            const active = sessionSets[currentIdx];
+            if (!active) return 0;
+            const rest = Number(active.restSeconds);
+            return Number.isFinite(rest) && rest > 0 ? Math.round(rest) : 0;
         }
 
         // Ensure display refreshes immediately when page visibility changes
@@ -1664,6 +1702,7 @@
                 const fallbackWeight = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.weight : null, 0);
                 const fallbackDistance = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.distance : null, 0);
                 const fallbackTime = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.time : null, 0);
+                const restSecondsValue = (workoutEx && typeof workoutEx === 'object' && Number.isFinite(workoutEx.restSeconds)) ? Math.max(0, Math.round(workoutEx.restSeconds)) : 0;
 
                 const createSetRecord = (setNum, source = {}) => {
                     const repsValue = isCardio ? 0 : normalizeNumericValue(source.reps, fallbackReps);
@@ -1684,6 +1723,7 @@
                         distance: distanceValue,
                         time: timeValue,
                         exerciseType,
+                        restSeconds: restSecondsValue,
                         completed: false,
                         skipped: false
                     };
@@ -1852,7 +1892,7 @@
             } else {
                 const signature = `${activeSet.occurrenceId}:${activeSet.setNum}`;
                 if (signature !== lastActiveTimerSignature) {
-                    startTimer();
+                    startTimer(activeSet.restSeconds);
                     lastActiveTimerSignature = signature;
                 } else {
                     updateTimerDisplay();
