@@ -334,9 +334,13 @@
 			--danger: #ff5252;
 		}
 
+		html {
+			background-color: var(--shell-background);
+		}
+
 		body {
 			font-family: 'Inter', system-ui, sans-serif;
-			background: transparent;
+			background: var(--shell-background);
 			color: var(--text);
 			max-width: 500px;
 			margin: 0 auto;
@@ -407,7 +411,7 @@
 			right: 0;
 			height: constant(safe-area-inset-top);
 			height: env(safe-area-inset-top);
-			background: #ffffff;
+			background: var(--shell-background);
 			z-index: 1100;
 			pointer-events: none;
 		}
@@ -533,7 +537,7 @@
 
 		/* motivational-text removed */
 		.nav-card {
-			background: var(--card-background, #1e293b);
+			background-color: var(--card-background);
 			padding: 24px;
 			border-radius: 16px;
 			text-decoration: none;
@@ -551,7 +555,7 @@
 		}
 
 		details {
-			background: var(--card-background, #1e293b);
+			background-color: var(--card-background);
 			border-radius: 16px;
 			margin-top: 40px;
 			border: 1px solid rgba(255, 255, 255, 0.05);
@@ -712,7 +716,7 @@
 			max-width: none;
 			margin: 12px 0;
 			box-sizing: border-box;
-			background: var(--card-background, #1e293b);
+			background-color: var(--card-background);
 			color: var(--text);
 			padding: 14px;
 			border-radius: 12px;
@@ -830,7 +834,7 @@
 			box-sizing: border-box;
 			padding: 16px;
 			border-radius: 12px;
-			background: var(--card-background, #1e293b);
+			background-color: var(--card-background);
 			border: 1px solid rgba(255, 255, 255, 0.05);
 			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
 			display: flex;

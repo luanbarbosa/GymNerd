@@ -22,10 +22,11 @@
     <link rel="stylesheet" href="styles/mode-support.css">
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
+        html { background-color: var(--shell-background); }
+        body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
-        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: var(--shell-background); z-index: 1100; pointer-events: none; }
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
         .app-title-compact, .top-title { margin: 12px 0; }
         .page-content { padding: 16px; padding-top: 12px; }
@@ -35,7 +36,7 @@
 
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        .card { background-color: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         .card h2 { margin-top: 0; margin-bottom: 15px; font-size: 1.2rem; }
         /* Exercise row preview styling */
         .exercise-row { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; padding:12px; background: rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.03); box-shadow: 0 6px 12px rgba(2,6,23,0.04); }

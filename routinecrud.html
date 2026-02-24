@@ -24,13 +24,14 @@
     <link rel="stylesheet" href="styles/mode-support.css">
     <style>
         :root { --primary: var(--accent-color); --primary-grad: linear-gradient(135deg, rgba(242,194,75,0.9) 0%, var(--accent-color) 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: var(--card-background, #1e293b); --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; }
+        html { background-color: var(--shell-background); }
+        body { font-family: system-ui, sans-serif; background-color: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; }
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; justify-content:space-between }
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         /* Top-card (same style used on index.html / history) */
         .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
-        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: var(--shell-background); z-index: 1100; pointer-events: none; }
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
         .page-content { padding: 16px; padding-top: 12px; }
         .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
@@ -45,7 +46,7 @@
           /* Make top-cards inside modals extend to the modal edges (compensate modal padding)
               and match the taller height used on the main History top-card. */
           .modal > .top-card, .modal .top-card { margin: -20px -20px 0 -20px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: calc(6px + env(safe-area-inset-top)) 16px 2px; padding-top: calc(6px + constant(safe-area-inset-top)); }
-        .card { background: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        .card { background-color: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         input, button { box-sizing: border-box; max-width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.02); color: white; transition: border-color 180ms ease, box-shadow 180ms ease, outline 180ms ease; }
         input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
         /* Make the modal search input visually pop when unfocused (not selected) */
@@ -89,7 +90,7 @@
         /* Empty state: larger dashed area and hint text; clickable to add exercises (localized via .empty-hint) */
         .selected-ex-list.empty { min-height: 160px; border: 2px dashed rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; align-items: center; justify-content: center; display: flex; cursor: pointer; }
         .selected-ex-list .empty-hint { color: var(--text-dim); font-size: 0.95rem; text-align: center; }
-        .selected-ex-card { background: var(--card-background); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; position: relative; display:flex; flex-direction:column; overflow:hidden; }
+        .selected-ex-card { background-color: var(--card-background); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; position: relative; display:flex; flex-direction:column; overflow:hidden; }
         .selected-ex-card.invalid { border-color: rgba(239,68,68,0.9); }
         .form-errors { background: rgba(239,68,68,0.04); border-left: 4px solid var(--danger); color: var(--danger); padding: 10px 12px; border-radius: 8px; margin-top: 8px; font-weight:700; }
         .card-error { color: var(--danger); background: rgba(239,68,68,0.03); padding: 6px 8px; border-radius: 6px; margin-top: 8px; font-size:0.85rem; }
@@ -116,23 +117,23 @@
         .rest-value-input:focus-visible { outline:none; }
         .selected-ex-card > div:first-child { width:100%; }
         .hidden { display:none !important }
-        .exercise-card { background: var(--card-background); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
+        .exercise-card { background-color: var(--card-background); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
         .exercise-card .actions { display:flex; gap:8px; align-items:center; position:absolute; right:12px; top:50%; transform:translateY(-50%); flex-direction:row; }
         .exercise-card .actions .icon-btn { padding:6px; box-shadow: 0 6px 14px rgba(2,6,23,0.12); background: rgba(255,255,255,0.02); border-radius:10px; }
         .exercise-card .meta { width:50%; }
         .exercise-card .meta .title { font-weight:700; margin-top:4px; font-size:20px; }
         .exercise-card .meta .badge { margin:0 0 6px 0; }
-        .modal { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; height: 100%; background: var(--shell-background); z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .modal { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; height: 100%; background-color: var(--shell-background); z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
         body.noselect, .noselect, .noselect * {
             user-select: none !important;
             -webkit-user-select: none !important;
             -ms-user-select: none !important;
         }
-        .category-section { background: var(--card-background); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; margin-bottom: 12px; }
+        .category-section { background-color: var(--card-background); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; margin-bottom: 12px; }
         .category-summary { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
         .exercise-grid { display: grid; gap: 12px; padding: 0 12px 16px 12px; }
         .exercise-grid .ex-thumb { width: 72px; height: 48px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
-        .exercise-card { background: var(--card-background); border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
+        .exercise-card { background-color: var(--card-background); border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
         /* Modal/search: stack image on top, then meta and actions below (scoped to .exercise-grid) */
         .exercise-grid .exercise-card { flex-direction: column; align-items: flex-start; gap: 10px; }
         .exercise-grid .exercise-card > div:first-child { width: 100%; }
@@ -191,7 +192,7 @@
         .set-row .field { display:flex; flex-direction:column; gap:6px; flex:1 1 0; min-width:48px; width:auto; align-items:flex-start; }
         .set-row .field label { font-size:0.75rem; color:var(--text-dim); font-weight:700; display:block; text-align:left; margin-left:2px; white-space:normal; overflow:visible; text-transform:uppercase; }
         .set-row.data-row .field label { display:none; }
-        .set-row input[type="number"], .set-row input[type="text"] { width:100%; padding:10px 8px; border-radius:10px; font-size:0.9rem; box-sizing:border-box; text-align:center; border:1px solid rgba(255,255,255,0.08); background: var(--shell-background); color:var(--text); min-height:42px; }
+        .set-row input[type="number"], .set-row input[type="text"] { width:100%; padding:10px 8px; border-radius:10px; font-size:0.9rem; box-sizing:border-box; text-align:center; border:1px solid rgba(255,255,255,0.08); background-color: var(--shell-background); color:var(--text); min-height:42px; }
         /* hide native number input spinners for a cleaner mobile UI */
         .set-row input[type="number"]::-webkit-outer-spin-button,
         .set-row input[type="number"]::-webkit-inner-spin-button {

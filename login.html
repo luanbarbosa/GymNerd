@@ -18,7 +18,7 @@
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
             /* Hide by default to avoid flashing the login UI while auth.js refreshes tokens */
             visibility: hidden;
-            background: transparent;
+            background-color: var(--shell-background);
             padding-top: constant(safe-area-inset-top);
             padding-top: env(safe-area-inset-top);
             color: #0f172a;
@@ -71,7 +71,7 @@
         .auth-card {
             width: 100%;
             max-width: 420px;
-            background: var(--card-background);
+            background-color: var(--card-background);
             border-radius: 18px;
             padding: 26px;
             box-sizing: border-box;
