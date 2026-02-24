@@ -19,6 +19,7 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
+    <link rel="stylesheet" href="styles/colors.css">
     <link rel="stylesheet" href="styles/mode-support.css">
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
@@ -37,6 +38,7 @@
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         .card { background-color: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        #routineFormSection.card { background-color: var(--card-background); }
         .card h2 { margin-top: 0; margin-bottom: 15px; font-size: 1.2rem; }
         /* Exercise row preview styling */
         .exercise-row { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; padding:12px; background: rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.03); box-shadow: 0 6px 12px rgba(2,6,23,0.04); }
@@ -72,7 +74,7 @@
         @media (max-width: 380px) { .sets-container .header-row, .set-row { grid-template-columns: 1fr 1fr 1fr 36px; gap:6px; } .set-row input[type="number"], .set-row input[type="text"] { padding:10px; font-size:0.9rem; } }
         .save-session { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
         .save-session.success { background: var(--success); }
-        button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button.primary { background: var(--accent-color); color: white; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 10px 20px rgba(242, 194, 75, 0.25); }
         /* Localized disclaimer shown below the main content (non-fixed, outside rounded background) */
         .disclaimer { text-align: center; color: var(--text-dim); font-size: 0.85rem; padding: 6px 8px; margin: 6px 16px; font-style: italic; }
     </style>
