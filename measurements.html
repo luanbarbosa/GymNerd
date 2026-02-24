@@ -20,6 +20,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
+    <link rel="stylesheet" href="styles/colors.css">
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
         body { font-family: system-ui, sans-serif; background: transparent; color: var(--text); max-width:500px;margin:0 auto;padding:0; }
@@ -38,7 +39,7 @@
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         .page-content { padding: 16px; }
         h1 { margin: 16px 0; font-size:1.6rem; background: linear-gradient(90deg,#60a5fa,#2563eb); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .card { background: var(--card); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.04); }
+        .card { background: var(--card-background, var(--card)); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.04); }
         .light-card { background: linear-gradient(180deg,#ffffff 0%, #f3f4f6 100%); color: #0f172a; }
         .light-card h1, .light-card h2, .light-card h3 { background: none; -webkit-background-clip: unset; -webkit-text-fill-color: initial; color: #0f172a; }
         .light-card p { color: #475569; }
