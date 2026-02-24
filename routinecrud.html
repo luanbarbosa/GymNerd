@@ -19,11 +19,12 @@
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <link rel="stylesheet" href="styles/colors.css">
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; }
+        :root { --primary: var(--accent-color); --primary-grad: linear-gradient(135deg, rgba(242,194,75,0.9) 0%, var(--accent-color) 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: var(--card-background, #1e293b); --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; }
         .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; justify-content:space-between }
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
@@ -44,30 +45,35 @@
           /* Make top-cards inside modals extend to the modal edges (compensate modal padding)
               and match the taller height used on the main History top-card. */
           .modal > .top-card, .modal .top-card { margin: -20px -20px 0 -20px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: calc(6px + env(safe-area-inset-top)) 16px 2px; padding-top: calc(6px + constant(safe-area-inset-top)); }
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
-        input, button { box-sizing: border-box; max-width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.02); color: white; }
+        .card { background: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        input, button { box-sizing: border-box; max-width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.02); color: white; transition: border-color 180ms ease, box-shadow 180ms ease, outline 180ms ease; }
+        input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
         /* Make the modal search input visually pop when unfocused (not selected) */
         #modalSearchInput {
-            background: rgba(59,130,246,0.14); /* brighter blue tint for stronger pop */
-            border: 1px solid rgba(59,130,246,0.30);
-            box-shadow: 0 8px 22px rgba(59,130,246,0.08);
+            background: rgba(242,194,75,0.14); /* brighter accent tint for stronger pop */
+            border: 1px solid rgba(242,194,75,0.30);
+            box-shadow: 0 8px 22px rgba(242,194,75,0.08);
             transition: box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
             color: var(--text);
-            outline: none;
+            outline: 2px solid transparent;
+            outline-offset: 2px;
             width: 100%;
             padding-right: 44px; /* make room for clear button */
         }
         /* Focused state (keeps stronger accent) */
         #modalSearchInput:focus {
             background: rgba(255,255,255,0.02);
-            border-color: rgba(59,130,246,0.95);
-            box-shadow: 0 14px 40px rgba(37,99,235,0.18);
+            border-color: rgba(242,194,75,0.95);
+            box-shadow: 0 14px 40px rgba(242,194,75,0.18);
+            outline-color: var(--accent-color);
+            outline-style: solid;
+            outline-width: 2px;
         }
         /* Slightly adjust clear button color to match new accent */
         .clear-search-btn { color: rgba(255,255,255,0.9); }
         button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
         .add-set-btn { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; color: var(--text-dim); margin-bottom: 10px; }
-        .add-set-btn.prominent { background: var(--primary-grad); color: #fff; border: none; font-weight: 800; box-shadow: 0 8px 20px rgba(37,99,235,0.12); }
+        .add-set-btn.prominent { background: var(--primary-grad); color: #fff; border: none; font-weight: 800; box-shadow: 0 8px 20px rgba(242,194,75,0.12); }
         /* Make the main "Search Exercise" button taller for better tap targets */
         #openSearchBtn { min-height: 56px; padding: 14px 16px; font-size: 1.05rem; display: inline-flex; align-items: center; justify-content: center; }
         .top-action-btn { padding: 10px 14px; min-height: 44px; border-radius: 10px; font-weight: 800; display: inline-flex; align-items: center; gap:8px; }
@@ -83,7 +89,7 @@
         /* Empty state: larger dashed area and hint text; clickable to add exercises (localized via .empty-hint) */
         .selected-ex-list.empty { min-height: 160px; border: 2px dashed rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; align-items: center; justify-content: center; display: flex; cursor: pointer; }
         .selected-ex-list .empty-hint { color: var(--text-dim); font-size: 0.95rem; text-align: center; }
-        .selected-ex-card { background: rgba(15,23,42,0.95); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; position: relative; display:flex; flex-direction:column; overflow:hidden; }
+        .selected-ex-card { background: var(--card-background); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; position: relative; display:flex; flex-direction:column; overflow:hidden; }
         .selected-ex-card.invalid { border-color: rgba(239,68,68,0.9); }
         .form-errors { background: rgba(239,68,68,0.04); border-left: 4px solid var(--danger); color: var(--danger); padding: 10px 12px; border-radius: 8px; margin-top: 8px; font-weight:700; }
         .card-error { color: var(--danger); background: rgba(239,68,68,0.03); padding: 6px 8px; border-radius: 6px; margin-top: 8px; font-size:0.85rem; }
@@ -110,23 +116,23 @@
         .rest-value-input:focus-visible { outline:none; }
         .selected-ex-card > div:first-child { width:100%; }
         .hidden { display:none !important }
-        .exercise-card { background: var(--card); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
+        .exercise-card { background: var(--card-background); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
         .exercise-card .actions { display:flex; gap:8px; align-items:center; position:absolute; right:12px; top:50%; transform:translateY(-50%); flex-direction:row; }
         .exercise-card .actions .icon-btn { padding:6px; box-shadow: 0 6px 14px rgba(2,6,23,0.12); background: rgba(255,255,255,0.02); border-radius:10px; }
         .exercise-card .meta { width:50%; }
         .exercise-card .meta .title { font-weight:700; margin-top:4px; font-size:20px; }
         .exercise-card .meta .badge { margin:0 0 6px 0; }
-        .modal { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; height: 100%; background: var(--bg); z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .modal { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; height: 100%; background: var(--shell-background); z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
         body.noselect, .noselect, .noselect * {
             user-select: none !important;
             -webkit-user-select: none !important;
             -ms-user-select: none !important;
         }
-        .category-section { background: var(--card); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; margin-bottom: 12px; }
+        .category-section { background: var(--card-background); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; margin-bottom: 12px; }
         .category-summary { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
         .exercise-grid { display: grid; gap: 12px; padding: 0 12px 16px 12px; }
         .exercise-grid .ex-thumb { width: 72px; height: 48px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
-        .exercise-card { background: var(--card); border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
+        .exercise-card { background: var(--card-background); border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
         /* Modal/search: stack image on top, then meta and actions below (scoped to .exercise-grid) */
         .exercise-grid .exercise-card { flex-direction: column; align-items: flex-start; gap: 10px; }
         .exercise-grid .exercise-card > div:first-child { width: 100%; }
@@ -149,12 +155,12 @@
             pointer-events: none;
         }
         .icon-btn { background:none; border:none; color:var(--primary); padding:6px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
-        .icon-btn:hover { background: rgba(59,130,246,0.06); }
+        .icon-btn:hover { background: rgba(242,194,75,0.06); }
         .badge { display:inline-flex; align-items:center; justify-content:center; margin:0 0 6px 0; background:var(--primary); color:white; font-size:0.7rem; padding:4px 8px; border-radius:999px; font-weight:700; white-space:nowrap; width:auto; height:auto; align-self:flex-start; }
         .selected-ex-card .badge.small-badge { display:inline-flex; align-items:center; justify-content:center; font-size:0.6rem; padding:2px 6px; font-weight:800; white-space:nowrap; width:auto; height:auto; align-self:flex-start; }
         /* Image drop / preview styling */
         .image-preview-box { width: 100%; height: 160px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius: 12px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; border: 2px dashed rgba(255,255,255,0.04); position:relative; }
-        .image-preview-box.dragover { background: linear-gradient(180deg, rgba(59,130,246,0.06), rgba(37,99,235,0.02)); border-color: rgba(37,99,235,0.6); }
+        .image-preview-box.dragover { background: linear-gradient(180deg, rgba(242,194,75,0.06), rgba(242,194,75,0.02)); border-color: rgba(242,194,75,0.6); }
         .image-preview-box img {
             width: auto;
             height: auto;
@@ -171,12 +177,12 @@
         /* Modern select styling */
         .select-wrapper { position: relative; }
         .select-wrapper select { -webkit-appearance: none; appearance: none; width: 100%; padding: 12px 44px 12px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); color: inherit; font-weight:700; cursor: pointer; }
-        .select-wrapper:focus-within { box-shadow: 0 6px 20px rgba(59,130,246,0.12); border-radius:12px; }
+        .select-wrapper:focus-within { box-shadow: 0 6px 20px rgba(242,194,75,0.12); border-radius:12px; }
         .select-wrapper .chev { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-dim); font-size: 14px; }
         /* Make options easier to scan */
         .select-wrapper select option { padding: 8px 12px; }
         /* Sets UI inside selected exercise cards */
-        .sets-container { display:flex; flex-direction:column; gap:6px; width:100%; margin:0; padding:6px 0 0; background: rgba(15,23,42,0.6); align-self:stretch; }
+        .sets-container { display:flex; flex-direction:column; gap:6px; width:100%; margin:0; padding:6px 0 0; align-self:stretch; }
         .sets-divider { width:100%; height:1px; background: rgba(255,255,255,0.08); margin:2px 0 6px; }
         /* table-like header for set fields */
         .sets-container .header-row { display:flex; gap:8px; align-items:center; background:transparent; box-shadow:none; padding:0; margin:0; border-radius:0; }
@@ -185,7 +191,7 @@
         .set-row .field { display:flex; flex-direction:column; gap:6px; flex:1 1 0; min-width:48px; width:auto; align-items:flex-start; }
         .set-row .field label { font-size:0.75rem; color:var(--text-dim); font-weight:700; display:block; text-align:left; margin-left:2px; white-space:normal; overflow:visible; text-transform:uppercase; }
         .set-row.data-row .field label { display:none; }
-        .set-row input[type="number"], .set-row input[type="text"] { width:100%; padding:10px 8px; border-radius:10px; font-size:0.9rem; box-sizing:border-box; text-align:center; border:1px solid rgba(255,255,255,0.08); background: rgba(15,23,42,0.4); color:var(--text); min-height:42px; }
+        .set-row input[type="number"], .set-row input[type="text"] { width:100%; padding:10px 8px; border-radius:10px; font-size:0.9rem; box-sizing:border-box; text-align:center; border:1px solid rgba(255,255,255,0.08); background: var(--shell-background); color:var(--text); min-height:42px; }
         /* hide native number input spinners for a cleaner mobile UI */
         .set-row input[type="number"]::-webkit-outer-spin-button,
         .set-row input[type="number"]::-webkit-inner-spin-button {
