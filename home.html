@@ -321,12 +321,13 @@
 	</script>
 	<link rel="stylesheet" href="styles/app-titles.css">
 	<link rel="stylesheet" href="styles/mode-support.css">
+	<link rel="stylesheet" href="styles/colors.css">
 	<style>
 		:root {
 			--primary: #3b82f6;
 			--primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
 			--bg: #101729;
-			--card: #1e293b;
+			--card: var(--card-background, #1e293b);
 			--text: #f8fafc;
 			--text-dim: #94a3b8;
 			--success: #00e676;
@@ -532,7 +533,7 @@
 
 		/* motivational-text removed */
 		.nav-card {
-			background: var(--card);
+			background: var(--card-background, #1e293b);
 			padding: 24px;
 			border-radius: 16px;
 			text-decoration: none;
@@ -550,7 +551,7 @@
 		}
 
 		details {
-			background: var(--card);
+			background: var(--card-background, #1e293b);
 			border-radius: 16px;
 			margin-top: 40px;
 			border: 1px solid rgba(255, 255, 255, 0.05);
@@ -711,7 +712,7 @@
 			max-width: none;
 			margin: 12px 0;
 			box-sizing: border-box;
-			background: var(--card);
+			background: var(--card-background, #1e293b);
 			color: var(--text);
 			padding: 14px;
 			border-radius: 12px;
@@ -829,7 +830,7 @@
 			box-sizing: border-box;
 			padding: 16px;
 			border-radius: 12px;
-			background: var(--card);
+			background: var(--card-background, #1e293b);
 			border: 1px solid rgba(255, 255, 255, 0.05);
 			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
 			display: flex;
@@ -902,8 +903,8 @@
 			display: block;
 			height: 100%;
 			border-radius: inherit;
-			background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%);
-			box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+			background: linear-gradient(90deg, var(--accent-color) 0%, rgba(242, 194, 75, 0.6) 100%);
+			box-shadow: 0 0 12px rgba(242, 194, 75, 0.45);
 			position: relative;
 			z-index: 1;
 			width: var(--fill, 0%);
