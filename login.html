@@ -18,7 +18,7 @@
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
             /* Hide by default to avoid flashing the login UI while auth.js refreshes tokens */
             visibility: hidden;
-            background: #0f172a;
+            background: transparent;
             padding-top: constant(safe-area-inset-top);
             padding-top: env(safe-area-inset-top);
             color: #0f172a;
@@ -30,7 +30,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            background: #0f172a;
+            background: transparent;
             width: 100%;
             box-sizing: border-box;
             padding: 36px 16px;
@@ -58,12 +58,12 @@
             margin: 8px 0 0 0;
             font-size: 2.2rem;
             font-weight: 900;
-            color: #fff;
+            color: var(--text-main-color);
             letter-spacing: -0.02em;
         }
 
         .tagline {
-            color: #9aa4b6;
+            color: var(--text-secondary-color);
             margin-top: 6px;
             font-weight: 600;
         }
@@ -71,7 +71,7 @@
         .auth-card {
             width: 100%;
             max-width: 420px;
-            background: #ffffff;
+            background: var(--card-background);
             border-radius: 18px;
             padding: 26px;
             box-sizing: border-box;
@@ -108,14 +108,14 @@
         .google-logo { width:20px; height:20px; display:inline-block; }
 
         .auth-subtext {
-            color:#94a3b8;
+            color: var(--text-secondary-color);
             font-size:0.92rem;
             margin-top:12px;
             margin-bottom:12px;
         }
 
         .divider {
-            display:flex;align-items:center;gap:12px;margin:18px 0;color:#0f172a;font-size:0.9rem;
+            display:flex;align-items:center;gap:12px;margin:18px 0;color: var(--text-main-color);font-size:0.9rem;
         }
 
         .divider .line { flex:1;height:1px;background:#e5e7eb;opacity:0.8 }
@@ -133,10 +133,11 @@
             box-shadow: 0 12px 30px rgba(59,130,246,0.18);
         }
 
-        .small-muted { color:#94a3b8; margin-top:12px; font-size:0.9rem }
+        .small-muted { color: var(--text-secondary-color); margin-top:12px; font-size:0.9rem }
 
         a.lang-link { color:#94a3b8 }
     </style>
+    <link rel="stylesheet" href="styles/colors.css" />
     <link rel="stylesheet" href="styles/mode-support.css" />
 
 </head>
