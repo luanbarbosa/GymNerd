@@ -4,7 +4,7 @@
     font-weight: 600;
     font-size: 1.2rem;
     letter-spacing: -1px;
-    color: var(--bg);
+    color: var(--text-main-color);
     font-style: normal;
     white-space: nowrap;
     overflow: visible;

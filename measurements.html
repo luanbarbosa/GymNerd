@@ -25,7 +25,7 @@
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
         html { background-color: var(--shell-background); }
         body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width:500px;margin:0 auto;padding:0; }
-        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
+        .top-card { position: static; background: transparent; color: var(--text-main-color); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: none; padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
         .top-card-inner { max-width: 100%; display:flex; align-items:center; gap:12px; padding-bottom: 2px; }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: var(--shell-background); z-index: 1100; pointer-events: none; }
         .top-card-inner > div { flex-wrap: nowrap; }
@@ -37,7 +37,7 @@
         .page-content { padding: 0; }
         /* Prevent top bar from wrapping (keeps height consistent with measurements.html) */
         /* Use same compact app title style as home.html */
-        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text-main-color); }
         .page-content { padding: 16px; }
         h1 { margin: 16px 0; font-size:1.6rem; background: linear-gradient(90deg,#60a5fa,#2563eb); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
         .card { background-color: var(--card-background, var(--card)); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.04); }

@@ -26,7 +26,7 @@
         html { background-color: var(--shell-background); }
         body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
+        .top-card { position: static; background: transparent; color: var(--text-main-color); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: none; padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: var(--shell-background); z-index: 1100; pointer-events: none; }
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
         .app-title-compact, .top-title { margin: 12px 0; }
@@ -35,7 +35,7 @@
         #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
         /* Use same compact app title style as home.html */
 
-        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
+        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text-main-color); }
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         .card { background-color: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         #routineFormSection.card { background-color: var(--card-background); }
