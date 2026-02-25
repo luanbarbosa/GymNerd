@@ -38,7 +38,7 @@
         .input-group { display: flex; flex-direction: column; gap: 10px; }
         input, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; background: rgba(255,255,255,0.05); color: white; }
         
-        button.primary { background: var(--accent-color); color: var(--text-on-accent-color); border: none; font-weight: bold; cursor: pointer; box-shadow: 0 10px 22px rgba(242,194,75,0.25); transition: transform 160ms ease, box-shadow 160ms ease; }
+        button.primary { background: var(--accent-color); color: var(--text-on-accent-color); border: none; font-weight: bold; cursor: pointer; box-shadow: none; transition: transform 160ms ease; }
         button.update { background: var(--success); color: white; border: none; font-weight: bold; cursor: pointer; display: none; }
         .cancel-link { text-align: center; font-size: 0.8rem; color: #ef4444; cursor: pointer; display: none; margin-top: 5px; text-decoration: underline; }
 
@@ -115,8 +115,8 @@
         .hidden { display: none !important; }
         /* Image preview modal */
         .image-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); z-index: 2200; }
-        .image-modal .modal-inner { position: relative; max-width: 92vw; max-height: 92vh; padding: 12px; box-sizing: border-box; background: #fff; border-radius: 12px; }
-        .image-modal img { max-width: 100%; max-height: 84vh; border-radius: 8px; display: block; background: #fff; }
+        .image-modal .modal-inner { position: relative; max-width: min(92vw, 560px); max-height: 92vh; padding: 12px; box-sizing: border-box; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .image-modal img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: 8px; display: block; background: #fff; }
         .image-modal .close-btn { position: absolute; top: 8px; right: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: var(--primary); border: none; color: #fff; border-radius: 50%; cursor: pointer; font-weight: 800; box-shadow: 0 6px 18px rgba(37,99,235,0.22); }
         .image-modal .close-btn:hover { filter: brightness(0.95); }
         .image-modal .close-btn:focus { outline: 3px solid rgba(59,130,246,0.18); }
@@ -150,6 +150,9 @@
         .exercise-list.reorder-mode .sets-compact,
         .exercise-list.reorder-mode .set-pill,
         .exercise-list.reorder-mode .sets-table { display: none !important; }
+        .exercise-row.dragging .sets-compact,
+        .exercise-row.dragging .set-pill,
+        .exercise-row.dragging .sets-table { display: none !important; }
         .exercise-row .drag-handle { display: none; border: none; background: transparent; color: var(--text-dim); font-size: 1.1rem; padding: 6px 8px; border-radius: 8px; cursor: grab; margin-left: auto; align-self: center; }
         .exercise-row .drag-handle:active { cursor: grabbing; }
         .sort-btn { color: var(--text-secondary-color); background: rgba(255,255,255,0.02); border: none; cursor: pointer; display: flex; align-items: center; padding: 8px; border-radius: 10px; transition: background 0.12s; }

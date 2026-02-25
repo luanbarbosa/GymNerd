@@ -906,14 +906,14 @@
             overview.innerHTML = `
                 <div class="stat-card">
                     <div class="stat-label">${GN_I18N.t('current_streak')}</div>
-                    <div class="stat-value" style="color: ${current > 0 ? 'var(--success)' : 'var(--text)'}">
+                    <div class="stat-value" style="color: ${current > 0 ? 'var(--text-main-color)' : 'var(--text)'}">
                         ${current} <span style="font-size: 0.9rem">${GN_I18N.t('days')}</span>
                     </div>
                     <div class="stat-sub">${current > 0 ? GN_I18N.t('keep_it_up') : (daysSince + ' ' + GN_I18N.t('days_since_last'))}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">${GN_I18N.t('best_record')}</div>
-                    <div class="stat-value">${longest} <span style="font-size: 0.9rem">${GN_I18N.t('days')}</span></div>
+                    <div class="stat-value" style="color: var(--accent-color)">${longest} <span style="font-size: 0.9rem">${GN_I18N.t('days')}</span></div>
                     <div class="stat-sub">${GN_I18N.t('personal_best')}</div>
                 </div>
             `;
