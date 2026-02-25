@@ -121,11 +121,11 @@
         .image-modal .close-btn:hover { filter: brightness(0.95); }
         .image-modal .close-btn:focus { outline: 3px solid rgba(59,130,246,0.18); }
         .workout-card { background: transparent; padding: 10px 0; border-radius: 16px; margin-bottom: 15px; border: none; }
-        .workout-panel { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin: 0 -12px 14px -12px; box-sizing: border-box; }
+        .workout-panel { background: rgb(27,27,27); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin: 0 -12px 14px -12px; box-sizing: border-box; }
         .workout-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; }
         .workout-name { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
         /* Stack image, title and sets vertically inside the main area; drag handle sits at the right */
-        .exercise-row { display: flex; align-items: stretch; gap: 12px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); box-shadow: none; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
+        .exercise-row { display: flex; align-items: stretch; gap: 12px; background: rgb(27,27,27); padding: 14px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 8px; border: 1.5px solid rgba(255,255,255,0.06); box-shadow: none; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
         .exercise-row:hover { transform: translateY(-3px); }
         /* `.main` wrapper removed; make `.exercise-meta` provide the vertical stacking and growth */
         .exercise-row .exercise-meta { flex: 1 1 auto; display:flex; flex-direction:column; gap:8px; }
@@ -201,7 +201,7 @@
         .section-title { margin-top: 40px; margin-bottom: 20px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; padding-left: 5px; background: var(--secondary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: fit-content; }
         /* Tabs - mobile segmented control style (scroll with page) */
         #tabsWrapper { position: static; top: auto; z-index: auto; }
-        #routines-tabs { display:flex; gap:6px; flex-wrap:nowrap; justify-content:flex-start; align-items:center; padding:8px 12px; background: rgba(255,255,255,0.02); border-radius: 14px; margin: 0 0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        #routines-tabs { display:flex; gap:6px; flex-wrap:nowrap; justify-content:flex-start; align-items:center; padding:8px 12px; background: rgb(27,27,27); border-radius: 14px; margin: 0 0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
           /* Tabs: allow up to two lines, then ellipsize; width grows with text up to max-width
               Use high-specificity and !important to avoid other injected styles overwriting these rules
               after SPA fragment navigations. */
@@ -236,12 +236,12 @@
                         text-align: center !important;
                         max-width: 100% !important;
                     }
-          .page-content #tabsWrapper #routines-tabs .tab-btn.active, #routines-tabs .tab-btn.active { color: #fff !important; background: var(--accent-color) !important; box-shadow: 0 6px 18px rgba(242,194,75,0.25) !important; }
+                    .page-content #tabsWrapper #routines-tabs .tab-btn.active, #routines-tabs .tab-btn.active { color: var(--text-on-accent-color) !important; background: var(--accent-color) !important; box-shadow: 0 6px 18px rgba(242,194,75,0.25) !important; }
         .tab-btn:focus { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); border-radius:10px; }
-        .tab-btn.active { background: var(--accent-color); color: #fff; box-shadow: 0 6px 18px rgba(242,194,75,0.25); }
+                .tab-btn.active { background: var(--accent-color); color: var(--text-on-accent-color); box-shadow: 0 6px 18px rgba(242,194,75,0.25); }
         .tab-card { background: transparent; padding: 12px; border-radius: 12px; border: none; }
         /* Let the entire page scroll instead of a fixed inner pane */
-        #routines-content { padding: 6px 12px 24px; box-sizing: border-box; }
+        #routines-content { padding: 6px 12px 24px; box-sizing: border-box; background: transparent; }
     </style>
 </head>
 <body>
