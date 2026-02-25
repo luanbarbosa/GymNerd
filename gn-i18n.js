@@ -247,7 +247,7 @@
                 history_disclaimer_stats_only: 'The values changed here will not be applied to the routines. Only to the statistics.'
                 ,
                 /* Livesession specific */
-                resume_unfinished: 'Unfinished session found',
+                resume_unfinished: 'Unfinished session found!',
                 resume_continue: 'Continue',
                 resume_discard: 'Discard',
                 label_select_routine: 'Select a Routine',
@@ -540,7 +540,7 @@
                 history_disclaimer_stats_only: 'Os valores alterados aqui não serão aplicados aos treinos. Somente às estatísticas.'
                 ,
                 /* Livesession specific */
-                resume_unfinished: 'Treino incompleto encontrado',
+                resume_unfinished: 'Treino incompleto encontrado!',
                 resume_continue: 'Continuar',
                 resume_discard: 'Descartar',
                 label_select_routine: 'Selecione um Treino',
