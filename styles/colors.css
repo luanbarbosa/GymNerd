@@ -4,4 +4,5 @@
     --text-main-color: rgb(255,255,255);
     --text-secondary-color: rgb(191,191,191);
     --accent-color: rgb(242,194,75);
+    --text-on-accent-color: rgb(0,0,0);
 }
