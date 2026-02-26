@@ -1,14 +1,8 @@
-/* Claim both color schemes and prevent forced recoloring while reusing the existing palette. */
+/* Claim the dark color scheme and prevent forced recoloring while reusing the existing palette. */
 :root {
-    color-scheme: light dark;
+    color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        color-scheme: dark;
-    }
-
-    *, *::before, *::after {
-        forced-color-adjust: none;
-    }
+*, *::before, *::after {
+    forced-color-adjust: none;
 }
