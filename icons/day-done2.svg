@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g id="Master-Pau-Barbaro-Happy-Flame" serif:id="Master/Pau Barbaro/Happy Flame" transform="matrix(0.147273,0,0,0.14339,-29.172111,-18.328215)">
+        <g transform="matrix(6.790111,0,0,6.973987,198.081868,127.820734)">
+            <circle cx="50.5" cy="49.5" r="44.5" style="fill:rgb(85,182,133);"/>
+        </g>
+        <g transform="matrix(7.73028,0,0,7.939616,251.096965,-31.132525)">
+            <circle cx="37.5" cy="63.5" r="32.5" style="fill:rgb(102,229,165);"/>
+        </g>
+        <g transform="matrix(18.672805,0,0,19.178464,547.772579,466.059105)">
+            <g transform="matrix(1,0,0,1,-12,-12)">
+                <g transform="matrix(0.025,0,0,0.025,0,24)">
+                    <path d="M382,-324.77L734.08,-676.85C737.973,-680.743 742.563,-682.82 747.85,-683.08C753.13,-683.333 757.973,-681.257 762.38,-676.85C766.793,-672.437 769,-667.68 769,-662.58C769,-657.473 766.793,-652.717 762.38,-648.31L404.62,-290.31C398.153,-283.85 390.613,-280.62 382,-280.62C373.387,-280.62 365.847,-283.85 359.38,-290.31L197.38,-452.31C193.487,-456.203 191.45,-460.83 191.27,-466.19C191.09,-471.55 193.207,-476.437 197.62,-480.85C202.027,-485.257 206.78,-487.46 211.88,-487.46C216.987,-487.46 221.743,-485.257 226.15,-480.85L382,-324.77Z" style="fill:white;fill-rule:nonzero;stroke:rgb(255,254,254);stroke-width:60px;"/>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
