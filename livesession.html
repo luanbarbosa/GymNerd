@@ -106,7 +106,8 @@
             display: none;
         }
 
-        .player-card { text-align: center; padding-top: 12px; }
+        .player-card { text-align: center; padding: 0; overflow: hidden; }
+        .player-card-body { padding: 6px 20px 20px; }
         .current-ex-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 10px; color: var(--text); line-height: 1.15; text-align: center; word-break: break-word; }
         /* Reserve space for up to 2 lines; center vertically when only one line */
         .current-ex-title {
@@ -120,7 +121,7 @@
             overflow: hidden;
         }
         /* Fixed image box so all exercise images share the same visible area */
-        .player-img { width: 100%; height: clamp(120px, 24vh, 160px); object-fit: contain; object-position: center; border-radius: 16px; margin-bottom: 12px; background: #fff; display: block; }
+        .player-img { width: 100%; height: clamp(120px, 24vh, 160px); object-fit: contain; object-position: center; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; background: #fff; display: block; }
         /* External spacer: visual spacing will be placed outside the player card so the card's content doesn't get extra inner padding */
         .player-bottom-spacer {
             height: calc(84px + constant(safe-area-inset-bottom));
@@ -561,11 +562,13 @@
             </div>
             <!-- graph moved inside title box above -->
             <div class="card player-card">
-                <h3 id="currentExName" class="current-ex-title" aria-live="polite"></h3>
                 <img id="playerImg" src="" class="player-img" onclick="showImagePreview(this.src)" style="cursor:pointer" aria-label="Preview image">
-                <div id="setsContainer"></div>
-                <!-- Player controls moved to fixed bottom bar -->
-                <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()" data-i18n="finish_routine"></button>
+                <div class="player-card-body">
+                    <h3 id="currentExName" class="current-ex-title" aria-live="polite"></h3>
+                    <div id="setsContainer"></div>
+                    <!-- Player controls moved to fixed bottom bar -->
+                    <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()" data-i18n="finish_routine"></button>
+                </div>
             </div>
             <div id="playerBottomSpacer" class="player-bottom-spacer" aria-hidden="true"></div>
         </div>
