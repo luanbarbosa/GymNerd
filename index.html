@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#121212" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.json" />
@@ -49,7 +49,7 @@
             margin: 0;
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
             visibility: visible; /* shell should be visible; pages control hiding */
-            background: #0f172a;
+            background-color: var(--shell-background);
             padding-top: 0; /* let page topbars control their own safe-area spacing */
         }
         /* ensure the page content has room at the bottom for the fixed nav */
@@ -67,7 +67,7 @@
             justify-content: space-around;
             align-items: center;
             padding: 10px 8px;
-            background: #0f172a;
+            background-color: var(--shell-background);
             border-top: 1px solid #0b1220;
             box-shadow: 0 -6px 20px rgba(0,0,0,0.25);
             z-index: 1400;
@@ -80,7 +80,7 @@
         }
         #bottom-nav a { color: #94a3b8; text-decoration: none; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; padding:6px 8px; border-radius:10px; }
         #bottom-nav a .nav-icon { width:auto; height:auto; display:inline-flex; align-items:center; justify-content:center; font-size:20px; line-height:1; }
-        #bottom-nav a.active { color: #fff; background: rgba(59,130,246,0.08); }
+        #bottom-nav a.active { color: #fff; background: rgba(255,255,255,0.08); }
 
         /* Make all nav items the same width except the prominent Play button */
         #bottom-nav a:not(#nav-play) {
@@ -103,12 +103,11 @@
             height: 64px;
             padding: 0;
             border-radius: 16px;
-            background: var(--primary-grad);
+            background: var(--accent-color);
             display:flex;
             align-items:center;
             justify-content:center;
-            color: #ffffff;
-            box-shadow: 0 10px 20px rgba(37,99,235,0.3);
+            color: #000;
         }
         #bottom-nav a#nav-play .nav-icon { width:auto; height:auto; font-size:28px; }
         /* hide only the text label in the Play button, keep the icon visible */
@@ -140,6 +139,8 @@
             z-index: 1201;
         }
     </style>
+    <link rel="stylesheet" href="styles/colors.css" />
+    <link rel="stylesheet" href="styles/background.css" />
     <link rel="stylesheet" href="styles/mode-support.css" />
 </head>
 

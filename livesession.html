@@ -30,14 +30,16 @@
     <script src="gn-i18n.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
+    <link rel="stylesheet" href="styles/colors.css">
     <style>
-        :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
+        :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: var(--shell-background); --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        html { background-color: var(--shell-background); }
+        body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; margin-bottom: 20px; }
         /* Top-card (same style used on index.html / settings) */
-        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
-        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
+        .top-card { position: static; background: transparent; color: var(--text-main-color); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: none; padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: var(--shell-background); z-index: 1100; pointer-events: none; }
         .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
         .app-title-compact, .top-title { margin: 12px 0; }
         .page-content { padding: 16px; padding-top: 12px; }
@@ -49,13 +51,13 @@
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        .card { background-color: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         .view-content { padding: 12px 15px 20px 15px; }
         select, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         
         .exercise-list { margin-top: 10px; }
         .exercise-item { 
-            background: var(--card); 
+            background-color: var(--card-background); 
             padding: 15px; 
             border-radius: 12px; 
             margin-bottom: 10px; 
@@ -84,8 +86,8 @@
         /* Hide delete/remove action while reordering to avoid accidental deletes */
         .exercise-list.reorder-mode .remove-ex-btn { display: none !important; }
         .reorder-btn .label { font-weight: 800; color: var(--text-dim); font-size: 0.95rem; }
-        .reorder-btn.active { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-        .reorder-btn.active .label { color: #fff; }
+        .reorder-btn.active { background: var(--accent-color); color: var(--text-on-accent-color); box-shadow: 0 6px 18px rgba(0,0,0,0.2); }
+        .reorder-btn.active .label { color: var(--text-on-accent-color); }
         .reorder-btn:focus { outline: 2px solid rgba(59,130,246,0.12); outline-offset: 2px; }
         .exercise-item.placeholder { border: 2px dashed rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
         .dragging { position: fixed; z-index: 1000; pointer-events: none; transform: scale(1.02); box-shadow: 0 10px 30px rgba(0,0,0,0.4); opacity: 0.98; border-radius: 12px; }
@@ -95,14 +97,13 @@
         input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); }
 
         .start-btn { 
-            background: var(--primary-grad); 
-            color: white; 
+            background: var(--accent-color); 
+            color: var(--text-on-accent-color); 
             border: none; 
             font-weight: bold; 
             cursor: pointer; 
             margin-top: 20px; 
             display: none;
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
         }
 
         .player-card { text-align: center; padding-top: 12px; }
@@ -129,12 +130,12 @@
         .ex-title-group { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         /* exercise title removed per request */
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .header-timer { display: flex; align-items: center; gap: 8px; background: linear-gradient(90deg, rgba(96,165,250,0.12), rgba(37,99,235,0.06)); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(59,130,246,0.12); cursor: pointer; color: #0f172a; }
-        .timer-val { font-size: 1.2rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+        .header-timer { display: flex; align-items: center; gap: 8px; background: var(--text-main-color); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; color: var(--text-on-accent-color); }
+        .timer-val { font-size: 1.2rem; font-weight: 800; color: var(--text-on-accent-color); font-variant-numeric: tabular-nums; }
         .timer-warning { color: var(--danger); animation: timer-blink 1s steps(2, start) infinite; }
         @keyframes timer-blink { 50% { opacity: 0; } }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
-        .progress-bar { height: 100%; background: var(--primary-grad); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-bar { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         /* Exercise progress graph (balls and connectors) */
         .exercise-graph { display:flex; gap:8px; align-items:center; justify-content:center; padding-top:8px; padding-left:16px; padding-right:16px; box-sizing:border-box; overflow:hidden; }
         .exercise-node { width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#0b1220; background:#1e293b; border:2px solid rgba(255,255,255,0.04); cursor:pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4); flex-shrink:0; }
@@ -154,14 +155,14 @@
         .timer-reset { background: none; border: none; color: inherit; cursor: pointer; padding: 0; display: flex; align-items: center; transition: color 0.2s; width: auto !important; }
         .timer-reset:active { color: var(--primary); }
 
-        .resume-card { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 16px; margin-bottom: 20px; }
-        .resume-title { color: var(--primary); font-weight: bold; margin-bottom: 10px; display: block; font-size: 0.9rem; }
+        .resume-card { background: color-mix(in srgb, var(--accent-color) 25%, rgba(255,255,255,0.15)); border: 1px solid var(--accent-color); padding: 15px; border-radius: 16px; margin-bottom: 20px; }
+        .resume-title { color: #ffffff; font-weight: bold; margin-bottom: 10px; display: block; font-size: clamp(1rem, 2vw, 1.1rem); }
 
         .set-row { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 10px; align-items: center; padding: 12px; border-radius: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.03); border: 1px solid transparent; transition: all 0.2s; }
         .set-row.completed { background: rgba(16, 185, 129, 0.1); border-color: var(--success); }
-        .set-row.skipped { background: rgba(255,255,255,0.05); border-color: #475569; opacity: 0.5; }
-        .set-row.active { background: rgba(59, 130, 246, 0.15); border-color: var(--primary); transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { border-color: var(--primary); } 50% { border-color: #60a5fa; } 100% { border-color: var(--primary); } }
+        .set-row.skipped { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); opacity: 1; }
+        .set-row.active { background: rgba(255, 255, 255, 0.35); border-color: rgba(255, 255, 255, 0.6); transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.2); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { border-color: rgba(255, 255, 255, 0.6); } 50% { border-color: rgba(255, 255, 255, 0.3); } 100% { border-color: rgba(255, 255, 255, 0.6); } }
         .set-row input { width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; text-align: center; font-size: 0.88rem; box-sizing: border-box; background: #000; color: white; }
         .set-label { font-weight: bold; color: var(--text-dim); font-size: 0.62rem; text-transform:uppercase; }
         .input-field-label { font-size: 0.56rem; color: var(--text-dim); font-weight:700; text-transform:uppercase; display:block; }
@@ -207,7 +208,7 @@
         .BottomActionBar .ba-center{display:flex;gap:20px;flex:1;align-items:center;justify-content:center;position:relative;left:auto;transform:none}
         .BottomActionBar .confirm{width:56px;height:56px;border-radius:14px;background:linear-gradient(90deg,var(--primary),#2563eb);border:none;color:white;font-size:22px;display:flex;align-items:center;justify-content:center}
         /* Play button inside bottom bar: center and wrap to its title */
-        .BottomActionBar #activateExBtn{display:none;box-sizing:border-box;display:inline-flex;height:56px;padding:0 28px;border-radius:14px;font-weight:800;background:var(--primary-grad);color:#fff;flex:0 0 auto;width:auto;min-width:140px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;align-items:center;justify-content:center;font-size:16px;align-self:center;line-height:1;margin:0}
+        .BottomActionBar #activateExBtn{display:none;box-sizing:border-box;display:inline-flex;height:56px;padding:0 28px;border-radius:14px;font-weight:800;background:var(--accent-color);color:var(--text-on-accent-color);flex:0 0 auto;width:auto;min-width:140px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;align-items:center;justify-content:center;font-size:16px;align-self:center;line-height:1;margin:0}
         .icon-btn {
             width: 56px;
             height: 56px;
@@ -227,8 +228,8 @@
         }
         .icon-btn:active { transform: scale(0.92); box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
         .icon-btn.prev { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim); }
-        .icon-btn.skip { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.18); }
-        .icon-btn.next { background: var(--primary-grad); }
+        .icon-btn.skip { background: var(--danger); color: #fff; border: none; }
+        .icon-btn.next { background: var(--success); color: #fff; }
 
         /* Ensure SVGs inside buttons are centered and sized consistently */
         .icon-btn svg { width: 20px; height: 20px; display: block; }
@@ -251,7 +252,7 @@
         .nav-ex-btn:disabled { opacity: 0.2; cursor: not-allowed; }
         .nav-ex-btn:active:not(:disabled) { transform: scale(0.8); color: var(--text); }
 
-        .finish-btn { background: var(--success); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .finish-btn { background: var(--accent-color); color: var(--text-on-accent-color); border: none; font-weight: bold; cursor: pointer; margin-top: 20px; }
         .remove-ex-btn { background: transparent; border: none; color: var(--danger); display: inline-flex; align-items: center; padding: 6px; border-radius: 8px; cursor: pointer; }
         .remove-ex-btn svg { display: block; }
         
@@ -273,7 +274,7 @@
               Ensure the finished view fits the viewport without scrolling. */
         /* Let the finished view fill the viewport; image should grow to available space above content */
         /* Fix finished view to the viewport so it always fills available space */
-        #finishedView { display: flex; flex-direction: column; position: fixed; inset: 0; padding: 0; margin: 0; box-sizing: border-box; overflow: hidden; z-index: 1200; }
+        #finishedView { display: flex; flex-direction: column; position: fixed; inset: 0; padding: 0; margin: 0; box-sizing: border-box; overflow: hidden; z-index: 1200; background: var(--shell-background); }
         /* Confetti overlay that appears when a streak record is about to fall */
         #streakConfetti {
             position: absolute;
@@ -318,7 +319,6 @@
         .finished-illustration-wrap {
             position: absolute;
             inset: 0;
-            background: var(--bg);
             display: flex;
             align-items: flex-start;
             justify-content: center;
@@ -360,7 +360,7 @@
             font-weight: 900;
             letter-spacing: -1px;
             text-align: center;
-            background: var(--primary-grad);
+            background: linear-gradient(120deg, var(--accent-color), color-mix(in srgb, var(--accent-color) 60%, #fff 40%));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -410,29 +410,6 @@
             text-align: center;
         }
 
-        /* New top-positioned large title for finished view */
-        .finished-top { display: none !important; }
-        /* Remove the finished top-card/topbar entirely (don't render space) */
-        .finished-top-card { display: none !important; }
-        /* Top-card variant for finished view: reuse top-card visual style but positioned inside finishedView */
-        .finished-top-card {
-            position: static; /* keep it in flow so it pushes content down */
-            width: 100%;
-            box-sizing: border-box;
-            /* Use the app primary gradient so the blue background extends under the status bar */
-            background: var(--primary-grad);
-            color: #ffffff;
-            border-bottom-left-radius: 20px;
-            border-bottom-right-radius: 20px;
-            box-shadow: 0 6px 16px rgba(2,6,23,0.06);
-            /* Pull the background up into the safe-area so the color fills behind the status bar */
-            margin-top: calc(-1 * env(safe-area-inset-top, 0px));
-            padding-top: calc(10px + env(safe-area-inset-top));
-            z-index: 3;
-        }
-        .finished-top-card .top-card-inner { padding-bottom: 6px; }
-        .finished-top-card .topbar { padding: 10px 16px; display:flex; align-items:center; justify-content:center; }
-        .finished-top-card h1 { margin: 0; font-weight: 900; line-height: 1; font-size: clamp(2rem, 4.5vw, 2.4rem); background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.6px; text-transform: uppercase; text-align: center; }
         .finished-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; margin:16px 0; align-items:stretch; width:100%; box-sizing:border-box; }
         .stat-card { background: rgba(255,255,255,0.03); border-radius:12px; padding:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:88px; }
         .stat-label { font-size:0.78rem; color:var(--text-dim); font-weight:800; text-transform:uppercase; }
@@ -486,8 +463,8 @@
         /* Slight optical nudge for symbol-based nodes to match numeric centering */
         .exercise-node.completed .exercise-node-label,
         .exercise-node.skipped .exercise-node-label { transform: translateX(0.6px); }
-        .exercise-node.completed { background:linear-gradient(90deg,var(--primary),#2563eb); color:white; border-color:transparent; }
-        .exercise-node.skipped { background: rgba(239,68,68,0.14); color:#ef4444; border-color: rgba(239,68,68,0.2); }
+        .exercise-node.completed { background: var(--success); color:white; border-color: transparent; }
+        .exercise-node.skipped { background: var(--danger); color: #ffffff; border-color: transparent; }
         .exercise-node.active { 
             /* stronger solid white ring for the viewed exercise */
             box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 0 3px rgba(255,255,255,0.98);
@@ -519,7 +496,7 @@
             <div id="resumeCard" class="resume-card" style="display: none;">
                 <span class="resume-title" data-i18n="resume_unfinished"></span>
                 <div style="display:flex; gap:10px">
-                    <button id="resumeContinueBtn" onclick="resumeSession()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2" data-i18n="resume_continue"></button>
+                    <button id="resumeContinueBtn" onclick="resumeSession()" style="background:var(--accent-color); color:var(--text-on-accent-color); border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:2" data-i18n="resume_continue"></button>
                     <button id="resumeDiscardBtn" onclick="discardSession()" style="background:white; color:#ef4444; border:1px solid #fee2e2; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; flex:1" data-i18n="resume_discard"></button>
                 </div>
             </div>
@@ -553,7 +530,7 @@
             <div class="top-card-inner">
                 <div class="topbar">
                     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                        <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); location.reload();" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
+                        <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); location.reload();" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;">
                             <span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span>
                         </a>
                         <div style="flex:1;min-width:0;">
@@ -628,12 +605,6 @@
             max-width: 88%;
             height: auto;
         }
-        .finished-top-card {
-            padding-top: 12px;
-            padding-top: constant(safe-area-inset-top);
-            padding-top: env(safe-area-inset-top);
-            box-sizing: border-box;
-        }
         #saveRoutineOpt {
             display: none;
             flex-direction: column;
@@ -696,15 +667,6 @@
                 </div>
             </div>
             <div id="streakConfetti" aria-hidden="true"></div>
-            <div class="top-card finished-top-card">
-                <div class="top-card-inner">
-                    <div class="topbar">
-                        <div style="flex:1;min-width:0; text-align:center;">
-                            <h2 class="app-title-compact" data-i18n="routine_done"></h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
                 <div class="finished-content">
                     <div class="finished-message" aria-live="polite"></div>
                 </div>
@@ -1319,9 +1281,7 @@
                     if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
                 }
 
-                const details = typeof item === 'object' 
-                    ? `<br><small>${Array.isArray(item.sets) ? item.sets.length : item.sets} ${GN_I18N.t('history_sets')}${!Array.isArray(item.sets) ? ` x ${item.reps} ${GN_I18N.t('history_reps')} @ ${item.weight}${GN_I18N.t('history_fmt_kg_suffix')}` : ''}</small>` 
-                    : ''; 
+                const details = '';
 
                 const displayName = (lang === 'pt' && ex.namePT) ? ex.namePT : ex.name;
                 const div = document.createElement('div');

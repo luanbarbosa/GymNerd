@@ -22,22 +22,24 @@
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: var(--shell-background); --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
+        html { background-color: var(--shell-background); }
+        body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         /* Top-card (same style used on index.html) */
-        .top-card { position: static; background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%); color: #0f172a; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 6px; box-shadow: 0 6px 16px rgba(2,6,23,0.06); padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
-        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: #ffffff; z-index: 1100; pointer-events: none; }
-        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
+        .top-card { position: static; background: transparent; color: var(--text-main-color); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 10px 16px 8px; box-shadow: none; padding-top: calc(10px + constant(safe-area-inset-top)); padding-top: calc(10px + env(safe-area-inset-top)); }
+        .main-content > .top-card + * { margin-top: 8px !important; }
+        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: var(--shell-background); z-index: 1100; pointer-events: none; }
+        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding-bottom: 2px; }
         .app-title-compact, .top-title { margin: 20px 0; }
-        .page-content { padding: 16px; padding-top: 8px; }
+        .page-content { padding: 16px; padding-top: 0; }
         .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
         #topbar-title { flex: 1; min-width: 0; display:flex; align-items:center; }
         
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
             /* Ensure back button icons are vertically centered inside top bars */
             .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-        .card { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
+        .card { background-color: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
         .card h2 { margin-top: 0; margin-bottom: 15px; font-size: 1.2rem; }
         select, input, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         /* Make native date picker calendar icon white on WebKit browsers (Safari, Chrome) */
@@ -45,13 +47,13 @@
             filter: invert(1) brightness(2);
             cursor: pointer;
         }
-        .exercise-row { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); display: grid; grid-template-columns: 50px 1fr 30px; gap: 15px; align-items: center; }
+        .exercise-row { background-color: var(--card-background); padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); display: grid; grid-template-columns: 50px 1fr 30px; gap: 15px; align-items: center; }
         .ex-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #fff; }
         .log-entry img { background: #fff; }
         .input-pair { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; grid-column: span 3; }
         .input-pair input { background: #000; }
         .save-session { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
-        button.primary { background: var(--primary-grad); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button.primary { background: var(--accent-color); color: var(--text-on-accent-color); border: none; font-weight: bold; cursor: pointer; box-shadow: none; }
         .save-session.success { background: var(--success); }
 
         details.history-section, .history-section { background: transparent; border-radius: 0; border: none; margin-top: 12px; }
@@ -62,7 +64,7 @@
         details.month-group { margin-bottom: 15px; }
         summary.month-header { font-weight: 700; font-size: 0.85rem; color: var(--text-dim); cursor: pointer; padding: 8px 0; list-style: none; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
 
-        details.history-group { background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin: 0 0 10px; overflow: hidden; }
+        details.history-group { background: var(--card-background); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin: 0 0 10px; overflow: hidden; }
         #history .history-group:first-child { margin-top: 16px; }
         summary.date-header { padding: 16px 15px; font-size: 0.85rem; font-weight: 800; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         .log-entry { padding: 14px 15px; border-bottom: 1px solid rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: flex-start; font-size: 0.85rem; color: var(--text-dim); }
@@ -73,7 +75,17 @@
         .delete-btn svg { width:18px; height:18px; }
         .edit-btn { background:none; border:none; color:var(--primary); cursor:pointer; padding:8px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; width:40px; height:40px; touch-action:manipulation; opacity:0.95 }
         .edit-btn svg { width:18px; height:18px; }
-        .date-edit-btn { background:none; border:1px solid rgba(255,255,255,0.06); color:var(--primary); padding:8px 12px; border-radius:10px; cursor:pointer; }
+        .date-edit-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.06);
+            color: var(--text-dim);
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            min-width: 0;
+            font-weight: 400;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
         .date-header .delete-btn { margin-left:12px; margin-right:6px; opacity:0.8 }
         .log-entry { gap: 8px; }
         .date-delete-btn { background:none; border:1px solid rgba(255,255,255,0.06); color:var(--danger); padding:8px 12px; border-radius:10px; cursor:pointer; }

@@ -263,8 +263,9 @@
 					const mainText = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode') || GN_I18N.t('demo_mode_main') || 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.') : 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.';
 					const smallText = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode_warning') || GN_I18N.t('demo_mode_small') || 'Sign in to enable cloud sync and restore from Google Drive.') : 'Sign in to enable cloud sync and restore from Google Drive.';
 					b.innerHTML = mainText + '<small>' + smallText + '</small>';
-					const topInner = document.querySelector('.top-card-inner');
-					if (topInner) topInner.appendChild(b);
+					const demoRoot = document.getElementById('home-demo-root');
+					const targetContainer = demoRoot || document.querySelector('.top-card');
+					if (targetContainer) targetContainer.appendChild(b);
 				} else {
 					// keep default display (controlled by CSS)
 				}
@@ -321,21 +322,27 @@
 	</script>
 	<link rel="stylesheet" href="styles/app-titles.css">
 	<link rel="stylesheet" href="styles/mode-support.css">
+	<link rel="stylesheet" href="styles/colors.css">
+	<link rel="stylesheet" href="styles/profile-card.css">
 	<style>
 		:root {
-			--primary: #3b82f6;
-			--primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+			--primary: var(--accent-color);
+			--primary-grad: linear-gradient(135deg, var(--accent-color) 0%, rgba(242, 194, 75, 0.6) 70%, rgba(242, 194, 75, 0.35) 100%);
 			--bg: #101729;
-			--card: #1e293b;
+			--card: var(--card-background, #1e293b);
 			--text: #f8fafc;
 			--text-dim: #94a3b8;
 			--success: #00e676;
 			--danger: #ff5252;
 		}
 
+		html {
+			background-color: var(--shell-background);
+		}
+
 		body {
 			font-family: 'Inter', system-ui, sans-serif;
-			background: var(--bg);
+			background: var(--shell-background);
 			color: var(--text);
 			max-width: 500px;
 			margin: 0 auto;
@@ -359,7 +366,7 @@
 		.main-content {
 			padding: 0;
 			display: none;
-			margin-top: 12px;
+			margin-top: 0;
 		}
 
 		h1 {
@@ -387,14 +394,18 @@
 		/* Use safe-area insets so on edge-to-edge devices the status bar area stays white */
 		.top-card {
 			position: static;
-			background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f3f4f6 100%);
-			color: #0f172a;
+			background: transparent;
+			color: var(--text-main-color);
 			border-bottom-left-radius: 20px;
 			border-bottom-right-radius: 20px;
-			padding: 10px 16px 20px;
-			box-shadow: 0 6px 16px rgba(2, 6, 23, 0.06);
+			padding: 10px 16px 8px;
+			box-shadow: none;
 			padding-top: calc(10px + constant(safe-area-inset-top));
 			padding-top: calc(10px + env(safe-area-inset-top));
+		}
+
+		.main-content > .top-card + * {
+			margin-top: 8px !important;
 		}
 
 		/* Full-width safe-area overlay so mobile Safari shows white behind status bar */
@@ -406,7 +417,7 @@
 			right: 0;
 			height: constant(safe-area-inset-top);
 			height: env(safe-area-inset-top);
-			background: #ffffff;
+			background: var(--shell-background);
 			z-index: 1100;
 			pointer-events: none;
 		}
@@ -417,15 +428,6 @@
 			flex-direction: column;
 			align-items: flex-start;
 			gap: 4px;
-		}
-
-		/* Ensure the home user container fills the top-card width so child
-		   elements (avatar + texts + spacer) can use available space. */
-		#home-user-main {
-			width: 100%;
-			max-width: none;
-			box-sizing: border-box;
-			display: block;
 		}
 
 		.top-card .topbar {
@@ -456,7 +458,7 @@
 
 		/* Remove bounds for the settings action and make the icon a bit smaller/lighter */
 		.top-card a#topbar-settings {
-			color: var(--bg) !important;
+			color: var(--text-main-color) !important;
 			border: none !important;
 			background: transparent !important;
 			padding: 4px;
@@ -469,70 +471,20 @@
 			stroke-width: 1.4;
 			opacity: 1 !important;
 			display: block;
-			stroke: var(--bg) !important;
+			stroke: var(--text-main-color) !important;
 			fill: none !important;
 			filter: none !important;
 		}
 
 		.top-card a#topbar-settings svg * {
-			stroke: var(--bg) !important;
+			stroke: var(--text-main-color) !important;
 			fill: none !important;
 			stroke-opacity: 1 !important;
 			fill-opacity: 0 !important;
 		}
 
-		.user-card {
-			display: flex;
-			flex-direction: row;
-			align-items: center;
-			justify-content: flex-start;
-			gap: 12px;
-			margin: 8px 0 12px;
-			width: 100%;
-			max-width: 460px;
-		}
-
-		.user-avatar {
-			width: 96px;
-			height: 96px;
-			border-radius: 12px;
-			object-fit: cover;
-			border: 3px solid rgba(37, 99, 235, 0.14);
-			box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
-		}
-
-		.user-line {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			gap: 10px;
-		}
-
-		/* Same (larger) font-size for both greeting and name, styles differ */
-		.user-greeting {
-			font-weight: 600;
-			font-size: 1.05rem;
-			color: var(--text-dim);
-			margin: 0;
-			line-height: 1;
-		}
-
-		.user-name {
-			font-weight: 900;
-			font-size: 2.8rem;
-			letter-spacing: -0.6px;
-			text-align: left;
-			background: var(--primary-grad);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			filter: drop-shadow(0 0 18px rgba(37, 99, 235, 0.32));
-			margin: 0;
-			line-height: 1;
-		}
-
-		/* motivational-text removed */
 		.nav-card {
-			background: var(--card);
+			background-color: var(--card-background);
 			padding: 24px;
 			border-radius: 16px;
 			text-decoration: none;
@@ -550,7 +502,7 @@
 		}
 
 		details {
-			background: var(--card);
+			background-color: var(--card-background);
 			border-radius: 16px;
 			margin-top: 40px;
 			border: 1px solid rgba(255, 255, 255, 0.05);
@@ -677,11 +629,12 @@
 		/* Demo mode banner */
 		#demo-banner {
 			display: none;
-			margin: 4px 20px;
+			margin: 0;
+			width: 100%;
 			padding: 10px 12px;
 			border-radius: 12px;
 			background: linear-gradient(90deg, #e6f0ff, #dbeafe);
-			color: #0f172a;
+			color: var(--shell-background);
 			font-weight: 700;
 			text-align: center;
 			box-shadow: none;
@@ -711,7 +664,7 @@
 			max-width: none;
 			margin: 12px 0;
 			box-sizing: border-box;
-			background: var(--card);
+			background-color: var(--card-background);
 			color: var(--text);
 			padding: 14px;
 			border-radius: 12px;
@@ -829,7 +782,7 @@
 			box-sizing: border-box;
 			padding: 16px;
 			border-radius: 12px;
-			background: var(--card);
+			background-color: var(--card-background);
 			border: 1px solid rgba(255, 255, 255, 0.05);
 			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
 			display: flex;
@@ -902,8 +855,8 @@
 			display: block;
 			height: 100%;
 			border-radius: inherit;
-			background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%);
-			box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+			background: linear-gradient(90deg, var(--accent-color) 0%, rgba(242, 194, 75, 0.6) 100%);
+			box-shadow: 0 0 12px rgba(242, 194, 75, 0.45);
 			position: relative;
 			z-index: 1;
 			width: var(--fill, 0%);
@@ -1021,20 +974,20 @@
 				</div>
 				<div id="topbar-actions">
 					<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure"
-						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;margin-right:8px;">
-						<span class="material-symbols-outlined" aria-hidden="true"
-							style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">square_foot</span>
-					</a>
-					<a id="topbar-settings" href="settings.html" aria-label="Settings"
-						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--bg);text-decoration:none;">
-						<span class="material-symbols-outlined" aria-hidden="true"
-							style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">settings</span>
-					</a>
+						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;margin-right:8px;">
+							<span class="material-symbols-outlined" aria-hidden="true"
+								style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">square_foot</span>
+						</a>
+						<a id="topbar-settings" href="settings.html" aria-label="Settings"
+							style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;">
+								<span class="material-symbols-outlined" aria-hidden="true"
+									style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">settings</span>
+							</a>
+					</div>
 				</div>
-			</div>
-			<div class="top-card-inner">
-				<div id="home-user-main"></div>
-				<!-- Demo mode banner (shown when no session token present) -->
+		</div>
+		<div style="padding: 0 20px;">
+			<div id="home-demo-root">
 				<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
 					Demo Mode — you are using the app without signing in. Your data will be stored locally only.
 					<small>Sign in to enable cloud sync and restore from Google Drive.</small>
@@ -1151,71 +1104,7 @@
 					if (s) s.setAttribute('aria-label', (typeof GN_I18N !== 'undefined') ? GN_I18N.t('menu_settings') : 'Settings');
 				} catch (e) { }
 			}
-			function renderMainUser() {
-				const container = document.getElementById('home-user-main');
-				if (!container) return;
-				let user = null;
-				try {
-					if (typeof getGoogleUser === 'function') user = getGoogleUser();
-					else {
-						const u = localStorage.getItem('google_user'); if (u) user = JSON.parse(u);
-					}
-				} catch (e) { user = null; }
-
-				const name = user ? (user.name || user.email || '') : '';
-				let firstName = '';
-				if (name) {
-					if (name.includes('@')) {
-						firstName = name.split('@')[0].split(/[.\-_+]/)[0];
-					} else {
-						firstName = name.trim().split(/\s+/)[0];
-					}
-				}
-				const avatar = user ? (user.picture || '') : '';
-				const origin = (window && window.location && window.location.origin && window.location.origin !== 'null' && !String(window.location.origin).startsWith('file:')) ? window.location.origin : '';
-				const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
-				const fallbackAvatar = origin ? (origin + basePath + 'icons/icon-512.svg') : 'icons/icon-512.svg';
-				const effectiveAvatar = (window && window.DEMO_MODE) ? fallbackAvatar : (avatar || fallbackAvatar);
-				if (window && window.DEMO_MODE) try { console.info('[DemoMode] using demo avatar', fallbackAvatar); } catch (e) { }
-				// Time-of-day localized greeting
-				(function () {
-					try {
-						const hour = (new Date()).getHours();
-						let key = 'greeting_morning';
-						if (hour >= 12 && hour < 18) key = 'greeting_afternoon';
-						else if (hour >= 18 && hour < 22) key = 'greeting_evening';
-						else if (hour >= 22 || hour < 5) key = 'greeting_evening';
-						const defaultMap = {
-							morning: 'Good morning',
-							afternoon: 'Good afternoon',
-							evening: 'Good evening'
-						};
-						if (typeof GN_I18N !== 'undefined' && GN_I18N.t) {
-							window.__computed_greeting = GN_I18N.t(key) || defaultMap[key.split('_')[1]] || defaultMap.morning;
-						} else {
-							// Fallback by locale
-							const isPt = (navigator.language || '').toLowerCase().startsWith('pt');
-							if (key === 'greeting_morning') window.__computed_greeting = isPt ? 'Bom dia' : 'Good morning';
-							else if (key === 'greeting_afternoon') window.__computed_greeting = isPt ? 'Boa tarde' : 'Good afternoon';
-							else window.__computed_greeting = isPt ? 'Boa noite' : 'Good evening';
-						}
-					} catch (e) { window.__computed_greeting = 'Hi'; }
-				})();
-				const greeting = window.__computed_greeting || 'Hi';
-
-				container.innerHTML = `
-				<div class="user-card">
-					<img src="${effectiveAvatar}" alt="avatar" class="user-avatar" onerror="this.onerror=null;this.src='${fallbackAvatar}'" />
-					<div style="display:flex; flex-direction:column; align-items:flex-start; gap:0;">
-						<div class="user-greeting">${greeting}</div>
-						<div class="user-name">${firstName || (window.DEMO_MODE ? 'Maria' : 'GymNerd')}</div>
-					</div>
-				</div>
-			`;
-			}
-
 			try { renderCompactApp(); } catch (e) { }
-			try { renderMainUser(); } catch (e) { }
 			try { GN_I18N && GN_I18N.applyTranslations && GN_I18N.applyTranslations(document.body); } catch (e) { }
 			try {
 				if (typeof renderWeekDots === 'function') {
@@ -1305,11 +1194,12 @@
 						// PT locale often returns 'seg.' etc.; normalize to 'Seg'/'Ter'... without dot.
 						let weekdayShort = '';
 						if (locale === 'pt') {
-							const ptShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+							const ptShort = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 							weekdayShort = ptShort[d.getDay()];
 						} else {
 							weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, '');
 							if (weekdayShort.length > 3) weekdayShort = weekdayShort.slice(0, 3);
+							weekdayShort = weekdayShort.toUpperCase();
 						}
 						const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
 
@@ -1746,7 +1636,6 @@
 				const HOME_REFRESH_FLAG = 'home_force_refresh';
 				async function refreshHomeData() {
 					try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { }
-					try { renderMainUser(); } catch (e) { }
 					let historyCount = 0;
 					try { historyCount = await db.history.count(); } catch (e) { }
 					updateDataDisclaimerVisibility(historyCount);
