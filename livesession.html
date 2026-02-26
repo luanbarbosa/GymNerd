@@ -131,9 +131,13 @@
         .ex-title-group { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         /* exercise title removed per request */
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .header-timer { display: flex; align-items: center; gap: 8px; background: var(--text-main-color); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; color: var(--text-on-accent-color); }
-        .timer-val { font-size: 1.2rem; font-weight: 800; color: var(--text-on-accent-color); font-variant-numeric: tabular-nums; }
+        .header-timer { display: inline-flex; align-items: center; gap: 8px; background: var(--text-main-color); padding-block: 4px; padding-inline: 12px; border-radius: 0 10px 10px 0; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; color: var(--text-on-accent-color); box-sizing: border-box; min-height: 36px; }
+        .timer-val { font-size: 0.95rem; font-weight: 800; color: var(--text-on-accent-color); font-variant-numeric: tabular-nums; }
         .timer-warning { color: var(--danger); animation: timer-blink 1s steps(2, start) infinite; }
+        .workout-timer { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; letter-spacing: 0.02em; background: var(--text-main-color); color: var(--text-on-accent-color); padding-block: 4px; padding-inline: 12px; border-radius: 10px 0 0 10px; border: 1px solid rgba(255,255,255,0.3); border-right: none; box-sizing: border-box; min-height: 36px; }
+        .workout-timer-label, .header-timer .set-timer-label { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; font-weight: 600; opacity: 0.9; }
+        .workout-timer-value { font-size: 0.95rem; font-weight: 400; font-variant-numeric: tabular-nums; }
+        .timer-pair { display: inline-flex; align-items: center; gap: 4px; }
         @keyframes timer-blink { 50% { opacity: 0; } }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
         .progress-bar { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -206,10 +210,12 @@
             padding-bottom: 52px;
         }
         .BottomActionBar .ba-left{display:none}
-        .BottomActionBar .ba-center{display:flex;gap:20px;flex:1;align-items:center;justify-content:center;position:relative;left:auto;transform:none}
+        .BottomActionBar .ba-center{display:flex;gap:20px;flex:none;width:100%;align-items:center;justify-content:center;position:relative;left:auto;transform:none}
         .BottomActionBar .confirm{width:56px;height:56px;border-radius:14px;background:linear-gradient(90deg,var(--primary),#2563eb);border:none;color:white;font-size:22px;display:flex;align-items:center;justify-content:center}
         /* Play button inside bottom bar: center and wrap to its title */
         .BottomActionBar #activateExBtn{display:none;box-sizing:border-box;display:inline-flex;height:56px;padding:0 28px;border-radius:14px;font-weight:800;background:var(--accent-color);color:var(--text-on-accent-color);flex:0 0 auto;width:auto;min-width:140px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;align-items:center;justify-content:center;font-size:16px;align-self:center;line-height:1;margin:0}
+        .BottomActionBar { flex-direction: column; }
+        .BottomActionBar .bottom-bar-timer { display:flex; justify-content:center; width:100%; gap:4px; }
         .icon-btn {
             width: 56px;
             height: 56px;
@@ -531,19 +537,23 @@
             <div class="top-card-inner">
                 <div class="topbar">
                     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                        <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); location.reload();" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;">
-                            <span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span>
-                        </a>
-                        <div style="flex:1;min-width:0;">
-                            <h2 id="playerWorkoutTitle" class="app-title-compact"></h2>
+                            <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); location.reload();" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;">
+                                <span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span>
+                            </a>
                         </div>
-                    </div>
-                    <div class="header-timer" onclick="startTimer()">
+                        <div class="timer-pair">
+                            <div class="workout-timer" aria-live="polite">
+                                <span class="workout-timer-label" data-i18n="livesession_workout_timer_label"></span>
+                                <span class="workout-timer-value" id="workoutTimerValue" aria-live="polite">00:00</span>
+                            </div>
+                            <div class="header-timer" onclick="startTimer()">
+                        <span class="set-timer-label" data-i18n="set_timer_label"></span>
                         <div id="setTimer" class="timer-val">00:00</div>
                         <button class="timer-reset">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                         </button>
                     </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -715,6 +725,7 @@
         let viewingIdx = 0;
         let currentWorkoutId = null;
         let timerInterval = null;
+        let workoutTimerInterval = null;
         let timerStartMs = null; // timestamp (ms) when current timer started
         let lastActiveTimerSignature = null;
         let timerMode = 'countup';
@@ -723,10 +734,71 @@
         let routineModified = false;
         let _finishingSession = false;
 
+        function resetSessionMemory() {
+            sessionSets = [];
+            currentIdx = 0;
+            viewingIdx = 0;
+            currentWorkoutId = null;
+            sessionStartMs = null;
+            routineModified = false;
+            lastActiveTimerSignature = null;
+            timerStartMs = null;
+            timerMode = 'countup';
+            timerDurationSeconds = 0;
+        }
+
         function formatTime(s) {
             const minutes = Math.floor(s / 60).toString().padStart(2, '0');
             const seconds = (s % 60).toString().padStart(2, '0');
             return `${minutes}:${seconds}`;
+        }
+
+        function getWorkoutElapsedSeconds() {
+            if (!sessionStartMs) return 0;
+            const elapsedMs = Date.now() - sessionStartMs;
+            return Math.max(0, Math.floor(elapsedMs / 1000));
+        }
+
+        function updateWorkoutTimerDisplay() {
+            try {
+                const timerEl = document.getElementById('workoutTimerValue');
+                if (!timerEl) return;
+                if (!sessionStartMs) {
+                    timerEl.innerText = '00:00';
+                    return;
+                }
+                timerEl.innerText = formatTime(getWorkoutElapsedSeconds());
+            } catch (e) { /* ignore */ }
+        }
+
+        function startWorkoutTimer() {
+            if (!sessionStartMs) {
+                resetWorkoutTimerDisplay();
+                return;
+            }
+            stopWorkoutTimer();
+            updateWorkoutTimerDisplay();
+            workoutTimerInterval = setInterval(updateWorkoutTimerDisplay, 1000);
+        }
+
+        function stopWorkoutTimer() {
+            if (workoutTimerInterval) {
+                clearInterval(workoutTimerInterval);
+                workoutTimerInterval = null;
+            }
+        }
+
+        function resetWorkoutTimerDisplay() {
+            const timerEl = document.getElementById('workoutTimerValue');
+            if (timerEl) timerEl.innerText = '00:00';
+        }
+
+        function resetSetTimerDisplay() {
+            const timerEl = document.getElementById('setTimer');
+            if (timerEl) {
+                timerEl.innerText = '00:00';
+                timerEl.classList.remove('timer-warning');
+            }
         }
 
         /* Use GN_I18N.getLang() from gn-i18n.js for language detection. */
@@ -793,7 +865,10 @@
 
         // Ensure display refreshes immediately when page visibility changes
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) updateTimerDisplay();
+            if (!document.hidden) {
+                updateTimerDisplay();
+                updateWorkoutTimerDisplay();
+            }
         });
 
         // Ensure the fullscreen illustration doesn't extend under the constrained content
@@ -1151,17 +1226,24 @@
                 const skipSetBtn = document.querySelector('.icon-btn.skip'); if (skipSetBtn) skipSetBtn.title = GN_I18N.t('skip_set');
                 const nextSetBtn = document.getElementById('nextBtn'); if (nextSetBtn) nextSetBtn.title = GN_I18N.t('complete_set');
             } catch(e){}
-            checkActiveSession();
+            syncResumeCardVisibility();
         }
 
-        function checkActiveSession() {
-            const saved = localStorage.getItem('gymNerd_activeSession');
-            if (saved) {
-                document.getElementById('resumeCard').style.display = 'block';
+        function syncResumeCardVisibility() {
+            try {
+                const resumeCard = document.getElementById('resumeCard');
+                if (!resumeCard) return;
+                const saved = localStorage.getItem('gymNerd_activeSession');
+                resumeCard.style.display = saved ? 'block' : 'none';
+            } catch (e) {
+                console.warn('syncResumeCardVisibility failed', e);
             }
         }
 
         function saveSessionState() {
+            if (!currentWorkoutId || !sessionSets || sessionSets.length === 0) {
+                return;
+            }
             // compute elapsed session time so unfinished sessions can be resumed with correct duration
             const sessionElapsedMs = sessionStartMs ? (Date.now() - sessionStartMs) : 0;
             const state = {
@@ -1177,11 +1259,18 @@
 
         function clearSessionState() {
             localStorage.removeItem('gymNerd_activeSession');
+            stopTimer();
+            resetSetTimerDisplay();
+            stopWorkoutTimer();
+            resetWorkoutTimerDisplay();
+            resetSessionMemory();
+            syncResumeCardVisibility();
         }
 
         async function resumeSession() {
             const saved = localStorage.getItem('gymNerd_activeSession');
             if (!saved) return;
+            stopWorkoutTimer();
             const state = JSON.parse(saved);
             sessionSets = state.sessionSets;
             currentIdx = state.currentIdx;
@@ -1191,21 +1280,13 @@
 
             // restore session elapsed ms so duration continues from where the user left off
             try {
-                const elapsed = state.sessionElapsedMs || 0;
-                if (elapsed && typeof elapsed === 'number') {
-                    sessionStartMs = Date.now() - elapsed;
-                } else {
-                    sessionStartMs = null;
-                }
+                const elapsed = Number.isFinite(state.sessionElapsedMs) ? state.sessionElapsedMs : 0;
+                sessionStartMs = Date.now() - Math.max(0, elapsed);
             } catch (e) {
                 sessionStartMs = null;
             }
 
             const workout = await db.routines.get(currentWorkoutId);
-            if (workout) {
-                const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-                document.getElementById('playerWorkoutTitle').innerText = (lang.startsWith('pt') && workout.namePT) ? workout.namePT : workout.name;
-            }
 
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
@@ -1230,6 +1311,7 @@
                     } catch (err) {
                         console.warn('Could not acquire wake resources or start silent audio:', err);
                     }
+                    startWorkoutTimer();
                     renderSet();
                 })();
         }
@@ -1239,7 +1321,7 @@
                 clearSessionState();
                 // Stop any wake resources (wake lock or silent audio) before leaving
                 try { await releaseWakeResources(); } catch (e) { console.warn('Error releasing wake resources', e); }
-                document.getElementById('resumeCard').style.display = 'none';
+                syncResumeCardVisibility();
             }
         }
 
@@ -1624,6 +1706,8 @@
                 }
 
         async function startSession() {
+            stopWorkoutTimer();
+            resetWorkoutTimerDisplay();
             const workoutId = parseInt(document.getElementById('workoutSelect').value);
             currentWorkoutId = workoutId;
             const workout = await db.routines.get(workoutId);
@@ -1642,7 +1726,6 @@
             sessionSets = [];
             lastActiveTimerSignature = null;
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-            document.getElementById('playerWorkoutTitle').innerText = (lang.startsWith('pt') && workout.namePT) ? workout.namePT : workout.name;
 
             let occurrenceId = 0;
             for (const itemDiv of visibleItems) {
@@ -1726,6 +1809,7 @@
                 } catch (err) {
                     console.warn('Could not acquire wake resources:', err);
                 }
+                startWorkoutTimer();
                 renderSet();
             })();
         }
@@ -1848,9 +1932,11 @@
 
         async function renderSet() {
             saveSessionState();
+            updateWorkoutTimerDisplay();
             const activeSet = sessionSets[currentIdx];
             if (!activeSet) {
                 stopTimer();
+                stopWorkoutTimer();
                 lastActiveTimerSignature = null;
             } else {
                 const signature = `${activeSet.occurrenceId}:${activeSet.setNum}`;
@@ -1974,6 +2060,7 @@
             const bottomBarEl = document.getElementById('bottomBar');
             if (allDone) {
                 stopTimer();
+                stopWorkoutTimer();
                 lastActiveTimerSignature = null;
                 if (playerViewEl) playerViewEl.style.display = 'none';
                 if (bottomBarEl) bottomBarEl.style.display = 'none';
@@ -2499,8 +2586,14 @@
             }
         });
         // Clean up when page is hidden or unloaded
-        window.addEventListener('pagehide', () => { try { releaseWakeResources(); } catch(e){} });
-        window.addEventListener('beforeunload', () => { try { releaseWakeResources(); } catch(e){} });
+        window.addEventListener('pagehide', () => {
+            try { saveSessionState(); } catch (e) {}
+            try { releaseWakeResources(); } catch(e){}
+        });
+        window.addEventListener('beforeunload', () => {
+            try { saveSessionState(); } catch (e) {}
+            try { releaseWakeResources(); } catch(e){}
+        });
         </script>
         <script>
         if ('serviceWorker' in navigator) {

@@ -254,6 +254,8 @@
                 choose_routine_placeholder: '-- Choose Routine --',
                 livesession_no_routines: 'You need to create a routine first',
                 start_session: 'Start Session',
+                livesession_workout_timer_label: 'Workout:',
+
                 play_exercise: 'Play this exercise',
                 finish_routine: 'Finish Routine',
                 finished_good_job: 'Good job!',
@@ -275,6 +277,7 @@
                 save_changes_to_routines: 'Save changes to routines',
                 routine_saved: 'Routine saved',
                 reset_timer: 'Reset Timer',
+                set_timer_label: 'Set:',
                 previous_exercise: 'Previous Exercise',
                 next_exercise: 'Next Exercise',
                 previous_set: 'Previous Set',
@@ -547,6 +550,9 @@
                 choose_routine_placeholder: '-- Escolha o Treino --',
                 livesession_no_routines: 'Você precisa criar um treino primeiro',
                 start_session: 'Iniciar Sessão',
+                livesession_workout_timer_label: 'Treino:',
+
+
                 play_exercise: 'Executar este exercício',
                 finish_routine: 'Finalizar Treino',
                 finished_good_job: 'Bom trabalho!',
@@ -568,6 +574,7 @@
                 save_changes_to_routines: 'Salvar alterações nos treinos',
                 routine_saved: 'Treino salvo',
                 reset_timer: 'Redefinir Temporizador',
+                set_timer_label: 'Série:',
                 previous_exercise: 'Exercício Anterior',
                 next_exercise: 'Próximo Exercício',
                 previous_set: 'Série Anterior',
