@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="styles/mode-support.css">
     <link rel="stylesheet" href="styles/colors.css">
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: var(--shell-background); --card: #1e293b; --text: #f8fafc; }
         html { background-color: var(--shell-background); }
         body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width:500px;margin:0 auto;padding:0; }
         .top-card { position: static; background: transparent; color: var(--text-main-color); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: none; padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
@@ -41,8 +41,8 @@
         .page-content { padding: 16px; }
         h1 { margin: 16px 0; font-size:1.6rem; background: linear-gradient(90deg,#60a5fa,#2563eb); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
         .card { background-color: var(--card-background, var(--card)); padding:16px; border-radius:12px; border:1px solid rgba(255,255,255,0.04); }
-        .light-card { background: linear-gradient(180deg,#ffffff 0%, #f3f4f6 100%); color: #0f172a; }
-        .light-card h1, .light-card h2, .light-card h3 { background: none; -webkit-background-clip: unset; -webkit-text-fill-color: initial; color: #0f172a; }
+        .light-card { background: linear-gradient(180deg,#ffffff 0%, #f3f4f6 100%); color: var(--shell-background); }
+        .light-card h1, .light-card h2, .light-card h3 { background: none; -webkit-background-clip: unset; -webkit-text-fill-color: initial; color: var(--shell-background); }
         .light-card p { color: #475569; }
         /* Snackbar (temporary) */
         #snackbar { position: fixed; left: 50%; transform: translateX(-50%) translateY(8px); bottom: 18px; background: rgba(2,6,23,0.88); color: #ffffff; padding: 10px 14px; border-radius: 10px; box-shadow: 0 8px 20px rgba(2,6,23,0.6); opacity: 0; pointer-events: none; transition: opacity 200ms ease, transform 200ms ease; z-index: 9999; font-weight: 700; font-family: system-ui, sans-serif; }
@@ -116,7 +116,7 @@
     .tick .line { width:2px; margin:0 auto; background:#cbd5e1; opacity:0.85; }
     .tick.minor .line { height:16px; opacity:0.5; }
     .tick.medium .line { height:40px; opacity:0.9; }
-    .tick.major .line { height:48px; opacity:1; background:#0f172a; }
+    .tick.major .line { height:48px; opacity:1; background:var(--shell-background); }
     .tick .label { text-align:center; font-size:0.75rem; color:#94a3b8; margin-top:6px; }
     /* Labels row placed below the ruler for legibility */
     .labels-row { display:block; height:32px; padding-top:6px; position:relative; pointer-events:none; overflow:hidden; z-index:2; margin-top:6px; }

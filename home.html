@@ -630,7 +630,7 @@
 			padding: 10px 12px;
 			border-radius: 12px;
 			background: linear-gradient(90deg, #e6f0ff, #dbeafe);
-			color: #0f172a;
+			color: var(--shell-background);
 			font-weight: 700;
 			text-align: center;
 			box-shadow: none;
@@ -1190,11 +1190,12 @@
 						// PT locale often returns 'seg.' etc.; normalize to 'Seg'/'Ter'... without dot.
 						let weekdayShort = '';
 						if (locale === 'pt') {
-							const ptShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+							const ptShort = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 							weekdayShort = ptShort[d.getDay()];
 						} else {
 							weekdayShort = d.toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, '');
 							if (weekdayShort.length > 3) weekdayShort = weekdayShort.slice(0, 3);
+							weekdayShort = weekdayShort.toUpperCase();
 						}
 						const weekdayFull = d.toLocaleDateString(locale, { weekday: 'long' });
 

@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#121212" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.json" />
@@ -21,7 +21,7 @@
             background-color: var(--shell-background);
             padding-top: constant(safe-area-inset-top);
             padding-top: env(safe-area-inset-top);
-            color: #0f172a;
+            color: var(--text-main-color);
         }
 
         .wrap {
@@ -174,13 +174,13 @@
                         if (!document.getElementById('gn-global-loader')) {
                             const el = document.createElement('div');
                             el.id = 'gn-global-loader';
-                            el.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#0f172a;color:white;z-index:2147483647;padding:20px;box-sizing:border-box;';
+                            el.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:var(--shell-background);color:white;z-index:2147483647;padding:20px;box-sizing:border-box;';
                             el.innerHTML = `
                                 <div style="max-width:520px;width:100%;text-align:center">
                                     <div id="gn-global-loader-message" style="font-weight:800;font-size:1.1rem;margin-bottom:16px">Refreshing session...</div>
                 </div>
                                     <div style="display:flex;align-items:center;justify-content:center">
-                                        <div style="width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.12);border-top-color:#3b82f6;animation:gn-spin 1s linear infinite"></div>
+                                        <div style="width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.12);border-top-color:var(--accent-color);animation:gn-spin 1s linear infinite"></div>
                                     </div>
                                 </div>
                             `;

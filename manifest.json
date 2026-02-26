@@ -3,7 +3,7 @@
   "short_name": "GymNerd",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#121212",
   "theme_color": "#ffffff",
   "icons": [
     { "src": "icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" },

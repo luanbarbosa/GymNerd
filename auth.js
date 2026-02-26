@@ -65,10 +65,10 @@
                 // Compute the page background variable and apply it directly to avoid
                 // var() resolution issues in some browsers. Use a very large z-index
                 // and explicit viewport sizing so the overlay fully covers everything.
-                let bgColor = '#0f172a';
+                let bgColor = '#121212';
                 try {
                     const docEl = document.documentElement;
-                    const v = getComputedStyle(docEl).getPropertyValue('--bg');
+                    const v = getComputedStyle(docEl).getPropertyValue('--shell-background');
                     if (v && v.trim()) bgColor = v.trim();
                 } catch (e) {}
                 el.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:' + bgColor + ';color:white;z-index:2147483647;padding:20px;opacity:1;pointer-events:auto;box-sizing:border-box;';
@@ -76,7 +76,7 @@
                     <div style="max-width:520px;width:100%;text-align:center">
                         <div id="gn-global-loader-message" style="font-weight:800;font-size:1.1rem;margin-bottom:16px">Loading...</div>
                         <div style="display:flex;align-items:center;justify-content:center">
-                            <div style="width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.12);border-top-color:#3b82f6;animation:gn-spin 1s linear infinite"></div>
+                            <div style="width:56px;height:56px;border-radius:50%;border:6px solid rgba(255,255,255,0.12);border-top-color:var(--accent-color);animation:gn-spin 1s linear infinite"></div>
                         </div>
                     </div>
                 `;
