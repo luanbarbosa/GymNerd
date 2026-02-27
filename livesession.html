@@ -93,7 +93,7 @@
         .routine-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 0;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -102,39 +102,71 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 0;
             box-sizing: border-box;
         }
+        .routine-entry {
+            background-color: var(--card-background);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0;
+            margin-bottom: 0;
+            overflow: hidden;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .routine-entry:first-child {
+            border-top-left-radius: 14px;
+            border-top-right-radius: 14px;
+        }
+        .routine-entry:last-child {
+            border-bottom-left-radius: 14px;
+            border-bottom-right-radius: 14px;
+        }
+        .routine-entry.open,
+        .routine-entry[open] {
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: none;
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
         .routine-row {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 32px;
             width: 100%;
             max-width: min(100%, 100vw);
             box-sizing: border-box;
-            padding: 14px 16px;
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
-            box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+            padding: 30px 0 0;
+            min-height: 72px;
             cursor: pointer;
-            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            user-select: none;
         }
         .routine-row:hover,
         .routine-row:focus-visible {
             transform: translateY(-1px);
             border-color: rgba(59,130,246,0.5);
-            box-shadow: 0 12px 24px rgba(37,99,235,0.25);
         }
         .routine-row--no-highlight:hover,
         .routine-row--no-highlight:focus-visible {
             transform: none;
             border-color: rgba(255,255,255,0.08);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.25);
         }
-        .routine-row input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
+        .routine-row input[type="checkbox"],
+        .routine-select input[type="checkbox"] {
+            flex: 0 0 26px;
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            min-height: 26px;
+            align-self: center;
             accent-color: var(--accent-color);
         }
         .routine-select {
@@ -144,7 +176,8 @@
             flex: 1 1 auto;
             justify-content: flex-start;
             min-width: 0;
-            cursor: pointer;
+            cursor: default;
+            margin-inline-start: 10px;
         }
         .routine-name {
             font-weight: 700;
@@ -152,55 +185,144 @@
             color: var(--text);
             flex: 1 1 auto;
             min-width: 0;
+            align-self: center;
+            overflow: hidden;
+            max-width: 100%;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-height: 1.25;
+            white-space: normal;
+            word-break: break-word;
         }
         .routine-show-btn {
-            flex: 0 0 auto;
+            flex-shrink: 0;
+            margin-left: auto;
+            margin-right: 10px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: auto;
-            white-space: nowrap;
-            background: transparent;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: 50%;
             border: none;
+            background: rgba(255,255,255,0.08);
             color: var(--accent-color);
-            font-weight: 700;
-            font-size: 0.75rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
             cursor: pointer;
-            padding: 4px 8px;
+            transition: transform 0.2s ease, background 0.2s ease;
+            align-self: center;
+        }
+        .routine-show-btn svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            transition: transform 0.2s ease;
+        }
+        .routine-entry[open] .routine-show-btn svg {
+            transform: rotate(180deg);
         }
         .routine-show-btn:focus-visible {
             outline: 2px solid rgba(255,255,255,0.6);
-            border-radius: 6px;
+            border-radius: 50%;
+        }
+        .routine-entry summary {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .routine-entry summary::-webkit-details-marker,
+        .routine-entry summary::marker {
+            display: none;
         }
         .routine-exercise-list {
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            padding-left: 18px;
-        }
-        .routine-exercise-list.expanded {
             display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 0;
+            margin-right: 0;
+            font-size: 0.9rem;
+            background: color-mix(in srgb, var(--card-background) 90%, #000 10%);
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: max-height 0.35s ease, opacity 0.35s ease, padding 0.35s ease;
+        }
+        .routine-entry[open] .routine-exercise-list {
+            max-height: 2000px;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .routine-entry[open] summary::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
         }
         .routine-exercise-row {
             display: flex;
-            align-items: center;
+            align-items: stretch;
             gap: 10px;
-            font-size: 0.85rem;
+            font-size: 1rem;
             color: var(--text);
+            padding: 0 0 0 16px;
+            border-radius: 0;
+            border: none;
+            background: transparent;
+            min-height: 78px;
+            height: 78px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .routine-exercise-row:not(:last-child) {
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
         .routine-exercise-row input[type="checkbox"] {
             width: 18px;
             height: 18px;
             accent-color: var(--accent-color);
+            align-self: center;
+            flex: 0 0 18px;
+        }
+        .routine-exercise-label {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0;
+        }
+        .routine-exercise-name {
+            flex: 1;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-height: 1.2;
+            max-height: calc(1.2em * 2);
+            word-break: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-secondary-color);
         }
         .routine-exercise-empty {
             font-size: 0.78rem;
             color: var(--text-dim);
         }
 
-        .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; }
+        .ex-thumb { width: 128px; border-radius: 0; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; margin: 0; align-self: stretch; height: 100%; }
         .player-img { background: #fff; }
         /* Reorder UI */
         .reorder-btn { display: inline-flex; align-items: center; gap:8px; border: none; background: rgba(255,255,255,0.02); color: var(--text-dim); padding: 8px 10px; border-radius: 10px; cursor: pointer; font-weight: 800; transition: background 0.12s, box-shadow 0.12s, color 0.12s, transform 0.08s; }
@@ -677,16 +799,21 @@
                     </select>
                     <div id="routineList" class="routine-list" role="list" aria-live="polite"></div>
                     <template id="routineRowTemplate">
-                        <div class="routine-entry">
-                            <div class="routine-row" aria-hidden="true">
-                                <label class="routine-select">
-                                    <input type="checkbox" name="routineSelect">
+                        <details class="routine-entry" aria-live="polite">
+                            <summary class="routine-row" role="button">
+                                <div class="routine-select">
+                                    <input type="checkbox" name="routineSelect" aria-label="">
                                     <span class="routine-name"></span>
-                                </label>
-                                <button type="button" class="routine-show-btn" data-i18n="livesession_show_exercises" aria-expanded="false" aria-controls=""></button>
-                            </div>
+                                </div>
+                                <button type="button" class="routine-show-btn" aria-expanded="false">
+                                    <span class="sr-only" data-i18n="livesession_show_exercises"></span>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                        <polyline points="6 10 12 16 18 10"></polyline>
+                                    </svg>
+                                </button>
+                            </summary>
                             <div class="routine-exercise-list" aria-live="polite"></div>
-                        </div>
+                        </details>
                     </template>
 
                     <div id="noRoutinesEmpty" style="display:none;color:var(--text-dim);padding:12px 0 20px;text-align:center;background:transparent;">
@@ -1384,11 +1511,12 @@
                 fragment.appendChild(empty);
                 return fragment;
             }
-            ids.forEach((item, index) => {
+            for (let index = 0; index < ids.length; index++) {
+                const item = ids[index];
                 const id = typeof item === 'object' ? item.id : item;
                 const isCustom = typeof item === 'object' ? !!item.isCustom : false;
                 const ex = exerciseRecords.find(e => e.id === id && !!e.isCustom === isCustom);
-                if (!ex) return;
+                if (!ex) continue;
                 const row = document.createElement('label');
                 row.className = 'routine-exercise-row';
                 const checkbox = document.createElement('input');
@@ -1397,17 +1525,37 @@
                 checkbox.name = `routine-${workout.id}-exercise`;
                 checkbox.dataset.custom = isCustom ? '1' : '0';
                 checkbox.dataset.entryIndex = String(index);
-                const span = document.createElement('span');
-                span.textContent = (lang && lang.startsWith('pt') && ex.namePT) ? ex.namePT : (ex.name || `#${id}`);
+                const displayName = (lang && lang.startsWith('pt') && ex.namePT) ? ex.namePT : (ex.name || `#${id}`);
+                const labelContainer = document.createElement('span');
+                labelContainer.className = 'routine-exercise-label';
+                const lineClamp = document.createElement('span');
+                lineClamp.className = 'routine-exercise-name';
+                lineClamp.textContent = displayName;
+                labelContainer.appendChild(lineClamp);
                 row.appendChild(checkbox);
-                row.appendChild(span);
+                row.appendChild(labelContainer);
+                const img = document.createElement('img');
+                img.className = 'ex-thumb';
+                img.alt = displayName;
+                let imageSrc = defaultImage;
+                const imgTable = db && (isCustom ? db.custom_images : db.catalog_images);
+                if (imgTable && ex.imageId) {
+                    try {
+                        const imgRecord = await imgTable.get(ex.imageId);
+                        if (imgRecord && imgRecord.data) {
+                            imageSrc = imgRecord.data;
+                        }
+                    } catch (err) {}
+                }
+                img.src = imageSrc || '';
+                row.appendChild(img);
                 checkbox.addEventListener('change', () => {
                     updateRoutineParentCheckboxState(checkbox.closest('.routine-entry'));
                     syncWorkoutSelectWithExercise(checkbox);
                     updateStartButtonsVisibility();
                 });
                 fragment.appendChild(row);
-            });
+            }
             if (!fragment.childElementCount) {
                 const empty = document.createElement('div');
                 empty.className = 'routine-exercise-empty';
@@ -1417,41 +1565,39 @@
             return fragment;
         }
 
-        async function toggleRoutineExerciseList(workout, panel, button, lang) {
-            if (!panel || !button) return;
-            const entry = panel.closest('.routine-entry');
+        async function ensureRoutineExercisesPopulated(entry, workout, lang) {
+            if (!entry || !workout) return;
+            const panel = entry.querySelector('.routine-exercise-list');
+            if (!panel || panel.dataset.populated === 'true' || panel.dataset.populated === 'loading') return;
+            panel.dataset.populated = 'loading';
+            panel.innerHTML = '';
+            try {
+                const content = await buildRoutineExerciseList(workout, lang);
+                panel.appendChild(content);
+                syncRoutineExerciseCheckboxesForEntry(entry);
+                panel.dataset.populated = 'true';
+            } catch (err) {
+                panel.dataset.populated = 'true';
+                const error = document.createElement('div');
+                error.className = 'routine-exercise-empty';
+                error.textContent = GN_I18N.t ? GN_I18N.t('loading') : 'Loading...';
+                panel.appendChild(error);
+            }
+        }
+
+        function handleRoutineEntryToggle(entry, workout, lang) {
             const row = entry ? entry.querySelector('.routine-row') : null;
-            const expanded = panel.classList.contains('expanded');
-            if (expanded) {
-                panel.classList.remove('expanded');
-                button.setAttribute('aria-expanded', 'false');
-                if (row) {
-                    row.dataset.highlightExpanded = 'false';
-                    refreshRoutineRowHighlight(row);
-                }
-                return;
-            }
-            if (panel.dataset.populated !== 'true') {
-                panel.dataset.populated = 'loading';
-                panel.innerHTML = '';
-                try {
-                    const content = await buildRoutineExerciseList(workout, lang);
-                    panel.appendChild(content);
-                    syncRoutineExerciseCheckboxesForEntry(entry);
-                    panel.dataset.populated = 'true';
-                } catch (err) {
-                    panel.dataset.populated = 'true';
-                    const error = document.createElement('div');
-                    error.className = 'routine-exercise-empty';
-                    error.textContent = GN_I18N.t ? GN_I18N.t('loading') : 'Loading...';
-                    panel.appendChild(error);
-                }
-            }
-            panel.classList.add('expanded');
-            button.setAttribute('aria-expanded', 'true');
+            const showBtn = entry ? entry.querySelector('.routine-show-btn') : null;
+            const isOpen = entry && entry.hasAttribute('open');
             if (row) {
-                row.dataset.highlightExpanded = 'true';
+                row.dataset.highlightExpanded = isOpen ? 'true' : 'false';
                 refreshRoutineRowHighlight(row);
+            }
+            if (showBtn) {
+                showBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
+            if (isOpen) {
+                ensureRoutineExercisesPopulated(entry, workout, lang);
             }
         }
 
@@ -1675,34 +1821,27 @@
                 const fragment = template.content.cloneNode(true);
                 const entry = fragment.querySelector('.routine-entry');
                 const row = fragment.querySelector('.routine-row');
-                const selectLabel = fragment.querySelector('.routine-select');
                 const checkbox = fragment.querySelector('input[name="routineSelect"]');
                 const nameEl = fragment.querySelector('.routine-name');
                 const showBtn = fragment.querySelector('.routine-show-btn');
                 const panel = fragment.querySelector('.routine-exercise-list');
-                if (!entry || !row || !selectLabel || !checkbox || !nameEl || !showBtn || !panel) return;
+                if (!entry || !row || !checkbox || !nameEl || !showBtn || !panel) return;
                 nameEl.textContent = getLocalizedRoutineName(workout, lang);
+                nameEl.id = `routine-name-${workout.id}`;
                 checkbox.value = workout.id;
                 checkbox.id = `routineCheckbox-${workout.id}`;
-                selectLabel.htmlFor = checkbox.id;
+                checkbox.setAttribute('aria-labelledby', nameEl.id);
                 row.removeAttribute('aria-hidden');
                 const routineIds = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
                 entry.dataset.exerciseCount = routineIds.length;
-                selectLabel.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        checkbox.click();
-                    }
-                });
+                checkbox.addEventListener('click', (event) => event.stopPropagation());
+                checkbox.addEventListener('keydown', (event) => event.stopPropagation());
                 checkbox.addEventListener('change', () => updateHiddenRoutineSelection(checkbox));
-                const panelId = `routine-exercises-${workout.id}`;
-                panel.id = panelId;
-                showBtn.setAttribute('aria-controls', panelId);
-                showBtn.setAttribute('aria-expanded', 'false');
+                entry.addEventListener('toggle', () => handleRoutineEntryToggle(entry, workout, lang));
                 showBtn.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    toggleRoutineExerciseList(workout, panel, showBtn, lang);
+                    entry.open = !entry.open;
                 });
                 list.appendChild(entry);
             });
