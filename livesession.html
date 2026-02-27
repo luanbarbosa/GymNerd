@@ -1392,6 +1392,9 @@
                 span.textContent = (lang && lang.startsWith('pt') && ex.namePT) ? ex.namePT : (ex.name || `#${id}`);
                 row.appendChild(checkbox);
                 row.appendChild(span);
+                checkbox.addEventListener('change', () => {
+                    updateRoutineParentCheckboxState(checkbox.closest('.routine-entry'));
+                });
                 fragment.appendChild(row);
             }
             if (!fragment.childElementCount) {
@@ -1423,6 +1426,7 @@
                 try {
                     const content = await buildRoutineExerciseList(workout, lang);
                     panel.appendChild(content);
+                    syncRoutineExerciseCheckboxesForEntry(entry);
                     panel.dataset.populated = 'true';
                 } catch (err) {
                     panel.dataset.populated = 'true';
@@ -1460,22 +1464,64 @@
             refreshRoutineRowHighlight(row);
         }
 
+        function syncRoutineExerciseCheckboxesForEntry(entry) {
+            if (!entry) return;
+            const routineCheckbox = entry.querySelector('input[name="routineSelect"]');
+            if (!routineCheckbox) return;
+            const exerciseCheckboxes = entry.querySelectorAll('.routine-exercise-row input[type="checkbox"]');
+            exerciseCheckboxes.forEach(cb => {
+                cb.checked = routineCheckbox.checked;
+            });
+            updateRoutineParentCheckboxState(entry);
+        }
+
+        function getRoutineExerciseCheckboxes(entry) {
+            if (!entry) return [];
+            return Array.from(entry.querySelectorAll('.routine-exercise-row input[type="checkbox"]'));
+        }
+
+        function updateRoutineParentCheckboxState(entry) {
+            if (!entry) return;
+            const routineCheckbox = entry.querySelector('input[name="routineSelect"]');
+            if (!routineCheckbox) return;
+            const exerciseCheckboxes = getRoutineExerciseCheckboxes(entry);
+            if (!exerciseCheckboxes.length) {
+                routineCheckbox.indeterminate = false;
+                return;
+            }
+            const checkedCount = exerciseCheckboxes.filter(cb => cb.checked).length;
+            const allChecked = checkedCount === exerciseCheckboxes.length;
+            routineCheckbox.checked = allChecked;
+            routineCheckbox.indeterminate = checkedCount > 0 && !allChecked;
+        }
+
+        function getActiveRoutineValueIgnoring(ignored) {
+            const routineList = document.getElementById('routineList');
+            if (!routineList) return '';
+            const candidate = Array.from(routineList.querySelectorAll('input[name="routineSelect"]')).find(cb => cb !== ignored && cb.checked);
+            return candidate ? candidate.value : '';
+        }
+
         function updateHiddenRoutineSelection(checkbox) {
             if (!checkbox) return;
-            const routineList = document.getElementById('routineList');
-            if (routineList) {
-                const all = routineList.querySelectorAll('input[name="routineSelect"]');
-                all.forEach(cb => {
-                    if (cb !== checkbox && cb.checked) {
-                        cb.checked = false;
-                    }
-                    updateRoutineRowHighlightForCheckbox(cb);
-                });
+            const entry = checkbox.closest('.routine-entry');
+            if (entry) {
+                syncRoutineExerciseCheckboxesForEntry(entry);
             }
+            updateRoutineRowHighlightForCheckbox(checkbox);
             const select = document.getElementById('workoutSelect');
             if (select) {
-                select.value = checkbox.checked ? checkbox.value : '';
-                select.dispatchEvent(new Event('change', { bubbles: true }));
+                let targetValue = checkbox.checked ? checkbox.value : getActiveRoutineValueIgnoring(checkbox);
+                if (!checkbox.checked && !targetValue) {
+                    targetValue = '';
+                }
+                if (select.value !== targetValue) {
+                    select.value = targetValue;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                } else if (!targetValue && select.value !== '') {
+                    select.value = '';
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }
         }
 
