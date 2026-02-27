@@ -230,7 +230,15 @@
             font-weight: bold; 
             cursor: pointer; 
             margin-top: 20px; 
-            display: none;
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+            transition: opacity 0.2s ease; 
+        }
+        .start-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
         }
 
         .player-card { text-align: center; padding: 0; overflow: hidden; }
@@ -664,7 +672,7 @@
             <div id="routineSetupPanel">
                 <div id="routinePickerWrapper">
                     <label class="routine-picker-label" data-i18n="label_select_routine"></label>
-                    <select id="workoutSelect" onchange="loadExercises()" aria-hidden="true" tabindex="-1" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;">
+                    <select id="workoutSelect" aria-hidden="true" tabindex="-1" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;">
                         <option value="" data-i18n="choose_routine_placeholder"></option>
                     </select>
                     <div id="routineList" class="routine-list" role="list" aria-live="polite"></div>
@@ -687,12 +695,10 @@
                     </div>
                 </div>
 
-                <div id="exerciseContainer" class="exercise-list"></div>
-                <button id="startBtn" class="start-btn" onclick="startSession()" data-i18n="start_session"></button>
             </div>
         </div>
         <aside id="setupBottomNav" role="navigation">
-            <button id="setupStartBtn" class="start-btn setup-start-btn" onclick="startSession()" data-i18n="start_workout"></button>
+            <button id="setupStartBtn" class="start-btn setup-start-btn" onclick="startSession()" data-i18n="start_workout" disabled></button>
         </aside>
     </div>
 
@@ -1394,6 +1400,8 @@
                 row.appendChild(span);
                 checkbox.addEventListener('change', () => {
                     updateRoutineParentCheckboxState(checkbox.closest('.routine-entry'));
+                    syncWorkoutSelectWithExercise(checkbox);
+                    updateStartButtonsVisibility();
                 });
                 fragment.appendChild(row);
             }
@@ -1495,6 +1503,26 @@
             routineCheckbox.indeterminate = checkedCount > 0 && !allChecked;
         }
 
+        function hasSelectedExercises() {
+            const expandedExerciseChecked = !!document.querySelector('.routine-exercise-row input[type="checkbox"]:checked');
+            const routineChecked = !!document.querySelector('input[name="routineSelect"]:checked');
+            return expandedExerciseChecked || routineChecked;
+        }
+
+        function syncWorkoutSelectWithExercise(checkbox) {
+            if (!checkbox || !checkbox.checked) return;
+            const entry = checkbox.closest('.routine-entry');
+            if (!entry) return;
+            const routineCheckbox = entry.querySelector('input[name="routineSelect"]');
+            if (!routineCheckbox) return;
+            const select = document.getElementById('workoutSelect');
+            if (!select) return;
+            const routineId = routineCheckbox.value;
+            if (!routineId) return;
+            if (select.value === routineId) return;
+            select.value = routineId;
+        }
+
         function getActiveRoutineValueIgnoring(ignored) {
             const routineList = document.getElementById('routineList');
             if (!routineList) return '';
@@ -1523,6 +1551,7 @@
                     select.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             }
+            updateStartButtonsVisibility();
         }
 
         function renderRoutineChecklist(workouts, lang) {
@@ -1579,8 +1608,6 @@
                 // hide select and related controls, show illustrative empty state
                 try { select.style.display = 'none'; } catch (e) {}
                 try { const lbl = select.previousElementSibling; if (lbl && lbl.tagName === 'LABEL') lbl.style.display = 'none'; } catch (e) {}
-                try { document.getElementById('exerciseContainer').style.display = 'none'; } catch (e) {}
-                try { document.getElementById('startBtn').style.display = 'none'; } catch (e) {}
                 if (routineList) {
                     routineList.innerHTML = '';
                     routineList.style.display = 'none';
@@ -1600,7 +1627,6 @@
                 if (noRoutinesEmpty) noRoutinesEmpty.style.display = 'none';
                 try { select.style.display = ''; } catch (e) {}
                 try { const lbl = select.previousElementSibling; if (lbl && lbl.tagName === 'LABEL') lbl.style.display = ''; } catch (e) {}
-                try { document.getElementById('exerciseContainer').style.display = ''; } catch (e) {}
             }
             // apply static translations from GN_I18N
             try { GN_I18N.applyTranslations(document); } catch(e){}
@@ -1616,6 +1642,7 @@
                 const nextSetBtn = document.getElementById('nextBtn'); if (nextSetBtn) nextSetBtn.title = GN_I18N.t('complete_set');
             } catch(e){}
             syncResumeCardVisibility();
+            updateStartButtonsVisibility();
         }
 
         function syncResumeCardVisibility() {
@@ -1714,323 +1741,37 @@
             }
         }
 
-        async function loadExercises() {
-            const workoutId = parseInt(document.getElementById('workoutSelect').value);
-            const container = document.getElementById('exerciseContainer');
-            const startBtn = document.getElementById('startBtn');
-            
-            if (!workoutId) {
-                container.innerHTML = "";
-                startBtn.style.display = "none";
-                container.classList.remove('reorder-mode');
-                return;
+        function updateStartButtonsVisibility() {
+            const hasExercises = hasSelectedExercises();
+            const setupStartBtn = document.getElementById('setupStartBtn');
+            if (setupStartBtn) {
+                setupStartBtn.disabled = !hasExercises;
             }
-
-            const workout = await db.routines.get(workoutId);
-            const [catalogEx, customEx] = await Promise.all([
-                db.catalog_exercises.toArray(),
-                db.custom_exercises.toArray()
-            ]);
-            const allExercises = [
-                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
-                ...customEx.map(ex => ({ ...ex, isCustom: true }))
-            ];
-            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-            
-            container.innerHTML = "";
-            for (const item of workout.exerciseIds) {
-                const id = typeof item === 'object' ? item.id : item;
-                const isCustom = typeof item === 'object' ? !!item.isCustom : false;
-                const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
-                if (!ex) continue;
-
-                const imgTable = isCustom ? db.custom_images : db.catalog_images;
-                let imgSrc = defaultImage;
-                if (ex.imageId) {
-                    const imgRecord = await imgTable.get(ex.imageId);
-                    if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
-                }
-
-                const details = '';
-
-                const displayName = (lang === 'pt' && ex.namePT) ? ex.namePT : ex.name;
-                const div = document.createElement('div');
-                div.className = 'exercise-item';
-                div.dataset.id = id;
-                div.dataset.iscustom = isCustom;
-                div.innerHTML = `
-                    <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
-                    <div style="flex:1; min-width:0;"><strong>${displayName}</strong>${details}</div>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                        <button type="button" class="remove-ex-btn" title="Remover" onclick="this.closest('.exercise-item').remove()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
-                        <button class="drag-handle" title="${GN_I18N.t ? GN_I18N.t('drag_to_reorder') : 'Drag to reorder'}">☰</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            }
-            startBtn.style.display = "block";
-            // translate any newly inserted elements (option/labels inside this container)
-            try { GN_I18N.applyTranslations(document.getElementById('workoutSelect').parentNode); } catch(e){}
-            attachDragHandlers();
-        }
-
-        // --- Drag & drop reordering (mobile-optimized custom) ---
-        let _dragState = null;
-        let _dragListeners = [];
-
-        function attachDragHandlers() {
-            const container = document.getElementById('exerciseContainer');
-            if (!container) return;
-            container.querySelectorAll('.drag-handle').forEach(h => {
-                if (h._dragAttached) return;
-                h.addEventListener('touchstart', _onHandleTouchStart, { passive: false });
-                h.addEventListener('pointerdown', _onHandlePointerDown);
-                h._dragAttached = true;
-            });
-        }
-
-        function detachDragHandlers() {
-            const container = document.getElementById('exerciseContainer');
-            if (!container) return;
-            container.querySelectorAll('.drag-handle').forEach(h => {
-                if (!h._dragAttached) return;
-                try { h.removeEventListener('touchstart', _onHandleTouchStart); } catch (e) {}
-                try { h.removeEventListener('pointerdown', _onHandlePointerDown); } catch (e) {}
-                h._dragAttached = false;
-            });
-        }
-
-        function _onHandleTouchStart(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            _onHandlePointerDown(touch);
-        }
-
-        function _onHandlePointerDown(e) {
-            const handle = e.target.closest('.drag-handle');
-            if (!handle) return;
-            const item = handle.closest('.exercise-item');
-            if (!item) return;
-            _startDrag(e, item);
-        }
-
-        function _startDrag(e, item) {
-            // Prevent multiple drags
-            if (_dragState) return;
-            const container = document.getElementById('exerciseContainer');
-            const rect = item.getBoundingClientRect();
-            const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0;
-            const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0;
-
-            const placeholder = document.createElement('div');
-            placeholder.className = 'exercise-item placeholder';
-            placeholder.style.height = rect.height + 'px';
-            placeholder.style.width = rect.width + 'px';
-            placeholder.style.boxSizing = 'border-box';
-
-            const ghost = item.cloneNode(true);
-            // remove any interactive/remove buttons from the ghost so they don't appear while dragging
-            const ghostRemove = ghost.querySelectorAll('.remove-ex-btn');
-            ghostRemove.forEach(el => el.remove());
-            ghost.classList.add('dragging');
-            ghost.style.width = rect.width + 'px';
-            ghost.style.left = rect.left + 'px';
-            ghost.style.top = rect.top + 'px';
-            ghost.style.position = 'fixed';
-            ghost.style.margin = '0';
-            ghost.style.transform = 'translate3d(0,0,0)';
-            ghost.style.willChange = 'transform';
-            document.body.appendChild(ghost);
-
-            // hide original and insert placeholder
-            item.style.display = 'none';
-            const originalParent = item.parentNode;
-            const originalNextSibling = item.nextSibling;
-            item.parentNode.insertBefore(placeholder, originalNextSibling);
-
-            // prevent page scroll during drag
-            const preventScroll = (ev) => { ev.preventDefault(); };
-            document.addEventListener('touchmove', preventScroll, { passive: false });
-
-            _dragState = {
-                draggingEl: item,
-                container,
-                placeholder,
-                ghost,
-                offsetY: clientY - rect.top,
-                offsetX: clientX - rect.left,
-                raf: null,
-                lastY: clientY,
-                lastX: clientX,
-                preventScroll,
-                originalParent,
-                originalNextSibling
-            };
-
-            function moveHandler(ev) {
-                const y = ev.clientY || (ev.touches && ev.touches[0] && ev.touches[0].clientY) || 0;
-                const x = ev.clientX || (ev.touches && ev.touches[0] && ev.touches[0].clientX) || 0;
-                _dragState.lastY = y; _dragState.lastX = x;
-                if (!_dragState.raf) {
-                    _dragState.raf = requestAnimationFrame(() => {
-                        _dragState.ghost.style.transform = `translate3d(${_dragState.lastX - _dragState.offsetX - rect.left}px, ${_dragState.lastY - _dragState.offsetY - rect.top}px, 0)`;
-                        // reposition placeholder using elementFromPoint with a movement threshold + FLIP animation
-                        try {
-                            const elUnder = document.elementFromPoint(_dragState.lastX, _dragState.lastY);
-                            if (!elUnder) return;
-                            const candidate = elUnder.closest('.exercise-item');
-                            const container = _dragState.container;
-
-                            // capture before positions
-                            const beforeChildren = Array.from(container.querySelectorAll('.exercise-item'));
-                            const beforeRects = beforeChildren.map(c => c.getBoundingClientRect());
-
-                            let moved = false;
-
-                            if (!candidate) {
-                                // append at end if not already there
-                                if (container.lastElementChild !== _dragState.placeholder) {
-                                    container.appendChild(_dragState.placeholder);
-                                    moved = true;
-                                    _dragState.lastCandidate = null;
-                                    _dragState.lastSide = 'end';
-                                }
-                            } else if (candidate === _dragState.placeholder || candidate === _dragState.draggingEl) {
-                                // do nothing
-                            } else {
-                                const r = candidate.getBoundingClientRect();
-                                const topThresh = r.top + r.height * 0.25;
-                                const bottomThresh = r.top + r.height * 0.75;
-                                let side = 'middle';
-                                if (_dragState.lastY < topThresh) side = 'before';
-                                else if (_dragState.lastY > bottomThresh) side = 'after';
-
-                                // only move if we are comfortably past threshold and candidate/side changed
-                                if (side !== 'middle') {
-                                    const sameCandidate = (_dragState.lastCandidate === candidate);
-                                    const sameSide = (_dragState.lastSide === side);
-                                    if (!sameCandidate || !sameSide) {
-                                        if (side === 'before') candidate.parentNode.insertBefore(_dragState.placeholder, candidate);
-                                        else candidate.parentNode.insertBefore(_dragState.placeholder, candidate.nextSibling);
-                                        moved = true;
-                                        _dragState.lastCandidate = candidate;
-                                        _dragState.lastSide = side;
-                                    }
-                                }
-                            }
-
-                            if (moved) {
-                                // capture after positions and animate differences (FLIP)
-                                const afterChildren = Array.from(container.querySelectorAll('.exercise-item'));
-                                const afterRects = afterChildren.map(c => c.getBoundingClientRect());
-
-                                beforeChildren.forEach((el, i) => {
-                                    if (el === _dragState.draggingEl || el === _dragState.placeholder) return;
-                                    const before = beforeRects[i];
-                                    const newIndex = afterChildren.indexOf(el);
-                                    if (newIndex === -1) return;
-                                    const after = afterRects[newIndex];
-                                    const dx = before.left - after.left;
-                                    const dy = before.top - after.top;
-                                    if (dx || dy) {
-                                        el.style.transition = 'none';
-                                        el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-                                        requestAnimationFrame(() => {
-                                            el.style.transition = 'transform 180ms cubic-bezier(.2,.8,.2,1)';
-                                            el.style.transform = '';
-                                            const cleanup = () => { el.style.transition = ''; el.removeEventListener('transitionend', cleanup); };
-                                            el.addEventListener('transitionend', cleanup);
-                                        });
-                                    }
-                                });
-                            }
-                        } catch (err) { console.warn('drag reposition error', err); }
-                        // if pointer moves outside visible viewport by a margin, cancel and revert
-                        const margin = 40;
-                        if (_dragState.lastX < -margin || _dragState.lastX > (window.innerWidth + margin) || _dragState.lastY < -margin || _dragState.lastY > (window.innerHeight + margin)) {
-                            try { _cancelDrag(); } catch (err) { console.warn('cancelDrag failed', err); }
-                            _dragState.raf = null;
-                            return;
-                        }
-                        _dragState.raf = null;
-                    });
+            if (!hasExercises) {
+                const select = document.getElementById('workoutSelect');
+                if (select && select.value) {
+                    select.value = '';
                 }
             }
-
-            function upHandler() { _endDrag(); }
-
-            // attach listeners
-            window.addEventListener('touchmove', moveHandler, { passive: false });
-            window.addEventListener('pointermove', moveHandler);
-            window.addEventListener('touchend', upHandler);
-            window.addEventListener('pointerup', upHandler);
-            window.addEventListener('touchcancel', upHandler);
-
-            _dragListeners.push({ moveHandler, upHandler });
-        }
-
-        function _endDrag() {
-            if (!_dragState) return;
-            const { draggingEl, placeholder, ghost, preventScroll } = _dragState;
-            // place element where placeholder is
-            try {
-                placeholder.parentNode.insertBefore(draggingEl, placeholder);
-            } catch (e) { console.warn('insert before failed', e); }
-            draggingEl.style.display = '';
-            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
-
-            // remove scroll prevention
-            try { document.removeEventListener('touchmove', preventScroll, { passive: false }); } catch (e) { document.removeEventListener('touchmove', preventScroll); }
-
-            // remove listeners
-            for (const L of _dragListeners) {
-                try { window.removeEventListener('touchmove', L.moveHandler); } catch (e) {}
-                try { window.removeEventListener('pointermove', L.moveHandler); } catch (e) {}
-                try { window.removeEventListener('touchend', L.upHandler); } catch (e) {}
-                try { window.removeEventListener('pointerup', L.upHandler); } catch (e) {}
-                try { window.removeEventListener('touchcancel', L.upHandler); } catch (e) {}
-            }
-            _dragListeners = [];
-
-            _dragState = null;
-        }
-
-        function _cancelDrag() {
-            if (!_dragState) return;
-            const { draggingEl, placeholder, ghost, preventScroll, originalParent, originalNextSibling } = _dragState;
-            // revert item to original position
-            try {
-                if (originalParent) {
-                    if (originalNextSibling && originalNextSibling.parentNode === originalParent) originalParent.insertBefore(draggingEl, originalNextSibling);
-                    else originalParent.appendChild(draggingEl);
-                }
-            } catch (e) { console.warn('revert insert failed', e); }
-            draggingEl.style.display = '';
-            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
-
-            try { document.removeEventListener('touchmove', preventScroll, { passive: false }); } catch (e) { document.removeEventListener('touchmove', preventScroll); }
-
-            for (const L of _dragListeners) {
-                try { window.removeEventListener('touchmove', L.moveHandler); } catch (e) {}
-                try { window.removeEventListener('pointermove', L.moveHandler); } catch (e) {}
-                try { window.removeEventListener('touchend', L.upHandler); } catch (e) {}
-                try { window.removeEventListener('pointerup', L.upHandler); } catch (e) {}
-                try { window.removeEventListener('touchcancel', L.upHandler); } catch (e) {}
-            }
-            _dragListeners = [];
-            _dragState = null;
         }
 
         async function startSession() {
             stopWorkoutTimer();
             resetWorkoutTimerDisplay();
-            const workoutId = parseInt(document.getElementById('workoutSelect').value);
+            const select = document.getElementById('workoutSelect');
+            const workoutId = select ? parseInt(select.value, 10) : NaN;
+            if (!workoutId) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
             currentWorkoutId = workoutId;
             const workout = await db.routines.get(workoutId);
+            if (!workout) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
+            const routineExercises = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
+            if (routineExercises.length === 0) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
             const [catalogEx, customEx] = await Promise.all([
                 db.catalog_exercises.toArray(),
                 db.custom_exercises.toArray()
@@ -2039,36 +1780,28 @@
                 ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
             ];
-            const container = document.getElementById('exerciseContainer');
-            const visibleItems = Array.from(container.querySelectorAll('.exercise-item'));
-            if (visibleItems.length === 0) return alert(GN_I18N.t('please_select_exercise'));
 
             sessionSets = [];
             lastActiveTimerSignature = null;
-            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
 
             let occurrenceId = 0;
-            for (const itemDiv of visibleItems) {
-                occurrenceId++;
-                const exId = parseInt(itemDiv.dataset.id);
-                const isCustom = itemDiv.dataset.iscustom === 'true';
+            for (const workoutEntry of routineExercises) {
+                const exId = typeof workoutEntry === 'object' ? workoutEntry.id : workoutEntry;
+                const isCustom = typeof workoutEntry === 'object' ? !!workoutEntry.isCustom : false;
                 const ex = allExercises.find(e => e.id === exId && !!e.isCustom === isCustom);
                 if (!ex) continue;
-                const workoutEx = workout.exerciseIds.find(we => {
-                    const weId = typeof we === 'object' ? we.id : we;
-                    const weIsCustom = typeof we === 'object' ? !!we.isCustom : false;
-                    return weId === exId && weIsCustom === isCustom;
-                });
+                occurrenceId++;
+                const workoutEx = (typeof workoutEntry === 'object') ? workoutEntry : null;
                 const exerciseType = (ex.type) ? ex.type : '';
                 const isCardio = isCardioExerciseType(exerciseType);
                 const workoutExSets = (workoutEx && Array.isArray(workoutEx.sets)) ? workoutEx.sets : null;
-                const fallbackSetsCount = Math.max(1, Math.round(normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.sets : null, 3)));
+                const fallbackSetsCount = Math.max(1, Math.round(normalizeNumericValue(workoutEx && workoutEx.sets ? workoutEx.sets : null, 3)));
                 const totalSets = workoutExSets ? workoutExSets.length : fallbackSetsCount;
-                const fallbackReps = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.reps : null, 0);
-                const fallbackWeight = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.weight : null, 0);
-                const fallbackDistance = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.distance : null, 0);
-                const fallbackTime = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.time : null, 0);
-                const restSecondsValue = (workoutEx && typeof workoutEx === 'object' && Number.isFinite(workoutEx.restSeconds)) ? Math.max(0, Math.round(workoutEx.restSeconds)) : 0;
+                const fallbackReps = normalizeNumericValue(workoutEx && workoutEx.reps, 0);
+                const fallbackWeight = normalizeNumericValue(workoutEx && workoutEx.weight, 0);
+                const fallbackDistance = normalizeNumericValue(workoutEx && workoutEx.distance, 0);
+                const fallbackTime = normalizeNumericValue(workoutEx && workoutEx.time, 0);
+                const restSecondsValue = (workoutEx && Number.isFinite(workoutEx.restSeconds)) ? Math.max(0, Math.round(workoutEx.restSeconds)) : 0;
 
                 const createSetRecord = (setNum, source = {}) => {
                     const repsValue = isCardio ? 0 : normalizeNumericValue(source.reps, fallbackReps);
@@ -2104,6 +1837,10 @@
                         sessionSets.push(createSetRecord(i));
                     }
                 }
+            }
+
+            if (sessionSets.length === 0) {
+                return alert(GN_I18N.t('please_select_exercise'));
             }
 
             currentIdx = 0;
