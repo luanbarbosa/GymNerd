@@ -90,12 +90,6 @@
             color: var(--text);
             margin: 0;
         }
-        .routine-picker-subtext {
-            font-size: 0.72rem;
-            color: var(--text-dim);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
         .routine-list {
             display: flex;
             flex-direction: column;
@@ -131,6 +125,12 @@
             transform: translateY(-1px);
             border-color: rgba(59,130,246,0.5);
             box-shadow: 0 12px 24px rgba(37,99,235,0.25);
+        }
+        .routine-row--no-highlight:hover,
+        .routine-row--no-highlight:focus-visible {
+            transform: none;
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.25);
         }
         .routine-row input[type="checkbox"] {
             width: 24px;
@@ -667,7 +667,6 @@
                     <select id="workoutSelect" onchange="loadExercises()" aria-hidden="true" tabindex="-1" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;">
                         <option value="" data-i18n="choose_routine_placeholder"></option>
                     </select>
-                    <div class="routine-picker-subtext" data-i18n="choose_routine_placeholder"></div>
                     <div id="routineList" class="routine-list" role="list" aria-live="polite"></div>
                     <template id="routineRowTemplate">
                         <div class="routine-entry">
@@ -686,13 +685,6 @@
                         <img src="illustrations/empty-livesession.svg" alt="" style="width:100%;max-width:100%;height:auto;margin:0 0 12px;display:block;" />
                         <div data-i18n="livesession_no_routines"></div>
                     </div>
-                </div>
-
-                <div style="display:flex; gap:8px; margin-top:8px;">
-                    <button id="toggleSortBtn" type="button" class="reorder-btn" style="display:none" onclick="toggleSortMode()" title="Ordenar">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="14" y2="12"></line><line x1="4" y1="17" x2="10" y2="17"></line></svg>
-                        <span class="label">Ordenar</span>
-                    </button>
                 </div>
 
                 <div id="exerciseContainer" class="exercise-list"></div>
@@ -1413,10 +1405,16 @@
 
         async function toggleRoutineExerciseList(workout, panel, button, lang) {
             if (!panel || !button) return;
+            const entry = panel.closest('.routine-entry');
+            const row = entry ? entry.querySelector('.routine-row') : null;
             const expanded = panel.classList.contains('expanded');
             if (expanded) {
                 panel.classList.remove('expanded');
                 button.setAttribute('aria-expanded', 'false');
+                if (row) {
+                    row.dataset.highlightExpanded = 'false';
+                    refreshRoutineRowHighlight(row);
+                }
                 return;
             }
             if (panel.dataset.populated !== 'true') {
@@ -1436,6 +1434,10 @@
             }
             panel.classList.add('expanded');
             button.setAttribute('aria-expanded', 'true');
+            if (row) {
+                row.dataset.highlightExpanded = 'true';
+                refreshRoutineRowHighlight(row);
+            }
         }
 
         function getLocalizedRoutineName(workout, lang) {
@@ -1443,12 +1445,32 @@
             return workout.name || `#${workout.id}`;
         }
 
+        function refreshRoutineRowHighlight(row) {
+            if (!row) return;
+            const suppressed = row.dataset.highlightExpanded === 'true' || row.dataset.highlightSelected === 'true';
+            row.classList.toggle('routine-row--no-highlight', suppressed);
+        }
+
+        function updateRoutineRowHighlightForCheckbox(checkbox) {
+            if (!checkbox) return;
+            const entry = checkbox.closest('.routine-entry');
+            const row = entry ? entry.querySelector('.routine-row') : null;
+            if (!row) return;
+            row.dataset.highlightSelected = checkbox.checked ? 'true' : 'false';
+            refreshRoutineRowHighlight(row);
+        }
+
         function updateHiddenRoutineSelection(checkbox) {
             if (!checkbox) return;
             const routineList = document.getElementById('routineList');
             if (routineList) {
                 const all = routineList.querySelectorAll('input[name="routineSelect"]');
-                all.forEach(cb => { if (cb !== checkbox) cb.checked = false; });
+                all.forEach(cb => {
+                    if (cb !== checkbox && cb.checked) {
+                        cb.checked = false;
+                    }
+                    updateRoutineRowHighlightForCheckbox(cb);
+                });
             }
             const select = document.getElementById('workoutSelect');
             if (select) {
@@ -1511,7 +1533,6 @@
                 // hide select and related controls, show illustrative empty state
                 try { select.style.display = 'none'; } catch (e) {}
                 try { const lbl = select.previousElementSibling; if (lbl && lbl.tagName === 'LABEL') lbl.style.display = 'none'; } catch (e) {}
-                try { document.getElementById('toggleSortBtn').style.display = 'none'; } catch (e) {}
                 try { document.getElementById('exerciseContainer').style.display = 'none'; } catch (e) {}
                 try { document.getElementById('startBtn').style.display = 'none'; } catch (e) {}
                 if (routineList) {
@@ -1655,10 +1676,6 @@
             if (!workoutId) {
                 container.innerHTML = "";
                 startBtn.style.display = "none";
-                const toggleBtn = document.getElementById('toggleSortBtn');
-                if (toggleBtn) {
-                    toggleBtn.style.display = 'none';
-                }
                 container.classList.remove('reorder-mode');
                 return;
             }
@@ -1708,13 +1725,6 @@
                 container.appendChild(div);
             }
             startBtn.style.display = "block";
-            const toggleBtn = document.getElementById('toggleSortBtn');
-            if (toggleBtn) {
-                toggleBtn.style.display = 'inline-flex';
-                // ensure reorder mode is reset when loading a new routine
-                document.getElementById('exerciseContainer').classList.remove('reorder-mode');
-                toggleBtn.classList.remove('active');
-            }
             // translate any newly inserted elements (option/labels inside this container)
             try { GN_I18N.applyTranslations(document.getElementById('workoutSelect').parentNode); } catch(e){}
             attachDragHandlers();
@@ -1968,64 +1978,6 @@
             _dragListeners = [];
             _dragState = null;
         }
-
-                // Toggle sort mode for the exercise list. When turning off, persist order to DB.
-                async function persistExerciseOrder(workoutId) {
-                    const container = document.getElementById('exerciseContainer');
-                    if (!container) return;
-                    const children = [...container.querySelectorAll('.exercise-item')];
-                    const workout = await db.routines.get(workoutId);
-                    if (!workout) return;
-                    const original = workout.exerciseIds || [];
-
-                    const used = new Array(original.length).fill(false);
-                    const newOrder = children.map((el, idx) => {
-                        const id = el.dataset.id ? parseInt(el.dataset.id) : null;
-                        const isCustom = el.dataset.iscustom === 'true';
-                        let matchIndex = -1;
-                        for (let i = 0; i < original.length; i++) {
-                            const item = original[i];
-                            const itemId = typeof item === 'object' ? item.id : item;
-                            const itemIsCustom = typeof item === 'object' ? !!item.isCustom : false;
-                            if (!used[i] && itemId === id && itemIsCustom === isCustom) { matchIndex = i; break; }
-                        }
-                        let newItem;
-                        if (matchIndex >= 0) {
-                            used[matchIndex] = true;
-                            const origItem = original[matchIndex];
-                            if (typeof origItem === 'object') {
-                                newItem = { ...origItem };
-                            } else {
-                                newItem = origItem;
-                            }
-                        } else {
-                            newItem = { id, isCustom };
-                        }
-                        return newItem;
-                    });
-                    await db.routines.update(workoutId, { exerciseIds: newOrder });
-                    localStorage.setItem('has_local_changes', 'true');
-                }
-
-                function toggleSortMode() {
-                    const container = document.getElementById('exerciseContainer');
-                    if (!container) return;
-                    const btn = document.getElementById('toggleSortBtn');
-                    const isActive = container.classList.toggle('reorder-mode');
-                    if (btn) btn.classList.toggle('active', isActive);
-
-                    if (isActive) {
-                        // enable custom drag handlers
-                        attachDragHandlers();
-                    } else {
-                        // disable handlers and persist order
-                        detachDragHandlers();
-                        // ensure any active drag is ended
-                        try { _endDrag(); } catch (e) {}
-                        const workoutId = parseInt(document.getElementById('workoutSelect').value);
-                        if (workoutId) persistExerciseOrder(workoutId).catch(err => console.warn('persistExerciseOrder failed', err));
-                    }
-                }
 
         async function startSession() {
             stopWorkoutTimer();
