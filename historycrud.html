@@ -153,7 +153,7 @@
             return [
                 { key: 'sets', label: labelSets, type: 'number', min: '0', step: '1' },
                 { key: 'reps', label: resolveLabel('history_reps', 'Reps'), type: 'number', min: '0', step: '1' },
-                { key: 'weight', label: resolveLabel('weight_kg', 'Weight (kg)'), type: 'text' }
+                { key: 'weight', label: resolveLabel('weight_kg', 'Weight (kg)'), type: 'number', min: '0', step: '0.25' }
             ];
         }
 
@@ -186,7 +186,7 @@
             const headerHtml = `<div class="set-row header-row">${headerCells}<div></div></div>`;
             const rowsHtml = normalized.map(set => renderSetRowHtml(fieldDefs, set)).join('');
             const addSetLabel = resolveLabel('add_set', 'Add set');
-            const addButtonHtml = `<button type="button" class="add-set-inline" aria-label="${addSetLabel}" onclick="(function(btn){ const container = btn.parentElement; const cardio = isCardioType(container.dataset.type || ''); addSetRowToContainer(container, getEmptySetData(cardio)); })(this)"><span aria-hidden="true">+</span><span data-i18n="add_set"></span></button>`;
+            const addButtonHtml = `<button type="button" class="add-set-inline" aria-label="${addSetLabel}" onclick="(function(btn){ const container = btn.parentElement; const cardio = isCardioType(container.dataset.type || ''); addSetRowToContainer(container, getEmptySetData(cardio)); })(this)"><span data-i18n="add_set"></span></button>`;
             return `<div class="sets-container" data-type="${type || ''}">${headerHtml}${rowsHtml}${addButtonHtml}</div>`;
         }
 

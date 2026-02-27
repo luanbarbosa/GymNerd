@@ -357,7 +357,7 @@
             return [
                 { key: 'sets', label: labelSets, type: 'number', min: '0', step: '1' },
                 { key: 'reps', label: resolveLabel('history_reps', 'Reps'), type: 'number', min: '0', step: '1' },
-                { key: 'weight', label: resolveLabel('weight_kg', 'Weight (kg)'), type: 'text' }
+                { key: 'weight', label: resolveLabel('weight_kg', 'Weight (kg)'), type: 'number', min: '0', step: '0.25' }
             ];
         }
 
