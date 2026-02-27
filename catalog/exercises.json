@@ -481,5 +481,12 @@
     "name": "Lying leg curl",
     "namePT": "Flexora deitado",
     "type": "legs"
+  },
+  {
+    "id": 70,
+    "imageId": 70,
+    "name": "Neutral Grip Lat Pulldown",
+    "namePT": "Puxada na barra com pegada neutra",
+    "type": "back"
   }
 ]
