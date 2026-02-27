@@ -895,6 +895,7 @@
         let currentIdx = 0;
         let viewingIdx = 0;
         let currentWorkoutId = null;
+        let sessionWorkoutIds = [];
         let timerInterval = null;
         let workoutTimerInterval = null;
         let timerStartMs = null; // timestamp (ms) when current timer started
@@ -910,6 +911,7 @@
             currentIdx = 0;
             viewingIdx = 0;
             currentWorkoutId = null;
+            sessionWorkoutIds = [];
             sessionStartMs = null;
             routineModified = false;
             lastActiveTimerSignature = null;
@@ -1382,11 +1384,11 @@
                 fragment.appendChild(empty);
                 return fragment;
             }
-            for (const item of ids) {
+            ids.forEach((item, index) => {
                 const id = typeof item === 'object' ? item.id : item;
                 const isCustom = typeof item === 'object' ? !!item.isCustom : false;
                 const ex = exerciseRecords.find(e => e.id === id && !!e.isCustom === isCustom);
-                if (!ex) continue;
+                if (!ex) return;
                 const row = document.createElement('label');
                 row.className = 'routine-exercise-row';
                 const checkbox = document.createElement('input');
@@ -1394,6 +1396,7 @@
                 checkbox.value = id;
                 checkbox.name = `routine-${workout.id}-exercise`;
                 checkbox.dataset.custom = isCustom ? '1' : '0';
+                checkbox.dataset.entryIndex = String(index);
                 const span = document.createElement('span');
                 span.textContent = (lang && lang.startsWith('pt') && ex.namePT) ? ex.namePT : (ex.name || `#${id}`);
                 row.appendChild(checkbox);
@@ -1404,7 +1407,7 @@
                     updateStartButtonsVisibility();
                 });
                 fragment.appendChild(row);
-            }
+            });
             if (!fragment.childElementCount) {
                 const empty = document.createElement('div');
                 empty.className = 'routine-exercise-empty';
@@ -1523,6 +1526,115 @@
             select.value = routineId;
         }
 
+        function getSelectedWorkoutEntries() {
+            const entries = Array.from(document.querySelectorAll('.routine-entry'));
+            const selections = [];
+            entries.forEach(entry => {
+                const routineCheckbox = entry.querySelector('input[name="routineSelect"]');
+                if (!routineCheckbox) return;
+                const workoutId = parseInt(routineCheckbox.value, 10);
+                if (!Number.isFinite(workoutId)) return;
+                const exerciseCheckboxes = Array.from(entry.querySelectorAll('.routine-exercise-row input[type="checkbox"]'));
+                const selectedIndexes = exerciseCheckboxes
+                    .filter(cb => cb.checked && cb.dataset.entryIndex !== undefined)
+                    .map(cb => parseInt(cb.dataset.entryIndex, 10))
+                    .filter(Number.isFinite);
+                if (selectedIndexes.length) {
+                    selectedIndexes.forEach(index => selections.push({ workoutId, index }));
+                    return;
+                }
+                if (!routineCheckbox.checked) return;
+                const total = Number(entry.dataset.exerciseCount) || 0;
+                for (let idx = 0; idx < total; idx++) {
+                    selections.push({ workoutId, index: idx });
+                }
+            });
+            return selections;
+        }
+
+        function getAffectedWorkoutIds() {
+            const ids = Array.isArray(sessionWorkoutIds) ? sessionWorkoutIds.slice() : [];
+            if (Number.isFinite(currentWorkoutId) && !ids.includes(currentWorkoutId)) {
+                ids.push(currentWorkoutId);
+            }
+            return Array.from(new Set(ids.filter(id => Number.isFinite(id))));
+        }
+
+        function getSessionSetsForExercise(workoutId, exId, isCustom) {
+            return sessionSets.filter(set => {
+                if (!set) return false;
+                const matchesWorkout = set.routineId === workoutId;
+                const matchesExercise = set.exId === exId;
+                const matchesCustom = (!!set.isCustom) === (!!isCustom);
+                return matchesWorkout && matchesExercise && matchesCustom;
+            });
+        }
+
+        function buildExerciseUpdateEntry(item, workoutId) {
+            if (!Number.isFinite(workoutId)) return item;
+            const entryIsObject = typeof item === 'object' && item !== null;
+            const exId = entryIsObject ? item.id : item;
+            const isCustom = entryIsObject ? !!item.isCustom : false;
+            const sessionSetsForExercise = getSessionSetsForExercise(workoutId, exId, isCustom);
+            if (!sessionSetsForExercise.length) return item;
+            const exerciseType = (sessionSetsForExercise[0] && (sessionSetsForExercise[0].exerciseType || sessionSetsForExercise[0].type)) ? (sessionSetsForExercise[0].exerciseType || sessionSetsForExercise[0].type) : '';
+            const isCardio = isCardioExerciseType(exerciseType);
+            const mappedSets = sessionSetsForExercise.map(set => isCardio ? { distance: set.distance, time: set.time } : { reps: set.reps, weight: set.weight });
+            return {
+                id: exId,
+                isCustom,
+                sets: mappedSets
+            };
+        }
+
+        function workoutHasRoutineChange(workout) {
+            if (!workout || !Array.isArray(workout.exerciseIds)) return false;
+            const workoutId = workout.id;
+            return workout.exerciseIds.some(item => {
+                const entryIsObject = typeof item === 'object' && item !== null;
+                const exId = entryIsObject ? item.id : item;
+                const isCustom = entryIsObject ? !!item.isCustom : false;
+                const sets = getSessionSetsForExercise(workoutId, exId, isCustom);
+                if (!sets.length) return false;
+                const storedSets = entryIsObject && Array.isArray(item.sets) ? item.sets : [];
+                const isCardio = isCardioExerciseType((sets[0] && (sets[0].exerciseType || sets[0].type)) || '');
+                return sets.some(set => {
+                    const stored = storedSets[set.setNum - 1];
+                    if (!stored) return false;
+                    if (isCardio) {
+                        return normalizeNumericValue(set.distance) !== normalizeNumericValue(stored.distance) ||
+                            normalizeNumericValue(set.time) !== normalizeNumericValue(stored.time);
+                    }
+                    return normalizeNumericValue(set.reps) !== normalizeNumericValue(stored.reps) ||
+                        normalizeNumericValue(set.weight) !== normalizeNumericValue(stored.weight);
+                });
+            });
+        }
+
+        async function updateWorkoutsFromSession(workoutIds) {
+            const ids = Array.from(new Set(workoutIds.filter(id => Number.isFinite(id))));
+            for (const id of ids) {
+                const workout = await db.routines.get(id);
+                if (!workout) continue;
+                const entries = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
+                workout.exerciseIds = entries.map(item => buildExerciseUpdateEntry(item, id));
+                await db.routines.put(workout);
+            }
+        }
+
+        async function shouldOfferRoutineSaveOption() {
+            if (routineModified) return true;
+            const ids = getAffectedWorkoutIds();
+            if (!ids.length) return false;
+            for (const id of ids) {
+                const workout = await db.routines.get(id);
+                if (workout && workoutHasRoutineChange(workout)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function getActiveRoutineValueIgnoring(ignored) {
             const routineList = document.getElementById('routineList');
             if (!routineList) return '';
@@ -1574,6 +1686,8 @@
                 checkbox.id = `routineCheckbox-${workout.id}`;
                 selectLabel.htmlFor = checkbox.id;
                 row.removeAttribute('aria-hidden');
+                const routineIds = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
+                entry.dataset.exerciseCount = routineIds.length;
                 selectLabel.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
@@ -1670,6 +1784,8 @@
                 sessionElapsedMs,
                 routineModified: !!routineModified
             };
+            const uniqueWorkoutIds = Array.from(new Set(sessionWorkoutIds.filter(id => Number.isFinite(id))));
+            state.sessionWorkoutIds = uniqueWorkoutIds;
             localStorage.setItem('gymNerd_activeSession', JSON.stringify(state));
         }
 
@@ -1688,10 +1804,19 @@
             if (!saved) return;
             stopWorkoutTimer();
             const state = JSON.parse(saved);
-            sessionSets = state.sessionSets;
+            sessionSets = Array.isArray(state.sessionSets) ? state.sessionSets : [];
             currentIdx = state.currentIdx;
             viewingIdx = state.viewingIdx || state.currentIdx;
-            currentWorkoutId = state.currentWorkoutId;
+            const parsedWorkoutId = Number.isFinite(Number(state.currentWorkoutId)) ? Number(state.currentWorkoutId) : null;
+            let restoredWorkoutIds = Array.isArray(state.sessionWorkoutIds) ? state.sessionWorkoutIds.map(id => Number(id)).filter(Number.isFinite) : [];
+            if (!restoredWorkoutIds.length && parsedWorkoutId !== null) {
+                restoredWorkoutIds = [parsedWorkoutId];
+            }
+            sessionWorkoutIds = Array.from(new Set(restoredWorkoutIds));
+            currentWorkoutId = parsedWorkoutId !== null ? parsedWorkoutId : (sessionWorkoutIds[0] || null);
+            if (currentWorkoutId !== null && !sessionWorkoutIds.includes(currentWorkoutId)) {
+                sessionWorkoutIds.push(currentWorkoutId);
+            }
             lastActiveTimerSignature = null;
 
             // restore session elapsed ms so duration continues from where the user left off
@@ -1703,6 +1828,15 @@
             }
 
             const workout = await db.routines.get(currentWorkoutId);
+
+            const fallbackRoutineId = sessionWorkoutIds[0] || currentWorkoutId || null;
+            if (fallbackRoutineId !== null) {
+                sessionSets.forEach(set => {
+                    if (set && (set.routineId === undefined || set.routineId === null)) {
+                        set.routineId = fallbackRoutineId;
+                    }
+                });
+            }
 
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
@@ -1758,20 +1892,40 @@
         async function startSession() {
             stopWorkoutTimer();
             resetWorkoutTimerDisplay();
+            const selections = getSelectedWorkoutEntries();
+            if (!selections.length) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
+            const grouped = new Map();
+            selections.forEach(({ workoutId, index }) => {
+                if (!grouped.has(workoutId)) grouped.set(workoutId, new Set());
+                grouped.get(workoutId).add(index);
+            });
+            const workoutIds = Array.from(grouped.keys()).filter(id => Number.isFinite(id));
+            if (!workoutIds.length) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
+            const workouts = await db.routines.bulkGet(workoutIds);
+            const workoutMap = new Map((workouts || []).filter(Boolean).map(w => [w.id, w]));
+            const selectedWorkoutExercises = [];
+            for (const [wid, indexSet] of grouped.entries()) {
+                const routineRecord = workoutMap.get(wid);
+                if (!routineRecord) continue;
+                const routineExercises = Array.isArray(routineRecord.exerciseIds) ? routineRecord.exerciseIds : [];
+                const sortedIndexes = Array.from(indexSet);
+                sortedIndexes.sort((a, b) => a - b);
+                sortedIndexes.forEach(idx => {
+                    const workoutEntry = routineExercises[idx];
+                    if (workoutEntry) selectedWorkoutExercises.push({ workoutEntry, workoutId: wid });
+                });
+            }
+            if (!selectedWorkoutExercises.length) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
+            sessionWorkoutIds = workoutIds;
+            currentWorkoutId = sessionWorkoutIds[0] || null;
             const select = document.getElementById('workoutSelect');
-            const workoutId = select ? parseInt(select.value, 10) : NaN;
-            if (!workoutId) {
-                return alert(GN_I18N.t('please_select_exercise'));
-            }
-            currentWorkoutId = workoutId;
-            const workout = await db.routines.get(workoutId);
-            if (!workout) {
-                return alert(GN_I18N.t('please_select_exercise'));
-            }
-            const routineExercises = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
-            if (routineExercises.length === 0) {
-                return alert(GN_I18N.t('please_select_exercise'));
-            }
+            if (select) select.value = currentWorkoutId || '';
             const [catalogEx, customEx] = await Promise.all([
                 db.catalog_exercises.toArray(),
                 db.custom_exercises.toArray()
@@ -1785,7 +1939,9 @@
             lastActiveTimerSignature = null;
 
             let occurrenceId = 0;
-            for (const workoutEntry of routineExercises) {
+            for (const selection of selectedWorkoutExercises) {
+                const workoutEntry = selection.workoutEntry;
+                const sourceWorkoutId = Number.isFinite(Number(selection.workoutId)) ? selection.workoutId : currentWorkoutId;
                 const exId = typeof workoutEntry === 'object' ? workoutEntry.id : workoutEntry;
                 const isCustom = typeof workoutEntry === 'object' ? !!workoutEntry.isCustom : false;
                 const ex = allExercises.find(e => e.id === exId && !!e.isCustom === isCustom);
@@ -1817,6 +1973,7 @@
                         setNum,
                         occurrenceId,
                         totalSets,
+                        routineId: sourceWorkoutId,
                         reps: repsValue,
                         weight: weightValue,
                         distance: distanceValue,
@@ -2132,27 +2289,7 @@
                     try {
                         const saveOpt = document.getElementById('saveRoutineOpt');
                         const cb = document.getElementById('saveRoutineCheckbox');
-                        let shouldShow = !!routineModified;
-                        if (!shouldShow && currentWorkoutId) {
-                            // detect differences between sessionSets and stored workout's sets
-                            const workout = await db.routines.get(currentWorkoutId);
-                            if (workout && Array.isArray(workout.exerciseIds)) {
-                                const map = {};
-                                workout.exerciseIds.forEach(it => {
-                                    const id = (typeof it === 'object') ? it.id : it;
-                                    if (typeof it === 'object' && Array.isArray(it.sets)) map[id] = it.sets;
-                                });
-                                for (const s of sessionSets) {
-                                    const sets = map[s.exId];
-                                    if (!sets) continue;
-                                    const w = sets[s.setNum - 1];
-                                    if (!w) continue;
-                                    const wr = (w.reps || 0);
-                                    const ww = (w.weight || 0);
-                                    if ((s.reps || 0) !== wr || (s.weight || 0) !== ww) { shouldShow = true; break; }
-                                }
-                            }
-                        }
+                        const shouldShow = await shouldOfferRoutineSaveOption();
                         if (saveOpt) saveOpt.style.display = shouldShow ? 'flex' : 'none';
                         if (cb) cb.checked = false;
                     } catch (e) { console.warn('save option detection failed', e); }
@@ -2386,25 +2523,10 @@
 
                 // Update the workout template with the values used in this session only if user opted in
                 const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
-                if (shouldSaveRoutine && currentWorkoutId) {
-                    const workout = await db.routines.get(currentWorkoutId);
-                    if (workout) {
-                        workout.exerciseIds = workout.exerciseIds.map(item => {
-                            const exId = typeof item === 'object' ? item.id : item;
-                            const isCustom = typeof item === 'object' ? !!item.isCustom : false;
-                            const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                            if (sessionExSets.length > 0) {
-                                const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
-                                const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                                return {
-                                    id: exId,
-                                    isCustom,
-                                    sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
-                                };
-                            }
-                            return item;
-                        });
-                        await db.routines.put(workout);
+                if (shouldSaveRoutine) {
+                    const affectedIds = getAffectedWorkoutIds();
+                    if (affectedIds.length) {
+                        await updateWorkoutsFromSession(affectedIds);
                     }
                 }
 
@@ -2494,26 +2616,9 @@
         async function saveRoutineChanges() {
             try {
                 await ensureDbOpen();
-                if (!currentWorkoutId) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
-                const workout = await db.routines.get(currentWorkoutId);
-                if (!workout) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
-
-                workout.exerciseIds = workout.exerciseIds.map(item => {
-                    const exId = typeof item === 'object' ? item.id : item;
-                    const isCustom = typeof item === 'object' ? !!item.isCustom : false;
-                    const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                    if (sessionExSets.length > 0) {
-                        const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
-                        const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                        return {
-                            id: exId,
-                            isCustom,
-                            sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
-                        };
-                    }
-                    return item;
-                });
-                await db.routines.put(workout);
+                const affectedIds = getAffectedWorkoutIds();
+                if (!affectedIds.length) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
+                await updateWorkoutsFromSession(affectedIds);
                 localStorage.setItem('has_local_changes', 'true');
                 alert(GN_I18N.t('routine_saved') || 'Routine saved');
             } catch (err) {
