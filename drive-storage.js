@@ -228,7 +228,7 @@ const DriveStorage = {
         }
     },
 
-    async sync(db, tableNames = null) {
+    async sync(db, tableNames = null, options = {}) {
         const token = localStorage.getItem('google_token');
         if (!token || token === 'local-bypass') return false;
 
@@ -255,10 +255,13 @@ const DriveStorage = {
             return true;
         } catch (error) {
             console.error("Auto-sync failed:", error);
-            if (error.message === "AUTH_EXPIRED") {
-                alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('google_session_expired') : "Your Google session expired. Please login again to keep syncing.");
-            } else {
-                alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('auto_sync_failed_prefix') + error.message) : ("Auto-sync failed: " + error.message));
+            const { showAlert = true } = options || {};
+            if (showAlert) {
+                if (error.message === "AUTH_EXPIRED") {
+                    alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('google_session_expired') : "Your Google session expired. Please login again to keep syncing.");
+                } else {
+                    alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('auto_sync_failed_prefix') + error.message) : ("Auto-sync failed: " + error.message));
+                }
             }
             return false;
         } finally {

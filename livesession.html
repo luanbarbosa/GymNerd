@@ -2280,6 +2280,37 @@
             renderSet();
         }
 
+        function getHomeShellUrl() {
+            try {
+                const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                return basePath + 'index.html?start=home';
+            } catch (e) {
+                return 'index.html?start=home';
+            }
+        }
+
+        function navigateHomeShell() {
+            const target = getHomeShellUrl();
+            try {
+                if (window.location && typeof window.location.replace === 'function') {
+                    window.location.replace(target);
+                } else if (window.location) {
+                    window.location.href = target;
+                }
+            } catch (e) {
+                try { window.location.href = target; } catch (err) { console.warn && console.warn('Failed to navigate home', err); }
+            }
+        }
+
+        function handleDriveSyncFailure(error) {
+            try { localStorage.setItem(HOME_REFRESH_FLAG, '1'); } catch (e) {}
+            try { localStorage.setItem('has_local_changes', 'true'); } catch (e) {}
+            const fallbackMsg = (error && error.message) ? error.message : 'Sync failed - please try again.';
+            const alertMsg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('sync_failed_try_home') || fallbackMsg : fallbackMsg;
+            try { alert(alertMsg); } catch (e) { console.warn && console.warn('Sync failure alert blocked', e); }
+            navigateHomeShell();
+        }
+
         async function finishSession() {
             try {
                 if (_finishingSession) return; // avoid re-entrancy
@@ -2375,7 +2406,7 @@
                         } catch (e) {}
 
                         syncOk = await Promise.race([
-                            DriveStorage.sync(db, ['history', 'routines']),
+                            DriveStorage.sync(db, ['history', 'routines'], { showAlert: false }),
                             new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 8000))
                         ]).then(res => !!res).catch(e => { throw e; });
                     } catch (syncErr) {
@@ -2388,16 +2419,7 @@
                 }
 
                 if (!syncOk) {
-                    try { localStorage.setItem(HOME_REFRESH_FLAG, '1'); } catch(e){}
-                    // Mark that local changes are pending and navigate home so
-                    // the existing sync-warning button is shown there. Keep the
-                    // alert so the user sees the failure first.
-                    try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
-                    const alertMsg = (typeof GN_I18N !== 'undefined')
-                        ? GN_I18N.t('sync_failed_try_home')
-                        : (lastSyncError && lastSyncError.message ? lastSyncError.message : 'Sync failed - please try again.');
-                    alert(alertMsg);
-                    try { const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/'); location.href = basePath + 'index.html?start=home'; } catch (e) { try { location.href = 'index.html?start=home'; } catch(_){} }
+                    handleDriveSyncFailure(lastSyncError);
                     return;
                 }
 
