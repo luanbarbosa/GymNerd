@@ -53,8 +53,8 @@
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
-        .card { background-color: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
-        .view-content { padding: 12px 15px 20px 15px; }
+        .view-content { padding: 16px; padding-top: 12px; }
+        #setupView .view-content { padding-bottom: 140px; }
         select, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         
         .exercise-list { margin-top: 10px; }
@@ -73,7 +73,6 @@
             transition: transform 180ms cubic-bezier(.2,.8,.2,1);
             will-change: transform;
         }
-
 
         .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; }
         .player-img { background: #fff; }
@@ -235,6 +234,31 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             background-clip: padding-box;
+        }
+        #setupBottomNav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+            backdrop-filter: blur(6px);
+            box-sizing: border-box;
+            z-index: 1300;
+        }
+        #setupBottomNav .setup-start-btn {
+            width: 100%;
+            max-width: 480px;
+            border-radius: 14px;
+            padding: 14px 0;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
         }
         .icon-btn:active { transform: scale(0.92); box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
         .icon-btn.prev { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim); }
@@ -511,15 +535,17 @@
                 </div>
             </div>
 
-            <div class="card">
-                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px" data-i18n="label_select_routine"></label>
-                <select id="workoutSelect" onchange="loadExercises()">
-                    <option value="" data-i18n="choose_routine_placeholder"></option>
-                </select>
+            <div id="routineSetupPanel">
+                <div id="routinePickerWrapper" class="hidden">
+                    <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px" data-i18n="label_select_routine"></label>
+                    <select id="workoutSelect" onchange="loadExercises()">
+                        <option value="" data-i18n="choose_routine_placeholder"></option>
+                    </select>
 
-                <div id="noRoutinesEmpty" style="display:none;color:var(--text-dim);padding:12px 0 20px;text-align:center;background:transparent;">
-                    <img src="illustrations/empty-livesession.svg" alt="" style="width:100%;max-width:100%;height:auto;margin:0 0 12px;display:block;" />
-                    <div data-i18n="livesession_no_routines"></div>
+                    <div id="noRoutinesEmpty" style="display:none;color:var(--text-dim);padding:12px 0 20px;text-align:center;background:transparent;">
+                        <img src="illustrations/empty-livesession.svg" alt="" style="width:100%;max-width:100%;height:auto;margin:0 0 12px;display:block;" />
+                        <div data-i18n="livesession_no_routines"></div>
+                    </div>
                 </div>
 
                 <div style="display:flex; gap:8px; margin-top:8px;">
@@ -533,6 +559,9 @@
                 <button id="startBtn" class="start-btn" onclick="startSession()" data-i18n="start_session"></button>
             </div>
         </div>
+        <aside id="setupBottomNav" role="navigation">
+            <button id="setupStartBtn" class="start-btn setup-start-btn" onclick="startSession()" data-i18n="start_workout"></button>
+        </aside>
     </div>
 
     <div id="playerView" style="display: none;">
@@ -1184,7 +1213,6 @@
 
         applyIosBottomPadding();
 
-
         async function init() {
             await ensureDbOpen();
             // Default images will use `defaultImage` defined in `db.js` when specific images are missing.
@@ -1192,7 +1220,6 @@
             const select = document.getElementById('workoutSelect');
             const noRoutinesEmpty = document.getElementById('noRoutinesEmpty');
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-            const cardEl = document.querySelector('.card');
             if (!workouts || workouts.length === 0) {
                 // hide select and related controls, show illustrative empty state
                 try { select.style.display = 'none'; } catch (e) {}
@@ -1201,8 +1228,6 @@
                 try { document.getElementById('exerciseContainer').style.display = 'none'; } catch (e) {}
                 try { document.getElementById('startBtn').style.display = 'none'; } catch (e) {}
                 if (noRoutinesEmpty) noRoutinesEmpty.style.display = '';
-                // make the enclosing card transparent so the illustration appears on the page background
-                try { if (cardEl) { cardEl.style.background = 'transparent'; cardEl.style.border = 'none'; cardEl.style.boxShadow = 'none'; } } catch(e) {}
             } else {
                 workouts.forEach(w => {
                     const opt = document.createElement('option');
@@ -1214,8 +1239,6 @@
                 try { select.style.display = ''; } catch (e) {}
                 try { const lbl = select.previousElementSibling; if (lbl && lbl.tagName === 'LABEL') lbl.style.display = ''; } catch (e) {}
                 try { document.getElementById('exerciseContainer').style.display = ''; } catch (e) {}
-                // restore card visual style
-                try { if (cardEl) { cardEl.style.background = ''; cardEl.style.border = ''; cardEl.style.boxShadow = ''; } } catch(e) {}
             }
             // apply static translations from GN_I18N
             try { GN_I18N.applyTranslations(document); } catch(e){}

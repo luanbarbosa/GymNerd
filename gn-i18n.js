@@ -254,6 +254,7 @@
                 choose_routine_placeholder: '-- Choose Routine --',
                 livesession_no_routines: 'You need to create a routine first',
                 start_session: 'Start Session',
+                start_workout: 'Start workout',
                 livesession_workout_timer_label: 'Workout:',
 
                 play_exercise: 'Play this exercise',
@@ -550,6 +551,7 @@
                 choose_routine_placeholder: '-- Escolha o Treino --',
                 livesession_no_routines: 'Você precisa criar um treino primeiro',
                 start_session: 'Iniciar Sessão',
+                start_workout: 'Iniciar treino',
                 livesession_workout_timer_label: 'Treino:',
 
 
