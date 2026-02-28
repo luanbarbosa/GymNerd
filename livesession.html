@@ -53,8 +53,8 @@
         .header h2 { font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
         
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
-        .card { background-color: var(--card-background); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; }
-        .view-content { padding: 12px 15px 20px 15px; }
+        .view-content { padding: 16px; padding-top: 12px; }
+        #setupView .view-content { padding-bottom: 140px; }
         select, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         
         .exercise-list { margin-top: 10px; }
@@ -74,8 +74,255 @@
             will-change: transform;
         }
 
+        /* Routine selection UI (checkbox list) */
+        #routinePickerWrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .routine-picker-label {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text);
+            margin: 0;
+        }
+        .routine-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .routine-entry {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            box-sizing: border-box;
+        }
+        .routine-entry {
+            background-color: var(--card-background);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0;
+            margin-bottom: 0;
+            overflow: hidden;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .routine-entry:first-child {
+            border-top-left-radius: 14px;
+            border-top-right-radius: 14px;
+        }
+        .routine-entry:last-child {
+            border-bottom-left-radius: 14px;
+            border-bottom-right-radius: 14px;
+        }
+        .routine-entry.open,
+        .routine-entry[open] {
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: none;
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
 
-        .ex-thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; }
+        .routine-row {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            width: 100%;
+            max-width: min(100%, 100vw);
+            box-sizing: border-box;
+            padding: 30px 0 0;
+            min-height: 72px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .routine-row:hover,
+        .routine-row:focus-visible {
+            transform: translateY(-1px);
+            border-color: rgba(59,130,246,0.5);
+        }
+        .routine-row--no-highlight:hover,
+        .routine-row--no-highlight:focus-visible {
+            transform: none;
+            border-color: rgba(255,255,255,0.08);
+        }
+        .routine-row input[type="checkbox"],
+        .routine-select input[type="checkbox"] {
+            flex: 0 0 26px;
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            min-height: 26px;
+            align-self: center;
+            accent-color: var(--accent-color);
+        }
+        .routine-select {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1 1 auto;
+            justify-content: flex-start;
+            min-width: 0;
+            cursor: default;
+            margin-inline-start: 10px;
+        }
+        .routine-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+            flex: 1 1 auto;
+            min-width: 0;
+            align-self: center;
+            overflow: hidden;
+            max-width: 100%;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-height: 1.25;
+            white-space: normal;
+            word-break: break-word;
+        }
+        .routine-show-btn {
+            flex-shrink: 0;
+            margin-left: auto;
+            margin-right: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.08);
+            color: var(--accent-color);
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+            align-self: center;
+        }
+        .routine-show-btn svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            transition: transform 0.2s ease;
+        }
+        .routine-entry[open] .routine-show-btn svg {
+            transform: rotate(180deg);
+        }
+        .routine-show-btn:focus-visible {
+            outline: 2px solid rgba(255,255,255,0.6);
+            border-radius: 50%;
+        }
+        .routine-entry summary {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .routine-entry summary::-webkit-details-marker,
+        .routine-entry summary::marker {
+            display: none;
+        }
+        .routine-exercise-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 0;
+            margin-right: 0;
+            font-size: 0.9rem;
+            background: color-mix(in srgb, var(--card-background) 90%, #000 10%);
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: max-height 0.35s ease, opacity 0.35s ease, padding 0.35s ease;
+        }
+        .routine-entry[open] .routine-exercise-list {
+            max-height: 2000px;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .routine-entry[open] summary::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+        .routine-exercise-row {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+            font-size: 1rem;
+            color: var(--text);
+            padding: 0 0 0 16px;
+            border-radius: 0;
+            border: none;
+            background: transparent;
+            min-height: 78px;
+            height: 78px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .routine-exercise-row:not(:last-child) {
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .routine-exercise-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-color);
+            align-self: center;
+            flex: 0 0 18px;
+        }
+        .routine-exercise-label {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0;
+        }
+        .routine-exercise-name {
+            flex: 1;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-height: 1.2;
+            max-height: calc(1.2em * 2);
+            word-break: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-secondary-color);
+        }
+        .routine-exercise-empty {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+
+        .ex-thumb { width: 128px; border-radius: 0; object-fit: contain; object-position: center; background: #fff; flex-shrink: 0; margin: 0; align-self: stretch; height: 100%; }
         .player-img { background: #fff; }
         /* Reorder UI */
         .reorder-btn { display: inline-flex; align-items: center; gap:8px; border: none; background: rgba(255,255,255,0.02); color: var(--text-dim); padding: 8px 10px; border-radius: 10px; cursor: pointer; font-weight: 800; transition: background 0.12s, box-shadow 0.12s, color 0.12s, transform 0.08s; }
@@ -104,12 +351,33 @@
             border: none; 
             font-weight: bold; 
             cursor: pointer; 
-            margin-top: 20px; 
-            display: none;
+            margin-top: 0;
+            margin-bottom: 12px;
+            padding: 14px 26px;
+            min-height: 56px;
+            border-radius: 12px;
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+            transition: opacity 0.2s ease; 
+        }
+        .start-btn.disabled { 
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .start-btn.secondary {
+            margin-top: 0;
+            background: transparent;
+            color: var(--text-secondary-color);
+            border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: none;
+            padding: 14px 26px;
+            min-height: 56px;
         }
 
         .player-card { text-align: center; padding: 0; overflow: hidden; }
-        .player-card-body { padding: 6px 20px 20px; }
+        .player-card-body { padding: 6px 20px 20px; background: var(--card-background); border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; }
         .current-ex-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 10px; color: var(--text); line-height: 1.15; text-align: center; word-break: break-word; }
         /* Reserve space for up to 2 lines; center vertically when only one line */
         .current-ex-title {
@@ -129,7 +397,7 @@
             height: calc(84px + constant(safe-area-inset-bottom));
             height: calc(84px + env(safe-area-inset-bottom));
         }
-        .ex-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
+        .ex-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 0; margin-bottom: 14px; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; }
         .ex-title-group { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         /* exercise title removed per request */
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -143,13 +411,13 @@
         .timer-pair { display: inline-flex; align-items: center; gap: 4px; }
         @keyframes timer-blink { 50% { opacity: 0; } }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
-        .progress-bar { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-bar { height: 100%; background: #ffffff; width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         /* Exercise progress graph (balls and connectors) */
         .exercise-graph { display:flex; gap:8px; align-items:center; justify-content:center; padding-top:8px; padding-left:16px; padding-right:16px; box-sizing:border-box; overflow:hidden; }
         .exercise-node { width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#0b1220; background:#1e293b; border:2px solid rgba(255,255,255,0.04); cursor:pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4); flex-shrink:0; }
         .exercise-node.completed { background: var(--success); color: white; border-color: rgba(16,185,129,0.15); }
         .exercise-node.active { box-shadow: 0 6px 18px rgba(59,130,246,0.16); transform: scale(1.06); }
-        .exercise-node.skipped { background: rgba(255,255,255,0.04); color: var(--text-dim); border-color: rgba(255,255,255,0.04); }
+        .exercise-node.skipped { background: var(--danger); color: #ffffff; border-color: transparent; }
         .exercise-connector { width:26px; height:4px; background: rgba(255,255,255,0.06); border-radius:2px; flex-shrink:0; }
         .exercise-connector.completed { background: linear-gradient(90deg, #10b981, #34d399); }
         .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
@@ -235,6 +503,56 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             background-clip: padding-box;
+        }
+        .topbar-sort-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            border: none;
+            background: none;
+            color: var(--text);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            cursor: pointer;
+            padding: 0;
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+        .topbar-sort-btn:hover,
+        .topbar-sort-btn:focus-visible {
+            background: rgba(255,255,255,0.15);
+        }
+        .topbar-sort-btn:active {
+            transform: scale(0.96);
+        }
+        .topbar-sort-btn .material-symbols-outlined {
+            font-size: 20px;
+        }
+        #setupBottomNav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+            backdrop-filter: blur(6px);
+            box-sizing: border-box;
+            z-index: 1300;
+        }
+        #setupBottomNav .setup-start-btn {
+            width: 100%;
+            max-width: 480px;
+            border-radius: 14px;
+            padding: 14px 0;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
         }
         .icon-btn:active { transform: scale(0.92); box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
         .icon-btn.prev { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim); }
@@ -444,7 +762,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: min(500px, calc(100% - 32px));
-            padding: 12px 0 0;
+            padding: 0 0 0;
             box-sizing: border-box;
             display:flex;
             flex-direction: column;
@@ -469,7 +787,7 @@
         /* Player card title overlay (title removed) */
         .player-card { position: relative; }
         .exercise-node { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:rgba(255,255,255,0.06); color:var(--text); width:34px; height:34px; flex:0 0 auto; border:2px solid rgba(255,255,255,0.06); font-weight:700; }
-        .exercise-node-label { display:block; width:100%; text-align:center; line-height:1; font-size:14px; }
+        .exercise-node-label { display:flex; align-items:center; justify-content:center; width:100%; height:100%; text-align:center; line-height:1; font-size:14px; }
         /* Slight optical nudge for symbol-based nodes to match numeric centering */
         .exercise-node.completed .exercise-node-label,
         .exercise-node.skipped .exercise-node-label { transform: translateX(0.6px); }
@@ -485,22 +803,127 @@
         }
         .exercise-connector { background:rgba(255,255,255,0.06); height:4px; border-radius:2px; display:inline-block; }
         .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
+        body.sort-dialog-open { overflow: hidden; }
+        .sort-dialog {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 2500;
+        }
+        .sort-dialog.hidden { display: none !important; }
+        .sort-dialog-overlay {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            opacity: 0.45;
+        }
+        .sort-dialog-panel {
+            position: relative;
+            z-index: 1;
+            width: min(500px, 100%);
+            max-height: calc(100vh - 64px);
+            background: var(--card-background);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            color: var(--text);
+            overflow: hidden;
+        }
+        .sort-dialog-header { display: flex; flex-direction: column; gap: 6px; }
+        .sort-dialog-header h3 { margin: 0; font-size: 1.3rem; font-weight: 700; }
+        .sort-dialog-header p { margin: 0; font-size: 0.9rem; color: var(--text-dim); }
+        .sort-dialog-list-wrapper { flex: 1; min-height: 120px; }
+        .sort-dialog-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: min(70vh, calc(100vh - 220px));
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .sort-dialog-item {
+            display: flex;
+            align-items: stretch;
+            gap: 12px;
+            padding-inline-start: 0;
+            padding-inline-end: 14px;
+            padding-block: 0;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: grab;
+        }
+        .sort-dialog-item:focus-visible { outline: 2px solid rgba(59,130,246,0.7); outline-offset: 2px; }
+        .sort-dialog-thumb {
+            width: 80px;
+            height: 70px;
+            border-radius: 12px 0 0 12px;
+            object-fit: contain;
+            background: #ffffff;
+            flex-shrink: 0;
+            margin: 0;
+            align-self: stretch;
+            overflow: hidden;
+            display: block;
+        }
+        .sort-dialog-item-content { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
+        .sort-dialog-exercise-name {
+            font-weight: 700;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+        }
+        .sort-dialog-actions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; padding: 0; }
+        .sort-dialog-btn {
+            min-width: 110px;
+            border-radius: 999px;
+            padding: 10px 18px;
+            border: 1px solid transparent;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.08);
+            color: inherit;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+        .sort-dialog-btn.primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--text-on-accent-color); }
+        .sort-dialog-btn.secondary { background: transparent; border-color: rgba(255, 255, 255, 0.35); }
+        .sort-dialog-btn:active { transform: scale(0.98); }
+        .sort-dialog-empty { text-align: center; color: var(--text-dim); font-size: 0.92rem; padding: 20px 0; }
+        .sort-dialog-handle { flex-shrink: 0; cursor: grab; font-size: 1.2rem; margin-left: auto; align-self: center; }
     </style>
 </head>
 <body>
     <div id="setupView">
                 <div class="top-card">
-            <div class="top-card-inner">
-                <div class="topbar">
-                    <div style="display:flex;align-items:center;width:100%;gap:12px;">
-                            <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); history.back();"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
-                            <div style="flex:1;min-width:0;">
-                                <h2 class="app-title-compact" data-i18n="page_start_routine"></h2>
-                            </div>
+                    <div class="top-card-inner">
+                        <div class="topbar">
+                            <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                                    <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); history.back();"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
+                                    <div style="flex:1;min-width:0;">
+                                        <h2 class="app-title-compact" data-i18n="page_start_routine"></h2>
+                                    </div>
+                                </div>
+                            <button id="sortExercisesBtn" class="topbar-sort-btn" type="button" onclick="handleSortExercises(event)">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M6 12h12M10 18h4"></path></svg>
+                                <span class="sr-only" data-i18n="sort_exercises"></span>
+                            </button>
                         </div>
+                    </div>
                 </div>
-            </div>
-        </div>
         
         <div class="view-content">
             <div id="resumeCard" class="resume-card" style="display: none;">
@@ -511,28 +934,42 @@
                 </div>
             </div>
 
-            <div class="card">
-                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px" data-i18n="label_select_routine"></label>
-                <select id="workoutSelect" onchange="loadExercises()">
-                    <option value="" data-i18n="choose_routine_placeholder"></option>
-                </select>
+            <div id="routineSetupPanel">
+                <div id="routinePickerWrapper">
+                    <label class="routine-picker-label" data-i18n="label_select_routine"></label>
+                    <select id="workoutSelect" aria-hidden="true" tabindex="-1" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;">
+                        <option value="" data-i18n="choose_routine_placeholder"></option>
+                    </select>
+                    <div id="routineList" class="routine-list" role="list" aria-live="polite"></div>
+                    <template id="routineRowTemplate">
+                        <details class="routine-entry" aria-live="polite">
+                            <summary class="routine-row" role="button">
+                                <div class="routine-select">
+                                    <input type="checkbox" name="routineSelect" aria-label="">
+                                    <span class="routine-name"></span>
+                                </div>
+                                <button type="button" class="routine-show-btn" aria-expanded="false">
+                                    <span class="sr-only" data-i18n="livesession_show_exercises"></span>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                        <polyline points="6 10 12 16 18 10"></polyline>
+                                    </svg>
+                                </button>
+                            </summary>
+                            <div class="routine-exercise-list" aria-live="polite"></div>
+                        </details>
+                    </template>
 
-                <div id="noRoutinesEmpty" style="display:none;color:var(--text-dim);padding:12px 0 20px;text-align:center;background:transparent;">
-                    <img src="illustrations/empty-livesession.svg" alt="" style="width:100%;max-width:100%;height:auto;margin:0 0 12px;display:block;" />
-                    <div data-i18n="livesession_no_routines"></div>
+                    <div id="noRoutinesEmpty" style="display:none;color:var(--text-dim);padding:12px 0 20px;text-align:center;background:transparent;">
+                        <img src="illustrations/empty-livesession.svg" alt="" style="width:100%;max-width:100%;height:auto;margin:0 0 12px;display:block;" />
+                        <div data-i18n="livesession_no_routines"></div>
+                    </div>
                 </div>
 
-                <div style="display:flex; gap:8px; margin-top:8px;">
-                    <button id="toggleSortBtn" type="button" class="reorder-btn" style="display:none" onclick="toggleSortMode()" title="Ordenar">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="14" y2="12"></line><line x1="4" y1="17" x2="10" y2="17"></line></svg>
-                        <span class="label">Ordenar</span>
-                    </button>
-                </div>
-
-                <div id="exerciseContainer" class="exercise-list"></div>
-                <button id="startBtn" class="start-btn" onclick="startSession()" data-i18n="start_session"></button>
             </div>
         </div>
+        <aside id="setupBottomNav" role="navigation">
+            <button id="setupStartBtn" class="start-btn setup-start-btn" onclick="handleStartButtonClick(event)" data-i18n="start_workout"></button>
+        </aside>
     </div>
 
     <div id="playerView" style="display: none;">
@@ -700,6 +1137,23 @@
                 </div>
         </div>
 
+        <div id="sortExercisesDialog" class="sort-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="sortExercisesDialogTitle" aria-describedby="sortExercisesDialogHint">
+            <div class="sort-dialog-overlay" data-dialog-close="true"></div>
+            <div class="sort-dialog-panel">
+                <header class="sort-dialog-header">
+                    <h3 id="sortExercisesDialogTitle" data-i18n="sort_exercises_dialog_title"></h3>
+                    <p id="sortExercisesDialogHint" data-i18n="drag_to_reorder"></p>
+                </header>
+                <div class="sort-dialog-list-wrapper">
+                    <ul id="sortExerciseList" class="sort-dialog-list" role="list" tabindex="0"></ul>
+                    <div id="sortDialogEmptyState" class="sort-dialog-empty hidden" data-i18n="select_exercise_alert"></div>
+                </div>
+                <div class="sort-dialog-actions">
+                    <button type="button" class="sort-dialog-btn primary" data-i18n="sort_exercises_dialog_done" onclick="confirmSortDialog()"></button>
+                </div>
+            </div>
+        </div>
+
         <script>
 
         const HOME_REFRESH_FLAG = 'home_force_refresh';
@@ -728,6 +1182,7 @@
         let currentIdx = 0;
         let viewingIdx = 0;
         let currentWorkoutId = null;
+        let sessionWorkoutIds = [];
         let timerInterval = null;
         let workoutTimerInterval = null;
         let timerStartMs = null; // timestamp (ms) when current timer started
@@ -737,12 +1192,15 @@
         let sessionStartMs = null; // timestamp (ms) when session started
         let routineModified = false;
         let _finishingSession = false;
+        let manualExerciseOrder = null;
+        let sortExercisesSortable = null;
 
         function resetSessionMemory() {
             sessionSets = [];
             currentIdx = 0;
             viewingIdx = 0;
             currentWorkoutId = null;
+            sessionWorkoutIds = [];
             sessionStartMs = null;
             routineModified = false;
             lastActiveTimerSignature = null;
@@ -1067,11 +1525,19 @@
                 grid.innerHTML = `
                     <div class="stat-card">
                         <div class="stat-label">${GN_I18N.t ? GN_I18N.t('exercises_completed') : 'Exercises'}</div>
-                        <div class="stat-value">${completedOcc.size}</div>
+                        <div class="stat-value">${(() => {
+                            const allOccIds = Array.from(new Set(sessionSets.map(s => s.occurrenceId)));
+                            const skippedOcc = allOccIds.filter(occId => sessionSets.filter(s => s.occurrenceId === occId).every(ss => ss.skipped));
+                            if (skippedOcc.length > 0) {
+                                return `${completedOcc.size}/${allOccIds.length}`;
+                            } else {
+                                return completedOcc.size;
+                            }
+                        })()}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('total_weight') : 'Total weight'}</div>
-                        <div class="stat-value">${totalWeightLifted.toFixed(1)} ${GN_I18N.t ? GN_I18N.t('history_fmt_kg_suffix') : 'kg'}</div>
+                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('duration') : 'Workout time'}</div>
+                        <div class="stat-value">${formatSeconds(durationSec)}</div>
                     </div>
                     <div class="stat-card type-progress-card" style="grid-column:1 / -1;">
                         <div class="stat-label">${GN_I18N.t ? GN_I18N.t('by_type') : 'By Type'}</div>
@@ -1182,8 +1648,394 @@
             }
         }
 
-        applyIosBottomPadding();
+        let _exerciseCache = null;
+        let _exerciseCachePromise = null;
 
+        async function getAllExerciseRecords() {
+            if (_exerciseCache) return _exerciseCache;
+            if (_exerciseCachePromise) return _exerciseCachePromise;
+            _exerciseCachePromise = (async () => {
+                const [catalogEx, customEx] = await Promise.all([
+                    db.catalog_exercises.toArray(),
+                    db.custom_exercises.toArray()
+                ]);
+                const mapped = [
+                    ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                    ...customEx.map(ex => ({ ...ex, isCustom: true }))
+                ];
+                _exerciseCache = mapped;
+                _exerciseCachePromise = null;
+                return mapped;
+            })();
+            return _exerciseCachePromise;
+        }
+
+        async function resolveExerciseImageSrc(record) {
+            const fallback = (typeof defaultImage === 'string' && defaultImage) ? defaultImage : '';
+            if (!record) return fallback;
+            const table = (record.isCustom ? db.custom_images : db.catalog_images);
+            if (!table || !record.imageId) return fallback;
+            try {
+                const imageEntry = await table.get(record.imageId);
+                if (imageEntry && imageEntry.data) {
+                    return imageEntry.data;
+                }
+            } catch (err) {
+                // ignore
+            }
+            return fallback;
+        }
+
+        async function buildRoutineExerciseList(workout, lang) {
+            const fragment = document.createDocumentFragment();
+            const exerciseRecords = await getAllExerciseRecords();
+            const ids = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
+            if (!ids.length) {
+                const empty = document.createElement('div');
+                empty.className = 'routine-exercise-empty';
+                empty.textContent = GN_I18N.t ? GN_I18N.t('no_exercise_found') : 'No exercises';
+                fragment.appendChild(empty);
+                return fragment;
+            }
+            for (let index = 0; index < ids.length; index++) {
+                const item = ids[index];
+                const id = typeof item === 'object' ? item.id : item;
+                const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                const ex = exerciseRecords.find(e => e.id === id && !!e.isCustom === isCustom);
+                if (!ex) continue;
+                const row = document.createElement('label');
+                row.className = 'routine-exercise-row';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = id;
+                checkbox.name = `routine-${workout.id}-exercise`;
+                checkbox.dataset.custom = isCustom ? '1' : '0';
+                checkbox.dataset.entryIndex = String(index);
+                const displayName = (lang && lang.startsWith('pt') && ex.namePT) ? ex.namePT : (ex.name || `#${id}`);
+                const labelContainer = document.createElement('span');
+                labelContainer.className = 'routine-exercise-label';
+                const lineClamp = document.createElement('span');
+                lineClamp.className = 'routine-exercise-name';
+                lineClamp.textContent = displayName;
+                labelContainer.appendChild(lineClamp);
+                row.appendChild(checkbox);
+                row.appendChild(labelContainer);
+                const img = document.createElement('img');
+                img.className = 'ex-thumb';
+                img.alt = displayName;
+                let imageSrc = defaultImage;
+                const imgTable = db && (isCustom ? db.custom_images : db.catalog_images);
+                if (imgTable && ex.imageId) {
+                    try {
+                        const imgRecord = await imgTable.get(ex.imageId);
+                        if (imgRecord && imgRecord.data) {
+                            imageSrc = imgRecord.data;
+                        }
+                    } catch (err) {}
+                }
+                img.src = imageSrc || '';
+                row.appendChild(img);
+                checkbox.addEventListener('change', () => {
+                    updateRoutineParentCheckboxState(checkbox.closest('.routine-entry'));
+                    syncWorkoutSelectWithExercise(checkbox);
+                    updateStartButtonsVisibility();
+                    invalidateExerciseSortOrder();
+                });
+                fragment.appendChild(row);
+            }
+            if (!fragment.childElementCount) {
+                const empty = document.createElement('div');
+                empty.className = 'routine-exercise-empty';
+                empty.textContent = GN_I18N.t ? GN_I18N.t('no_exercise_found') : 'No exercises';
+                fragment.appendChild(empty);
+            }
+            return fragment;
+        }
+
+        async function ensureRoutineExercisesPopulated(entry, workout, lang) {
+            if (!entry || !workout) return;
+            const panel = entry.querySelector('.routine-exercise-list');
+            if (!panel || panel.dataset.populated === 'true' || panel.dataset.populated === 'loading') return;
+            panel.dataset.populated = 'loading';
+            panel.innerHTML = '';
+            try {
+                const content = await buildRoutineExerciseList(workout, lang);
+                panel.appendChild(content);
+                syncRoutineExerciseCheckboxesForEntry(entry);
+                panel.dataset.populated = 'true';
+            } catch (err) {
+                panel.dataset.populated = 'true';
+                const error = document.createElement('div');
+                error.className = 'routine-exercise-empty';
+                error.textContent = GN_I18N.t ? GN_I18N.t('loading') : 'Loading...';
+                panel.appendChild(error);
+            }
+        }
+
+        function handleRoutineEntryToggle(entry, workout, lang) {
+            const row = entry ? entry.querySelector('.routine-row') : null;
+            const showBtn = entry ? entry.querySelector('.routine-show-btn') : null;
+            const isOpen = entry && entry.hasAttribute('open');
+            if (row) {
+                row.dataset.highlightExpanded = isOpen ? 'true' : 'false';
+                refreshRoutineRowHighlight(row);
+            }
+            if (showBtn) {
+                showBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
+            if (isOpen) {
+                ensureRoutineExercisesPopulated(entry, workout, lang);
+            }
+        }
+
+        function getLocalizedRoutineName(workout, lang) {
+            if (lang && lang.toString().startsWith('pt') && workout.namePT) return workout.namePT;
+            return workout.name || `#${workout.id}`;
+        }
+
+        function refreshRoutineRowHighlight(row) {
+            if (!row) return;
+            const suppressed = row.dataset.highlightExpanded === 'true' || row.dataset.highlightSelected === 'true';
+            row.classList.toggle('routine-row--no-highlight', suppressed);
+        }
+
+        function updateRoutineRowHighlightForCheckbox(checkbox) {
+            if (!checkbox) return;
+            const entry = checkbox.closest('.routine-entry');
+            const row = entry ? entry.querySelector('.routine-row') : null;
+            if (!row) return;
+            row.dataset.highlightSelected = checkbox.checked ? 'true' : 'false';
+            refreshRoutineRowHighlight(row);
+        }
+
+        function syncRoutineExerciseCheckboxesForEntry(entry) {
+            if (!entry) return;
+            const routineCheckbox = entry.querySelector('input[name="routineSelect"]');
+            if (!routineCheckbox) return;
+            const exerciseCheckboxes = entry.querySelectorAll('.routine-exercise-row input[type="checkbox"]');
+            exerciseCheckboxes.forEach(cb => {
+                cb.checked = routineCheckbox.checked;
+            });
+            updateRoutineParentCheckboxState(entry);
+        }
+
+        function getRoutineExerciseCheckboxes(entry) {
+            if (!entry) return [];
+            return Array.from(entry.querySelectorAll('.routine-exercise-row input[type="checkbox"]'));
+        }
+
+        function updateRoutineParentCheckboxState(entry) {
+            if (!entry) return;
+            const routineCheckbox = entry.querySelector('input[name="routineSelect"]');
+            if (!routineCheckbox) return;
+            const exerciseCheckboxes = getRoutineExerciseCheckboxes(entry);
+            if (!exerciseCheckboxes.length) {
+                routineCheckbox.indeterminate = false;
+                return;
+            }
+            const checkedCount = exerciseCheckboxes.filter(cb => cb.checked).length;
+            const allChecked = checkedCount === exerciseCheckboxes.length;
+            routineCheckbox.checked = allChecked;
+            routineCheckbox.indeterminate = checkedCount > 0 && !allChecked;
+        }
+
+        function hasSelectedExercises() {
+            const expandedExerciseChecked = !!document.querySelector('.routine-exercise-row input[type="checkbox"]:checked');
+            const routineChecked = !!document.querySelector('input[name="routineSelect"]:checked');
+            return expandedExerciseChecked || routineChecked;
+        }
+
+        function syncWorkoutSelectWithExercise(checkbox) {
+            if (!checkbox || !checkbox.checked) return;
+            const entry = checkbox.closest('.routine-entry');
+            if (!entry) return;
+            const routineCheckbox = entry.querySelector('input[name="routineSelect"]');
+            if (!routineCheckbox) return;
+            const select = document.getElementById('workoutSelect');
+            if (!select) return;
+            const routineId = routineCheckbox.value;
+            if (!routineId) return;
+            if (select.value === routineId) return;
+            select.value = routineId;
+        }
+
+        function getSelectedWorkoutEntries() {
+            const entries = Array.from(document.querySelectorAll('.routine-entry'));
+            const selections = [];
+            entries.forEach(entry => {
+                const routineCheckbox = entry.querySelector('input[name="routineSelect"]');
+                if (!routineCheckbox) return;
+                const workoutId = parseInt(routineCheckbox.value, 10);
+                if (!Number.isFinite(workoutId)) return;
+                const exerciseCheckboxes = Array.from(entry.querySelectorAll('.routine-exercise-row input[type="checkbox"]'));
+                const selectedIndexes = exerciseCheckboxes
+                    .filter(cb => cb.checked && cb.dataset.entryIndex !== undefined)
+                    .map(cb => parseInt(cb.dataset.entryIndex, 10))
+                    .filter(Number.isFinite);
+                if (selectedIndexes.length) {
+                    selectedIndexes.forEach(index => selections.push({ workoutId, index }));
+                    return;
+                }
+                if (!routineCheckbox.checked) return;
+                const total = Number(entry.dataset.exerciseCount) || 0;
+                for (let idx = 0; idx < total; idx++) {
+                    selections.push({ workoutId, index: idx });
+                }
+            });
+            return selections;
+        }
+
+        function getAffectedWorkoutIds() {
+            const ids = Array.isArray(sessionWorkoutIds) ? sessionWorkoutIds.slice() : [];
+            if (Number.isFinite(currentWorkoutId) && !ids.includes(currentWorkoutId)) {
+                ids.push(currentWorkoutId);
+            }
+            return Array.from(new Set(ids.filter(id => Number.isFinite(id))));
+        }
+
+        function getSessionSetsForExercise(workoutId, exId, isCustom) {
+            return sessionSets.filter(set => {
+                if (!set) return false;
+                const matchesWorkout = set.routineId === workoutId;
+                const matchesExercise = set.exId === exId;
+                const matchesCustom = (!!set.isCustom) === (!!isCustom);
+                return matchesWorkout && matchesExercise && matchesCustom;
+            });
+        }
+
+        function buildExerciseUpdateEntry(item, workoutId) {
+            if (!Number.isFinite(workoutId)) return item;
+            const entryIsObject = typeof item === 'object' && item !== null;
+            const exId = entryIsObject ? item.id : item;
+            const isCustom = entryIsObject ? !!item.isCustom : false;
+            const sessionSetsForExercise = getSessionSetsForExercise(workoutId, exId, isCustom);
+            if (!sessionSetsForExercise.length) return item;
+            const exerciseType = (sessionSetsForExercise[0] && (sessionSetsForExercise[0].exerciseType || sessionSetsForExercise[0].type)) ? (sessionSetsForExercise[0].exerciseType || sessionSetsForExercise[0].type) : '';
+            const isCardio = isCardioExerciseType(exerciseType);
+            const mappedSets = sessionSetsForExercise.map(set => isCardio ? { distance: set.distance, time: set.time } : { reps: set.reps, weight: set.weight });
+            return {
+                id: exId,
+                isCustom,
+                sets: mappedSets
+            };
+        }
+
+        function workoutHasRoutineChange(workout) {
+            if (!workout || !Array.isArray(workout.exerciseIds)) return false;
+            const workoutId = workout.id;
+            return workout.exerciseIds.some(item => {
+                const entryIsObject = typeof item === 'object' && item !== null;
+                const exId = entryIsObject ? item.id : item;
+                const isCustom = entryIsObject ? !!item.isCustom : false;
+                const sets = getSessionSetsForExercise(workoutId, exId, isCustom);
+                if (!sets.length) return false;
+                const storedSets = entryIsObject && Array.isArray(item.sets) ? item.sets : [];
+                const isCardio = isCardioExerciseType((sets[0] && (sets[0].exerciseType || sets[0].type)) || '');
+                return sets.some(set => {
+                    const stored = storedSets[set.setNum - 1];
+                    if (!stored) return false;
+                    if (isCardio) {
+                        return normalizeNumericValue(set.distance) !== normalizeNumericValue(stored.distance) ||
+                            normalizeNumericValue(set.time) !== normalizeNumericValue(stored.time);
+                    }
+                    return normalizeNumericValue(set.reps) !== normalizeNumericValue(stored.reps) ||
+                        normalizeNumericValue(set.weight) !== normalizeNumericValue(stored.weight);
+                });
+            });
+        }
+
+        async function updateWorkoutsFromSession(workoutIds) {
+            const ids = Array.from(new Set(workoutIds.filter(id => Number.isFinite(id))));
+            for (const id of ids) {
+                const workout = await db.routines.get(id);
+                if (!workout) continue;
+                const entries = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
+                workout.exerciseIds = entries.map(item => buildExerciseUpdateEntry(item, id));
+                await db.routines.put(workout);
+            }
+        }
+
+        async function shouldOfferRoutineSaveOption() {
+            if (routineModified) return true;
+            const ids = getAffectedWorkoutIds();
+            if (!ids.length) return false;
+            for (const id of ids) {
+                const workout = await db.routines.get(id);
+                if (workout && workoutHasRoutineChange(workout)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function getActiveRoutineValueIgnoring(ignored) {
+            const routineList = document.getElementById('routineList');
+            if (!routineList) return '';
+            const candidate = Array.from(routineList.querySelectorAll('input[name="routineSelect"]')).find(cb => cb !== ignored && cb.checked);
+            return candidate ? candidate.value : '';
+        }
+
+        function updateHiddenRoutineSelection(checkbox) {
+            if (!checkbox) return;
+            const entry = checkbox.closest('.routine-entry');
+            if (entry) {
+                syncRoutineExerciseCheckboxesForEntry(entry);
+            }
+            updateRoutineRowHighlightForCheckbox(checkbox);
+            const select = document.getElementById('workoutSelect');
+            if (select) {
+                let targetValue = checkbox.checked ? checkbox.value : getActiveRoutineValueIgnoring(checkbox);
+                if (!checkbox.checked && !targetValue) {
+                    targetValue = '';
+                }
+                if (select.value !== targetValue) {
+                    select.value = targetValue;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                } else if (!targetValue && select.value !== '') {
+                    select.value = '';
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+            updateStartButtonsVisibility();
+            invalidateExerciseSortOrder();
+        }
+
+        function renderRoutineChecklist(workouts, lang) {
+            const list = document.getElementById('routineList');
+            const template = document.getElementById('routineRowTemplate');
+            if (!list || !template) return;
+            list.innerHTML = '';
+            workouts.forEach(workout => {
+                const fragment = template.content.cloneNode(true);
+                const entry = fragment.querySelector('.routine-entry');
+                const row = fragment.querySelector('.routine-row');
+                const checkbox = fragment.querySelector('input[name="routineSelect"]');
+                const nameEl = fragment.querySelector('.routine-name');
+                const showBtn = fragment.querySelector('.routine-show-btn');
+                const panel = fragment.querySelector('.routine-exercise-list');
+                if (!entry || !row || !checkbox || !nameEl || !showBtn || !panel) return;
+                nameEl.textContent = getLocalizedRoutineName(workout, lang);
+                nameEl.id = `routine-name-${workout.id}`;
+                checkbox.value = workout.id;
+                checkbox.id = `routineCheckbox-${workout.id}`;
+                checkbox.setAttribute('aria-labelledby', nameEl.id);
+                row.removeAttribute('aria-hidden');
+                const routineIds = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
+                entry.dataset.exerciseCount = routineIds.length;
+                checkbox.addEventListener('click', (event) => event.stopPropagation());
+                checkbox.addEventListener('keydown', (event) => event.stopPropagation());
+                checkbox.addEventListener('change', () => updateHiddenRoutineSelection(checkbox));
+                entry.addEventListener('toggle', () => handleRoutineEntryToggle(entry, workout, lang));
+                showBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    entry.open = !entry.open;
+                });
+                list.appendChild(entry);
+            });
+        }
+
+        applyIosBottomPadding();
 
         async function init() {
             await ensureDbOpen();
@@ -1191,31 +2043,31 @@
             const workouts = await db.routines.toArray();
             const select = document.getElementById('workoutSelect');
             const noRoutinesEmpty = document.getElementById('noRoutinesEmpty');
+            const routineList = document.getElementById('routineList');
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-            const cardEl = document.querySelector('.card');
             if (!workouts || workouts.length === 0) {
                 // hide select and related controls, show illustrative empty state
                 try { select.style.display = 'none'; } catch (e) {}
                 try { const lbl = select.previousElementSibling; if (lbl && lbl.tagName === 'LABEL') lbl.style.display = 'none'; } catch (e) {}
-                try { document.getElementById('toggleSortBtn').style.display = 'none'; } catch (e) {}
-                try { document.getElementById('exerciseContainer').style.display = 'none'; } catch (e) {}
-                try { document.getElementById('startBtn').style.display = 'none'; } catch (e) {}
+                if (routineList) {
+                    routineList.innerHTML = '';
+                    routineList.style.display = 'none';
+                }
                 if (noRoutinesEmpty) noRoutinesEmpty.style.display = '';
-                // make the enclosing card transparent so the illustration appears on the page background
-                try { if (cardEl) { cardEl.style.background = 'transparent'; cardEl.style.border = 'none'; cardEl.style.boxShadow = 'none'; } } catch(e) {}
             } else {
                 workouts.forEach(w => {
                     const opt = document.createElement('option');
                     opt.value = w.id;
-                    opt.textContent = (lang.startsWith('pt') && w.namePT) ? w.namePT : w.name;
+                    opt.textContent = getLocalizedRoutineName(w, lang);
                     select.appendChild(opt);
                 });
+                if (routineList) {
+                    routineList.style.display = '';
+                    renderRoutineChecklist(workouts, lang);
+                }
                 if (noRoutinesEmpty) noRoutinesEmpty.style.display = 'none';
                 try { select.style.display = ''; } catch (e) {}
                 try { const lbl = select.previousElementSibling; if (lbl && lbl.tagName === 'LABEL') lbl.style.display = ''; } catch (e) {}
-                try { document.getElementById('exerciseContainer').style.display = ''; } catch (e) {}
-                // restore card visual style
-                try { if (cardEl) { cardEl.style.background = ''; cardEl.style.border = ''; cardEl.style.boxShadow = ''; } } catch(e) {}
             }
             // apply static translations from GN_I18N
             try { GN_I18N.applyTranslations(document); } catch(e){}
@@ -1229,8 +2081,10 @@
                 const prevSetBtn = document.querySelector('.icon-btn.prev'); if (prevSetBtn) prevSetBtn.title = GN_I18N.t('previous_set');
                 const skipSetBtn = document.querySelector('.icon-btn.skip'); if (skipSetBtn) skipSetBtn.title = GN_I18N.t('skip_set');
                 const nextSetBtn = document.getElementById('nextBtn'); if (nextSetBtn) nextSetBtn.title = GN_I18N.t('complete_set');
+                const sortBtn = document.getElementById('sortExercisesBtn'); if (sortBtn) sortBtn.title = GN_I18N.t('sort_exercises');
             } catch(e){}
             syncResumeCardVisibility();
+            updateStartButtonsVisibility();
         }
 
         function syncResumeCardVisibility() {
@@ -1258,6 +2112,8 @@
                 sessionElapsedMs,
                 routineModified: !!routineModified
             };
+            const uniqueWorkoutIds = Array.from(new Set(sessionWorkoutIds.filter(id => Number.isFinite(id))));
+            state.sessionWorkoutIds = uniqueWorkoutIds;
             localStorage.setItem('gymNerd_activeSession', JSON.stringify(state));
         }
 
@@ -1276,10 +2132,19 @@
             if (!saved) return;
             stopWorkoutTimer();
             const state = JSON.parse(saved);
-            sessionSets = state.sessionSets;
+            sessionSets = Array.isArray(state.sessionSets) ? state.sessionSets : [];
             currentIdx = state.currentIdx;
             viewingIdx = state.viewingIdx || state.currentIdx;
-            currentWorkoutId = state.currentWorkoutId;
+            const parsedWorkoutId = Number.isFinite(Number(state.currentWorkoutId)) ? Number(state.currentWorkoutId) : null;
+            let restoredWorkoutIds = Array.isArray(state.sessionWorkoutIds) ? state.sessionWorkoutIds.map(id => Number(id)).filter(Number.isFinite) : [];
+            if (!restoredWorkoutIds.length && parsedWorkoutId !== null) {
+                restoredWorkoutIds = [parsedWorkoutId];
+            }
+            sessionWorkoutIds = Array.from(new Set(restoredWorkoutIds));
+            currentWorkoutId = parsedWorkoutId !== null ? parsedWorkoutId : (sessionWorkoutIds[0] || null);
+            if (currentWorkoutId !== null && !sessionWorkoutIds.includes(currentWorkoutId)) {
+                sessionWorkoutIds.push(currentWorkoutId);
+            }
             lastActiveTimerSignature = null;
 
             // restore session elapsed ms so duration continues from where the user left off
@@ -1291,6 +2156,15 @@
             }
 
             const workout = await db.routines.get(currentWorkoutId);
+
+            const fallbackRoutineId = sessionWorkoutIds[0] || currentWorkoutId || null;
+            if (fallbackRoutineId !== null) {
+                sessionSets.forEach(set => {
+                    if (set && (set.routineId === undefined || set.routineId === null)) {
+                        set.routineId = fallbackRoutineId;
+                    }
+                });
+            }
 
             document.getElementById('setupView').style.display = 'none';
             document.getElementById('playerView').style.display = 'block';
@@ -1329,392 +2203,241 @@
             }
         }
 
-        async function loadExercises() {
-            const workoutId = parseInt(document.getElementById('workoutSelect').value);
-            const container = document.getElementById('exerciseContainer');
-            const startBtn = document.getElementById('startBtn');
-            
-            if (!workoutId) {
-                container.innerHTML = "";
-                startBtn.style.display = "none";
-                const toggleBtn = document.getElementById('toggleSortBtn');
-                if (toggleBtn) {
-                    toggleBtn.style.display = 'none';
+        function updateStartButtonsVisibility() {
+            const hasExercises = hasSelectedExercises();
+            const setupStartBtn = document.getElementById('setupStartBtn');
+            const sortBtn = document.getElementById('sortExercisesBtn');
+            setActionButtonState(setupStartBtn, hasExercises);
+            setActionButtonState(sortBtn, hasExercises);
+            if (!hasExercises) {
+                const select = document.getElementById('workoutSelect');
+                if (select && select.value) {
+                    select.value = '';
                 }
-                container.classList.remove('reorder-mode');
+            }
+        }
+
+        function setActionButtonState(button, enabled) {
+            if (!button) return;
+            button.dataset.disabled = enabled ? 'false' : 'true';
+            button.classList.toggle('disabled', !enabled);
+        }
+
+        function getSelectionKey(selection) {
+            if (!selection) return '';
+            const workoutId = Number.isFinite(Number(selection.workoutId)) ? Number(selection.workoutId) : selection.workoutId;
+            const index = Number.isFinite(Number(selection.index)) ? Number(selection.index) : selection.index;
+            return `${workoutId}:${index}`;
+        }
+
+        function invalidateExerciseSortOrder() {
+            manualExerciseOrder = null;
+        }
+
+        function getSortedWorkoutSelections(selections) {
+            if (!Array.isArray(selections) || !selections.length) return [];
+            if (!Array.isArray(manualExerciseOrder) || !manualExerciseOrder.length) {
+                return selections;
+            }
+            const ordered = [];
+            const lookup = new Map(selections.map(sel => [getSelectionKey(sel), sel]));
+            manualExerciseOrder.forEach(saved => {
+                const key = getSelectionKey(saved);
+                const match = lookup.get(key);
+                if (match) {
+                    ordered.push(match);
+                    lookup.delete(key);
+                }
+            });
+            lookup.forEach(sel => ordered.push(sel));
+            return ordered;
+        }
+
+        function showSelectExerciseAlert() {
+            const message = (GN_I18N && GN_I18N.t) ? GN_I18N.t('select_exercise_alert') : 'First select at least 1 exercise';
+            alert(message);
+        }
+
+        function handleStartButtonClick(event) {
+            if (event && event.currentTarget && event.currentTarget.dataset.disabled === 'true') {
+                showSelectExerciseAlert();
                 return;
             }
+            startSession();
+        }
 
-            const workout = await db.routines.get(workoutId);
-            const [catalogEx, customEx] = await Promise.all([
-                db.catalog_exercises.toArray(),
-                db.custom_exercises.toArray()
-            ]);
-            const allExercises = [
-                ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
-                ...customEx.map(ex => ({ ...ex, isCustom: true }))
-            ];
+        async function handleSortExercises(event) {
+            if (event && event.currentTarget && event.currentTarget.dataset.disabled === 'true') {
+                showSelectExerciseAlert();
+                return;
+            }
+            try {
+                await showSortExercisesDialog();
+            } catch (err) {
+                console.error('Unable to open sort dialog', err);
+            }
+        }
+
+        async function showSortExercisesDialog() {
+            const selections = getSelectedWorkoutEntries();
+            if (!selections.length) {
+                showSelectExerciseAlert();
+                return;
+            }
+            const dialog = document.getElementById('sortExercisesDialog');
+            const list = document.getElementById('sortExerciseList');
+            if (!dialog || !list) return;
+            if (sortExercisesSortable) {
+                sortExercisesSortable.destroy();
+                sortExercisesSortable = null;
+            }
+            await populateSortDialogList(getSortedWorkoutSelections(selections));
+            dialog.setAttribute('aria-hidden', 'false');
+            dialog.classList.remove('hidden');
+            document.body.classList.add('sort-dialog-open');
+            list.scrollTop = 0;
+            if (list.firstElementChild) {
+                list.firstElementChild.focus();
+            }
+            sortExercisesSortable = Sortable.create(list, {
+                animation: 160,
+                handle: '.sort-dialog-handle'
+            });
+        }
+
+        async function populateSortDialogList(orderedSelections) {
+            const list = document.getElementById('sortExerciseList');
+            const emptyState = document.getElementById('sortDialogEmptyState');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!orderedSelections.length) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+            if (emptyState) emptyState.classList.add('hidden');
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-            
-            container.innerHTML = "";
-            for (const item of workout.exerciseIds) {
-                const id = typeof item === 'object' ? item.id : item;
-                const isCustom = typeof item === 'object' ? !!item.isCustom : false;
-                const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
-                if (!ex) continue;
-
-                const imgTable = isCustom ? db.custom_images : db.catalog_images;
-                let imgSrc = defaultImage;
-                if (ex.imageId) {
-                    const imgRecord = await imgTable.get(ex.imageId);
-                    if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
-                }
-
-                const details = '';
-
-                const displayName = (lang === 'pt' && ex.namePT) ? ex.namePT : ex.name;
-                const div = document.createElement('div');
-                div.className = 'exercise-item';
-                div.dataset.id = id;
-                div.dataset.iscustom = isCustom;
-                div.innerHTML = `
-                    <img src="${imgSrc}" class="ex-thumb" onerror="this.style.display='none'">
-                    <div style="flex:1; min-width:0;"><strong>${displayName}</strong>${details}</div>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                        <button type="button" class="remove-ex-btn" title="Remover" onclick="this.closest('.exercise-item').remove()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
-                        <button class="drag-handle" title="${GN_I18N.t ? GN_I18N.t('drag_to_reorder') : 'Drag to reorder'}">☰</button>
-                    </div>
-                `;
-                container.appendChild(div);
+            const workoutIds = Array.from(new Set(orderedSelections.map(sel => sel.workoutId)));
+            const routines = await db.routines.bulkGet(workoutIds);
+            const routineMap = new Map((routines || []).filter(Boolean).map(r => [r.id, r]));
+            const exerciseRecords = await getAllExerciseRecords();
+            const fragment = document.createDocumentFragment();
+            for (const selection of orderedSelections) {
+                const routineRecord = routineMap.get(selection.workoutId);
+                const exercises = (routineRecord && Array.isArray(routineRecord.exerciseIds)) ? routineRecord.exerciseIds : [];
+                const safeIndex = Number.isFinite(Number(selection.index)) ? Number(selection.index) : -1;
+                const entry = (safeIndex >= 0 && safeIndex < exercises.length) ? exercises[safeIndex] : null;
+                const entryId = entry && typeof entry === 'object' ? entry.id : entry;
+                const isCustom = entry && typeof entry === 'object' ? !!entry.isCustom : false;
+                const record = exerciseRecords.find(ex => ex.id === entryId && (!!ex.isCustom) === isCustom);
+                const displayName = record ? ((lang.startsWith('pt') && record.namePT) ? record.namePT : (record.name || `#${entryId}`)) : (entry && entry.name ? entry.name : `#${entryId || safeIndex}`);
+                const listItem = document.createElement('li');
+                listItem.className = 'sort-dialog-item';
+                listItem.tabIndex = 0;
+                listItem.setAttribute('role', 'listitem');
+                listItem.dataset.workoutId = String(selection.workoutId);
+                listItem.dataset.entryIndex = String(selection.index);
+                listItem.dataset.selectionKey = getSelectionKey(selection);
+                const handle = document.createElement('span');
+                handle.className = 'sort-dialog-handle material-symbols-outlined';
+                handle.setAttribute('aria-hidden', 'true');
+                handle.textContent = 'drag_indicator';
+                const content = document.createElement('div');
+                content.className = 'sort-dialog-item-content';
+                const nameEl = document.createElement('span');
+                nameEl.className = 'sort-dialog-exercise-name';
+                nameEl.textContent = displayName;
+                content.appendChild(nameEl);
+                const thumb = document.createElement('img');
+                thumb.className = 'sort-dialog-thumb';
+                thumb.src = await resolveExerciseImageSrc(record);
+                thumb.alt = displayName;
+                listItem.appendChild(thumb);
+                listItem.appendChild(content);
+                listItem.appendChild(handle);
+                fragment.appendChild(listItem);
             }
-            startBtn.style.display = "block";
-            const toggleBtn = document.getElementById('toggleSortBtn');
-            if (toggleBtn) {
-                toggleBtn.style.display = 'inline-flex';
-                // ensure reorder mode is reset when loading a new routine
-                document.getElementById('exerciseContainer').classList.remove('reorder-mode');
-                toggleBtn.classList.remove('active');
-            }
-            // translate any newly inserted elements (option/labels inside this container)
-            try { GN_I18N.applyTranslations(document.getElementById('workoutSelect').parentNode); } catch(e){}
-            attachDragHandlers();
+            list.appendChild(fragment);
         }
 
-        // --- Drag & drop reordering (mobile-optimized custom) ---
-        let _dragState = null;
-        let _dragListeners = [];
+        function closeSortDialog() {
+            const dialog = document.getElementById('sortExercisesDialog');
+            const list = document.getElementById('sortExerciseList');
+            if (!dialog) return;
+            dialog.classList.add('hidden');
+            dialog.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('sort-dialog-open');
+            if (sortExercisesSortable) {
+                sortExercisesSortable.destroy();
+                sortExercisesSortable = null;
+            }
+            if (list) list.innerHTML = '';
+        }
 
-        function attachDragHandlers() {
-            const container = document.getElementById('exerciseContainer');
-            if (!container) return;
-            container.querySelectorAll('.drag-handle').forEach(h => {
-                if (h._dragAttached) return;
-                h.addEventListener('touchstart', _onHandleTouchStart, { passive: false });
-                h.addEventListener('pointerdown', _onHandlePointerDown);
-                h._dragAttached = true;
+        function confirmSortDialog() {
+            const list = document.getElementById('sortExerciseList');
+            if (!list) {
+                closeSortDialog();
+                return;
+            }
+            const items = Array.from(list.querySelectorAll('.sort-dialog-item'));
+            manualExerciseOrder = items.map(item => ({
+                workoutId: Number.parseInt(item.dataset.workoutId, 10),
+                index: Number.parseInt(item.dataset.entryIndex, 10)
+            })).filter(entry => Number.isFinite(entry.workoutId) && Number.isFinite(entry.index));
+            closeSortDialog();
+        }
+
+        function isSortDialogOpen() {
+            const dialog = document.getElementById('sortExercisesDialog');
+            return !!dialog && !dialog.classList.contains('hidden');
+        }
+
+        (function attachSortDialogHandlers() {
+            const dialog = document.getElementById('sortExercisesDialog');
+            if (!dialog) return;
+            dialog.addEventListener('click', (event) => {
+                if (event.target === dialog || event.target.dataset.dialogClose === 'true') {
+                    closeSortDialog();
+                }
             });
-        }
+        })();
 
-        function detachDragHandlers() {
-            const container = document.getElementById('exerciseContainer');
-            if (!container) return;
-            container.querySelectorAll('.drag-handle').forEach(h => {
-                if (!h._dragAttached) return;
-                try { h.removeEventListener('touchstart', _onHandleTouchStart); } catch (e) {}
-                try { h.removeEventListener('pointerdown', _onHandlePointerDown); } catch (e) {}
-                h._dragAttached = false;
-            });
-        }
-
-        function _onHandleTouchStart(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            _onHandlePointerDown(touch);
-        }
-
-        function _onHandlePointerDown(e) {
-            const handle = e.target.closest('.drag-handle');
-            if (!handle) return;
-            const item = handle.closest('.exercise-item');
-            if (!item) return;
-            _startDrag(e, item);
-        }
-
-        function _startDrag(e, item) {
-            // Prevent multiple drags
-            if (_dragState) return;
-            const container = document.getElementById('exerciseContainer');
-            const rect = item.getBoundingClientRect();
-            const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0;
-            const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0;
-
-            const placeholder = document.createElement('div');
-            placeholder.className = 'exercise-item placeholder';
-            placeholder.style.height = rect.height + 'px';
-            placeholder.style.width = rect.width + 'px';
-            placeholder.style.boxSizing = 'border-box';
-
-            const ghost = item.cloneNode(true);
-            // remove any interactive/remove buttons from the ghost so they don't appear while dragging
-            const ghostRemove = ghost.querySelectorAll('.remove-ex-btn');
-            ghostRemove.forEach(el => el.remove());
-            ghost.classList.add('dragging');
-            ghost.style.width = rect.width + 'px';
-            ghost.style.left = rect.left + 'px';
-            ghost.style.top = rect.top + 'px';
-            ghost.style.position = 'fixed';
-            ghost.style.margin = '0';
-            ghost.style.transform = 'translate3d(0,0,0)';
-            ghost.style.willChange = 'transform';
-            document.body.appendChild(ghost);
-
-            // hide original and insert placeholder
-            item.style.display = 'none';
-            const originalParent = item.parentNode;
-            const originalNextSibling = item.nextSibling;
-            item.parentNode.insertBefore(placeholder, originalNextSibling);
-
-            // prevent page scroll during drag
-            const preventScroll = (ev) => { ev.preventDefault(); };
-            document.addEventListener('touchmove', preventScroll, { passive: false });
-
-            _dragState = {
-                draggingEl: item,
-                container,
-                placeholder,
-                ghost,
-                offsetY: clientY - rect.top,
-                offsetX: clientX - rect.left,
-                raf: null,
-                lastY: clientY,
-                lastX: clientX,
-                preventScroll,
-                originalParent,
-                originalNextSibling
-            };
-
-            function moveHandler(ev) {
-                const y = ev.clientY || (ev.touches && ev.touches[0] && ev.touches[0].clientY) || 0;
-                const x = ev.clientX || (ev.touches && ev.touches[0] && ev.touches[0].clientX) || 0;
-                _dragState.lastY = y; _dragState.lastX = x;
-                if (!_dragState.raf) {
-                    _dragState.raf = requestAnimationFrame(() => {
-                        _dragState.ghost.style.transform = `translate3d(${_dragState.lastX - _dragState.offsetX - rect.left}px, ${_dragState.lastY - _dragState.offsetY - rect.top}px, 0)`;
-                        // reposition placeholder using elementFromPoint with a movement threshold + FLIP animation
-                        try {
-                            const elUnder = document.elementFromPoint(_dragState.lastX, _dragState.lastY);
-                            if (!elUnder) return;
-                            const candidate = elUnder.closest('.exercise-item');
-                            const container = _dragState.container;
-
-                            // capture before positions
-                            const beforeChildren = Array.from(container.querySelectorAll('.exercise-item'));
-                            const beforeRects = beforeChildren.map(c => c.getBoundingClientRect());
-
-                            let moved = false;
-
-                            if (!candidate) {
-                                // append at end if not already there
-                                if (container.lastElementChild !== _dragState.placeholder) {
-                                    container.appendChild(_dragState.placeholder);
-                                    moved = true;
-                                    _dragState.lastCandidate = null;
-                                    _dragState.lastSide = 'end';
-                                }
-                            } else if (candidate === _dragState.placeholder || candidate === _dragState.draggingEl) {
-                                // do nothing
-                            } else {
-                                const r = candidate.getBoundingClientRect();
-                                const topThresh = r.top + r.height * 0.25;
-                                const bottomThresh = r.top + r.height * 0.75;
-                                let side = 'middle';
-                                if (_dragState.lastY < topThresh) side = 'before';
-                                else if (_dragState.lastY > bottomThresh) side = 'after';
-
-                                // only move if we are comfortably past threshold and candidate/side changed
-                                if (side !== 'middle') {
-                                    const sameCandidate = (_dragState.lastCandidate === candidate);
-                                    const sameSide = (_dragState.lastSide === side);
-                                    if (!sameCandidate || !sameSide) {
-                                        if (side === 'before') candidate.parentNode.insertBefore(_dragState.placeholder, candidate);
-                                        else candidate.parentNode.insertBefore(_dragState.placeholder, candidate.nextSibling);
-                                        moved = true;
-                                        _dragState.lastCandidate = candidate;
-                                        _dragState.lastSide = side;
-                                    }
-                                }
-                            }
-
-                            if (moved) {
-                                // capture after positions and animate differences (FLIP)
-                                const afterChildren = Array.from(container.querySelectorAll('.exercise-item'));
-                                const afterRects = afterChildren.map(c => c.getBoundingClientRect());
-
-                                beforeChildren.forEach((el, i) => {
-                                    if (el === _dragState.draggingEl || el === _dragState.placeholder) return;
-                                    const before = beforeRects[i];
-                                    const newIndex = afterChildren.indexOf(el);
-                                    if (newIndex === -1) return;
-                                    const after = afterRects[newIndex];
-                                    const dx = before.left - after.left;
-                                    const dy = before.top - after.top;
-                                    if (dx || dy) {
-                                        el.style.transition = 'none';
-                                        el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-                                        requestAnimationFrame(() => {
-                                            el.style.transition = 'transform 180ms cubic-bezier(.2,.8,.2,1)';
-                                            el.style.transform = '';
-                                            const cleanup = () => { el.style.transition = ''; el.removeEventListener('transitionend', cleanup); };
-                                            el.addEventListener('transitionend', cleanup);
-                                        });
-                                    }
-                                });
-                            }
-                        } catch (err) { console.warn('drag reposition error', err); }
-                        // if pointer moves outside visible viewport by a margin, cancel and revert
-                        const margin = 40;
-                        if (_dragState.lastX < -margin || _dragState.lastX > (window.innerWidth + margin) || _dragState.lastY < -margin || _dragState.lastY > (window.innerHeight + margin)) {
-                            try { _cancelDrag(); } catch (err) { console.warn('cancelDrag failed', err); }
-                            _dragState.raf = null;
-                            return;
-                        }
-                        _dragState.raf = null;
-                    });
-                }
+        document.addEventListener('keydown', (event) => {
+            if ((event.key === 'Escape' || event.key === 'Esc') && isSortDialogOpen()) {
+                closeSortDialog();
             }
-
-            function upHandler() { _endDrag(); }
-
-            // attach listeners
-            window.addEventListener('touchmove', moveHandler, { passive: false });
-            window.addEventListener('pointermove', moveHandler);
-            window.addEventListener('touchend', upHandler);
-            window.addEventListener('pointerup', upHandler);
-            window.addEventListener('touchcancel', upHandler);
-
-            _dragListeners.push({ moveHandler, upHandler });
-        }
-
-        function _endDrag() {
-            if (!_dragState) return;
-            const { draggingEl, placeholder, ghost, preventScroll } = _dragState;
-            // place element where placeholder is
-            try {
-                placeholder.parentNode.insertBefore(draggingEl, placeholder);
-            } catch (e) { console.warn('insert before failed', e); }
-            draggingEl.style.display = '';
-            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
-
-            // remove scroll prevention
-            try { document.removeEventListener('touchmove', preventScroll, { passive: false }); } catch (e) { document.removeEventListener('touchmove', preventScroll); }
-
-            // remove listeners
-            for (const L of _dragListeners) {
-                try { window.removeEventListener('touchmove', L.moveHandler); } catch (e) {}
-                try { window.removeEventListener('pointermove', L.moveHandler); } catch (e) {}
-                try { window.removeEventListener('touchend', L.upHandler); } catch (e) {}
-                try { window.removeEventListener('pointerup', L.upHandler); } catch (e) {}
-                try { window.removeEventListener('touchcancel', L.upHandler); } catch (e) {}
-            }
-            _dragListeners = [];
-
-            _dragState = null;
-        }
-
-        function _cancelDrag() {
-            if (!_dragState) return;
-            const { draggingEl, placeholder, ghost, preventScroll, originalParent, originalNextSibling } = _dragState;
-            // revert item to original position
-            try {
-                if (originalParent) {
-                    if (originalNextSibling && originalNextSibling.parentNode === originalParent) originalParent.insertBefore(draggingEl, originalNextSibling);
-                    else originalParent.appendChild(draggingEl);
-                }
-            } catch (e) { console.warn('revert insert failed', e); }
-            draggingEl.style.display = '';
-            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-            if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
-
-            try { document.removeEventListener('touchmove', preventScroll, { passive: false }); } catch (e) { document.removeEventListener('touchmove', preventScroll); }
-
-            for (const L of _dragListeners) {
-                try { window.removeEventListener('touchmove', L.moveHandler); } catch (e) {}
-                try { window.removeEventListener('pointermove', L.moveHandler); } catch (e) {}
-                try { window.removeEventListener('touchend', L.upHandler); } catch (e) {}
-                try { window.removeEventListener('pointerup', L.upHandler); } catch (e) {}
-                try { window.removeEventListener('touchcancel', L.upHandler); } catch (e) {}
-            }
-            _dragListeners = [];
-            _dragState = null;
-        }
-
-                // Toggle sort mode for the exercise list. When turning off, persist order to DB.
-                async function persistExerciseOrder(workoutId) {
-                    const container = document.getElementById('exerciseContainer');
-                    if (!container) return;
-                    const children = [...container.querySelectorAll('.exercise-item')];
-                    const workout = await db.routines.get(workoutId);
-                    if (!workout) return;
-                    const original = workout.exerciseIds || [];
-
-                    const used = new Array(original.length).fill(false);
-                    const newOrder = children.map((el, idx) => {
-                        const id = el.dataset.id ? parseInt(el.dataset.id) : null;
-                        const isCustom = el.dataset.iscustom === 'true';
-                        let matchIndex = -1;
-                        for (let i = 0; i < original.length; i++) {
-                            const item = original[i];
-                            const itemId = typeof item === 'object' ? item.id : item;
-                            const itemIsCustom = typeof item === 'object' ? !!item.isCustom : false;
-                            if (!used[i] && itemId === id && itemIsCustom === isCustom) { matchIndex = i; break; }
-                        }
-                        let newItem;
-                        if (matchIndex >= 0) {
-                            used[matchIndex] = true;
-                            const origItem = original[matchIndex];
-                            if (typeof origItem === 'object') {
-                                newItem = { ...origItem };
-                            } else {
-                                newItem = origItem;
-                            }
-                        } else {
-                            newItem = { id, isCustom };
-                        }
-                        return newItem;
-                    });
-                    await db.routines.update(workoutId, { exerciseIds: newOrder });
-                    localStorage.setItem('has_local_changes', 'true');
-                }
-
-                function toggleSortMode() {
-                    const container = document.getElementById('exerciseContainer');
-                    if (!container) return;
-                    const btn = document.getElementById('toggleSortBtn');
-                    const isActive = container.classList.toggle('reorder-mode');
-                    if (btn) btn.classList.toggle('active', isActive);
-
-                    if (isActive) {
-                        // enable custom drag handlers
-                        attachDragHandlers();
-                    } else {
-                        // disable handlers and persist order
-                        detachDragHandlers();
-                        // ensure any active drag is ended
-                        try { _endDrag(); } catch (e) {}
-                        const workoutId = parseInt(document.getElementById('workoutSelect').value);
-                        if (workoutId) persistExerciseOrder(workoutId).catch(err => console.warn('persistExerciseOrder failed', err));
-                    }
-                }
+        });
 
         async function startSession() {
             stopWorkoutTimer();
             resetWorkoutTimerDisplay();
-            const workoutId = parseInt(document.getElementById('workoutSelect').value);
-            currentWorkoutId = workoutId;
-            const workout = await db.routines.get(workoutId);
+            const orderedSelections = getSortedWorkoutSelections(getSelectedWorkoutEntries());
+            if (!orderedSelections.length) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
+            const workoutIds = Array.from(new Set(orderedSelections.map(sel => sel.workoutId).filter(id => Number.isFinite(id))));
+            if (!workoutIds.length) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
+            const workouts = await db.routines.bulkGet(workoutIds);
+            const workoutMap = new Map((workouts || []).filter(Boolean).map(w => [w.id, w]));
+            const selectedWorkoutExercises = [];
+            orderedSelections.forEach(selection => {
+                const routineRecord = workoutMap.get(selection.workoutId);
+                if (!routineRecord) return;
+                const routineExercises = Array.isArray(routineRecord.exerciseIds) ? routineRecord.exerciseIds : [];
+                const idx = Number.isFinite(Number(selection.index)) ? Number(selection.index) : -1;
+                if (idx < 0 || idx >= routineExercises.length) return;
+                const workoutEntry = routineExercises[idx];
+                if (workoutEntry) selectedWorkoutExercises.push({ workoutEntry, workoutId: selection.workoutId });
+            });
+            if (!selectedWorkoutExercises.length) {
+                return alert(GN_I18N.t('please_select_exercise'));
+            }
+            sessionWorkoutIds = workoutIds;
+            currentWorkoutId = sessionWorkoutIds[0] || null;
+            const select = document.getElementById('workoutSelect');
+            if (select) select.value = currentWorkoutId || '';
             const [catalogEx, customEx] = await Promise.all([
                 db.catalog_exercises.toArray(),
                 db.custom_exercises.toArray()
@@ -1723,36 +2446,30 @@
                 ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
             ];
-            const container = document.getElementById('exerciseContainer');
-            const visibleItems = Array.from(container.querySelectorAll('.exercise-item'));
-            if (visibleItems.length === 0) return alert(GN_I18N.t('please_select_exercise'));
 
             sessionSets = [];
             lastActiveTimerSignature = null;
-            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
 
             let occurrenceId = 0;
-            for (const itemDiv of visibleItems) {
-                occurrenceId++;
-                const exId = parseInt(itemDiv.dataset.id);
-                const isCustom = itemDiv.dataset.iscustom === 'true';
+            for (const selection of selectedWorkoutExercises) {
+                const workoutEntry = selection.workoutEntry;
+                const sourceWorkoutId = Number.isFinite(Number(selection.workoutId)) ? selection.workoutId : currentWorkoutId;
+                const exId = typeof workoutEntry === 'object' ? workoutEntry.id : workoutEntry;
+                const isCustom = typeof workoutEntry === 'object' ? !!workoutEntry.isCustom : false;
                 const ex = allExercises.find(e => e.id === exId && !!e.isCustom === isCustom);
                 if (!ex) continue;
-                const workoutEx = workout.exerciseIds.find(we => {
-                    const weId = typeof we === 'object' ? we.id : we;
-                    const weIsCustom = typeof we === 'object' ? !!we.isCustom : false;
-                    return weId === exId && weIsCustom === isCustom;
-                });
+                occurrenceId++;
+                const workoutEx = (typeof workoutEntry === 'object') ? workoutEntry : null;
                 const exerciseType = (ex.type) ? ex.type : '';
                 const isCardio = isCardioExerciseType(exerciseType);
                 const workoutExSets = (workoutEx && Array.isArray(workoutEx.sets)) ? workoutEx.sets : null;
-                const fallbackSetsCount = Math.max(1, Math.round(normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.sets : null, 3)));
+                const fallbackSetsCount = Math.max(1, Math.round(normalizeNumericValue(workoutEx && workoutEx.sets ? workoutEx.sets : null, 3)));
                 const totalSets = workoutExSets ? workoutExSets.length : fallbackSetsCount;
-                const fallbackReps = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.reps : null, 0);
-                const fallbackWeight = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.weight : null, 0);
-                const fallbackDistance = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.distance : null, 0);
-                const fallbackTime = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.time : null, 0);
-                const restSecondsValue = (workoutEx && typeof workoutEx === 'object' && Number.isFinite(workoutEx.restSeconds)) ? Math.max(0, Math.round(workoutEx.restSeconds)) : 0;
+                const fallbackReps = normalizeNumericValue(workoutEx && workoutEx.reps, 0);
+                const fallbackWeight = normalizeNumericValue(workoutEx && workoutEx.weight, 0);
+                const fallbackDistance = normalizeNumericValue(workoutEx && workoutEx.distance, 0);
+                const fallbackTime = normalizeNumericValue(workoutEx && workoutEx.time, 0);
+                const restSecondsValue = (workoutEx && Number.isFinite(workoutEx.restSeconds)) ? Math.max(0, Math.round(workoutEx.restSeconds)) : 0;
 
                 const createSetRecord = (setNum, source = {}) => {
                     const repsValue = isCardio ? 0 : normalizeNumericValue(source.reps, fallbackReps);
@@ -1768,6 +2485,7 @@
                         setNum,
                         occurrenceId,
                         totalSets,
+                        routineId: sourceWorkoutId,
                         reps: repsValue,
                         weight: weightValue,
                         distance: distanceValue,
@@ -1788,6 +2506,10 @@
                         sessionSets.push(createSetRecord(i));
                     }
                 }
+            }
+
+            if (sessionSets.length === 0) {
+                return alert(GN_I18N.t('please_select_exercise'));
             }
 
             currentIdx = 0;
@@ -1873,42 +2595,52 @@
             wrapper.style.transformOrigin = 'center center';
             wrapper.style.willChange = 'transform';
 
+            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             // Build nodes/connectors inside wrapper (unscaled sizes)
             occs.forEach((occ, i) => {
                 const allDone = occ.sets.every(ss => ss.completed || ss.skipped);
-                const allSkipped = occ.sets.every(ss => ss.skipped && !ss.completed);
+                const allSkipped = occ.sets.every(ss => ss.skipped);
                 if (allDone) completedOcc++;
 
-                const node = document.createElement('div');
-                node.className = 'exercise-node' + (allDone ? ' completed' : '') + (allSkipped ? ' skipped' : '') + (occ.occurrenceId === activeOccId ? ' active' : '');
-                node.setAttribute('role', 'button');
-                node.setAttribute('tabindex', '0');
-                // Accessible label for screen readers
-                const labelState = allSkipped ? 'skipped' : (allDone ? 'completed' : 'pending');
-                node.setAttribute('aria-label', `${i + 1} ${labelState}`);
-                // Render an X for fully-skipped occurrences, a check for completed, or index otherwise
+                const node = document.createElement('button');
+                node.type = 'button';
+                node.className = 'exercise-node';
                 if (allSkipped) {
-                    node.innerHTML = `<span class="exercise-node-label">&#10005;</span>`; // X
-                } else {
-                    node.innerHTML = allDone ? `<span class="exercise-node-label">&#10003;</span>` : `<span class="exercise-node-label">${i + 1}</span>`;
+                    node.classList.add('skipped');
+                } else if (allDone) {
+                    node.classList.add('completed');
                 }
-                node.style.width = node.style.height = baseNode + 'px';
-                node.style.fontSize = '14px';
+                if (occ.occurrenceId === activeOccId) node.classList.add('active');
+                node.dataset.occurrenceId = String(occ.occurrenceId);
+
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'exercise-node-label';
+                labelSpan.textContent = String(i + 1);
+                node.appendChild(labelSpan);
+
+                const labelText = (lang.startsWith('pt') && occ.namePT) ? occ.namePT : (occ.name || `#${i + 1}`);
+                node.title = labelText;
+                node.setAttribute('aria-label', labelText);
+
+                node.style.width = node.style.height = `${nodeSize}px`;
+                node.style.fontSize = `${Math.max(12, Math.floor(nodeSize * 0.4))}px`;
                 node.addEventListener('click', () => {
-                    // When user clicks a graph node, only switch the viewed exercise occurrence
-                    // Do not modify `currentIdx` so the play button behaves like arrow navigation
                     viewingIdx = occ.startIdx;
                     renderSet();
                 });
-                node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); node.click(); } });
+                node.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        node.click();
+                    }
+                });
 
                 wrapper.appendChild(node);
 
                 if (i < occs.length - 1) {
                     const conn = document.createElement('div');
-                    // Keep connectors neutral regardless of node status
                     conn.className = 'exercise-connector';
-                    conn.style.width = baseConn + 'px';
+                    conn.style.width = `${connSize}px`;
                     conn.style.height = '4px';
                     wrapper.appendChild(conn);
                 }
@@ -2079,27 +2811,7 @@
                     try {
                         const saveOpt = document.getElementById('saveRoutineOpt');
                         const cb = document.getElementById('saveRoutineCheckbox');
-                        let shouldShow = !!routineModified;
-                        if (!shouldShow && currentWorkoutId) {
-                            // detect differences between sessionSets and stored workout's sets
-                            const workout = await db.routines.get(currentWorkoutId);
-                            if (workout && Array.isArray(workout.exerciseIds)) {
-                                const map = {};
-                                workout.exerciseIds.forEach(it => {
-                                    const id = (typeof it === 'object') ? it.id : it;
-                                    if (typeof it === 'object' && Array.isArray(it.sets)) map[id] = it.sets;
-                                });
-                                for (const s of sessionSets) {
-                                    const sets = map[s.exId];
-                                    if (!sets) continue;
-                                    const w = sets[s.setNum - 1];
-                                    if (!w) continue;
-                                    const wr = (w.reps || 0);
-                                    const ww = (w.weight || 0);
-                                    if ((s.reps || 0) !== wr || (s.weight || 0) !== ww) { shouldShow = true; break; }
-                                }
-                            }
-                        }
+                        const shouldShow = await shouldOfferRoutineSaveOption();
                         if (saveOpt) saveOpt.style.display = shouldShow ? 'flex' : 'none';
                         if (cb) cb.checked = false;
                     } catch (e) { console.warn('save option detection failed', e); }
@@ -2333,25 +3045,10 @@
 
                 // Update the workout template with the values used in this session only if user opted in
                 const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
-                if (shouldSaveRoutine && currentWorkoutId) {
-                    const workout = await db.routines.get(currentWorkoutId);
-                    if (workout) {
-                        workout.exerciseIds = workout.exerciseIds.map(item => {
-                            const exId = typeof item === 'object' ? item.id : item;
-                            const isCustom = typeof item === 'object' ? !!item.isCustom : false;
-                            const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                            if (sessionExSets.length > 0) {
-                                const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
-                                const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                                return {
-                                    id: exId,
-                                    isCustom,
-                                    sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
-                                };
-                            }
-                            return item;
-                        });
-                        await db.routines.put(workout);
+                if (shouldSaveRoutine) {
+                    const affectedIds = getAffectedWorkoutIds();
+                    if (affectedIds.length) {
+                        await updateWorkoutsFromSession(affectedIds);
                     }
                 }
 
@@ -2441,26 +3138,9 @@
         async function saveRoutineChanges() {
             try {
                 await ensureDbOpen();
-                if (!currentWorkoutId) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
-                const workout = await db.routines.get(currentWorkoutId);
-                if (!workout) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
-
-                workout.exerciseIds = workout.exerciseIds.map(item => {
-                    const exId = typeof item === 'object' ? item.id : item;
-                    const isCustom = typeof item === 'object' ? !!item.isCustom : false;
-                    const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                    if (sessionExSets.length > 0) {
-                        const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
-                        const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                        return {
-                            id: exId,
-                            isCustom,
-                            sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
-                        };
-                    }
-                    return item;
-                });
-                await db.routines.put(workout);
+                const affectedIds = getAffectedWorkoutIds();
+                if (!affectedIds.length) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
+                await updateWorkoutsFromSession(affectedIds);
                 localStorage.setItem('has_local_changes', 'true');
                 alert(GN_I18N.t('routine_saved') || 'Routine saved');
             } catch (err) {
