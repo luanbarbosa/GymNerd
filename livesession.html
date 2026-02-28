@@ -1525,11 +1525,19 @@
                 grid.innerHTML = `
                     <div class="stat-card">
                         <div class="stat-label">${GN_I18N.t ? GN_I18N.t('exercises_completed') : 'Exercises'}</div>
-                        <div class="stat-value">${completedOcc.size}</div>
+                        <div class="stat-value">${(() => {
+                            const allOccIds = Array.from(new Set(sessionSets.map(s => s.occurrenceId)));
+                            const skippedOcc = allOccIds.filter(occId => sessionSets.filter(s => s.occurrenceId === occId).every(ss => ss.skipped));
+                            if (skippedOcc.length > 0) {
+                                return `${completedOcc.size}/${allOccIds.length}`;
+                            } else {
+                                return completedOcc.size;
+                            }
+                        })()}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('total_weight') : 'Total weight'}</div>
-                        <div class="stat-value">${totalWeightLifted.toFixed(1)} ${GN_I18N.t ? GN_I18N.t('history_fmt_kg_suffix') : 'kg'}</div>
+                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('duration') : 'Workout time'}</div>
+                        <div class="stat-value">${formatSeconds(durationSec)}</div>
                     </div>
                     <div class="stat-card type-progress-card" style="grid-column:1 / -1;">
                         <div class="stat-label">${GN_I18N.t ? GN_I18N.t('by_type') : 'By Type'}</div>

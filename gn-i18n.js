@@ -267,7 +267,7 @@
                 finished_new_record_subtext: 'You\u2019re on a {n}-day streak!',
 
                 routine_done: 'Routine done!',
-                exercises_completed: 'Exercises completed',
+                exercises_completed: 'Completed exercises',
                 kg_per_rep: 'kg per rep',
                 total_weight: 'Total weight',
                 duration: 'Duration',
