@@ -33,7 +33,7 @@
                 sync_pending: '☁️ Send changes to Google Drive',
                 start_routine: 'Start Live Routine',
                 menu_start_routine: 'Start Routine',
-                page_start_routine: 'Start Routine',
+                page_start_routine: 'Start Workout',
                 menu_home: 'Home',
                 routines: '🏋 Routines',
                 menu_routines: 'Routines',
@@ -295,7 +295,7 @@
                 ,
                 drag_to_reorder: 'Drag to reorder',
                 sort_exercises_dialog_title: 'Sort exercises',
-                sort_exercises_dialog_done: 'Done',
+                sort_exercises_dialog_done: 'Ok',
                 /* Device settings */
                 keep_device_awake: 'Keep device awake on workouts',
                 keep_device_awake_help: 'Prevent the device from sleeping during workouts.',
@@ -598,7 +598,7 @@
                 ,
                 drag_to_reorder: 'Arraste para reordenar',
                 sort_exercises_dialog_title: 'Ordenar exercícios',
-                sort_exercises_dialog_done: 'Concluído',
+                sort_exercises_dialog_done: 'Ok',
                 /* Device settings */
                 keep_device_awake: 'Manter dispositivo acordado durante treinos',
                 keep_device_awake_help: 'Evita que o dispositivo desligue a tela durante o treino.',

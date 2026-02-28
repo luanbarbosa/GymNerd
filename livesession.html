@@ -377,7 +377,7 @@
         }
 
         .player-card { text-align: center; padding: 0; overflow: hidden; }
-        .player-card-body { padding: 6px 20px 20px; }
+        .player-card-body { padding: 6px 20px 20px; background: var(--card-background); border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; }
         .current-ex-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 10px; color: var(--text); line-height: 1.15; text-align: center; word-break: break-word; }
         /* Reserve space for up to 2 lines; center vertically when only one line */
         .current-ex-title {
@@ -417,7 +417,7 @@
         .exercise-node { width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#0b1220; background:#1e293b; border:2px solid rgba(255,255,255,0.04); cursor:pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4); flex-shrink:0; }
         .exercise-node.completed { background: var(--success); color: white; border-color: rgba(16,185,129,0.15); }
         .exercise-node.active { box-shadow: 0 6px 18px rgba(59,130,246,0.16); transform: scale(1.06); }
-        .exercise-node.skipped { background: rgba(255,255,255,0.04); color: var(--text-dim); border-color: rgba(255,255,255,0.04); }
+        .exercise-node.skipped { background: var(--danger); color: #ffffff; border-color: transparent; }
         .exercise-connector { width:26px; height:4px; background: rgba(255,255,255,0.06); border-radius:2px; flex-shrink:0; }
         .exercise-connector.completed { background: linear-gradient(90deg, #10b981, #34d399); }
         .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
@@ -2591,14 +2591,17 @@
             // Build nodes/connectors inside wrapper (unscaled sizes)
             occs.forEach((occ, i) => {
                 const allDone = occ.sets.every(ss => ss.completed || ss.skipped);
-                const allSkipped = occ.sets.every(ss => ss.skipped && !ss.completed);
+                const allSkipped = occ.sets.every(ss => ss.skipped);
                 if (allDone) completedOcc++;
 
                 const node = document.createElement('button');
                 node.type = 'button';
                 node.className = 'exercise-node';
-                if (allDone) node.classList.add('completed');
-                if (allSkipped && !allDone) node.classList.add('skipped');
+                if (allSkipped) {
+                    node.classList.add('skipped');
+                } else if (allDone) {
+                    node.classList.add('completed');
+                }
                 if (occ.occurrenceId === activeOccId) node.classList.add('active');
                 node.dataset.occurrenceId = String(occ.occurrenceId);
 
