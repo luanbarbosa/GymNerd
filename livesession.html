@@ -411,7 +411,7 @@
         .timer-pair { display: inline-flex; align-items: center; gap: 4px; }
         @keyframes timer-blink { 50% { opacity: 0; } }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
-        .progress-bar { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-bar { height: 100%; background: #ffffff; width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         /* Exercise progress graph (balls and connectors) */
         .exercise-graph { display:flex; gap:8px; align-items:center; justify-content:center; padding-top:8px; padding-left:16px; padding-right:16px; box-sizing:border-box; overflow:hidden; }
         .exercise-node { width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#0b1220; background:#1e293b; border:2px solid rgba(255,255,255,0.04); cursor:pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4); flex-shrink:0; }
@@ -762,7 +762,7 @@
         /* Player card title overlay (title removed) */
         .player-card { position: relative; }
         .exercise-node { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:rgba(255,255,255,0.06); color:var(--text); width:34px; height:34px; flex:0 0 auto; border:2px solid rgba(255,255,255,0.06); font-weight:700; }
-        .exercise-node-label { display:block; width:100%; text-align:center; line-height:1; font-size:14px; }
+        .exercise-node-label { display:flex; align-items:center; justify-content:center; width:100%; height:100%; text-align:center; line-height:1; font-size:14px; }
         /* Slight optical nudge for symbol-based nodes to match numeric centering */
         .exercise-node.completed .exercise-node-label,
         .exercise-node.skipped .exercise-node-label { transform: translateX(0.6px); }
@@ -778,6 +778,107 @@
         }
         .exercise-connector { background:rgba(255,255,255,0.06); height:4px; border-radius:2px; display:inline-block; }
         .exercise-count { margin-top:6px; font-size:0.8rem; color:var(--text-dim); text-align:center; }
+        body.sort-dialog-open { overflow: hidden; }
+        .sort-dialog {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 2500;
+        }
+        .sort-dialog.hidden { display: none !important; }
+        .sort-dialog-overlay {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            opacity: 0.45;
+        }
+        .sort-dialog-panel {
+            position: relative;
+            z-index: 1;
+            width: min(500px, 100%);
+            max-height: calc(100vh - 64px);
+            background: var(--card-background);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            color: var(--text);
+            overflow: hidden;
+        }
+        .sort-dialog-header { display: flex; flex-direction: column; gap: 6px; }
+        .sort-dialog-header h3 { margin: 0; font-size: 1.3rem; font-weight: 700; }
+        .sort-dialog-header p { margin: 0; font-size: 0.9rem; color: var(--text-dim); }
+        .sort-dialog-list-wrapper { flex: 1; min-height: 120px; }
+        .sort-dialog-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: min(70vh, calc(100vh - 220px));
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .sort-dialog-item {
+            display: flex;
+            align-items: stretch;
+            gap: 12px;
+            padding-inline-start: 0;
+            padding-inline-end: 14px;
+            padding-block: 0;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: grab;
+        }
+        .sort-dialog-item:focus-visible { outline: 2px solid rgba(59,130,246,0.7); outline-offset: 2px; }
+        .sort-dialog-thumb {
+            width: 80px;
+            height: 70px;
+            border-radius: 12px 0 0 12px;
+            object-fit: contain;
+            background: #ffffff;
+            flex-shrink: 0;
+            margin: 0;
+            align-self: stretch;
+            overflow: hidden;
+            display: block;
+        }
+        .sort-dialog-item-content { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
+        .sort-dialog-exercise-name {
+            font-weight: 700;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+        }
+        .sort-dialog-actions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; padding: 0; }
+        .sort-dialog-btn {
+            min-width: 110px;
+            border-radius: 999px;
+            padding: 10px 18px;
+            border: 1px solid transparent;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.08);
+            color: inherit;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+        .sort-dialog-btn.primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--text-on-accent-color); }
+        .sort-dialog-btn.secondary { background: transparent; border-color: rgba(255, 255, 255, 0.35); }
+        .sort-dialog-btn:active { transform: scale(0.98); }
+        .sort-dialog-empty { text-align: center; color: var(--text-dim); font-size: 0.92rem; padding: 20px 0; }
+        .sort-dialog-handle { flex-shrink: 0; cursor: grab; font-size: 1.2rem; margin-left: auto; align-self: center; }
     </style>
 </head>
 <body>
@@ -1008,6 +1109,23 @@
                 </div>
         </div>
 
+        <div id="sortExercisesDialog" class="sort-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="sortExercisesDialogTitle" aria-describedby="sortExercisesDialogHint">
+            <div class="sort-dialog-overlay" data-dialog-close="true"></div>
+            <div class="sort-dialog-panel">
+                <header class="sort-dialog-header">
+                    <h3 id="sortExercisesDialogTitle" data-i18n="sort_exercises_dialog_title"></h3>
+                    <p id="sortExercisesDialogHint" data-i18n="drag_to_reorder"></p>
+                </header>
+                <div class="sort-dialog-list-wrapper">
+                    <ul id="sortExerciseList" class="sort-dialog-list" role="list" tabindex="0"></ul>
+                    <div id="sortDialogEmptyState" class="sort-dialog-empty hidden" data-i18n="select_exercise_alert"></div>
+                </div>
+                <div class="sort-dialog-actions">
+                    <button type="button" class="sort-dialog-btn primary" data-i18n="sort_exercises_dialog_done" onclick="confirmSortDialog()"></button>
+                </div>
+            </div>
+        </div>
+
         <script>
 
         const HOME_REFRESH_FLAG = 'home_force_refresh';
@@ -1046,6 +1164,8 @@
         let sessionStartMs = null; // timestamp (ms) when session started
         let routineModified = false;
         let _finishingSession = false;
+        let manualExerciseOrder = null;
+        let sortExercisesSortable = null;
 
         function resetSessionMemory() {
             sessionSets = [];
@@ -1514,6 +1634,22 @@
             return _exerciseCachePromise;
         }
 
+        async function resolveExerciseImageSrc(record) {
+            const fallback = (typeof defaultImage === 'string' && defaultImage) ? defaultImage : '';
+            if (!record) return fallback;
+            const table = (record.isCustom ? db.custom_images : db.catalog_images);
+            if (!table || !record.imageId) return fallback;
+            try {
+                const imageEntry = await table.get(record.imageId);
+                if (imageEntry && imageEntry.data) {
+                    return imageEntry.data;
+                }
+            } catch (err) {
+                // ignore
+            }
+            return fallback;
+        }
+
         async function buildRoutineExerciseList(workout, lang) {
             const fragment = document.createDocumentFragment();
             const exerciseRecords = await getAllExerciseRecords();
@@ -1567,6 +1703,7 @@
                     updateRoutineParentCheckboxState(checkbox.closest('.routine-entry'));
                     syncWorkoutSelectWithExercise(checkbox);
                     updateStartButtonsVisibility();
+                    invalidateExerciseSortOrder();
                 });
                 fragment.appendChild(row);
             }
@@ -1824,6 +1961,7 @@
                 }
             }
             updateStartButtonsVisibility();
+            invalidateExerciseSortOrder();
         }
 
         function renderRoutineChecklist(workouts, lang) {
@@ -2048,6 +2186,36 @@
             button.classList.toggle('disabled', !enabled);
         }
 
+        function getSelectionKey(selection) {
+            if (!selection) return '';
+            const workoutId = Number.isFinite(Number(selection.workoutId)) ? Number(selection.workoutId) : selection.workoutId;
+            const index = Number.isFinite(Number(selection.index)) ? Number(selection.index) : selection.index;
+            return `${workoutId}:${index}`;
+        }
+
+        function invalidateExerciseSortOrder() {
+            manualExerciseOrder = null;
+        }
+
+        function getSortedWorkoutSelections(selections) {
+            if (!Array.isArray(selections) || !selections.length) return [];
+            if (!Array.isArray(manualExerciseOrder) || !manualExerciseOrder.length) {
+                return selections;
+            }
+            const ordered = [];
+            const lookup = new Map(selections.map(sel => [getSelectionKey(sel), sel]));
+            manualExerciseOrder.forEach(saved => {
+                const key = getSelectionKey(saved);
+                const match = lookup.get(key);
+                if (match) {
+                    ordered.push(match);
+                    lookup.delete(key);
+                }
+            });
+            lookup.forEach(sel => ordered.push(sel));
+            return ordered;
+        }
+
         function showSelectExerciseAlert() {
             const message = (GN_I18N && GN_I18N.t) ? GN_I18N.t('select_exercise_alert') : 'First select at least 1 exercise';
             alert(message);
@@ -2061,44 +2229,171 @@
             startSession();
         }
 
-        function handleSortExercises(event) {
+        async function handleSortExercises(event) {
             if (event && event.currentTarget && event.currentTarget.dataset.disabled === 'true') {
                 showSelectExerciseAlert();
                 return;
             }
-            console.info('Sort exercises action triggered');
+            try {
+                await showSortExercisesDialog();
+            } catch (err) {
+                console.error('Unable to open sort dialog', err);
+            }
         }
+
+        async function showSortExercisesDialog() {
+            const selections = getSelectedWorkoutEntries();
+            if (!selections.length) {
+                showSelectExerciseAlert();
+                return;
+            }
+            const dialog = document.getElementById('sortExercisesDialog');
+            const list = document.getElementById('sortExerciseList');
+            if (!dialog || !list) return;
+            if (sortExercisesSortable) {
+                sortExercisesSortable.destroy();
+                sortExercisesSortable = null;
+            }
+            await populateSortDialogList(getSortedWorkoutSelections(selections));
+            dialog.setAttribute('aria-hidden', 'false');
+            dialog.classList.remove('hidden');
+            document.body.classList.add('sort-dialog-open');
+            list.scrollTop = 0;
+            if (list.firstElementChild) {
+                list.firstElementChild.focus();
+            }
+            sortExercisesSortable = Sortable.create(list, {
+                animation: 160,
+                handle: '.sort-dialog-handle'
+            });
+        }
+
+        async function populateSortDialogList(orderedSelections) {
+            const list = document.getElementById('sortExerciseList');
+            const emptyState = document.getElementById('sortDialogEmptyState');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!orderedSelections.length) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+            if (emptyState) emptyState.classList.add('hidden');
+            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+            const workoutIds = Array.from(new Set(orderedSelections.map(sel => sel.workoutId)));
+            const routines = await db.routines.bulkGet(workoutIds);
+            const routineMap = new Map((routines || []).filter(Boolean).map(r => [r.id, r]));
+            const exerciseRecords = await getAllExerciseRecords();
+            const fragment = document.createDocumentFragment();
+            for (const selection of orderedSelections) {
+                const routineRecord = routineMap.get(selection.workoutId);
+                const exercises = (routineRecord && Array.isArray(routineRecord.exerciseIds)) ? routineRecord.exerciseIds : [];
+                const safeIndex = Number.isFinite(Number(selection.index)) ? Number(selection.index) : -1;
+                const entry = (safeIndex >= 0 && safeIndex < exercises.length) ? exercises[safeIndex] : null;
+                const entryId = entry && typeof entry === 'object' ? entry.id : entry;
+                const isCustom = entry && typeof entry === 'object' ? !!entry.isCustom : false;
+                const record = exerciseRecords.find(ex => ex.id === entryId && (!!ex.isCustom) === isCustom);
+                const displayName = record ? ((lang.startsWith('pt') && record.namePT) ? record.namePT : (record.name || `#${entryId}`)) : (entry && entry.name ? entry.name : `#${entryId || safeIndex}`);
+                const listItem = document.createElement('li');
+                listItem.className = 'sort-dialog-item';
+                listItem.tabIndex = 0;
+                listItem.setAttribute('role', 'listitem');
+                listItem.dataset.workoutId = String(selection.workoutId);
+                listItem.dataset.entryIndex = String(selection.index);
+                listItem.dataset.selectionKey = getSelectionKey(selection);
+                const handle = document.createElement('span');
+                handle.className = 'sort-dialog-handle material-symbols-outlined';
+                handle.setAttribute('aria-hidden', 'true');
+                handle.textContent = 'drag_indicator';
+                const content = document.createElement('div');
+                content.className = 'sort-dialog-item-content';
+                const nameEl = document.createElement('span');
+                nameEl.className = 'sort-dialog-exercise-name';
+                nameEl.textContent = displayName;
+                content.appendChild(nameEl);
+                const thumb = document.createElement('img');
+                thumb.className = 'sort-dialog-thumb';
+                thumb.src = await resolveExerciseImageSrc(record);
+                thumb.alt = displayName;
+                listItem.appendChild(thumb);
+                listItem.appendChild(content);
+                listItem.appendChild(handle);
+                fragment.appendChild(listItem);
+            }
+            list.appendChild(fragment);
+        }
+
+        function closeSortDialog() {
+            const dialog = document.getElementById('sortExercisesDialog');
+            const list = document.getElementById('sortExerciseList');
+            if (!dialog) return;
+            dialog.classList.add('hidden');
+            dialog.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('sort-dialog-open');
+            if (sortExercisesSortable) {
+                sortExercisesSortable.destroy();
+                sortExercisesSortable = null;
+            }
+            if (list) list.innerHTML = '';
+        }
+
+        function confirmSortDialog() {
+            const list = document.getElementById('sortExerciseList');
+            if (!list) {
+                closeSortDialog();
+                return;
+            }
+            const items = Array.from(list.querySelectorAll('.sort-dialog-item'));
+            manualExerciseOrder = items.map(item => ({
+                workoutId: Number.parseInt(item.dataset.workoutId, 10),
+                index: Number.parseInt(item.dataset.entryIndex, 10)
+            })).filter(entry => Number.isFinite(entry.workoutId) && Number.isFinite(entry.index));
+            closeSortDialog();
+        }
+
+        function isSortDialogOpen() {
+            const dialog = document.getElementById('sortExercisesDialog');
+            return !!dialog && !dialog.classList.contains('hidden');
+        }
+
+        (function attachSortDialogHandlers() {
+            const dialog = document.getElementById('sortExercisesDialog');
+            if (!dialog) return;
+            dialog.addEventListener('click', (event) => {
+                if (event.target === dialog || event.target.dataset.dialogClose === 'true') {
+                    closeSortDialog();
+                }
+            });
+        })();
+
+        document.addEventListener('keydown', (event) => {
+            if ((event.key === 'Escape' || event.key === 'Esc') && isSortDialogOpen()) {
+                closeSortDialog();
+            }
+        });
 
         async function startSession() {
             stopWorkoutTimer();
             resetWorkoutTimerDisplay();
-            const selections = getSelectedWorkoutEntries();
-            if (!selections.length) {
+            const orderedSelections = getSortedWorkoutSelections(getSelectedWorkoutEntries());
+            if (!orderedSelections.length) {
                 return alert(GN_I18N.t('please_select_exercise'));
             }
-            const grouped = new Map();
-            selections.forEach(({ workoutId, index }) => {
-                if (!grouped.has(workoutId)) grouped.set(workoutId, new Set());
-                grouped.get(workoutId).add(index);
-            });
-            const workoutIds = Array.from(grouped.keys()).filter(id => Number.isFinite(id));
+            const workoutIds = Array.from(new Set(orderedSelections.map(sel => sel.workoutId).filter(id => Number.isFinite(id))));
             if (!workoutIds.length) {
                 return alert(GN_I18N.t('please_select_exercise'));
             }
             const workouts = await db.routines.bulkGet(workoutIds);
             const workoutMap = new Map((workouts || []).filter(Boolean).map(w => [w.id, w]));
             const selectedWorkoutExercises = [];
-            for (const [wid, indexSet] of grouped.entries()) {
-                const routineRecord = workoutMap.get(wid);
-                if (!routineRecord) continue;
+            orderedSelections.forEach(selection => {
+                const routineRecord = workoutMap.get(selection.workoutId);
+                if (!routineRecord) return;
                 const routineExercises = Array.isArray(routineRecord.exerciseIds) ? routineRecord.exerciseIds : [];
-                const sortedIndexes = Array.from(indexSet);
-                sortedIndexes.sort((a, b) => a - b);
-                sortedIndexes.forEach(idx => {
-                    const workoutEntry = routineExercises[idx];
-                    if (workoutEntry) selectedWorkoutExercises.push({ workoutEntry, workoutId: wid });
-                });
-            }
+                const idx = Number.isFinite(Number(selection.index)) ? Number(selection.index) : -1;
+                if (idx < 0 || idx >= routineExercises.length) return;
+                const workoutEntry = routineExercises[idx];
+                if (workoutEntry) selectedWorkoutExercises.push({ workoutEntry, workoutId: selection.workoutId });
+            });
             if (!selectedWorkoutExercises.length) {
                 return alert(GN_I18N.t('please_select_exercise'));
             }
@@ -2263,42 +2558,49 @@
             wrapper.style.transformOrigin = 'center center';
             wrapper.style.willChange = 'transform';
 
+            const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             // Build nodes/connectors inside wrapper (unscaled sizes)
             occs.forEach((occ, i) => {
                 const allDone = occ.sets.every(ss => ss.completed || ss.skipped);
                 const allSkipped = occ.sets.every(ss => ss.skipped && !ss.completed);
                 if (allDone) completedOcc++;
 
-                const node = document.createElement('div');
-                node.className = 'exercise-node' + (allDone ? ' completed' : '') + (allSkipped ? ' skipped' : '') + (occ.occurrenceId === activeOccId ? ' active' : '');
-                node.setAttribute('role', 'button');
-                node.setAttribute('tabindex', '0');
-                // Accessible label for screen readers
-                const labelState = allSkipped ? 'skipped' : (allDone ? 'completed' : 'pending');
-                node.setAttribute('aria-label', `${i + 1} ${labelState}`);
-                // Render an X for fully-skipped occurrences, a check for completed, or index otherwise
-                if (allSkipped) {
-                    node.innerHTML = `<span class="exercise-node-label">&#10005;</span>`; // X
-                } else {
-                    node.innerHTML = allDone ? `<span class="exercise-node-label">&#10003;</span>` : `<span class="exercise-node-label">${i + 1}</span>`;
-                }
-                node.style.width = node.style.height = baseNode + 'px';
-                node.style.fontSize = '14px';
+                const node = document.createElement('button');
+                node.type = 'button';
+                node.className = 'exercise-node';
+                if (allDone) node.classList.add('completed');
+                if (allSkipped && !allDone) node.classList.add('skipped');
+                if (occ.occurrenceId === activeOccId) node.classList.add('active');
+                node.dataset.occurrenceId = String(occ.occurrenceId);
+
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'exercise-node-label';
+                labelSpan.textContent = String(i + 1);
+                node.appendChild(labelSpan);
+
+                const labelText = (lang.startsWith('pt') && occ.namePT) ? occ.namePT : (occ.name || `#${i + 1}`);
+                node.title = labelText;
+                node.setAttribute('aria-label', labelText);
+
+                node.style.width = node.style.height = `${nodeSize}px`;
+                node.style.fontSize = `${Math.max(12, Math.floor(nodeSize * 0.4))}px`;
                 node.addEventListener('click', () => {
-                    // When user clicks a graph node, only switch the viewed exercise occurrence
-                    // Do not modify `currentIdx` so the play button behaves like arrow navigation
                     viewingIdx = occ.startIdx;
                     renderSet();
                 });
-                node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); node.click(); } });
+                node.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        node.click();
+                    }
+                });
 
                 wrapper.appendChild(node);
 
                 if (i < occs.length - 1) {
                     const conn = document.createElement('div');
-                    // Keep connectors neutral regardless of node status
                     conn.className = 'exercise-connector';
-                    conn.style.width = baseConn + 'px';
+                    conn.style.width = `${connSize}px`;
                     conn.style.height = '4px';
                     wrapper.appendChild(conn);
                 }
