@@ -757,8 +757,21 @@
             return `${minutes}:${seconds}`;
         }
 
+        let finalWorkoutDuration = null;
+
         function getWorkoutElapsedSeconds() {
             if (!sessionStartMs) return 0;
+            
+            // If we have a locked final duration, use it
+            if (finalWorkoutDuration !== null) return finalWorkoutDuration;
+
+            // If the session is finished, lock the duration
+            const allDone = sessionSets.every(s => s.completed || s.skipped);
+            if (allDone) {
+                finalWorkoutDuration = Math.max(0, Math.floor((Date.now() - sessionStartMs) / 1000));
+                return finalWorkoutDuration;
+            }
+
             const elapsedMs = Date.now() - sessionStartMs;
             return Math.max(0, Math.floor(elapsedMs / 1000));
         }
@@ -1255,8 +1268,8 @@
                 currentIdx,
                 viewingIdx,
                 currentWorkoutId,
-                sessionElapsedMs,
-                routineModified: !!routineModified
+                // Add this line to capture the duration if the session is over
+                sessionElapsedMs: finalWorkoutDuration !== null ? finalWorkoutDuration * 1000 : (Date.now() - sessionStartMs)
             };
             localStorage.setItem('gymNerd_activeSession', JSON.stringify(state));
         }
@@ -1282,10 +1295,15 @@
             currentWorkoutId = state.currentWorkoutId;
             lastActiveTimerSignature = null;
 
-            // restore session elapsed ms so duration continues from where the user left off
             try {
                 const elapsed = Number.isFinite(state.sessionElapsedMs) ? state.sessionElapsedMs : 0;
                 sessionStartMs = Date.now() - Math.max(0, elapsed);
+                
+                // Lock the timer if the resumed session is already complete
+                const allDone = state.sessionSets.every(s => s.completed || s.skipped);
+                if (allDone) {
+                    finalWorkoutDuration = Math.floor(elapsed / 1000);
+                }
             } catch (e) {
                 sessionStartMs = null;
             }
@@ -1938,10 +1956,12 @@
             saveSessionState();
             updateWorkoutTimerDisplay();
             const activeSet = sessionSets[currentIdx];
+            
             if (!activeSet) {
                 stopTimer();
-                stopWorkoutTimer();
+                stopWorkoutTimer(); // Stops the setInterval call
                 lastActiveTimerSignature = null;
+                _finishingSession = true; // Mark as finished
             } else {
                 const signature = `${activeSet.occurrenceId}:${activeSet.setNum}`;
                 if (signature !== lastActiveTimerSignature) {
