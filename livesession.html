@@ -1070,8 +1070,8 @@
                         <div class="stat-value">${completedOcc.size}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('total_weight') : 'Total weight'}</div>
-                        <div class="stat-value">${totalWeightLifted.toFixed(1)} ${GN_I18N.t ? GN_I18N.t('history_fmt_kg_suffix') : 'kg'}</div>
+                        <div class="stat-label">${GN_I18N.t ? GN_I18N.t('total_time') : 'Total Time'}</div>
+                        <div class="stat-value">${formatSeconds(durationSec)}</div>
                     </div>
                     <div class="stat-card type-progress-card" style="grid-column:1 / -1;">
                         <div class="stat-label">${GN_I18N.t ? GN_I18N.t('by_type') : 'By Type'}</div>
