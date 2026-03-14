@@ -40,12 +40,86 @@
         /* Top-card (same style used on index.html / settings) */
         .top-card { position: static; background: var(--shell-background); color: var(--text-main-color); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: none; padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: var(--shell-background); z-index: 1100; pointer-events: none; }
-        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; }
+        .top-card-inner { max-width: 100%; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom: 2px; overflow: visible; }
         .app-title-compact, .top-title { margin: 12px 0; }
         .page-content { padding: 16px; padding-top: 12px; }
         .top-card .topbar { background: var(--shell-background); padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
-        .top-card .topbar.player-topbar { justify-content:flex-start; }
-        .top-card .topbar.player-topbar .timer-pair { margin-left: 8px; }
+        .top-card .topbar.player-topbar { justify-content:space-between; gap: 8px; overflow: visible; }
+        .top-card .topbar.player-topbar .timer-pair { margin-left: 4px; flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap; overflow: hidden; }
+        .player-topbar-left { display:flex; align-items:center; gap:8px; min-width:0; flex: 1 1 auto; overflow: hidden; }
+        .player-topbar-actions { position: relative; display:flex; align-items:center; justify-content:flex-end; flex: 0 0 auto; overflow: visible; }
+        .player-menu-btn { width: 42px; height: 42px; padding: 0; border: none; border-radius: 12px; background: transparent; color: var(--text-main-color); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+        .player-menu-btn .material-symbols-outlined { font-size: 24px; line-height: 1; }
+        .player-menu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 180px; padding: 8px; border-radius: 14px; background: var(--card-background); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 12px 28px rgba(0,0,0,0.32); display: none; z-index: 2000; }
+        .player-menu.open { display: block; }
+        .player-menu-item { width: 100%; padding: 12px 14px; border: none; border-radius: 10px; background: transparent; color: var(--text); text-align: left; font-weight: 700; cursor: pointer; }
+        .player-menu-item:active { background: rgba(255,255,255,0.06); }
+        .dialog-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.68);
+            display: none;
+            align-items: stretch;
+            justify-content: center;
+            z-index: 1600;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+        .dialog-overlay.open { display: flex; }
+        .dialog-sheet {
+            width: min(100%, 500px);
+            height: calc(100vh - 24px);
+            max-height: calc(100vh - 24px);
+            display: flex;
+            flex-direction: column;
+            background: var(--shell-background);
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+        }
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            padding: 18px 18px 14px;
+        }
+        .dialog-title { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text); }
+        .dialog-body {
+            flex: 1 1 auto;
+            overflow: auto;
+            padding: 14px 16px 16px;
+        }
+        .dialog-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 14px 16px 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .dialog-btn {
+            width: 100%;
+            min-width: 0;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 14px 16px;
+        }
+        .dialog-btn-secondary {
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+        }
+        .dialog-btn-primary {
+            background: var(--accent-color);
+            color: var(--text-on-accent-color);
+            margin-left: auto;
+        }
+        .dialog-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
         .top-card .back-btn { color: inherit; }
         /* Ensure back button icons are vertically centered inside top bars */
         .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
@@ -149,14 +223,27 @@
         .ex-title-group { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         /* exercise title removed per request */
         .current-ex-subtitle { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .header-timer { display: inline-flex; align-items: center; gap: 8px; background: transparent; padding-block: 4px; padding-inline: 12px; border-radius: 0 10px 10px 0; border: none; cursor: pointer; color: var(--text-secondary-color); box-sizing: border-box; min-height: 36px; }
-        .timer-val { font-size: 0.95rem; font-weight: 800; color: var(--text-secondary-color); font-variant-numeric: tabular-nums; }
+        .header-timer { display: inline-flex; align-items: center; gap: 6px; background: transparent; padding-block: 4px; padding-inline: 8px; border-radius: 0 10px 10px 0; border: none; cursor: pointer; color: var(--text-secondary-color); box-sizing: border-box; min-height: 36px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
+        .timer-val { font-size: clamp(0.78rem, 2.3vw, 0.95rem); font-weight: 800; color: var(--text-secondary-color); font-variant-numeric: tabular-nums; white-space: nowrap; }
         .timer-warning { color: var(--danger); animation: timer-blink 1s steps(2, start) infinite; }
-        .workout-timer { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; letter-spacing: 0.02em; background: transparent; color: var(--text-secondary-color); padding-block: 4px; padding-inline: 12px; border-radius: 10px 0 0 10px; border: none; box-sizing: border-box; min-height: 36px; }
-        .workout-timer-label, .header-timer .set-timer-label { text-transform: uppercase; font-size: 0.95rem; letter-spacing: 0.08em; font-weight: 600; opacity: 0.9; }
-        .workout-timer-value { font-size: 0.95rem; font-weight: 400; font-variant-numeric: tabular-nums; }
-        .timer-separator { color: var(--text-secondary-color); font-size: 0.85rem; padding: 0 6px; }
+        .workout-timer { display: inline-flex; align-items: center; gap: 4px; font-size: clamp(0.72rem, 2vw, 0.85rem); letter-spacing: 0.02em; background: transparent; color: var(--text-secondary-color); padding-block: 4px; padding-inline: 8px; border-radius: 10px 0 0 10px; border: none; box-sizing: border-box; min-height: 36px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
+        .workout-timer-label, .header-timer .set-timer-label { text-transform: uppercase; font-size: clamp(0.72rem, 2vw, 0.95rem); letter-spacing: 0.06em; font-weight: 600; opacity: 0.9; white-space: nowrap; }
+        .workout-timer-value { font-size: clamp(0.78rem, 2.3vw, 0.95rem); font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .timer-separator { color: var(--text-secondary-color); font-size: clamp(0.72rem, 2vw, 0.85rem); padding: 0 2px; flex: 0 0 auto; }
         .timer-pair { display: inline-flex; align-items: center; gap: 4px; }
+
+        @media (max-width: 380px) {
+            .top-card .topbar.player-topbar { gap: 6px; }
+            .player-topbar-left { gap: 6px; }
+            .top-card .topbar.player-topbar .timer-pair { gap: 2px; }
+            .workout-timer,
+            .header-timer { padding-inline: 4px; gap: 4px; }
+            .workout-timer-label,
+            .header-timer .set-timer-label,
+            .workout-timer-value,
+            .timer-val,
+            .timer-separator { font-size: 0.72rem; }
+        }
         @keyframes timer-blink { 50% { opacity: 0; } }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.02); }
         .progress-bar { height: 100%; background: rgb(255,255,255); width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -544,11 +631,10 @@
         <div class="top-card">
             <div class="top-card-inner">
                 <div class="topbar player-topbar">
-                    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                            <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); location.reload();" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;">
-                                <span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span>
-                            </a>
-                        </div>
+                    <div class="player-topbar-left">
+                        <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); location.reload();" style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;">
+                            <span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span>
+                        </a>
                         <div class="timer-pair">
                             <div class="workout-timer" aria-live="polite">
                                 <span class="workout-timer-label" data-i18n="livesession_workout_timer_label"></span>
@@ -556,13 +642,22 @@
                             </div>
                             <span class="timer-separator" aria-hidden="true">|</span>
                             <div class="header-timer" onclick="startTimer()">
-                        <span class="set-timer-label" data-i18n="set_timer_label"></span>
-                        <div id="setTimer" class="timer-val">00:00</div>
-                        <button class="timer-reset">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-                        </button>
-                    </div>
+                                <span class="set-timer-label" data-i18n="set_timer_label"></span>
+                                <div id="setTimer" class="timer-val">00:00</div>
+                                <button class="timer-reset">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                                </button>
+                            </div>
                         </div>
+                    </div>
+                    <div class="player-topbar-actions">
+                        <button id="playerMenuBtn" class="player-menu-btn" type="button" aria-label="More options" aria-haspopup="menu" aria-expanded="false">
+                            <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
+                        </button>
+                        <div id="playerMenu" class="player-menu" role="menu" aria-label="Player options" hidden>
+                            <button id="playerMenuAddExercise" class="player-menu-item" type="button" role="menuitem">Add exercise</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -609,6 +704,21 @@
                 </button>
             </div>
         </aside>
+
+        <div id="addExerciseDialog" class="dialog-overlay" aria-hidden="true" onclick="handleAddExerciseDialogBackdrop(event)">
+            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="addExerciseDialogTitle" onclick="event.stopPropagation()">
+                <div class="dialog-header">
+                    <h3 id="addExerciseDialogTitle" class="dialog-title">Add exercise</h3>
+                </div>
+                <div class="dialog-body">
+                    <div id="addExercisePickerHost"></div>
+                </div>
+                <div class="dialog-actions">
+                    <button id="addExerciseConfirmBtn" class="dialog-btn dialog-btn-primary" type="button" onclick="confirmAddExercises()" disabled>Add selected</button>
+                    <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeAddExerciseDialog()">Cancel</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Finished view shown when all exercises are completed (minimalized) -->
         <style>
@@ -737,6 +847,7 @@
         let workoutTimerInterval = null;
         let timerStartMs = null; // timestamp (ms) when current timer started
         let lastActiveTimerSignature = null;
+        let addExercisePickerPlaceholder = null;
         let timerMode = 'countup';
         let timerDurationSeconds = 0;
         let sessionStartMs = null; // timestamp (ms) when session started
@@ -758,6 +869,76 @@
                 if (lang && lang.toLowerCase().startsWith('pt') && ex && ex.namePT) return ex.namePT;
             } catch (e) {}
             return ex && ex.name ? ex.name : '';
+        }
+
+        async function buildSessionSetsFromSelection(selectedExerciseCbs, startingOccurrenceId = 0) {
+            const builtSets = [];
+            let occurrenceId = startingOccurrenceId;
+            const selectedWorkoutIds = new Set();
+
+            for (const cb of selectedExerciseCbs) {
+                occurrenceId++;
+                const workoutId = Number(cb.dataset.workoutId);
+                const exIndex = Number(cb.dataset.exIndex);
+                const exId = Number(cb.dataset.id);
+                const isCustom = cb.dataset.iscustom === 'true';
+                selectedWorkoutIds.add(workoutId);
+
+                const workout = _setupWorkoutsById.get(workoutId) || await db.routines.get(workoutId);
+                if (!workout || !Array.isArray(workout.exerciseIds) || !workout.exerciseIds[exIndex]) continue;
+
+                const ex = _setupExerciseMap.get(_exKey(exId, isCustom)) || null;
+                if (!ex) continue;
+
+                const workoutEx = workout.exerciseIds[exIndex];
+                const exerciseType = (ex.type) ? ex.type : '';
+                const isCardio = isCardioExerciseType(exerciseType);
+                const workoutExSets = (workoutEx && Array.isArray(workoutEx.sets)) ? workoutEx.sets : null;
+                const fallbackSetsCount = Math.max(1, Math.round(normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.sets : null, 3)));
+                const totalSets = workoutExSets ? workoutExSets.length : fallbackSetsCount;
+                const fallbackReps = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.reps : null, 0);
+                const fallbackWeight = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.weight : null, 0);
+                const fallbackDistance = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.distance : null, 0);
+                const fallbackTime = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.time : null, 0);
+                const restSecondsValue = (workoutEx && typeof workoutEx === 'object' && Number.isFinite(workoutEx.restSeconds)) ? Math.max(0, Math.round(workoutEx.restSeconds)) : 0;
+
+                const createSetRecord = (setNum, source = {}) => {
+                    const repsValue = isCardio ? 0 : normalizeNumericValue(source.reps, fallbackReps);
+                    const weightValue = isCardio ? 0 : normalizeNumericValue(source.weight, fallbackWeight);
+                    const distanceValue = isCardio ? normalizeNumericValue(source.distance, fallbackDistance) : undefined;
+                    const timeValue = isCardio ? normalizeNumericValue(source.time, fallbackTime) : undefined;
+                    return {
+                        exId,
+                        isCustom,
+                        name: ex.name,
+                        namePT: ex.namePT,
+                        imageId: ex.imageId,
+                        setNum,
+                        occurrenceId,
+                        totalSets,
+                        reps: repsValue,
+                        weight: weightValue,
+                        distance: distanceValue,
+                        time: timeValue,
+                        exerciseType,
+                        restSeconds: restSecondsValue,
+                        completed: false,
+                        skipped: false
+                    };
+                };
+
+                if (workoutExSets) {
+                    workoutExSets.forEach((s, i) => {
+                        builtSets.push(createSetRecord(i + 1, s));
+                    });
+                } else {
+                    for (let i = 1; i <= fallbackSetsCount; i++) {
+                        builtSets.push(createSetRecord(i));
+                    }
+                }
+            }
+
+            return { builtSets, selectedWorkoutIds, lastOccurrenceId: occurrenceId };
         }
 
         function resetSessionMemory() {
@@ -1409,9 +1590,9 @@
 
         function _syncStartButtonState() {
             const startBtn = document.getElementById('startBtn');
-            if (!startBtn) return;
             const selected = document.querySelectorAll('#exercisePicker input.exercise-select:checked').length;
-            startBtn.disabled = selected === 0;
+            if (startBtn) startBtn.disabled = selected === 0;
+            updateAddExerciseDialogState();
         }
 
         function syncResumeCardVisibility() {
@@ -1450,6 +1631,160 @@
             resetWorkoutTimerDisplay();
             resetSessionMemory();
             syncResumeCardVisibility();
+        }
+
+        function closePlayerMenu() {
+            const menu = document.getElementById('playerMenu');
+            const btn = document.getElementById('playerMenuBtn');
+            if (menu) {
+                menu.classList.remove('open');
+                menu.hidden = true;
+                menu.style.display = 'none';
+            }
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+
+        function togglePlayerMenu(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const menu = document.getElementById('playerMenu');
+            const btn = document.getElementById('playerMenuBtn');
+            if (!menu || !btn) return;
+            const willOpen = !menu.classList.contains('open');
+            menu.hidden = !willOpen;
+            menu.style.display = willOpen ? 'block' : 'none';
+            menu.classList.toggle('open', willOpen);
+            btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        }
+
+        function handleAddExerciseMenuClick(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            closePlayerMenu();
+            openAddExerciseDialog();
+        }
+
+        function wirePlayerMenu() {
+            const btn = document.getElementById('playerMenuBtn');
+            const addExerciseBtn = document.getElementById('playerMenuAddExercise');
+            if (btn && !btn.dataset.wired) {
+                const onMenuTrigger = (event) => {
+                    togglePlayerMenu(event);
+                };
+                btn.addEventListener('click', onMenuTrigger);
+                btn.dataset.wired = 'true';
+            }
+            if (addExerciseBtn && !addExerciseBtn.dataset.wired) {
+                const onAddExercise = (event) => {
+                    handleAddExerciseMenuClick(event);
+                };
+                addExerciseBtn.addEventListener('click', onAddExercise);
+                addExerciseBtn.dataset.wired = 'true';
+            }
+        }
+
+        function updateAddExerciseDialogState() {
+            const confirmBtn = document.getElementById('addExerciseConfirmBtn');
+            if (!confirmBtn) return;
+            const selected = document.querySelectorAll('#exercisePicker input.exercise-select:checked').length;
+            confirmBtn.disabled = selected === 0;
+        }
+
+        function clearExercisePickerSelection() {
+            document.querySelectorAll('#exercisePicker input.exercise-select').forEach(cb => {
+                cb.checked = false;
+            });
+            document.querySelectorAll('#exercisePicker input.workout-select').forEach(cb => {
+                cb.checked = false;
+                cb.indeterminate = false;
+            });
+            _setupWorkouts.forEach(workout => _syncWorkoutSelectionState(Number(workout.id)));
+            _syncStartButtonState();
+            updateAddExerciseDialogState();
+        }
+
+        function mountExercisePickerIntoAddDialog() {
+            const host = document.getElementById('addExercisePickerHost');
+            const container = document.querySelector('#setupView .exercisePickerContainer');
+            if (!host || !container) return;
+            if (!addExercisePickerPlaceholder) {
+                addExercisePickerPlaceholder = document.createComment('exercisePickerContainer-placeholder');
+            }
+            if (!addExercisePickerPlaceholder.parentNode && container.parentNode) {
+                container.parentNode.insertBefore(addExercisePickerPlaceholder, container);
+            }
+            host.appendChild(container);
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) startBtn.style.display = 'none';
+        }
+
+        function restoreExercisePickerFromAddDialog() {
+            const host = document.getElementById('addExercisePickerHost');
+            const container = host ? host.querySelector('.exercisePickerContainer') : null;
+            if (container && addExercisePickerPlaceholder && addExercisePickerPlaceholder.parentNode) {
+                addExercisePickerPlaceholder.parentNode.insertBefore(container, addExercisePickerPlaceholder);
+                addExercisePickerPlaceholder.parentNode.removeChild(addExercisePickerPlaceholder);
+            }
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) startBtn.style.display = 'block';
+        }
+
+        function openAddExerciseDialog() {
+            const dialog = document.getElementById('addExerciseDialog');
+            if (!dialog) return;
+            dialog.classList.add('open');
+            dialog.setAttribute('aria-hidden', 'false');
+            try {
+                mountExercisePickerIntoAddDialog();
+                clearExercisePickerSelection();
+            } catch (e) {
+                console.warn('openAddExerciseDialog failed to mount picker', e);
+            }
+        }
+
+        function closeAddExerciseDialog() {
+            const dialog = document.getElementById('addExerciseDialog');
+            if (!dialog) return;
+            dialog.classList.remove('open');
+            dialog.setAttribute('aria-hidden', 'true');
+            try {
+                restoreExercisePickerFromAddDialog();
+                clearExercisePickerSelection();
+            } catch (e) {
+                console.warn('closeAddExerciseDialog failed to restore picker', e);
+            }
+        }
+
+        function handleAddExerciseDialogBackdrop(event) {
+            if (event && event.target && event.target.id === 'addExerciseDialog') {
+                closeAddExerciseDialog();
+            }
+        }
+
+        async function confirmAddExercises() {
+            const selectedExerciseCbs = Array.from(document.querySelectorAll('#exercisePicker input.exercise-select:checked'));
+            if (selectedExerciseCbs.length === 0) return;
+
+            const lastOccurrenceId = sessionSets.reduce((max, set) => Math.max(max, Number(set.occurrenceId) || 0), 0);
+            const { builtSets } = await buildSessionSetsFromSelection(selectedExerciseCbs, lastOccurrenceId);
+            if (builtSets.length === 0) return;
+
+            const previousLength = sessionSets.length;
+            sessionSets = sessionSets.concat(builtSets);
+            if (previousLength === 0) {
+                currentIdx = 0;
+                viewingIdx = 0;
+            } else {
+                viewingIdx = previousLength;
+            }
+
+            currentWorkoutId = null;
+            closeAddExerciseDialog();
+            await renderSet();
         }
 
         async function hydrateResumedSessionSets(savedSets) {
@@ -1940,71 +2275,10 @@
 
             sessionSets = [];
             lastActiveTimerSignature = null;
-
-            let occurrenceId = 0;
-            const selectedWorkoutIds = new Set(selectedExerciseCbs.map(cb => Number(cb.dataset.workoutId)));
+            const { builtSets, selectedWorkoutIds } = await buildSessionSetsFromSelection(selectedExerciseCbs, 0);
+            sessionSets = builtSets;
             currentWorkoutId = (selectedWorkoutIds.size === 1) ? Array.from(selectedWorkoutIds)[0] : null;
-
-            for (const cb of selectedExerciseCbs) {
-                occurrenceId++;
-                const workoutId = Number(cb.dataset.workoutId);
-                const exIndex = Number(cb.dataset.exIndex);
-                const exId = Number(cb.dataset.id);
-                const isCustom = cb.dataset.iscustom === 'true';
-
-                const workout = _setupWorkoutsById.get(workoutId) || await db.routines.get(workoutId);
-                if (!workout || !Array.isArray(workout.exerciseIds) || !workout.exerciseIds[exIndex]) continue;
-
-                const ex = _setupExerciseMap.get(_exKey(exId, isCustom)) || null;
-                if (!ex) continue;
-
-                const workoutEx = workout.exerciseIds[exIndex];
-                const exerciseType = (ex.type) ? ex.type : '';
-                const isCardio = isCardioExerciseType(exerciseType);
-                const workoutExSets = (workoutEx && Array.isArray(workoutEx.sets)) ? workoutEx.sets : null;
-                const fallbackSetsCount = Math.max(1, Math.round(normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.sets : null, 3)));
-                const totalSets = workoutExSets ? workoutExSets.length : fallbackSetsCount;
-                const fallbackReps = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.reps : null, 0);
-                const fallbackWeight = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.weight : null, 0);
-                const fallbackDistance = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.distance : null, 0);
-                const fallbackTime = normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.time : null, 0);
-                const restSecondsValue = (workoutEx && typeof workoutEx === 'object' && Number.isFinite(workoutEx.restSeconds)) ? Math.max(0, Math.round(workoutEx.restSeconds)) : 0;
-
-                const createSetRecord = (setNum, source = {}) => {
-                    const repsValue = isCardio ? 0 : normalizeNumericValue(source.reps, fallbackReps);
-                    const weightValue = isCardio ? 0 : normalizeNumericValue(source.weight, fallbackWeight);
-                    const distanceValue = isCardio ? normalizeNumericValue(source.distance, fallbackDistance) : undefined;
-                    const timeValue = isCardio ? normalizeNumericValue(source.time, fallbackTime) : undefined;
-                    return {
-                        exId,
-                        isCustom,
-                        name: ex.name,
-                        namePT: ex.namePT,
-                        imageId: ex.imageId,
-                        setNum,
-                        occurrenceId,
-                        totalSets,
-                        reps: repsValue,
-                        weight: weightValue,
-                        distance: distanceValue,
-                        time: timeValue,
-                        exerciseType,
-                        restSeconds: restSecondsValue,
-                        completed: false,
-                        skipped: false
-                    };
-                };
-
-                if (workoutExSets) {
-                    workoutExSets.forEach((s, i) => {
-                        sessionSets.push(createSetRecord(i + 1, s));
-                    });
-                } else {
-                    for (let i = 1; i <= fallbackSetsCount; i++) {
-                        sessionSets.push(createSetRecord(i));
-                    }
-                }
-            }
+            if (sessionSets.length === 0) return alert(GN_I18N.t('please_select_exercise'));
 
             currentIdx = 0;
             viewingIdx = 0;
@@ -2688,6 +2962,7 @@
         }
 
         init();
+        wirePlayerMenu();
 
         // Wire fixed bottom bar buttons to existing handlers
         (function wireBottomBar(){
@@ -2698,6 +2973,14 @@
             if (bbNext) bbNext.addEventListener('click', ()=>{ try { nextSet(); } catch(e){} });
             if (bbSkip) bbSkip.addEventListener('click', ()=>{ try { skipSet(); } catch(e){} });
         })();
+
+        document.addEventListener('click', (event) => {
+            const menu = document.getElementById('playerMenu');
+            const btn = document.getElementById('playerMenuBtn');
+            if (!menu || !btn) return;
+            if (menu.contains(event.target) || btn.contains(event.target)) return;
+            closePlayerMenu();
+        });
         </script>
         <!-- Image preview modal (full-screen) -->
         <div id="imagePreviewModal" class="image-modal hidden" onclick="hideImagePreview()">
