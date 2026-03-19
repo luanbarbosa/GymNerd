@@ -183,6 +183,7 @@
         .workout-section[open] .workout-chevron { transform: rotate(180deg); }
         .workout-exercises { display:flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; }
         .workout-exercise-row { display:flex; align-items:center; gap: 12px; padding: 10px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); background: rgba(0,0,0,0.08); }
+        .workout-exercise-row.is-disabled { opacity: 0.45; cursor: not-allowed; }
         .workout-exercise-row .ex-thumb { width: 52px; height: 40px; }
         .workout-exercise-name { flex: 1; min-width: 0; font-weight: 750; }
         .workout-exercise-sub { font-size: 0.82rem; color: var(--text-dim); margin-top: 2px; font-weight: 650; }
@@ -871,6 +872,33 @@
             return ex && ex.name ? ex.name : '';
         }
 
+        function _getSessionExerciseKeys() {
+            const keys = new Set();
+            sessionSets.forEach(set => {
+                const exId = Number(set && set.exId);
+                if (!Number.isFinite(exId)) return;
+                keys.add(_exKey(exId, !!(set && set.isCustom)));
+            });
+            return keys;
+        }
+
+        function _syncExercisePickerAvailability() {
+            const sessionExerciseKeys = _getSessionExerciseKeys();
+            document.querySelectorAll('#exercisePicker .workout-exercise-row').forEach(row => {
+                const exCb = row.querySelector('input.exercise-select');
+                if (!exCb) return;
+                const exId = Number(exCb.dataset.id);
+                const isCustom = exCb.dataset.iscustom === 'true';
+                const isDuplicate = Number.isFinite(exId) && sessionExerciseKeys.has(_exKey(exId, isCustom));
+                exCb.checked = isDuplicate ? false : exCb.checked;
+                exCb.disabled = isDuplicate;
+                row.classList.toggle('is-disabled', isDuplicate);
+                row.setAttribute('aria-disabled', isDuplicate ? 'true' : 'false');
+            });
+            _setupWorkouts.forEach(workout => _syncWorkoutSelectionState(Number(workout.id)));
+            _syncStartButtonState();
+        }
+
         async function buildSessionSetsFromSelection(selectedExerciseCbs, startingOccurrenceId = 0) {
             const builtSets = [];
             let occurrenceId = startingOccurrenceId;
@@ -1485,7 +1513,7 @@
                 workoutCb.dataset.workoutId = String(workoutId);
                 workoutCb.addEventListener('change', () => {
                     const checked = !!workoutCb.checked;
-                    details.querySelectorAll('input.exercise-select').forEach(cb => { cb.checked = checked; });
+                    details.querySelectorAll('input.exercise-select:not(:disabled)').forEach(cb => { cb.checked = checked; });
                     _syncWorkoutSelectionState(workoutId);
                     _syncStartButtonState();
                 });
@@ -1549,6 +1577,7 @@
                     row.addEventListener('click', (e) => {
                         // avoid toggling when user clicks directly on the checkbox
                         if (e && e.target && (e.target.tagName === 'INPUT')) return;
+                        if (exCb.disabled) return;
                         exCb.checked = !exCb.checked;
                         _syncWorkoutSelectionState(workoutId);
                         _syncStartButtonState();
@@ -1567,6 +1596,7 @@
                 _syncWorkoutSelectionState(workoutId);
             });
 
+            _syncExercisePickerAvailability();
             _syncStartButtonState();
         }
 
@@ -1576,10 +1606,11 @@
             const meta = document.getElementById(`workoutMeta-${workoutId}`);
             if (!details || !workoutCb) return;
 
-            const exCbs = Array.from(details.querySelectorAll('input.exercise-select'));
+            const exCbs = Array.from(details.querySelectorAll('input.exercise-select:not(:disabled)'));
             const total = exCbs.length;
             const checked = exCbs.filter(cb => cb.checked).length;
 
+            workoutCb.disabled = total === 0;
             workoutCb.indeterminate = checked > 0 && checked < total;
             workoutCb.checked = total > 0 && checked === total;
 
@@ -1740,6 +1771,7 @@
             dialog.setAttribute('aria-hidden', 'false');
             try {
                 mountExercisePickerIntoAddDialog();
+                _syncExercisePickerAvailability();
                 clearExercisePickerSelection();
             } catch (e) {
                 console.warn('openAddExerciseDialog failed to mount picker', e);
@@ -1784,6 +1816,7 @@
 
             currentWorkoutId = null;
             closeAddExerciseDialog();
+            _syncExercisePickerAvailability();
             await renderSet();
         }
 
