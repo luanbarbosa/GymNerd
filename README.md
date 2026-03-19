@@ -1,4 +1,4 @@
-> Fully vibe-coded Gym webapp for personal use (only public because I want to host on GitHub Pages for free 🙈)
+> Fully vibe-coded Gym webapp for personal use. 
 
 # GymNerd
 A PWA (Progressive Web App) to track your performance at the gym.
