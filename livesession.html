@@ -34,7 +34,7 @@
     <style>
         :root { --primary: #3b82f6; --secondary: #94a3b8; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --secondary-grad: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%); --bg: var(--shell-background); --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         html { background-color: var(--shell-background); }
-        body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; }
+        body { font-family: system-ui, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; min-height: 100vh; min-height: 100dvh; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .header { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; margin-bottom: 20px; }
         /* Top-card (same style used on index.html / settings) */
@@ -129,6 +129,13 @@
         .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--bg); }
         .exercisePickerContainer { background: transparent; padding: 0; border-radius: 0; border: none; margin: 0; }
         .view-content { padding: 12px 15px 20px 15px; }
+        #setupView { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+        #setupView > .view-content { flex: 1 1 auto; overflow: auto; padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+        #setupView .exercisePickerContainer { display: flex; flex-direction: column; min-height: 100%; }
+        #setupBottomBar { display: none; background: #000; backdrop-filter: none; -webkit-backdrop-filter: none; border: none; outline: none; box-shadow: none; }
+        #setupBottomBar::after { background: #000; border: none; box-shadow: none; }
+        #setupBottomBar .ba-center { width: 100%; max-width: 500px; margin: 0 auto; padding: 0 15px; box-sizing: border-box; }
+        #setupBottomBar #startBtn { display: inline-flex; margin: 0; width: 100%; min-width: 0; max-width: none; height: 56px; align-items: center; justify-content: center; }
         select, button { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.05); color: white; }
         
         .exercise-list { margin-top: 10px; }
@@ -291,8 +298,9 @@
             right: 0;
             bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
             min-height: 84px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
-            backdrop-filter: blur(6px);
+            background: #000;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
             display: flex;
             align-items: center;
             padding: 12px 16px 12px;
@@ -309,7 +317,7 @@
             bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
             height: constant(safe-area-inset-bottom, 0px);
             height: env(safe-area-inset-bottom, 0px);
-            background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+            background: #000;
             pointer-events: none;
             z-index: -1;
         }
@@ -320,7 +328,8 @@
         .BottomActionBar .ba-center{display:flex;gap:20px;flex:none;width:100%;align-items:center;justify-content:center;position:relative;left:auto;transform:none}
         .BottomActionBar .confirm{width:56px;height:56px;border-radius:14px;background:linear-gradient(90deg,var(--primary),#2563eb);border:none;color:white;font-size:22px;display:flex;align-items:center;justify-content:center}
         /* Play button inside bottom bar: center and wrap to its title */
-        .BottomActionBar #activateExBtn{display:none;box-sizing:border-box;display:inline-flex;height:56px;padding:0 28px;border-radius:14px;font-weight:800;background:var(--accent-color);color:var(--text-on-accent-color);flex:0 0 auto;width:auto;min-width:140px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;align-items:center;justify-content:center;font-size:16px;align-self:center;line-height:1;margin:0}
+        .BottomActionBar #activateExBtn,.BottomActionBar #replayExBtn{display:none;box-sizing:border-box;display:inline-flex;height:56px;padding:0 28px;border-radius:14px;font-weight:800;background:var(--accent-color);color:var(--text-on-accent-color);flex:0 0 auto;width:auto;min-width:140px;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;align-items:center;justify-content:center;font-size:16px;align-self:center;line-height:1;margin:0}
+        .BottomActionBar #replayExBtn{background:rgba(255,255,255,0.12);color:var(--text)}
         .BottomActionBar { flex-direction: column; }
         .BottomActionBar .bottom-bar-timer { display:flex; justify-content:center; width:100%; gap:4px; }
         .icon-btn {
@@ -622,11 +631,15 @@
                     <img src="illustrations/empty-livesession.svg" alt="" style="width:100%;max-width:100%;height:auto;margin:0 0 12px;display:block;" />
                     <div data-i18n="livesession_no_routines"></div>
                 </div>
-
-                <button id="startBtn" class="start-btn" onclick="startSession()" data-i18n="start_session" style="display:none" disabled></button>
             </div>
         </div>
     </div>
+
+    <aside id="setupBottomBar" class="BottomActionBar" role="region" aria-label="Setup actions" style="display:none;">
+        <div class="ba-center">
+            <button id="startBtn" class="start-btn" onclick="startSession()" data-i18n="start_session" style="display:none" disabled></button>
+        </div>
+    </aside>
 
     <div id="playerView" style="display: none;">
         <div class="top-card">
@@ -656,7 +669,7 @@
                             <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
                         </button>
                         <div id="playerMenu" class="player-menu" role="menu" aria-label="Player options" hidden>
-                            <button id="playerMenuAddExercise" class="player-menu-item" type="button" role="menuitem">Add exercise</button>
+                            <button id="playerMenuAddExercise" class="player-menu-item" type="button" role="menuitem" data-i18n="add_exercise_action">Add exercise</button>
                         </div>
                     </div>
                 </div>
@@ -700,6 +713,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
                 <button id="activateExBtn" class="start-btn" style="display:none;" onclick="activateExercise()" data-i18n="play_exercise">Play</button>
+                <button id="replayExBtn" class="start-btn" style="display:none;" onclick="replayExercise()" data-i18n="replay_exercise">Replay this exercise</button>
                 <button id="bb-next" class="icon-btn next" title="Complete">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </button>
@@ -709,14 +723,14 @@
         <div id="addExerciseDialog" class="dialog-overlay" aria-hidden="true" onclick="handleAddExerciseDialogBackdrop(event)">
             <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="addExerciseDialogTitle" onclick="event.stopPropagation()">
                 <div class="dialog-header">
-                    <h3 id="addExerciseDialogTitle" class="dialog-title">Add exercise</h3>
+                    <h3 id="addExerciseDialogTitle" class="dialog-title" data-i18n="add_exercise_modal_title">Add exercise</h3>
                 </div>
                 <div class="dialog-body">
                     <div id="addExercisePickerHost"></div>
                 </div>
                 <div class="dialog-actions">
-                    <button id="addExerciseConfirmBtn" class="dialog-btn dialog-btn-primary" type="button" onclick="confirmAddExercises()" disabled>Add selected</button>
-                    <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeAddExerciseDialog()">Cancel</button>
+                    <button id="addExerciseConfirmBtn" class="dialog-btn dialog-btn-primary" type="button" onclick="confirmAddExercises()" disabled data-i18n="add_selected">Add selected</button>
+                    <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeAddExerciseDialog()" data-i18n="cancel">Cancel</button>
                 </div>
             </div>
         </div>
@@ -1437,11 +1451,10 @@
             const noRoutinesEmpty = document.getElementById('noRoutinesEmpty');
             const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             const cardEl = document.querySelector('.exercisePickerContainer');
-            const startBtn = document.getElementById('startBtn');
             if (!workouts || workouts.length === 0) {
                 // hide picker, show illustrative empty state
                 try { if (picker) picker.style.display = 'none'; } catch (e) {}
-                try { if (startBtn) startBtn.style.display = 'none'; } catch (e) {}
+                setSetupStartBarVisible(false);
                 if (noRoutinesEmpty) noRoutinesEmpty.style.display = '';
                 // make the enclosing card transparent so the illustration appears on the page background
                 try { if (cardEl) { cardEl.style.background = 'transparent'; cardEl.style.border = 'none'; cardEl.style.boxShadow = 'none'; } } catch(e) {}
@@ -1453,7 +1466,9 @@
                 _renderExercisePicker();
                 if (noRoutinesEmpty) noRoutinesEmpty.style.display = 'none';
                 try { if (picker) picker.style.display = ''; } catch (e) {}
-                try { if (startBtn) { startBtn.style.display = 'block'; startBtn.disabled = true; } } catch (e) {}
+                setSetupStartBarVisible(true);
+                const startBtn = document.getElementById('startBtn');
+                if (startBtn) startBtn.disabled = true;
                 // restore card visual style
                 try { if (cardEl) { cardEl.style.background = ''; cardEl.style.border = ''; cardEl.style.boxShadow = ''; } } catch(e) {}
             }
@@ -1469,6 +1484,8 @@
                 const prevSetBtn = document.querySelector('.icon-btn.prev'); if (prevSetBtn) prevSetBtn.title = GN_I18N.t('previous_set');
                 const skipSetBtn = document.querySelector('.icon-btn.skip'); if (skipSetBtn) skipSetBtn.title = GN_I18N.t('skip_set');
                 const nextSetBtn = document.getElementById('nextBtn'); if (nextSetBtn) nextSetBtn.title = GN_I18N.t('complete_set');
+                const playerMenuBtn = document.getElementById('playerMenuBtn'); if (playerMenuBtn) playerMenuBtn.setAttribute('aria-label', GN_I18N.t('more_options'));
+                const playerMenu = document.getElementById('playerMenu'); if (playerMenu) playerMenu.setAttribute('aria-label', GN_I18N.t('player_options'));
             } catch(e){}
             syncResumeCardVisibility();
         }
@@ -1626,6 +1643,13 @@
             updateAddExerciseDialogState();
         }
 
+        function setSetupStartBarVisible(visible) {
+            const startBtn = document.getElementById('startBtn');
+            const startBar = document.getElementById('setupBottomBar');
+            if (startBtn) startBtn.style.display = visible ? 'inline-flex' : 'none';
+            if (startBar) startBar.style.display = visible ? 'flex' : 'none';
+        }
+
         function syncResumeCardVisibility() {
             try {
                 const resumeCard = document.getElementById('resumeCard');
@@ -1749,8 +1773,7 @@
                 container.parentNode.insertBefore(addExercisePickerPlaceholder, container);
             }
             host.appendChild(container);
-            const startBtn = document.getElementById('startBtn');
-            if (startBtn) startBtn.style.display = 'none';
+            setSetupStartBarVisible(false);
         }
 
         function restoreExercisePickerFromAddDialog() {
@@ -1760,8 +1783,8 @@
                 addExercisePickerPlaceholder.parentNode.insertBefore(container, addExercisePickerPlaceholder);
                 addExercisePickerPlaceholder.parentNode.removeChild(addExercisePickerPlaceholder);
             }
-            const startBtn = document.getElementById('startBtn');
-            if (startBtn) startBtn.style.display = 'block';
+            const hasWorkouts = Array.isArray(_setupWorkouts) && _setupWorkouts.length > 0;
+            setSetupStartBarVisible(hasWorkouts);
         }
 
         function openAddExerciseDialog() {
@@ -1923,11 +1946,10 @@
         async function loadExercises() {
             const workoutId = parseInt(document.getElementById('workoutSelect').value);
             const container = document.getElementById('exerciseContainer');
-            const startBtn = document.getElementById('startBtn');
             
             if (!workoutId) {
                 container.innerHTML = "";
-                startBtn.style.display = "none";
+                setSetupStartBarVisible(false);
                 const toggleBtn = document.getElementById('toggleSortBtn');
                 if (toggleBtn) {
                     toggleBtn.style.display = 'none';
@@ -1980,7 +2002,7 @@
                 `;
                 container.appendChild(div);
             }
-            startBtn.style.display = "block";
+            setSetupStartBarVisible(true);
             const toggleBtn = document.getElementById('toggleSortBtn');
             if (toggleBtn) {
                 toggleBtn.style.display = 'inline-flex';
@@ -2656,16 +2678,19 @@
             const bbSkip = document.getElementById('bb-skip');
             const bbNext = document.getElementById('bb-next');
             const actBtn = document.getElementById('activateExBtn');
+            const replayBtn = document.getElementById('replayExBtn');
             if (isActiveEx) {
                 if (bbPrev) bbPrev.style.display = 'inline-flex';
                 if (bbSkip) bbSkip.style.display = 'inline-flex';
                 if (bbNext) bbNext.style.display = 'inline-flex';
                 if (actBtn) actBtn.style.display = 'none';
+                if (replayBtn) replayBtn.style.display = 'none';
             } else {
                 if (bbPrev) bbPrev.style.display = 'none';
                 if (bbSkip) bbSkip.style.display = 'none';
                 if (bbNext) bbNext.style.display = 'none';
-                if (actBtn) actBtn.style.display = (allSetsDone ? 'none' : 'inline-flex');
+                if (actBtn) actBtn.style.display = allSetsDone ? 'none' : 'inline-flex';
+                if (replayBtn) replayBtn.style.display = allSetsDone ? 'inline-flex' : 'none';
             }
 
             // Disable prev button when at the first set of the current exercise occurrence
@@ -2802,6 +2827,24 @@
             const occId = sessionSets[viewingIdx].occurrenceId;
             const firstIncomplete = sessionSets.findIndex(s => s.occurrenceId === occId && !s.completed && !s.skipped);
             currentIdx = firstIncomplete !== -1 ? firstIncomplete : viewingIdx;
+            renderSet();
+        }
+
+        function replayExercise() {
+            if (!sessionSets || !sessionSets[viewingIdx]) return;
+            const occId = sessionSets[viewingIdx].occurrenceId;
+            let firstIdx = -1;
+            sessionSets.forEach((set, idx) => {
+                if (set.occurrenceId !== occId) return;
+                if (firstIdx === -1) firstIdx = idx;
+                set.completed = false;
+                set.skipped = false;
+            });
+            if (firstIdx !== -1) {
+                currentIdx = firstIdx;
+                viewingIdx = firstIdx;
+                lastActiveTimerSignature = null;
+            }
             renderSet();
         }
 
