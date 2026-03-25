@@ -379,6 +379,7 @@
                     ctx.font = 'bold 10px sans-serif';
                     ctx.fillStyle = '#94a3b8';
                     ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
                     const dataset = data.datasets[0];
                     const defaultUnit = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg';
                     const unit = (dataset && dataset.unit) ? dataset.unit : defaultUnit;
@@ -386,10 +387,49 @@
                     const area = chart.chartArea || { left: 6, right: chart.width - 6 };
                     const minX = (area.left || 6) + 12;
                     const maxX = (area.right || (chart.width - 6)) - 12;
+                    const minY = (area.top || 6) + 12;
+                    const drawnRects = [];
+                    const formatValue = (value) => {
+                        const num = Number(value);
+                        if (!Number.isFinite(num)) return String(value);
+                        return Number(num.toFixed(2)).toString();
+                    };
+                    const overlaps = (a, b) => !(
+                        a.right < b.left ||
+                        a.left > b.right ||
+                        a.bottom < b.top ||
+                        a.top > b.bottom
+                    );
                     meta.data.forEach((point, index) => {
                         const value = dataset.data[index];
+                        const prevValue = index > 0 ? dataset.data[index - 1] : null;
+                        const nextValue = index < dataset.data.length - 1 ? dataset.data[index + 1] : null;
+                        const isFlatMiddle = prevValue === value && nextValue === value;
+                        if (isFlatMiddle) return;
+
+                        const label = `${formatValue(value)} ${unit}`.trim();
                         const x = Math.min(Math.max(point.x, minX), maxX);
-                        ctx.fillText(value + ' ' + unit, x, point.y - 10);
+                        const textWidth = ctx.measureText(label).width;
+                        const labelHeight = 10;
+                        const yCandidates = [
+                            point.y - 10,
+                            point.y - 24,
+                            point.y + 18
+                        ];
+
+                        for (const candidateY of yCandidates) {
+                            const safeY = Math.max(candidateY, minY);
+                            const rect = {
+                                left: x - (textWidth / 2) - 3,
+                                right: x + (textWidth / 2) + 3,
+                                top: safeY - labelHeight - 2,
+                                bottom: safeY + 2
+                            };
+                            if (drawnRects.some(existing => overlaps(rect, existing))) continue;
+                            ctx.fillText(label, x, safeY);
+                            drawnRects.push(rect);
+                            return;
+                        }
                     });
                     ctx.restore();
                 }
