@@ -95,21 +95,23 @@
             text-overflow: ellipsis;
         }
 
-        /* Prominent centered Play button styling (offset above the nav) */
+        /* Prominent centered Play button styling */
         #bottom-nav a#nav-play {
             position: relative;
-            top: -22px; /* lift the button above the bar */
+            top: 0;
+            box-sizing: border-box;
+            flex: 0 0 64px;
             width: 64px;
-            height: 64px;
+            height: 54px;
             padding: 0;
-            border-radius: 16px;
+            border-radius: 14px;
             background: var(--accent-color);
             display:flex;
             align-items:center;
             justify-content:center;
             color: #000;
         }
-        #bottom-nav a#nav-play .nav-icon { width:auto; height:auto; font-size:28px; }
+        #bottom-nav a#nav-play .nav-icon { width:auto; height:auto; font-size:24px; }
         /* hide only the text label in the Play button, keep the icon visible */
         #bottom-nav a#nav-play span:not(.nav-icon) { display:none; }
 
