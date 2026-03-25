@@ -186,19 +186,24 @@
         /* Exercise picker (expandable exercises with checkboxes) */
         .exercise-picker { display: flex; flex-direction: column; gap: 10px; }
         .workout-section { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 14px; overflow: hidden; }
-        .workout-section summary { list-style: none; cursor: pointer; padding: 12px 14px; display:flex; align-items:center; gap: 10px; }
+        .workout-section summary { list-style: none; cursor: pointer; padding: 16px 14px; display:flex; align-items:center; gap: 10px; }
         .workout-section summary::-webkit-details-marker { display:none; }
-        .workout-title { flex: 1; min-width: 0; font-weight: 900; letter-spacing: -0.2px; }
-        .workout-meta { font-size: 0.82rem; color: var(--text-dim); font-weight: 700; }
+        .workout-title { flex: 1; min-width: 0; font-weight: 900; letter-spacing: -0.2px; color: var(--text); }
         .workout-chevron { color: var(--text-dim); transition: transform 0.2s ease; }
         .workout-section[open] .workout-chevron { transform: rotate(180deg); }
-        .workout-exercises { display:flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; }
-        .workout-exercise-row { display:flex; align-items:center; gap: 12px; padding: 10px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); background: rgba(0,0,0,0.08); }
+        .workout-exercises { display:flex; flex-direction: column; gap: 0; padding: 0; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.08); }
+        .workout-exercise-row { display:flex; align-items:center; gap: 12px; height: 88px; padding: 10px 0 10px 14px; box-sizing: border-box; background: transparent; overflow: hidden; }
+        .workout-exercise-row + .workout-exercise-row { border-top: 1px solid rgba(255,255,255,0.05); }
         .workout-exercise-row.is-disabled { opacity: 0.45; cursor: not-allowed; }
-        .workout-exercise-row .ex-thumb { width: 52px; height: 40px; }
-        .workout-exercise-name { flex: 1; min-width: 0; font-weight: 750; }
+        .workout-exercise-row .ex-thumb { width: 124px; height: auto; align-self: stretch; margin: -10px 0; border-radius: 0; }
+        .workout-exercise-name { flex: 1; min-width: 0; font-weight: 500; color: rgba(248,250,252,0.84); }
         .workout-exercise-sub { font-size: 0.82rem; color: var(--text-dim); margin-top: 2px; font-weight: 650; }
-        .workout-exercise-row .exercise-select { width: 22px; height: 22px; flex: 0 0 auto; }
+        .picker-checkbox-hitbox { width: 24px; height: 24px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+        .picker-checkbox-hitbox input { pointer-events: none; }
+        .picker-checkbox-hitbox.is-disabled { cursor: not-allowed; }
+        .workout-section summary .workout-select { width: 24px; height: 24px; flex: 0 0 auto; }
+        .workout-exercise-row .picker-checkbox-hitbox { width: 20px; height: 20px; }
+        .workout-exercise-row .exercise-select { width: 20px; height: 20px; flex: 0 0 auto; }
 
         .start-btn { 
             background: var(--accent-color); 
@@ -904,6 +909,7 @@
             const sessionExerciseKeys = _getSessionExerciseKeys();
             document.querySelectorAll('#exercisePicker .workout-exercise-row').forEach(row => {
                 const exCb = row.querySelector('input.exercise-select');
+                const exCbHitbox = row.querySelector('.picker-checkbox-hitbox');
                 if (!exCb) return;
                 const exId = Number(exCb.dataset.id);
                 const isCustom = exCb.dataset.iscustom === 'true';
@@ -912,6 +918,7 @@
                 exCb.disabled = isDuplicate;
                 row.classList.toggle('is-disabled', isDuplicate);
                 row.setAttribute('aria-disabled', isDuplicate ? 'true' : 'false');
+                if (exCbHitbox) exCbHitbox.classList.toggle('is-disabled', isDuplicate);
             });
             _setupWorkouts.forEach(workout => _syncWorkoutSelectionState(Number(workout.id)));
             _syncStartButtonState();
@@ -1538,22 +1545,30 @@
                     _syncWorkoutSelectionState(workoutId);
                     _syncStartButtonState();
                 });
+                const workoutCbHitbox = document.createElement('div');
+                workoutCbHitbox.className = 'picker-checkbox-hitbox';
+                workoutCbHitbox.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (workoutCb.disabled) {
+                        alert((GN_I18N && GN_I18N.t) ? GN_I18N.t('routine_already_in_session') : 'All exercises in this routine are already in the current session.');
+                        return;
+                    }
+                    workoutCb.checked = !workoutCb.checked;
+                    workoutCb.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                workoutCbHitbox.appendChild(workoutCb);
 
                 const title = document.createElement('div');
                 title.className = 'workout-title';
                 title.textContent = (lang && lang.toLowerCase().startsWith('pt') && workout.namePT) ? workout.namePT : (workout.name || '');
 
-                const meta = document.createElement('div');
-                meta.className = 'workout-meta';
-                meta.id = `workoutMeta-${workoutId}`;
-
                 const chevron = document.createElement('div');
                 chevron.className = 'workout-chevron';
                 chevron.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
 
-                summary.appendChild(workoutCb);
+                summary.appendChild(workoutCbHitbox);
                 summary.appendChild(title);
-                summary.appendChild(meta);
                 summary.appendChild(chevron);
 
                 const list = document.createElement('div');
@@ -1591,20 +1606,47 @@
                     exCb.dataset.id = String(exId);
                     exCb.dataset.iscustom = isCustom ? 'true' : 'false';
                     exCb.addEventListener('change', () => {
+                        if (exCb.disabled) {
+                            alert((GN_I18N && GN_I18N.t) ? GN_I18N.t('exercise_already_in_session') : 'This exercise is already in the current session.');
+                            exCb.checked = false;
+                            return;
+                        }
                         _syncWorkoutSelectionState(workoutId);
                         _syncStartButtonState();
                     });
+                    exCb.addEventListener('click', (e) => {
+                        if (!exCb.disabled) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        alert((GN_I18N && GN_I18N.t) ? GN_I18N.t('exercise_already_in_session') : 'This exercise is already in the current session.');
+                    });
+                    const exCbHitbox = document.createElement('div');
+                    exCbHitbox.className = 'picker-checkbox-hitbox';
+                    exCbHitbox.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (exCb.disabled) {
+                            alert((GN_I18N && GN_I18N.t) ? GN_I18N.t('exercise_already_in_session') : 'This exercise is already in the current session.');
+                            return;
+                        }
+                        exCb.checked = !exCb.checked;
+                        exCb.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+                    exCbHitbox.appendChild(exCb);
 
                     row.addEventListener('click', (e) => {
                         // avoid toggling when user clicks directly on the checkbox
-                        if (e && e.target && (e.target.tagName === 'INPUT')) return;
-                        if (exCb.disabled) return;
+                        if (e && e.target && (e.target.tagName === 'INPUT' || (e.target.closest && e.target.closest('.picker-checkbox-hitbox')))) return;
+                        if (exCb.disabled) {
+                            alert((GN_I18N && GN_I18N.t) ? GN_I18N.t('exercise_already_in_session') : 'This exercise is already in the current session.');
+                            return;
+                        }
                         exCb.checked = !exCb.checked;
                         _syncWorkoutSelectionState(workoutId);
                         _syncStartButtonState();
                     });
 
-                    row.appendChild(exCb);
+                    row.appendChild(exCbHitbox);
                     row.appendChild(nameWrap);
                     row.appendChild(img);
                     list.appendChild(row);
@@ -1624,7 +1666,7 @@
         function _syncWorkoutSelectionState(workoutId) {
             const details = document.querySelector(`.workout-section summary input.workout-select[data-workout-id="${workoutId}"]`)?.closest('.workout-section');
             const workoutCb = document.querySelector(`input.workout-select[data-workout-id="${workoutId}"]`);
-            const meta = document.getElementById(`workoutMeta-${workoutId}`);
+            const workoutCbHitbox = document.querySelector(`input.workout-select[data-workout-id="${workoutId}"]`)?.closest('.picker-checkbox-hitbox');
             if (!details || !workoutCb) return;
 
             const exCbs = Array.from(details.querySelectorAll('input.exercise-select:not(:disabled)'));
@@ -1634,10 +1676,7 @@
             workoutCb.disabled = total === 0;
             workoutCb.indeterminate = checked > 0 && checked < total;
             workoutCb.checked = total > 0 && checked === total;
-
-            if (meta) {
-                meta.textContent = total > 0 ? `${checked}/${total}` : '';
-            }
+            if (workoutCbHitbox) workoutCbHitbox.classList.toggle('is-disabled', workoutCb.disabled);
         }
 
         function _syncStartButtonState() {
