@@ -108,6 +108,43 @@
         .radar-edit #radarTypesContainer input[type="checkbox"] { accent-color: var(--accent-color); width: 18px; height: 18px; border-radius: 5px; }
         .radar-edit .radar-refresh-btn { margin-left: 8px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color: var(--text); cursor: pointer; font-weight: 700; font-size: 0.85rem; display: none; }
         .radar-edit .radar-refresh-btn:hover { background: rgba(255,255,255,0.035); transform: translateY(-1px); }
+        .chart-pill-filter {
+            margin-top: 16px;
+            padding-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .chart-pill-option {
+            appearance: none;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            color: var(--text-dim);
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+        }
+        .chart-pill-option:hover {
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+        .chart-pill-option.is-active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #111827;
+            box-shadow: 0 8px 20px rgba(242, 194, 75, 0.22);
+        }
+        .chart-pill-option:focus-visible {
+            outline: 2px solid rgba(242, 194, 75, 0.75);
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body>
@@ -166,7 +203,6 @@
         </div>
         </div>
 
-        
         <div class="card" id="radarCard">
             <div class="calendar-header">
                 <h3 class="align-start" data-i18n="exercise_frequency"></h3>
@@ -189,6 +225,12 @@
                 </summary>
                 <div id="radarTypesContainer" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:8px;"></div>
             </details>
+        </div>
+        <div class="chart-pill-filter" role="tablist" aria-label="Chart period quick filter">
+            <button type="button" class="chart-pill-option is-active" data-period="all" aria-selected="true" data-i18n="all_time">All</button>
+            <button type="button" class="chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
+            <button type="button" class="chart-pill-option" data-period="6m" aria-selected="false" data-i18n="last_6_months">6 months</button>
+            <button type="button" class="chart-pill-option" data-period="month" aria-selected="false" data-i18n="this_month">This month</button>
         </div>
     </div>
 
@@ -213,8 +255,80 @@
             }
             return accentColorBase;
         };
+        const CHART_PILL_FILTER_STORAGE_KEY = 'gn_statistics_chart_pill_filter';
+        const LEGACY_RADAR_PILL_FILTER_STORAGE_KEY = 'gn_statistics_radar_pill_filter';
+        const CHART_PILL_FILTER_VALUES = ['all', 'yoy', '6m', 'month'];
         
         let currentViewDate = new Date();
+
+        function applyChartPillSelection(value) {
+            const normalized = CHART_PILL_FILTER_VALUES.includes(value) ? value : 'all';
+            const pills = document.querySelectorAll('.chart-pill-option');
+            pills.forEach((pill) => {
+                const isActive = pill.dataset.period === normalized;
+                pill.classList.toggle('is-active', isActive);
+                pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+            return normalized;
+        }
+
+        function getStoredChartPillSelection() {
+            try {
+                const stored = localStorage.getItem(CHART_PILL_FILTER_STORAGE_KEY) || localStorage.getItem(LEGACY_RADAR_PILL_FILTER_STORAGE_KEY);
+                return CHART_PILL_FILTER_VALUES.includes(stored) ? stored : 'all';
+            } catch (e) {
+                return 'all';
+            }
+        }
+
+        function initChartPillFilter() {
+            const pills = document.querySelectorAll('.chart-pill-option');
+            if (!pills.length) return;
+
+            const savedValue = applyChartPillSelection(getStoredChartPillSelection());
+            try { localStorage.setItem(CHART_PILL_FILTER_STORAGE_KEY, savedValue); } catch (e) {}
+
+            pills.forEach((pill) => {
+                if (pill.dataset.wired === 'true') return;
+                pill.addEventListener('click', () => {
+                    const nextValue = applyChartPillSelection(pill.dataset.period || 'all');
+                    try { localStorage.setItem(CHART_PILL_FILTER_STORAGE_KEY, nextValue); } catch (e) {}
+                    try { renderCharts(); } catch (e) {}
+                });
+                pill.dataset.wired = 'true';
+            });
+        }
+
+        function getChartBoxFilterStart(period) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (period === 'month') return new Date(today.getFullYear(), today.getMonth(), 1);
+            if (period === '6m') {
+                const start = new Date(today);
+                start.setMonth(start.getMonth() - 6);
+                return start;
+            }
+            if (period === 'yoy') {
+                const start = new Date(today);
+                start.setMonth(start.getMonth() - 12);
+                return start;
+            }
+            return null;
+        }
+
+        function filterLogsForChartBoxes(logs) {
+            const period = getStoredChartPillSelection();
+            const start = getChartBoxFilterStart(period);
+            if (!start) return Array.isArray(logs) ? logs : [];
+
+            return (Array.isArray(logs) ? logs : []).filter((log) => {
+                if (!log || !log.date) return false;
+                const logDate = new Date(`${log.date}T00:00:00`);
+                if (Number.isNaN(logDate.getTime())) return false;
+                return logDate >= start;
+            });
+        }
 
         async function init() {
             const logs = await db.history.toArray();
@@ -354,6 +468,7 @@
             const isRenderChartsStale = () => window.__gn_stats_renderChartsToken !== renderChartsToken;
 
             if (!logs) logs = await db.history.toArray();
+            logs = filterLogsForChartBoxes(logs);
             if (isRenderChartsStale()) return;
             const wrapper = document.getElementById('chartsWrapper');
             if (!wrapper) return;
@@ -972,6 +1087,7 @@
             } catch(e){}
         }
 
+        initChartPillFilter();
         init();
         </script>
         </div>
