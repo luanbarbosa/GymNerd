@@ -136,10 +136,10 @@
             transform: translateY(-1px);
         }
         .chart-pill-option.is-active {
-            background: var(--accent-color);
+            background: rgba(255,255,255,0.03);
             border-color: var(--accent-color);
-            color: #111827;
-            box-shadow: 0 8px 20px rgba(242, 194, 75, 0.22);
+            color: var(--accent-color);
+            box-shadow: 0 0 0 1px var(--accent-color);
         }
         .chart-pill-option:focus-visible {
             outline: 2px solid rgba(242, 194, 75, 0.75);
@@ -293,7 +293,7 @@
                 pill.addEventListener('click', () => {
                     const nextValue = applyChartPillSelection(pill.dataset.period || 'all');
                     try { localStorage.setItem(CHART_PILL_FILTER_STORAGE_KEY, nextValue); } catch (e) {}
-                    try { renderCharts(); } catch (e) {}
+                    try { renderCharts(null, nextValue, false); } catch (e) {}
                 });
                 pill.dataset.wired = 'true';
             });
@@ -317,9 +317,9 @@
             return null;
         }
 
-        function filterLogsForChartBoxes(logs) {
-            const period = getStoredChartPillSelection();
-            const start = getChartBoxFilterStart(period);
+        function filterLogsForChartBoxes(logs, period = getStoredChartPillSelection()) {
+            const normalized = CHART_PILL_FILTER_VALUES.includes(period) ? period : 'all';
+            const start = getChartBoxFilterStart(normalized);
             if (!start) return Array.isArray(logs) ? logs : [];
 
             return (Array.isArray(logs) ? logs : []).filter((log) => {
@@ -328,6 +328,22 @@
                 if (Number.isNaN(logDate.getTime())) return false;
                 return logDate >= start;
             });
+        }
+
+        function getPreviousChartPillPeriod(period) {
+            const index = CHART_PILL_FILTER_VALUES.indexOf(period);
+            if (index <= 0) return null;
+            return CHART_PILL_FILTER_VALUES[index - 1];
+        }
+
+        function resolveEffectiveChartPillPeriod(logs, requestedPeriod = getStoredChartPillSelection()) {
+            let currentPeriod = CHART_PILL_FILTER_VALUES.includes(requestedPeriod) ? requestedPeriod : 'all';
+            while (currentPeriod) {
+                const filtered = filterLogsForChartBoxes(logs, currentPeriod);
+                if (filtered.length > 0 || currentPeriod === 'all') return currentPeriod;
+                currentPeriod = getPreviousChartPillPeriod(currentPeriod);
+            }
+            return 'all';
         }
 
         async function init() {
@@ -461,14 +477,17 @@
         }
         
 
-        async function renderCharts(logs) {
+        async function renderCharts(logs, requestedPeriod = getStoredChartPillSelection(), useFallback = true) {
             const renderChartsToken = (window.__gn_stats_renderChartsToken || 0) + 1;
             window.__gn_stats_renderChartsToken = renderChartsToken;
             // Prevent overlapping renders from appending duplicate groups when SPA re-initializes the page.
             const isRenderChartsStale = () => window.__gn_stats_renderChartsToken !== renderChartsToken;
 
             if (!logs) logs = await db.history.toArray();
-            logs = filterLogsForChartBoxes(logs);
+            const normalizedPeriod = CHART_PILL_FILTER_VALUES.includes(requestedPeriod) ? requestedPeriod : 'all';
+            const effectivePeriod = useFallback ? resolveEffectiveChartPillPeriod(logs, normalizedPeriod) : normalizedPeriod;
+            applyChartPillSelection(effectivePeriod);
+            logs = filterLogsForChartBoxes(logs, effectivePeriod);
             if (isRenderChartsStale()) return;
             const wrapper = document.getElementById('chartsWrapper');
             if (!wrapper) return;
