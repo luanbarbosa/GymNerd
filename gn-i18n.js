@@ -173,7 +173,6 @@
                 empty_home_cta: "Let's start working out!",
                 best_record: 'Your record',
                 exercise_type_mix_title: 'Type distribution',
-                home_data_disclaimer: 'All data shown is based on the last 12 months of history.',
                 no_records_yet: 'No records yet',
                 keep_it_up: 'Keep it up!',
                 days_since_last: 'days since last',
@@ -481,7 +480,6 @@
                 personal_best: 'Recorde Pessoal'
                 ,
                 exercise_type_mix_title: 'Distribuição por tipo',
-                home_data_disclaimer: 'Todos os dados exibidos são baseados nos últimos 12 meses de histórico.',
                 /* Exercise types */
                 exercise_type_shoulder: 'Ombros',
                 exercise_type_chest: 'Peito',

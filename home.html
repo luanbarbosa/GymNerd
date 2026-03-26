@@ -761,6 +761,47 @@
 			margin-bottom: 4px;
 		}
 
+		.home-chart-pill-filter {
+			margin: 24px 0 12px;
+			padding-top: 2px;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			justify-content: center;
+		}
+
+		.home-chart-pill-option {
+			appearance: none;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			background: rgba(255, 255, 255, 0.03);
+			color: var(--text-dim);
+			border-radius: 999px;
+			padding: 8px 14px;
+			font-size: 0.8rem;
+			font-weight: 700;
+			line-height: 1;
+			cursor: pointer;
+			transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+		}
+
+		.home-chart-pill-option:hover {
+			background: rgba(255, 255, 255, 0.06);
+			color: var(--text);
+			transform: translateY(-1px);
+		}
+
+		.home-chart-pill-option.is-active {
+			background: rgba(255, 255, 255, 0.03);
+			border-color: var(--accent-color);
+			color: var(--accent-color);
+			box-shadow: 0 0 0 1px var(--accent-color);
+		}
+
+		.home-chart-pill-option:focus-visible {
+			outline: 2px solid rgba(242, 194, 75, 0.75);
+			outline-offset: 2px;
+		}
+
 		/* Favorite type widget tweaks: match streak-banner spacing and full width */
 		#fav-type-widget {
 			width: 100%;
@@ -861,22 +902,6 @@
 			z-index: 1;
 			width: var(--fill, 0%);
 			min-width: 6px;
-		}
-
-		.data-disclaimer {
-			font-size: 0.75rem;
-			color: rgba(248, 250, 252, 0.7);
-			font-style: italic;
-			margin: 32px auto 40px;
-			width: calc(100% - 40px);
-			max-width: 520px;
-			display: flex;
-			justify-content: center;
-			text-align: center;
-			white-space: normal;
-			line-height: 1.2;
-			letter-spacing: 0.02em;
-			word-spacing: 0.1rem;
 		}
 
 		/* Grid layout for favorite type + exercise */
@@ -1029,12 +1054,19 @@
 					<div id="week-dots" class="week-dots" aria-hidden="false"></div>
 				</div>
 
+				<div id="home-chart-pill-filter" class="home-chart-pill-filter" role="tablist" aria-label="Home chart period quick filter" style="display:none;">
+					<button type="button" class="home-chart-pill-option is-active" data-period="all" aria-selected="true" data-i18n="all_time">All</button>
+					<button type="button" class="home-chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
+					<button type="button" class="home-chart-pill-option" data-period="6m" aria-selected="false" data-i18n="last_6_months">6 months</button>
+					<button type="button" class="home-chart-pill-option" data-period="month" aria-selected="false" data-i18n="this_month">This month</button>
+				</div>
+
 				<!-- Favorite exercise widget -->
 				<!-- Favorite exercise preview integrated into favorite-type widget below -->
 
 				<!-- Favorite exercise TYPE widget (type first, exercise below) -->
 				<div id="type-distribution-widget" class="nav-card" role="region" aria-live="polite" style="display:none;" aria-label="Exercise type mix">
-					<div class="streak-title" data-i18n="exercise_type_mix_title">Exercise type mix (last 12 months)</div>
+					<div class="streak-title" data-i18n="exercise_type_mix_title">Exercise type mix</div>
 					<div id="type-distribution-list"></div>
 				</div>
 
@@ -1113,15 +1145,16 @@
 							if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 							let historyCount = 0;
 							try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
-							updateDataDisclaimerVisibility(historyCount);
+							updateHomeChartFilterVisibility(historyCount);
+							initHomeChartPillFilter();
 							await renderWeekDots();
 							if (historyCount > 0) {
 								try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch (e) { }
-								try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch (e) { }
-								try { if (typeof renderTypeDistribution === 'function') renderTypeDistribution(); } catch (e) { }
+								try { if (typeof renderHomeInsightWidgets === 'function') await renderHomeInsightWidgets(); } catch (e) { }
 								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'none'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'none'; } } catch (e) { }
 							} else {
 								try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
+								try { const hf = document.getElementById('home-chart-pill-filter'); if (hf) hf.style.display = 'none'; } catch (e) { }
 								try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
 								try { const dist = document.getElementById('type-distribution-widget'); if (dist) dist.style.display = 'none'; } catch (e) { }
 								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'flex'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'block'; try { if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration(); } catch (e) { } } } catch (e) { }
@@ -1139,14 +1172,6 @@
 					const hasChanges = localStorage.getItem('has_local_changes') === 'true';
 					btn.style.display = hasChanges ? 'block' : 'none';
 				} catch (e) { console.error('Error reading has_local_changes', e); }
-			}
-
-			function updateDataDisclaimerVisibility(historyCount) {
-				const el = document.getElementById('home-data-disclaimer');
-				if (!el) return;
-				try {
-					el.style.display = (historyCount && historyCount > 0) ? 'flex' : 'none';
-				} catch (e) { }
 			}
 
 			window.syncToDrive = async function () {
@@ -1332,8 +1357,122 @@
 			}
 
 			// Global favorite-exercise renderer (uses the same parent widget as favorite-type)
-			async function renderFavoriteExercise(range = 'year') {
+			const HOME_CHART_PILL_FILTER_STORAGE_KEY = 'gn_home_chart_pill_filter';
+			const HOME_CHART_PILL_FILTER_VALUES = ['all', 'yoy', '6m', 'month'];
+
+			function normalizeHomeChartPeriod(value) {
+				if (value === 'year') return 'yoy';
+				if (HOME_CHART_PILL_FILTER_VALUES.includes(value)) return value;
+				return 'all';
+			}
+
+			function applyHomeChartPillSelection(value) {
+				const normalized = normalizeHomeChartPeriod(value);
+				const pills = document.querySelectorAll('.home-chart-pill-option');
+				pills.forEach((pill) => {
+					const isActive = pill.dataset.period === normalized;
+					pill.classList.toggle('is-active', isActive);
+					pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
+				});
+				return normalized;
+			}
+
+			function getStoredHomeChartPillSelection() {
 				try {
+					return normalizeHomeChartPeriod(localStorage.getItem(HOME_CHART_PILL_FILTER_STORAGE_KEY));
+				} catch (e) {
+					return 'all';
+				}
+			}
+
+			function getHomeChartFilterStart(period) {
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
+
+				if (period === 'month') return new Date(today.getFullYear(), today.getMonth(), 1);
+				if (period === '6m') {
+					const start = new Date(today);
+					start.setMonth(start.getMonth() - 6);
+					return start;
+				}
+				if (period === 'yoy') {
+					const start = new Date(today);
+					start.setMonth(start.getMonth() - 12);
+					return start;
+				}
+				return null;
+			}
+
+			function filterHomeEntriesByPeriod(items, period) {
+				const normalized = normalizeHomeChartPeriod(period);
+				const start = getHomeChartFilterStart(normalized);
+				if (!start) return Array.isArray(items) ? items : [];
+
+				return (Array.isArray(items) ? items : []).filter((it) => {
+					if (!it || !it.date) return false;
+					const itemDate = new Date(`${it.date}T00:00:00`);
+					if (Number.isNaN(itemDate.getTime())) return false;
+					return itemDate >= start;
+				});
+			}
+
+			function getPreviousHomeChartPeriod(period) {
+				const index = HOME_CHART_PILL_FILTER_VALUES.indexOf(period);
+				if (index <= 0) return null;
+				return HOME_CHART_PILL_FILTER_VALUES[index - 1];
+			}
+
+			function resolveEffectiveHomeChartPeriod(items, requestedPeriod = getStoredHomeChartPillSelection()) {
+				let currentPeriod = normalizeHomeChartPeriod(requestedPeriod);
+				while (currentPeriod) {
+					const filtered = filterHomeEntriesByPeriod(items, currentPeriod);
+					if (filtered.length > 0 || currentPeriod === 'all') return currentPeriod;
+					currentPeriod = getPreviousHomeChartPeriod(currentPeriod);
+				}
+				return 'all';
+			}
+
+			function updateHomeChartFilterVisibility(historyCount) {
+				const filter = document.getElementById('home-chart-pill-filter');
+				if (!filter) return;
+				try {
+					filter.style.display = (historyCount && historyCount > 0) ? 'flex' : 'none';
+				} catch (e) { }
+			}
+
+			async function renderHomeInsightWidgets(period = getStoredHomeChartPillSelection(), useFallback = true) {
+				const requestedPeriod = normalizeHomeChartPeriod(period);
+				try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { }
+				let items = [];
+				try { items = await db.history.toArray(); } catch (e) { items = []; }
+				const effectivePeriod = useFallback ? resolveEffectiveHomeChartPeriod(items, requestedPeriod) : requestedPeriod;
+				try { applyHomeChartPillSelection(effectivePeriod); } catch (e) { }
+				try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise(effectivePeriod, items); } catch (e) { console.error('renderFavoriteExercise failed', e); }
+				try { if (typeof renderTypeDistribution === 'function') await renderTypeDistribution(effectivePeriod, items); } catch (e) { console.error('renderTypeDistribution failed', e); }
+			}
+
+			function initHomeChartPillFilter() {
+				const filter = document.getElementById('home-chart-pill-filter');
+				const pills = document.querySelectorAll('.home-chart-pill-option');
+				if (!filter || !pills.length) return;
+
+				const savedValue = applyHomeChartPillSelection(getStoredHomeChartPillSelection());
+				try { localStorage.setItem(HOME_CHART_PILL_FILTER_STORAGE_KEY, savedValue); } catch (e) { }
+
+				pills.forEach((pill) => {
+					if (pill.dataset.wired === 'true') return;
+					pill.addEventListener('click', async () => {
+						const nextValue = applyHomeChartPillSelection(pill.dataset.period || 'all');
+						try { localStorage.setItem(HOME_CHART_PILL_FILTER_STORAGE_KEY, nextValue); } catch (e) { }
+						await renderHomeInsightWidgets(nextValue, false);
+					});
+					pill.dataset.wired = 'true';
+				});
+			}
+
+			async function renderFavoriteExercise(range = getStoredHomeChartPillSelection(), sourceItems = null) {
+				try {
+					range = normalizeHomeChartPeriod(range);
 					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 					const parent = document.getElementById('fav-type-widget');
 					if (!parent) return;
@@ -1342,15 +1481,14 @@
 						const total = await db.history.count();
 						if (!total) { try { parent.style.display = 'none'; } catch (e) { }; return; }
 					} catch (e) { }
-					let items = await db.history.toArray();
+					let items = Array.isArray(sourceItems) ? sourceItems.slice() : await db.history.toArray();
 					if (!items || items.length === 0) {
 						// try broader range before showing empty message
 						try {
-							const broader = (range === 'month') ? 'year' : (range === 'year') ? 'all' : null;
+							const broader = getPreviousHomeChartPeriod(range);
 							if (broader) {
-								const sel = document.getElementById('fav-type-range'); if (sel) sel.value = broader;
 								try { if (typeof renderFavoriteType === 'function') renderFavoriteType(broader); } catch (e) { }
-								try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader); } catch (e) { }
+								try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise(broader, sourceItems); } catch (e) { }
 								return;
 							}
 						} catch (e) { }
@@ -1363,21 +1501,11 @@
 						try { parent.style.display = 'flex'; } catch (e) { }
 						return;
 					}
-					const now = new Date(); now.setHours(0, 0, 0, 0);
-					if (range === 'year') {
-						const start = new Date(now);
-						start.setFullYear(start.getFullYear() - 1);
-						const startYMD = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-						items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch (e) { return false; } });
-						try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch (e) { }
-						try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0, 5).map(i => i && i.date) }); } catch (e) { }
-					} else if (range === 'month') {
-						const start = new Date(now.getFullYear(), now.getMonth(), 1);
-						const startYMD = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-						items = items.filter(it => { try { return it && it.date && String(it.date) >= startYMD; } catch (e) { return false; } });
-						try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch (e) { }
-						try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0, 5).map(i => i && i.date) }); } catch (e) { }
-					}
+					const start = getHomeChartFilterStart(range);
+					const startYMD = start ? `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}` : null;
+					items = filterHomeEntriesByPeriod(items, range);
+					try { console.debug('[renderFavoriteExercise] range=', range, 'startYMD=', startYMD, 'filtered=', (items && items.length) ? items.length : 0); } catch (e) { }
+					try { if (typeof updateFavDebug === 'function') updateFavDebug({ renderer: 'exercise', range: range, startYMD: startYMD, filtered: (items && items.length) ? items.length : 0, sample: (items || []).slice(0, 5).map(i => i && i.date) }); } catch (e) { }
 					if (!items || items.length === 0) {
 						try { parent.style.display = 'flex'; } catch (e) { }
 						try { const nameEl = document.getElementById('fav-ex-name'); if (nameEl) nameEl.textContent = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('no_exercise_data_found') || 'No exercise data found') : 'No exercise data found'; } catch (e) { }
@@ -1491,8 +1619,9 @@
 				} catch (err) { console.error('renderFavoriteExercise failed', err); }
 			}
 
-			async function renderTypeDistribution() {
+			async function renderTypeDistribution(range = getStoredHomeChartPillSelection(), sourceEntries = null) {
 				try {
+					range = normalizeHomeChartPeriod(range);
 					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 					const widget = document.getElementById('type-distribution-widget');
 					const list = document.getElementById('type-distribution-list');
@@ -1500,16 +1629,9 @@
 					let historyCount = 0;
 					try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
 					if (!historyCount) { widget.style.display = 'none'; return; }
-					const now = new Date();
-					now.setHours(0, 0, 0, 0);
-					const start = new Date(now);
-					start.setFullYear(start.getFullYear() - 1);
-					const startYMD = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-					let entries = await db.history.toArray();
+					let entries = Array.isArray(sourceEntries) ? sourceEntries.slice() : await db.history.toArray();
 					if (!entries || entries.length === 0) { widget.style.display = 'none'; return; }
-					entries = entries.filter(it => {
-						try { return it && it.date && String(it.date) >= startYMD; } catch (e) { return false; }
-					});
+					entries = filterHomeEntriesByPeriod(entries, range);
 					if (!entries.length) { widget.style.display = 'none'; return; }
 					const [catalogEx, customEx] = await Promise.all([
 						db.catalog_exercises.toArray(),
@@ -1578,9 +1700,6 @@
 			// range selector removed; no listener required
 		</script>
 
-		<div id="home-data-disclaimer" class="data-disclaimer" style="display:none;">
-			<em data-i18n="home_data_disclaimer">all data shown is based on data from the last 12 months</em>
-		</div>
 		<script>
 			if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
 				navigator.serviceWorker.register('./sw.js').then(() => console.log('Service worker registered')).catch(err => console.warn('SW registration failed', err));
@@ -1609,26 +1728,26 @@
 
 				// Expose globally so inner startup scope can call it if needed
 				try { window.updateFavDebug = updateFavDebug; } catch (e) { }
+				try { if (typeof initHomeChartPillFilter === 'function') initHomeChartPillFilter(); } catch (e) { }
 				try { console.debug('[fav-init] DOMContentLoaded — invoking favorite renderers'); } catch (e) { }
 				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined'); } catch (e) { console.error('[fav-init] renderFavoriteType error', e); }
-				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined'); } catch (e) { console.error('[fav-init] renderFavoriteExercise error', e); }
-				try { if (typeof renderTypeDistribution === 'function') renderTypeDistribution(); } catch (e) { console.error('[fav-init] renderTypeDistribution error', e); }
+				try { if (typeof renderHomeInsightWidgets === 'function') renderHomeInsightWidgets(); else console.debug('[fav-init] renderHomeInsightWidgets not defined'); } catch (e) { console.error('[fav-init] renderHomeInsightWidgets error', e); }
 			});
 
 			// SPA hook: when the app is shown (fragment injected), ensure renderers run
 			window.addEventListener('app-shown', () => {
 				try { console.debug('[fav-init] app-shown — invoking favorite renderers'); } catch (e) { }
+				try { if (typeof initHomeChartPillFilter === 'function') initHomeChartPillFilter(); } catch (e) { }
 				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); else console.debug('[fav-init] renderFavoriteType not defined on app-shown'); } catch (e) { console.error('[fav-init] renderFavoriteType error', e); }
-				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); else console.debug('[fav-init] renderFavoriteExercise not defined on app-shown'); } catch (e) { console.error('[fav-init] renderFavoriteExercise error', e); }
-				try { if (typeof renderTypeDistribution === 'function') renderTypeDistribution(); } catch (e) { console.error('[fav-init] renderTypeDistribution error', e); }
+				try { if (typeof renderHomeInsightWidgets === 'function') renderHomeInsightWidgets(); else console.debug('[fav-init] renderHomeInsightWidgets not defined on app-shown'); } catch (e) { console.error('[fav-init] renderHomeInsightWidgets error', e); }
 			});
 
 			// Fallback: call after a short delay in case neither event fires in the SPA environment
 			setTimeout(() => {
 				try { console.debug('[fav-init] timeout fallback — invoking favorite renderers'); } catch (e) { }
+				try { if (typeof initHomeChartPillFilter === 'function') initHomeChartPillFilter(); } catch (e) { }
 				try { if (typeof renderFavoriteType === 'function') renderFavoriteType('year'); } catch (e) { }
-				try { if (typeof renderFavoriteExercise === 'function') renderFavoriteExercise('year'); } catch (e) { }
-				try { if (typeof renderTypeDistribution === 'function') renderTypeDistribution(); } catch (e) { }
+				try { if (typeof renderHomeInsightWidgets === 'function') renderHomeInsightWidgets(); } catch (e) { }
 			}, 800);
 		</script>
 		<script>
@@ -1638,13 +1757,13 @@
 					try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { }
 					let historyCount = 0;
 					try { historyCount = await db.history.count(); } catch (e) { }
-					updateDataDisclaimerVisibility(historyCount);
+					updateHomeChartFilterVisibility(historyCount);
+					initHomeChartPillFilter();
 					try { await renderWeekDots(); } catch (e) { }
 					if (historyCount > 0) {
 						try { if (typeof renderStreakBanner === 'function') await renderStreakBanner(); } catch (e) { }
 						try { if (typeof renderFavoriteType === 'function') await renderFavoriteType('year'); } catch (e) { }
-						try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise('year'); } catch (e) { }
-						try { if (typeof renderTypeDistribution === 'function') await renderTypeDistribution(); } catch (e) { }
+						try { if (typeof renderHomeInsightWidgets === 'function') await renderHomeInsightWidgets(); } catch (e) { }
 						try {
 							const emptyEl = document.getElementById('home-empty-illustration');
 							if (emptyEl) {
@@ -1655,6 +1774,7 @@
 						} catch (e) { }
 					} else {
 						try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
+						try { const hf = document.getElementById('home-chart-pill-filter'); if (hf) hf.style.display = 'none'; } catch (e) { }
 						try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
 						try { const dist = document.getElementById('type-distribution-widget'); if (dist) dist.style.display = 'none'; } catch (e) { }
 						try {
