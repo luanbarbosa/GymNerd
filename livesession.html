@@ -54,6 +54,8 @@
         .player-menu.open { display: block; }
         .player-menu-item { width: 100%; padding: 12px 14px; border: none; border-radius: 10px; background: transparent; color: var(--text); text-align: left; font-weight: 700; cursor: pointer; }
         .player-menu-item:active { background: rgba(255,255,255,0.06); }
+        .player-menu-item-danger { color: #fca5a5; }
+        .player-menu-item-danger:active { background: rgba(239,68,68,0.12); }
         .dialog-overlay {
             position: fixed;
             inset: 0;
@@ -679,6 +681,7 @@
                         </button>
                         <div id="playerMenu" class="player-menu" role="menu" aria-label="Player options" hidden>
                             <button id="playerMenuAddExercise" class="player-menu-item" type="button" role="menuitem" data-i18n="add_exercise_action">Add exercise</button>
+                            <button id="playerMenuGiveUpSession" class="player-menu-item player-menu-item-danger" type="button" role="menuitem" data-i18n="give_up_session">Give up session</button>
                         </div>
                     </div>
                 </div>
@@ -1766,9 +1769,25 @@
             openAddExerciseDialog();
         }
 
+        function handleGiveUpSessionMenuClick(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            closePlayerMenu();
+            const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+                ? (GN_I18N.t('give_up_session_message') || 'If you cancel now, your unfinished progress will be lost and this session will not be saved.')
+                : 'If you cancel now, your unfinished progress will be lost and this session will not be saved.';
+            let shouldCancel = false;
+            try { shouldCancel = window.confirm(message); } catch (e) { shouldCancel = false; }
+            if (!shouldCancel) return;
+            confirmGiveUpSession();
+        }
+
         function wirePlayerMenu() {
             const btn = document.getElementById('playerMenuBtn');
             const addExerciseBtn = document.getElementById('playerMenuAddExercise');
+            const giveUpSessionBtn = document.getElementById('playerMenuGiveUpSession');
             if (btn && !btn.dataset.wired) {
                 const onMenuTrigger = (event) => {
                     togglePlayerMenu(event);
@@ -1782,6 +1801,13 @@
                 };
                 addExerciseBtn.addEventListener('click', onAddExercise);
                 addExerciseBtn.dataset.wired = 'true';
+            }
+            if (giveUpSessionBtn && !giveUpSessionBtn.dataset.wired) {
+                const onGiveUpSession = (event) => {
+                    handleGiveUpSessionMenuClick(event);
+                };
+                giveUpSessionBtn.addEventListener('click', onGiveUpSession);
+                giveUpSessionBtn.dataset.wired = 'true';
             }
         }
 
@@ -1860,6 +1886,17 @@
         function handleAddExerciseDialogBackdrop(event) {
             if (event && event.target && event.target.id === 'addExerciseDialog') {
                 closeAddExerciseDialog();
+            }
+        }
+
+        async function confirmGiveUpSession() {
+            try {
+                clearSessionState();
+                try { await releaseWakeResources(); } catch (e) { console.warn('releaseWakeResources failed in confirmGiveUpSession', e); }
+                goBack();
+            } catch (e) {
+                console.error('confirmGiveUpSession failed', e);
+                try { navigateHomeShell(); } catch (err) { console.warn('confirmGiveUpSession fallback navigation failed', err); }
             }
         }
 
