@@ -113,11 +113,7 @@
 					} catch (err) { console.error('renderFavoriteType failed', err); }
 				}
 
-				try { if (window.hideLoading) window.hideLoading(); } catch (e) { }
-				return;
-			}
-
-				try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { console.warn('[StartupWatchdog] ensureDbOpen failed', e); }
+					try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { console.warn('[StartupWatchdog] ensureDbOpen failed', e); }
 
 			console.info('[StartupWatchdog] calling DriveStorage.load');
 			const data = await DriveStorage.load();
@@ -832,6 +828,127 @@
 			align-items: flex-start;
 		}
 
+		#weight-change-widget {
+			width: 100%;
+			max-width: none;
+			margin: 12px 0;
+			box-sizing: border-box;
+			padding: 0;
+			border-radius: 12px;
+			background-color: var(--card-background);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+			display: flex;
+			flex-direction: column;
+			gap: 0;
+			align-items: flex-start;
+			overflow: hidden;
+		}
+
+		#weight-change-widget .streak-title {
+			width: 100%;
+			box-sizing: border-box;
+			padding: 16px 16px 2px;
+			margin: 0;
+		}
+
+		.weight-change-subtitle {
+			width: 100%;
+			box-sizing: border-box;
+			padding: 0 16px 12px;
+			margin: 0;
+			font-size: 0.82rem;
+			font-weight: 500;
+			color: var(--text-dim);
+		}
+
+		#weight-change-list {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 0;
+			width: 100%;
+		}
+
+		.weight-change-row {
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			justify-content: flex-start;
+			width: 100%;
+			height: auto;
+			border-radius: 0;
+		}
+
+		.weight-change-row-main {
+			width: 100%;
+		}
+
+		.weight-change-row-thumb {
+			width: 100%;
+			height: 144px;
+			border-radius: 0;
+			object-fit: contain;
+			object-position: center;
+			background: #fff;
+			display: block;
+			box-shadow: 0 8px 24px rgba(2, 6, 23, 0.14);
+		}
+
+		.weight-change-row-content {
+			display: flex;
+			justify-content: center;
+			padding: 0 8px 8px;
+			margin-bottom: 8px;
+		}
+
+		.weight-change-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 5px;
+			padding: 9px 13px;
+			border-radius: 999px;
+			font-size: 0.84rem;
+			font-weight: 500;
+			line-height: 1;
+			border: 1px solid transparent;
+			white-space: normal;
+			flex-wrap: wrap;
+			flex: 0 0 auto;
+			max-width: 100%;
+		}
+
+		.weight-change-badge .material-symbols-outlined {
+			font-size: 17px;
+		}
+
+		.weight-change-badge.is-positive {
+			color: var(--success);
+			background: rgba(0, 230, 118, 0.12);
+			border-color: rgba(0, 230, 118, 0.25);
+		}
+
+		.weight-change-badge.is-negative {
+			color: var(--danger);
+			background: rgba(255, 82, 82, 0.12);
+			border-color: rgba(255, 82, 82, 0.25);
+		}
+
+		@media (max-width: 420px) {
+			#weight-change-list {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 0;
+			}
+
+			.weight-change-row-thumb {
+				height: 112px;
+			}
+
+			.weight-change-badge {
+				font-size: 0.8rem;
+				padding: 8px 12px;
+			}
+		}
+
 		#type-distribution-widget .streak-title {
 			text-align: left;
 		}
@@ -1059,6 +1176,12 @@
 					<button type="button" class="home-chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
 					<button type="button" class="home-chart-pill-option" data-period="6m" aria-selected="false" data-i18n="last_6_months">6 months</button>
 					<button type="button" class="home-chart-pill-option" data-period="month" aria-selected="false" data-i18n="this_month">This month</button>
+				</div>
+
+				<div id="weight-change-widget" class="nav-card" role="region" aria-live="polite" style="display:none;" aria-label="Biggest weight changes">
+					<div class="streak-title" data-i18n="biggest_weight_changes_title">Biggest weight changes</div>
+					<div class="weight-change-subtitle" data-i18n="weight_per_rep">Weight per rep</div>
+					<div id="weight-change-list"></div>
 				</div>
 
 				<!-- Favorite exercise widget -->
@@ -1447,6 +1570,7 @@
 				try { items = await db.history.toArray(); } catch (e) { items = []; }
 				const effectivePeriod = useFallback ? resolveEffectiveHomeChartPeriod(items, requestedPeriod) : requestedPeriod;
 				try { applyHomeChartPillSelection(effectivePeriod); } catch (e) { }
+				try { if (typeof renderWeightChangeWidget === 'function') await renderWeightChangeWidget(effectivePeriod, items); } catch (e) { console.error('renderWeightChangeWidget failed', e); }
 				try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise(effectivePeriod, items); } catch (e) { console.error('renderFavoriteExercise failed', e); }
 				try { if (typeof renderTypeDistribution === 'function') await renderTypeDistribution(effectivePeriod, items); } catch (e) { console.error('renderTypeDistribution failed', e); }
 			}
@@ -1619,6 +1743,165 @@
 				} catch (err) { console.error('renderFavoriteExercise failed', err); }
 			}
 
+			function getHomeExerciseDisplayName(exercise, fallback = '') {
+				if (!exercise) return fallback;
+				const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+				if (lang === 'pt') return exercise.namePT || exercise.name || fallback;
+				return exercise.name || exercise.namePT || fallback;
+			}
+
+			function getHomeWeightPerRep(entry) {
+				const weight = Number(entry && entry.weight) || 0;
+				const reps = (entry && entry.reps !== undefined && entry.reps !== null) ? Number(entry.reps) : 1;
+				const value = reps > 0 ? weight / reps : weight;
+				if (!Number.isFinite(value)) return 0;
+				return Number(value.toFixed(2));
+			}
+
+			function getHomeWeightChangeMeta(values, unit = 'kg') {
+				const numericValues = (Array.isArray(values) ? values : []).map((value) => Number(value)).filter((value) => Number.isFinite(value));
+				if (numericValues.length < 2) return null;
+
+				const first = numericValues[0];
+				const last = numericValues[numericValues.length - 1];
+				const delta = Number((last - first).toFixed(2));
+				if (!Number.isFinite(delta) || delta === 0) return null;
+
+				let percentText = 'N/A';
+				let percentage = null;
+				if (first !== 0) {
+					const rawPercentage = (delta / Math.abs(first)) * 100;
+					if (Number.isFinite(rawPercentage)) {
+						percentage = Number(rawPercentage.toFixed(1));
+						percentText = `${percentage > 0 ? '+' : ''}${percentage}%`;
+					}
+				}
+
+				return {
+					delta,
+					deltaText: `${delta > 0 ? '+' : ''}${delta} ${unit}`.trim(),
+					percentText,
+					state: delta > 0 ? 'positive' : 'negative',
+					icon: delta > 0 ? 'arrow_upward' : 'arrow_downward'
+				};
+			}
+
+			async function getHomeExerciseImage(exercise) {
+				try {
+					if (!exercise || !exercise.imageId) return '';
+					const table = exercise.isCustom ? db.custom_images : db.catalog_images;
+					const imageRecord = await table.get(exercise.imageId);
+					return imageRecord && imageRecord.data ? imageRecord.data : '';
+				} catch (e) {
+					return '';
+				}
+			}
+
+			function renderWeightChangeRow(item) {
+				if (!item) return '';
+				return `
+					<div class="weight-change-row">
+						<div class="weight-change-row-content">
+							<div class="weight-change-badge is-${item.change.state}">
+								<span class="material-symbols-outlined" aria-hidden="true">${item.change.icon}</span>
+								<span>${item.change.percentText}</span>
+								<span aria-hidden="true">&nbsp;&nbsp;</span>
+								<span>${item.change.deltaText}</span>
+							</div>
+						</div>
+						<div class="weight-change-row-main">
+							<img class="weight-change-row-thumb" src="${item.imageSrc}" alt="${item.name}">
+						</div>
+					</div>
+				`;
+			}
+
+			async function renderWeightChangeWidget(range = getStoredHomeChartPillSelection(), sourceItems = null) {
+				try {
+					range = normalizeHomeChartPeriod(range);
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const widget = document.getElementById('weight-change-widget');
+					const list = document.getElementById('weight-change-list');
+					if (!widget || !list) return;
+					try {
+						if (window.GN_I18N && typeof GN_I18N.t === 'function') {
+							widget.setAttribute('aria-label', GN_I18N.t('biggest_weight_changes_title') || 'Biggest weight changes');
+						}
+					} catch (e) { }
+
+					let historyCount = 0;
+					try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
+					if (!historyCount) { widget.style.display = 'none'; return; }
+
+					let entries = Array.isArray(sourceItems) ? sourceItems.slice() : await db.history.toArray();
+					if (!entries || !entries.length) { widget.style.display = 'none'; return; }
+					entries = filterHomeEntriesByPeriod(entries, range);
+					if (!entries.length) { widget.style.display = 'none'; return; }
+
+					const [catalogEx, customEx] = await Promise.all([
+						db.catalog_exercises.toArray(),
+						db.custom_exercises.toArray()
+					]);
+					const allExercises = [
+						...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+						...customEx.map(ex => ({ ...ex, isCustom: true }))
+					];
+					const exMap = allExercises.reduce((acc, ex) => {
+						acc[`${ex.id}-${!!ex.isCustom}`] = ex;
+						return acc;
+					}, {});
+
+					const grouped = {};
+					for (const entry of entries) {
+						const key = `${entry.exerciseId}-${entry.isCustom !== undefined ? !!entry.isCustom : entry.exerciseId > 0}`;
+						if (!grouped[key]) grouped[key] = [];
+						grouped[key].push(entry);
+					}
+
+					const candidates = [];
+					for (const [key, exerciseEntries] of Object.entries(grouped)) {
+						const sorted = exerciseEntries.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+						const values = sorted.map(getHomeWeightPerRep);
+						const change = getHomeWeightChangeMeta(values, (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg');
+						if (!change) continue;
+						const ex = exMap[key];
+						const fallbackName = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('unknown_exercise') || 'Unknown Exercise') : 'Unknown Exercise';
+						const imageSrc = await getHomeExerciseImage(ex);
+						candidates.push({
+							key,
+							name: getHomeExerciseDisplayName(ex, fallbackName),
+							imageSrc,
+							change
+						});
+					}
+
+					if (!candidates.length) {
+						widget.style.display = 'none';
+						return;
+					}
+
+					const topPositive = candidates
+						.filter((item) => item.change.delta > 0)
+						.sort((a, b) => b.change.delta - a.change.delta)[0] || null;
+					const topNegative = candidates
+						.filter((item) => item.change.delta < 0)
+						.sort((a, b) => a.change.delta - b.change.delta)[0] || null;
+
+					if (!topPositive && !topNegative) {
+						widget.style.display = 'none';
+						return;
+					}
+
+					list.innerHTML = [
+						topPositive ? renderWeightChangeRow(topPositive) : '',
+						topNegative ? renderWeightChangeRow(topNegative) : ''
+					].filter(Boolean).join('');
+					widget.style.display = 'flex';
+				} catch (err) {
+					console.error('renderWeightChangeWidget failed', err);
+				}
+			}
+
 			async function renderTypeDistribution(range = getStoredHomeChartPillSelection(), sourceEntries = null) {
 				try {
 					range = normalizeHomeChartPeriod(range);
@@ -1775,6 +2058,7 @@
 					} else {
 						try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
 						try { const hf = document.getElementById('home-chart-pill-filter'); if (hf) hf.style.display = 'none'; } catch (e) { }
+						try { const wc = document.getElementById('weight-change-widget'); if (wc) wc.style.display = 'none'; } catch (e) { }
 						try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
 						try { const dist = document.getElementById('type-distribution-widget'); if (dist) dist.style.display = 'none'; } catch (e) { }
 						try {
