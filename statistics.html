@@ -1085,7 +1085,7 @@
 	                            callbacks: {
 	                                label(context) {
 	                                    const value = Number(context && context.raw) || 0;
-	                                    const setWord = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t('history_fmt_sets_short') || 'sets') : 'sets';
+	                                    const setWord = (window.GN_I18N && typeof GN_I18N.getSetCountLabel === 'function') ? GN_I18N.getSetCountLabel(value) : (value === 1 ? 'set' : 'sets');
 	                                    return `${value} ${setWord}`;
 	                                }
 	                            }

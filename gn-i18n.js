@@ -239,6 +239,8 @@
                 history_edit_routine: 'Editing routine',
                 history_edit_weight: 'Editing weight',
                 history_fmt_sets_short: 'sets',
+                history_fmt_set_short_singular: 'set',
+                history_fmt_set_short_plural: 'sets',
                 history_fmt_kg_suffix: 'kg'
                 ,
                 // UI strings added for history page filters and empty state
@@ -544,7 +546,9 @@
                 history_confirm_delete_weight: 'Excluir entrada de peso para {date}?',
                 history_edit_routine: 'Editando treino',
                 history_edit_weight: 'Editando peso',
-                history_fmt_sets_short: 'sér',
+                history_fmt_sets_short: 'série',
+                history_fmt_set_short_singular: 'série',
+                history_fmt_set_short_plural: 'séries',
                 history_fmt_set: 'Série {n}',
                 history_fmt_kg_suffix: 'kg'
                 ,
@@ -660,6 +664,14 @@
         t: function (key) {
             const lang = this.getLang();
             return (this.translations[lang] && this.translations[lang][key]) || key;
+        },
+        getSetCountLabel: function (count) {
+            const numericCount = Number(count);
+            const isSingular = Number.isFinite(numericCount) && numericCount === 1;
+            const key = isSingular ? 'history_fmt_set_short_singular' : 'history_fmt_set_short_plural';
+            const translated = this.t(key);
+            if (translated && translated !== key) return translated;
+            return isSingular ? 'set' : 'sets';
         },
         localizeExerciseType: function (type) {
             if (!type) return type;

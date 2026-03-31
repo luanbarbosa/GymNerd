@@ -976,6 +976,8 @@
 		}
 
 		.type-distribution-row-label {
+			flex: 1 1 auto;
+			min-width: 0;
 			font-weight: 700;
 			font-size: 1rem;
 			color: var(--text);
@@ -983,8 +985,10 @@
 
 		.type-distribution-row-stats {
 			display: flex;
+			flex: 0 0 auto;
 			gap: 8px;
 			align-items: baseline;
+			white-space: nowrap;
 			font-size: 0.85rem;
 			color: var(--text-dim);
 		}
@@ -1734,7 +1738,7 @@
 						try {
 							const exCountEl = document.getElementById('fav-ex-count');
 							if (exCountEl) {
-								const setWord = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t('history_fmt_sets_short') || 'sets') : 'sets';
+								const setWord = (window.GN_I18N && typeof GN_I18N.getSetCountLabel === 'function') ? GN_I18N.getSetCountLabel(bestCount) : (bestCount === 1 ? 'set' : 'sets');
 								exCountEl.textContent = `\u00A0(${bestCount} ${setWord})`;
 							}
 						} catch (e) { }
@@ -1973,7 +1977,6 @@
 							totalSets += entrySetCount;
 						}
 						if (!totalSets) { widget.style.display = 'none'; return; }
-						const setWord = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t('history_fmt_sets_short') || 'sets') : 'sets';
 						const rows = Object.entries(typeCounts)
 							.filter(([, count]) => count > 0)
 							.map(([typeKey, count]) => {
@@ -1999,6 +2002,7 @@
 							const percentSpan = document.createElement('span');
 							percentSpan.textContent = `${row.percentLabel}%`;
 							const countSpan = document.createElement('span');
+							const setWord = (window.GN_I18N && typeof GN_I18N.getSetCountLabel === 'function') ? GN_I18N.getSetCountLabel(row.count) : (row.count === 1 ? 'set' : 'sets');
 							countSpan.textContent = `${row.count} ${setWord}`;
 						stats.appendChild(percentSpan);
 						stats.appendChild(countSpan);
