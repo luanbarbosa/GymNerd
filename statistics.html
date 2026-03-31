@@ -211,25 +211,31 @@
         <div class="calendar-grid" id="calendarGrid"></div>
         </div>
 
-        <div class="card frequency-card">
-            <div class="calendar-header">
-            <h3 class="align-start" data-i18n="workout_frequency"></h3>
-                <select id="frequencyFilter" onchange="updateFrequencyChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
-                <option value="month" selected data-i18n="monthly">Monthly</option>
-                <option value="year" data-i18n="yearly">Yearly</option>
-            </select>
-        </div>
+	        <div class="card frequency-card">
+	            <div class="calendar-header">
+	            <div style="display:flex; flex-direction:column; gap:2px; min-width:0; flex:1;">
+	                <h3 class="align-start" data-i18n="workout_frequency"></h3>
+	                <div data-i18n="workout_frequency_subtext" style="font-size:0.72rem; color:var(--text-dim); line-height:1.2; padding:0 8px;"></div>
+	            </div>
+	                <select id="frequencyFilter" onchange="updateFrequencyChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
+	                <option value="month" selected data-i18n="monthly">Monthly</option>
+	                <option value="year" data-i18n="yearly">Yearly</option>
+	            </select>
+	        </div>
             <div class="canvas-wrapper" style="height: 200px;">
             <canvas id="frequencyChart"></canvas>
         </div>
         </div>
 
-        <div class="card" id="radarCard">
-            <div class="calendar-header">
-                <h3 class="align-start" data-i18n="exercise_frequency"></h3>
-                <select id="radarFilter" onchange="updateRadarChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
-                    <option value="all" data-i18n="all_time">All time</option>
-                    <option value="ytd" data-i18n="year_to_date">Year to date</option>
+	        <div class="card" id="radarCard">
+	            <div class="calendar-header">
+	                <div style="display:flex; flex-direction:column; gap:2px; min-width:0; flex:1;">
+	                    <h3 class="align-start" data-i18n="exercise_frequency"></h3>
+	                    <div data-i18n="exercise_frequency_subtext" style="font-size:0.72rem; color:var(--text-dim); line-height:1.2; padding:0 8px;"></div>
+	                </div>
+	                <select id="radarFilter" onchange="updateRadarChart()" class="nav-btn" style="width: auto; border: 1px solid rgba(255,255,255,0.1);">
+	                    <option value="all" data-i18n="all_time">All time</option>
+	                    <option value="ytd" data-i18n="year_to_date">Year to date</option>
                     <option value="6m" data-i18n="last_6_months">Last 6 months</option>
                     <option value="month" selected data-i18n="this_month">This month</option>
                 </select>
@@ -993,6 +999,22 @@
             if (!logs) logs = await db.history.toArray();
             const period = document.getElementById('radarFilter').value;
             const start = getPeriodStart(period);
+            function getEntrySetCount(entry) {
+                if (Array.isArray(entry && entry.sets) && entry.sets.length > 0) {
+                    let totalSets = 0;
+                    for (const setEntry of entry.sets) {
+                        const setsCount = (setEntry && setEntry.sets !== undefined && setEntry.sets !== '') ? Number(setEntry.sets) : NaN;
+                        if (Number.isFinite(setsCount) && setsCount > 0) {
+                            totalSets += setsCount;
+                            continue;
+                        }
+                        if (setEntry && (setEntry.reps !== undefined || setEntry.weight !== undefined)) totalSets += 1;
+                    }
+                    if (totalSets > 0) return totalSets;
+                }
+                if (entry && (entry.reps !== undefined || entry.weight !== undefined)) return 1;
+                return 0;
+            }
 
             const [catalogEx, customEx] = await Promise.all([
                 db.catalog_exercises.toArray(),
@@ -1018,7 +1040,7 @@
                 const exKey = `${l.exerciseId}-${l.isCustom !== undefined ? !!l.isCustom : l.exerciseId > 0}`;
                 const ex = exMap[exKey];
                 const type = ex ? ex.type : 'Other';
-                counts[type] = (counts[type] || 0) + 1;
+                counts[type] = (counts[type] || 0) + getEntrySetCount(l);
             });
 
             // Populate selector if needed
@@ -1041,10 +1063,10 @@
 
             const ctx = document.getElementById('radarChart').getContext('2d');
             if (radarChart) radarChart.destroy();
-            radarChart = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels,
+	            radarChart = new Chart(ctx, {
+	                type: 'radar',
+	                data: {
+	                    labels,
                     datasets: [{
                         data,
                         backgroundColor: accentWithAlpha(0.15),
@@ -1053,14 +1075,26 @@
                         pointBackgroundColor: accentColorBase
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.05)' },
+	                options: {
+	                    responsive: true,
+	                    maintainAspectRatio: false,
+	                    plugins: {
+	                        legend: { display: false },
+	                        tooltip: {
+	                            displayColors: false,
+	                            callbacks: {
+	                                label(context) {
+	                                    const value = Number(context && context.raw) || 0;
+	                                    const setWord = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t('history_fmt_sets_short') || 'sets') : 'sets';
+	                                    return `${value} ${setWord}`;
+	                                }
+	                            }
+	                        }
+	                    },
+	                    scales: {
+	                        r: {
+	                            beginAtZero: true,
+	                            grid: { color: 'rgba(255,255,255,0.05)' },
                             ticks: { display: false }
                         }
                     }
