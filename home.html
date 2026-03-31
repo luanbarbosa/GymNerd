@@ -1206,11 +1206,11 @@
 									<span id="fav-ex-initial">—</span>
 								</div>
 
-								<div id="fav-ex-name-and-count"
-									style="color:var(--text); font-weight:700; word-break:break-word; width:100%;">
-									<span id="fav-ex-name">—</span>
-									<span id="fav-ex-count" class="streak-record"> </span>
-								</div>
+									<div id="fav-ex-name-and-count"
+										style="color:var(--text); font-weight:400; word-break:break-word; width:100%;">
+										<span id="fav-ex-name">—</span>
+										<span id="fav-ex-count" class="streak-record"> </span>
+									</div>
 							</div>
 						</div>
 					</div>
@@ -1639,19 +1639,35 @@
 						try { const previewEl = document.getElementById('fav-ex-preview'); if (previewEl) previewEl.style.display = 'none'; } catch (e) { }
 						return;
 					}
-					const counts = {};
-					const totals = {}; // totals[key] = { reps: number, weight: number }
-					function addTotalsForKey(key, repsToAdd, weightToAdd) {
-						if (!totals[key]) totals[key] = { reps: 0, weight: 0 };
-						totals[key].reps += repsToAdd;
-						totals[key].weight += weightToAdd;
-					}
-					for (const it of items) {
-						const key = (it.isCustom === true ? 'c' : 'k') + '|' + it.exerciseId;
-						counts[key] = (counts[key] || 0) + 1;
-						// attempt to extract reps/weight information from the history entry
-						try {
-							let entryReps = 0, entryWeight = 0;
+						const counts = {};
+						const totals = {}; // totals[key] = { reps: number, weight: number }
+						function addTotalsForKey(key, repsToAdd, weightToAdd) {
+							if (!totals[key]) totals[key] = { reps: 0, weight: 0 };
+							totals[key].reps += repsToAdd;
+							totals[key].weight += weightToAdd;
+						}
+						function getEntrySetCount(entry) {
+							if (Array.isArray(entry && entry.sets) && entry.sets.length > 0) {
+								let totalSets = 0;
+								for (const setEntry of entry.sets) {
+									const explicitSetCount = (setEntry && setEntry.sets !== undefined && setEntry.sets !== '') ? Number(setEntry.sets) : NaN;
+									if (Number.isFinite(explicitSetCount) && explicitSetCount > 0) {
+										totalSets += explicitSetCount;
+										continue;
+									}
+									if (setEntry && (setEntry.reps !== undefined || setEntry.weight !== undefined)) totalSets += 1;
+								}
+								if (totalSets > 0) return totalSets;
+							}
+							if (entry && (entry.reps !== undefined || entry.weight !== undefined)) return 1;
+							return 0;
+						}
+						for (const it of items) {
+							const key = (it.isCustom === true ? 'c' : 'k') + '|' + it.exerciseId;
+							counts[key] = (counts[key] || 0) + getEntrySetCount(it);
+							// attempt to extract reps/weight information from the history entry
+							try {
+								let entryReps = 0, entryWeight = 0;
 							if (Array.isArray(it.sets) && it.sets.length > 0) {
 								for (const s of it.sets) {
 									// s may be {sets, reps, weight} or {reps, weight}
@@ -1671,12 +1687,13 @@
 							if (entryReps > 0 || entryWeight > 0) addTotalsForKey(key, entryReps, entryWeight);
 						} catch (e) { /* ignore parse errors */ }
 					}
-					let bestKey = null, bestCount = 0, bestAvg = 0;
-					for (const k of Object.keys(counts)) {
-						const c = counts[k] || 0;
-						if (c > bestCount) {
-							bestCount = c; bestKey = k; bestAvg = ((totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0);
-						} else if (c === bestCount) {
+						let bestKey = null, bestCount = 0, bestAvg = 0;
+						for (const k of Object.keys(counts)) {
+							const c = counts[k] || 0;
+							if (c <= 0) continue;
+							if (c > bestCount) {
+								bestCount = c; bestKey = k; bestAvg = ((totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0);
+							} else if (c === bestCount) {
 							// tie-breaker: pick the one with higher average weight per rep
 							const avg = (totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0;
 							if (avg > bestAvg) {
@@ -1714,10 +1731,13 @@
 					if (!name) name = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('unknown_exercise') : 'Unknown Exercise';
 					const nameEl = document.getElementById('fav-ex-name');
 					if (nameEl) nameEl.textContent = name;
-					try {
-						const exCountEl = document.getElementById('fav-ex-count');
-						if (exCountEl) exCountEl.textContent = `\u00A0(${bestCount}x)`;
-					} catch (e) { }
+						try {
+							const exCountEl = document.getElementById('fav-ex-count');
+							if (exCountEl) {
+								const setWord = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t('history_fmt_sets_short') || 'sets') : 'sets';
+								exCountEl.textContent = `\u00A0(${bestCount} ${setWord})`;
+							}
+						} catch (e) { }
 					// Ensure preview container is visible, then try to show image preview if available
 					const previewEl = document.getElementById('fav-ex-preview');
 					if (previewEl) previewEl.style.display = 'flex';
@@ -1902,10 +1922,10 @@
 				}
 			}
 
-			async function renderTypeDistribution(range = getStoredHomeChartPillSelection(), sourceEntries = null) {
-				try {
-					range = normalizeHomeChartPeriod(range);
-					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+				async function renderTypeDistribution(range = getStoredHomeChartPillSelection(), sourceEntries = null) {
+					try {
+						range = normalizeHomeChartPeriod(range);
+						if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 					const widget = document.getElementById('type-distribution-widget');
 					const list = document.getElementById('type-distribution-list');
 					if (!widget || !list) return;
@@ -1920,30 +1940,50 @@
 						db.catalog_exercises.toArray(),
 						db.custom_exercises.toArray()
 					]);
-					const allExercises = [
-						...catalogEx.map(ex => ({ ...ex, isCustom: false })),
-						...customEx.map(ex => ({ ...ex, isCustom: true }))
-					];
-					const exMap = allExercises.reduce((acc, ex) => { acc[`${ex.id}-${!!ex.isCustom}`] = ex; return acc; }, {});
-					const typeCounts = {};
-					for (const entry of entries) {
-						const key = `${entry.exerciseId}-${entry.isCustom !== undefined ? !!entry.isCustom : entry.exerciseId > 0}`;
-						const ex = exMap[key];
-						const typeKey = (ex && ex.type) ? ex.type : 'other';
-						typeCounts[typeKey] = (typeCounts[typeKey] || 0) + 1;
-					}
-					const total = entries.length;
-					const sessionWord = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t('sessions') || 'sessions') : 'sessions';
-					const rows = Object.entries(typeCounts)
-						.filter(([, count]) => count > 0)
-						.map(([typeKey, count]) => {
-							const percentRaw = total ? (count / total) * 100 : 0;
-							const percentRounded = Math.round(percentRaw * 10) / 10;
-							const percentLabel = (percentRounded % 1 === 0) ? percentRounded.toFixed(0) : percentRounded.toFixed(1);
-							const label = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? (GN_I18N.localizeExerciseType(typeKey) || typeKey) : typeKey;
-							return { typeKey, label, count, percentRounded, percentLabel };
-						})
-						.sort((a, b) => b.percentRounded - a.percentRounded);
+						const allExercises = [
+							...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+							...customEx.map(ex => ({ ...ex, isCustom: true }))
+						];
+						const exMap = allExercises.reduce((acc, ex) => { acc[`${ex.id}-${!!ex.isCustom}`] = ex; return acc; }, {});
+						function getEntrySetCount(entry) {
+							if (Array.isArray(entry && entry.sets) && entry.sets.length > 0) {
+								let totalSets = 0;
+								for (const setEntry of entry.sets) {
+									const explicitSetCount = (setEntry && setEntry.sets !== undefined && setEntry.sets !== '') ? Number(setEntry.sets) : NaN;
+									if (Number.isFinite(explicitSetCount) && explicitSetCount > 0) {
+										totalSets += explicitSetCount;
+										continue;
+									}
+									if (setEntry && (setEntry.reps !== undefined || setEntry.weight !== undefined)) totalSets += 1;
+								}
+								if (totalSets > 0) return totalSets;
+							}
+							if (entry && (entry.reps !== undefined || entry.weight !== undefined)) return 1;
+							return 0;
+						}
+						const typeCounts = {};
+						let totalSets = 0;
+						for (const entry of entries) {
+							const key = `${entry.exerciseId}-${entry.isCustom !== undefined ? !!entry.isCustom : entry.exerciseId > 0}`;
+							const ex = exMap[key];
+							const typeKey = (ex && ex.type) ? ex.type : 'other';
+							const entrySetCount = getEntrySetCount(entry);
+							if (entrySetCount <= 0) continue;
+							typeCounts[typeKey] = (typeCounts[typeKey] || 0) + entrySetCount;
+							totalSets += entrySetCount;
+						}
+						if (!totalSets) { widget.style.display = 'none'; return; }
+						const setWord = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t('history_fmt_sets_short') || 'sets') : 'sets';
+						const rows = Object.entries(typeCounts)
+							.filter(([, count]) => count > 0)
+							.map(([typeKey, count]) => {
+								const percentRaw = totalSets ? (count / totalSets) * 100 : 0;
+								const percentRounded = Math.round(percentRaw * 10) / 10;
+								const percentLabel = (percentRounded % 1 === 0) ? percentRounded.toFixed(0) : percentRounded.toFixed(1);
+								const label = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? (GN_I18N.localizeExerciseType(typeKey) || typeKey) : typeKey;
+								return { typeKey, label, count, percentRounded, percentLabel };
+							})
+							.sort((a, b) => b.count - a.count || b.percentRounded - a.percentRounded);
 					if (!rows.length) { widget.style.display = 'none'; return; }
 					list.innerHTML = '';
 					for (const row of rows) {
@@ -1956,10 +1996,10 @@
 						labelEl.textContent = row.label;
 						const stats = document.createElement('span');
 						stats.className = 'type-distribution-row-stats';
-						const percentSpan = document.createElement('span');
-						percentSpan.textContent = `${row.percentLabel}%`;
-						const countSpan = document.createElement('span');
-						countSpan.textContent = `${row.count} ${sessionWord}`;
+							const percentSpan = document.createElement('span');
+							percentSpan.textContent = `${row.percentLabel}%`;
+							const countSpan = document.createElement('span');
+							countSpan.textContent = `${row.count} ${setWord}`;
 						stats.appendChild(percentSpan);
 						stats.appendChild(countSpan);
 						main.appendChild(labelEl);
