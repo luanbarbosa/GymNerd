@@ -540,13 +540,48 @@
             }
         } catch(e) {}
 
+        function refreshLocalizedShell() {
+            try { if (window.GN_I18N) GN_I18N.applyTranslations(document); } catch(e) {}
+            try {
+                const pageTitle = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('page_settings') : 'Settings';
+                document.title = `GymNerd | ${pageTitle}`;
+            } catch(e) {}
+            try {
+                const nav = document.getElementById('bottom-nav') || document.getElementById('gn-bottom-nav');
+                if (nav && window.GN_I18N) {
+                    GN_I18N.applyTranslations(nav);
+                    const map = {
+                        'nav-home': 'menu_home',
+                        'nav-routines': 'menu_routines',
+                        'nav-play': 'menu_start_routine',
+                        'nav-history': 'menu_history',
+                        'nav-statistics': 'menu_statistics'
+                    };
+                    Object.keys(map).forEach((id) => {
+                        const el = document.getElementById(id);
+                        if (el) el.setAttribute('aria-label', GN_I18N.safeT(map[id]));
+                    });
+                }
+            } catch(e) {}
+            try {
+                window.dispatchEvent(new CustomEvent('gn:language-changed', {
+                    detail: {
+                        lang: (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : null
+                    }
+                }));
+            } catch(e) {}
+        }
+
         // Initialize language selector on settings page
         try {
             const sel = document.getElementById('gn-lang-select');
             if (sel && window.GN_I18N) {
                 try { sel.value = GN_I18N.getLang(); } catch(e) {}
                 sel.addEventListener('change', (ev) => {
-                    try { GN_I18N.setLang(ev.target.value); location.reload(); } catch(e) {}
+                    try {
+                        GN_I18N.setLang(ev.target.value);
+                        refreshLocalizedShell();
+                    } catch(e) {}
                 });
             }
         } catch(e) {}
