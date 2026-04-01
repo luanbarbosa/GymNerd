@@ -761,21 +761,30 @@
 			margin: 24px 0 12px;
 			padding-top: 2px;
 			display: flex;
-			flex-wrap: wrap;
-			gap: 8px;
+			flex-wrap: nowrap;
+			gap: clamp(4px, 1.5vw, 8px);
 			justify-content: center;
+			align-items: center;
+			width: 100%;
+			min-width: 0;
 		}
 
 		.home-chart-pill-option {
 			appearance: none;
+			flex: 1 1 0;
+			min-width: 0;
 			border: 1px solid rgba(255, 255, 255, 0.08);
 			background: rgba(255, 255, 255, 0.03);
 			color: var(--text-dim);
 			border-radius: 999px;
-			padding: 8px 14px;
-			font-size: 0.8rem;
+			padding: clamp(6px, 1.8vw, 8px) clamp(8px, 2.6vw, 14px);
+			font-size: clamp(0.62rem, 2.1vw, 0.8rem);
 			font-weight: 700;
 			line-height: 1;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			text-align: center;
 			cursor: pointer;
 			transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
 		}

@@ -146,7 +146,7 @@
 	                /* Statistics page */
 	                workout_frequency: 'Workout Frequency',
 	                workout_frequency_subtext: 'Number of workout days',
-	                favorite_exercise: 'Favorite exercise',
+	                favorite_exercise: 'Most frequent exercise',
                 session: 'session',
                 sessions: 'sessions',
                 this_week: 'This week',
@@ -455,7 +455,7 @@
                 failed_to_refresh_session: 'Não foi possível atualizar sua sessão automaticamente. Por favor, entre novamente.',
 	            workout_frequency: 'Frequência de Treinos',
 	            workout_frequency_subtext: 'Número de dias de treino',
-	            favorite_exercise: 'Exercício favorito',
+	            favorite_exercise: 'Exercício mais frequente',
                 session: 'sessão',
                 sessions: 'sessões',
                 this_week: 'Esta semana',
