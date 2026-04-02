@@ -15,6 +15,7 @@
     // Non-UI logout: perform cleanup silently and redirect to login.
     window.logout = async () => {
         try {
+            try { localStorage.removeItem('local_mode'); } catch(e){}
             localStorage.removeItem('google_token');
             localStorage.removeItem('google_token_expires_at');
             try { localStorage.removeItem('google_refresh_token'); } catch(e){}
@@ -706,6 +707,7 @@
         sessionStorage.setItem('pkce_code_verifier', code_verifier);
         // mark that the app is currently performing an interactive sign-in
         try {
+            try { localStorage.removeItem('local_mode'); } catch(e){}
             localStorage.setItem('gn_signing_in', '1');
             sessionStorage.setItem('gn_signing_in', '1');
         } catch (e) {}
@@ -764,6 +766,7 @@
                 // If exchange succeeded and we have a token, navigate immediately
                 // without hiding the global loader so the login UI doesn't flash.
                 if (tokenData && tokenData.access_token) {
+                try { localStorage.removeItem('local_mode'); } catch(e){}
                 localStorage.setItem('google_token', tokenData.access_token);
                 localStorage.setItem('google_token_expires_at', Date.now() + (tokenData.expires_in * 1000));
                 if (tokenData.refresh_token) localStorage.setItem('google_refresh_token', tokenData.refresh_token);

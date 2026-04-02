@@ -225,14 +225,22 @@
 	<script>
 		// Early demo-mode flag: set before auth.js runs so other scripts can read it.
 		(function () {
+			const LOCAL_MODE_DISMISS_KEY = 'local_mode_banner_dismissed_until';
+			const LOCAL_MODE_DISMISS_MS = 30 * 24 * 60 * 60 * 1000;
 			function cookieHas(name) {
 				try { if (!document || !document.cookie) return false; const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + '=([^;]+)')); return !!m; } catch (e) { return false; }
 			}
-			const hasCookieToken = cookieHas('google_token');
-			const hasLocalToken = !!localStorage.getItem('google_token');
-			window.DEMO_MODE = (!hasCookieToken && !hasLocalToken);
-			// Ensure banner and demo setup run after DOM is ready, in case auth runs earlier.
-			document.addEventListener('DOMContentLoaded', function () {
+			function isBannerDismissed() {
+				try {
+					const until = parseInt(localStorage.getItem(LOCAL_MODE_DISMISS_KEY) || '0', 10);
+					return Number.isFinite(until) && until > Date.now();
+				} catch (e) { return false; }
+			}
+			function dismissBanner(banner) {
+				try { localStorage.setItem(LOCAL_MODE_DISMISS_KEY, String(Date.now() + LOCAL_MODE_DISMISS_MS)); } catch (e) { }
+				try { if (banner) banner.style.display = 'none'; } catch (e) { }
+			}
+			function initLocalModeBanner() {
 				if (!window.DEMO_MODE) return;
 				try { window.authNeedsLogin = false; } catch (e) { }
 				try { localStorage.removeItem('needs_initial_download'); } catch (e) { }
@@ -252,21 +260,24 @@
 					b.id = 'demo-banner';
 					b.setAttribute('role', 'status');
 					b.setAttribute('aria-live', 'polite');
-					b.style.flexDirection = 'column';
-					b.style.justifyContent = 'center';
-					b.style.alignItems = 'center';
-					b.style.gap = '8px';
-					const mainText = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode') || GN_I18N.t('demo_mode_main') || 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.') : 'Demo Mode — you are using the app without signing in. Your data will be stored locally only.';
-					const smallText = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode_warning') || GN_I18N.t('demo_mode_small') || 'Sign in to enable cloud sync and restore from Google Drive.') : 'Sign in to enable cloud sync and restore from Google Drive.';
-					b.innerHTML = mainText + '<small>' + smallText + '</small>';
 					const demoRoot = document.getElementById('home-demo-root');
 					const targetContainer = demoRoot || document.querySelector('.top-card');
 					if (targetContainer) targetContainer.appendChild(b);
-				} else {
-					// keep default display (controlled by CSS)
 				}
+				const mainText = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode') || GN_I18N.t('demo_mode_main') || 'Local Mode — you are using the app without signing in. Your data will be stored locally only.') : 'Local Mode — you are using the app without signing in. Your data will be stored locally only.';
+				const smallText = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('demo_mode_warning') || GN_I18N.t('demo_mode_small') || 'Sign in to enable cloud sync and restore from Google Drive.') : 'Sign in to enable cloud sync and restore from Google Drive.';
+				b.innerHTML = '<button type="button" class="demo-banner__dismiss" aria-label="Dismiss local mode notice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" /></svg></button><div class="demo-banner__body"><div class="demo-banner__title">' + mainText + '</div><small>' + smallText + '</small></div>';
+				const dismissBtn = b.querySelector('.demo-banner__dismiss');
+				if (dismissBtn) dismissBtn.onclick = function () { dismissBanner(b); };
+				b.style.display = isBannerDismissed() ? 'none' : 'flex';
 				try { if (typeof window.showApp === 'function') window.showApp(); } catch (e) { }
-			});
+			}
+			const hasCookieToken = cookieHas('google_token');
+			const hasLocalToken = !!localStorage.getItem('google_token');
+			window.DEMO_MODE = (!hasCookieToken && !hasLocalToken);
+			// Ensure banner and local mode setup run on both direct loads and SPA injections.
+			if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initLocalModeBanner, { once: true });
+			else initLocalModeBanner();
 		})();
 	</script>
 	<script src="auth.js"></script>
@@ -274,8 +285,8 @@
 	<script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 	<script src="db.js"></script>
 	<script>
-		// Demo mode detection: if there's no session token in cookies or localStorage,
-		// enable demo mode which disables token refresh and Drive sync.
+		// Local mode detection: if there's no session token in cookies or localStorage,
+		// enable local mode which disables token refresh and Drive sync.
 		(function () {
 			function cookieHas(name) {
 				try {
@@ -622,32 +633,85 @@
 			background: transparent;
 		}
 
-		/* Demo mode banner */
+		/* Local mode banner */
 		#demo-banner {
 			display: none;
 			margin: 0;
 			width: 100%;
+			box-sizing: border-box;
+			max-width: 100%;
 			padding: 10px 12px;
 			border-radius: 12px;
-			background: linear-gradient(90deg, #e6f0ff, #dbeafe);
-			color: var(--shell-background);
+			background: var(--card-background);
+			border: 1px solid var(--accent-color);
+			color: var(--text-main-color);
 			font-weight: 700;
+			position: relative;
 			text-align: center;
 			box-shadow: none;
+			display: block;
+		}
+
+		#home-demo-root {
+			width: 100%;
+			max-width: 100%;
+			box-sizing: border-box;
+			padding: 0 20px;
+		}
+
+		#demo-banner .demo-banner__body {
 			display: flex;
 			flex-direction: column;
+			align-items: flex-start;
+			gap: 2px;
+			text-align: left;
+			padding-right: 36px;
+		}
+
+		#demo-banner .demo-banner__title {
+			font-weight: 700;
+		}
+
+		#demo-banner .demo-banner__dismiss {
+			position: absolute;
+			top: 8px;
+			right: 8px;
+			border: 0;
+			border-radius: 999px;
+			padding: 4px;
+			width: 28px;
+			height: 28px;
+			background: transparent;
+			color: var(--text-secondary-color);
+			cursor: pointer;
+			display: inline-flex;
 			align-items: center;
 			justify-content: center;
-			gap: 2px;
+		}
+
+		#demo-banner .demo-banner__dismiss svg {
+			width: 18px;
+			height: 18px;
+			stroke: currentColor;
+			stroke-width: 2;
+			stroke-linecap: round;
+			fill: none;
 		}
 
 		#demo-banner small {
 			display: block;
 			font-weight: 500;
-			color: #334155;
+			color: var(--text-secondary-color);
 			opacity: 0.9;
 			font-size: 0.75rem;
 			margin-top: 1px;
+		}
+
+		@media (max-width: 640px) {
+			#demo-banner .demo-banner__dismiss {
+				top: 8px;
+				right: 8px;
+			}
 		}
 
 		/* Streak banner (structure only; colors intentionally neutral)
@@ -1106,7 +1170,7 @@
 		window.showApp = function () {
 			// Emit an event so pages or other scripts can react instead of directly
 			// manipulating visibility. Also ensure the main content is visible
-			// in cases (like demo mode) where no other listener will unhide it.
+			// in cases (like local mode) where no other listener will unhide it.
 			try { window.dispatchEvent(new CustomEvent('app-shown')); } catch (e) { }
 			try {
 				const mc = document.querySelector('.main-content');
@@ -1141,10 +1205,15 @@
 					</div>
 				</div>
 		</div>
-		<div style="padding: 0 20px;">
-			<div id="home-demo-root">
-				<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
-					Demo Mode — you are using the app without signing in. Your data will be stored locally only.
+		<div id="home-demo-root">
+			<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
+				<button type="button" class="demo-banner__dismiss" aria-label="Dismiss local mode notice">
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M6 6L18 18M18 6L6 18" />
+					</svg>
+				</button>
+				<div class="demo-banner__body">
+					<div class="demo-banner__title">Local Mode — you are using the app without signing in. Your data will be stored locally only.</div>
 					<small>Sign in to enable cloud sync and restore from Google Drive.</small>
 				</div>
 			</div>

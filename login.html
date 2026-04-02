@@ -149,10 +149,20 @@
     <script>
         (function(){
             try {
+                const isLocalMode = localStorage.getItem('local_mode') === 'true';
                 const token = localStorage.getItem('google_token');
                 const expires = localStorage.getItem('google_token_expires_at');
                 const refresh = localStorage.getItem('google_refresh_token');
                 const isExpired = expires ? (Date.now() > parseInt(expires)) : true;
+
+                // If local mode was explicitly enabled, bypass login and go straight to the app.
+                if (isLocalMode) {
+                    try {
+                        const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                        const target = basePath + 'index.html?start=home';
+                        try { window.location.replace(target); return; } catch(e) { window.location.replace('index.html?start=home'); return; }
+                    } catch(e) { try { window.location.replace('index.html?start=home'); return; } catch(_){} }
+                }
 
                 // If we have a valid (non-expired) token, go straight to the app.
                 if (token && !isExpired) {
@@ -260,6 +270,7 @@
         <!-- language selector initialization removed -->
 
         document.getElementById('signin-google').addEventListener('click', function () {
+            try { localStorage.removeItem('local_mode'); } catch(e){}
             if (typeof handleAuth === 'function') return handleAuth();
             try {
                 const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
@@ -272,6 +283,7 @@
             try { if (typeof GN_I18N !== 'undefined') demoBtn.textContent = GN_I18N.t('demo_mode'); } catch(e){}
             demoBtn.addEventListener('click', function(e){
                     try { e.preventDefault(); } catch(e){}
+                    try { localStorage.setItem('local_mode', 'true'); } catch(e){}
                     const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('demo_mode_warning') : 'The data will be stored locally and might be cleared by the system.';
                     try { alert(msg); } catch(e) { console.warn('alert failed', e); }
                     try { window.location.replace('index.html?start=home'); } catch(e) { window.location.href = 'index.html?start=home'; }
