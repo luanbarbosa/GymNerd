@@ -272,6 +272,7 @@
 				b.style.display = isBannerDismissed() ? 'none' : 'flex';
 				try { if (typeof window.showApp === 'function') window.showApp(); } catch (e) { }
 			}
+			window.initLocalModeBanner = initLocalModeBanner;
 			const hasCookieToken = cookieHas('google_token');
 			const hasLocalToken = !!localStorage.getItem('google_token');
 			window.DEMO_MODE = (!hasCookieToken && !hasLocalToken);

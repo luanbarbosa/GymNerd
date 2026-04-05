@@ -218,6 +218,9 @@
                 if (pageName === 'routines.html') {
                     try { if (typeof renderTabs === 'function') renderTabs(); } catch(e){}
                     try { if (typeof renderWorkouts === 'function') renderWorkouts(); } catch(e){}
+                } else if (pageName === 'home.html') {
+                    try { if (typeof window.initLocalModeBanner === 'function') window.initLocalModeBanner(); } catch(e){}
+                    try { if (typeof window.refreshHomeData === 'function') await window.refreshHomeData(); } catch(e){}
                 } else if (pageName === 'measurements.html') {
                     try { if (typeof renderMeasureWeightChart === 'function') renderMeasureWeightChart(); } catch(e){}
                     try { if (typeof renderWeightHistory === 'function') renderWeightHistory(); } catch(e){}
