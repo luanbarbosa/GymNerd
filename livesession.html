@@ -2959,6 +2959,14 @@
             navigateHomeShell();
         }
 
+        function isLocalModeEnabled() {
+            try {
+                return localStorage.getItem('local_mode') === 'true';
+            } catch (e) {
+                return false;
+            }
+        }
+
         async function finishSession() {
             try {
                 if (_finishingSession) return; // avoid re-entrancy
@@ -3047,7 +3055,9 @@
                 // Attempt to sync with Drive (with timeout). Wait for a successful sync before completing navigation.
                 let syncOk = false;
                 let lastSyncError = null;
-                if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
+                if (isLocalModeEnabled()) {
+                    syncOk = true;
+                } else if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
                     try {
                         try {
                             if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...');
