@@ -113,8 +113,26 @@
         .cardio-charts .canvas-wrapper { height: 150px; }
         .exercise-group .group-header { display:flex; align-items:center; gap:8px; cursor:pointer; padding: 8px 10px; justify-content: space-between; border-radius: 8px; }
         .exercise-group .group-header:hover { background: rgba(255,255,255,0.02); }
+        .exercise-group .group-header-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .exercise-group .group-header-row { min-width: 0; display: flex; align-items: center; gap: 12px; }
         .exercise-group .group-header .chevron { font-size: 20px; color: var(--text-dim); margin-left: 8px; }
-        .exercise-group .group-header .section-title-inline { font-weight: 800; font-size: 0.95rem; color: var(--text-main-color); background: none; -webkit-background-clip: initial; -webkit-text-fill-color: initial; flex: 1; }
+        .exercise-group .group-header .section-title-inline { font-weight: 800; font-size: 0.95rem; color: var(--text-main-color); background: none; -webkit-background-clip: initial; -webkit-text-fill-color: initial; min-width: 0; }
+        .exercise-group .group-header-trend {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
+            flex: 0 0 auto;
+            width: 15px;
+        }
+        .exercise-group .group-header-trend .material-symbols-outlined { font-size: 15px; line-height: 1; }
+        .exercise-group .group-header-trend.is-positive { color: var(--success); }
+        .exercise-group .group-header-trend.is-negative { color: var(--danger); }
+        .exercise-group .group-header-trend.is-neutral { color: var(--text-dim); }
+        .exercise-group .group-header-progress-expanded { display: none; flex-wrap: wrap; gap: 8px; }
+        .exercise-group .group-header[aria-expanded="true"] { align-items: flex-start; }
+        .exercise-group .group-header[aria-expanded="true"] .group-header-progress-expanded { display: flex; }
+        .exercise-group .group-header-trailing { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
         .exercise-group .group-body { display: none; margin-top: 12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .exercise-group .group-body.open { display: grid; }
         /* Radar types edit drawer */
@@ -681,6 +699,72 @@
                     </span>
                 `;
             };
+            const aggregateSeriesByDate = (entries, mapper) => {
+                const grouped = new Map();
+                (Array.isArray(entries) ? entries : []).forEach((entry) => {
+                    if (!entry || !entry.date) return;
+                    const value = Number(mapper(entry));
+                    if (!Number.isFinite(value)) return;
+                    if (!grouped.has(entry.date)) grouped.set(entry.date, []);
+                    grouped.get(entry.date).push(value);
+                });
+
+                return Array.from(grouped.entries())
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .map(([, values]) => safeMetricValue(values.reduce((sum, value) => sum + value, 0) / values.length));
+            };
+            const getTypeTrendMeta = (typeKey, exercisesInType) => {
+                const allEntries = Object.values(exercisesInType || {}).flat();
+                if (!allEntries.length) return null;
+
+                const isCardioType = typeKey === 'cardio';
+                if (isCardioType) {
+                    const distanceSeries = aggregateSeriesByDate(allEntries, (entry) => safeMetricValue(entry.distance));
+                    const durationSeries = aggregateSeriesByDate(allEntries, (entry) => safeMetricValue(getCardioDurationValue(entry), 0));
+                    const distanceChange = getChangeMeta(distanceSeries, translate('cardio_distance_unit', 'km'));
+                    if (distanceChange.state !== 'neutral') return distanceChange;
+                    const durationChange = getChangeMeta(durationSeries, translate('cardio_time_unit', 'min'));
+                    return durationChange.state !== 'neutral' ? durationChange : null;
+                }
+
+                const weightSeries = aggregateSeriesByDate(allEntries, (entry) => {
+                    const weight = Number(entry && entry.weight) || 0;
+                    const reps = (entry && entry.reps !== undefined && entry.reps !== null) ? Number(entry.reps) : 1;
+                    return reps > 0 ? weight / reps : weight;
+                });
+                const weightChange = getChangeMeta(weightSeries, translate('history_fmt_kg_suffix', 'kg'));
+                return weightChange.state !== 'neutral' ? weightChange : null;
+            };
+            const getTypeProgressBadgesMarkup = (typeKey, exercisesInType) => {
+                const allEntries = Object.values(exercisesInType || {}).flat();
+                if (!allEntries.length) return '';
+
+                const isCardioType = typeKey === 'cardio';
+                if (isCardioType) {
+                    const distanceSeries = aggregateSeriesByDate(allEntries, (entry) => safeMetricValue(entry.distance));
+                    const durationSeries = aggregateSeriesByDate(allEntries, (entry) => safeMetricValue(getCardioDurationValue(entry), 0));
+                    return [
+                        renderChangeBadge(distanceSeries, translate('cardio_distance_label', 'Distance'), translate('cardio_distance_unit', 'km')),
+                        renderChangeBadge(durationSeries, translate('cardio_time_label', 'Time'), translate('cardio_time_unit', 'min'))
+                    ].join('');
+                }
+
+                const weightSeries = aggregateSeriesByDate(allEntries, (entry) => {
+                    const weight = Number(entry && entry.weight) || 0;
+                    const reps = (entry && entry.reps !== undefined && entry.reps !== null) ? Number(entry.reps) : 1;
+                    return reps > 0 ? weight / reps : weight;
+                });
+                return renderChangeBadge(weightSeries, '', translate('history_fmt_kg_suffix', 'kg'));
+            };
+            const stripBadgeIcons = (markup) => String(markup || '').replace(/<span class="material-symbols-outlined" aria-hidden="true">.*?<\/span>/g, '');
+            const renderTypeTrendIcon = (typeKey, exercisesInType) => {
+                const trend = getTypeTrendMeta(typeKey, exercisesInType);
+                if (!trend) {
+                    return '<span class="group-header-trend is-neutral" aria-hidden="true"><span class="material-symbols-outlined">horizontal_rule</span></span>';
+                }
+                const icon = trend.state === 'positive' ? 'trending_up' : 'trending_down';
+                return `<span class="group-header-trend is-${trend.state}" aria-hidden="true"><span class="material-symbols-outlined">${icon}</span></span>`;
+            };
             const getCardioDurationValue = (entry) => {
                 if (!entry) return 0;
                 if (entry.duration !== undefined && entry.duration !== null) return entry.duration;
@@ -776,13 +860,23 @@
                 if (isRenderChartsStale()) return;
                 const groupId = 'grp_' + (typeIndex++);
                 const localizedType = typeInfo.localizedLabel || typeInfo.entry.label || typeInfo.key;
+                const typeTrendIconMarkup = renderTypeTrendIcon(typeInfo.key, typeInfo.entry.exercises);
+                const typeProgressMarkup = stripBadgeIcons(getTypeProgressBadgesMarkup(typeInfo.key, typeInfo.entry.exercises));
 
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'exercise-group';
                 groupContainer.innerHTML = `
                     <div class="group-header" data-group="${groupId}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${groupId}')" onkeydown="if(event.key==='Enter' || event.key===' ') toggleGroup('${groupId}');">
-                        <div class="section-title-inline">${localizedType}</div>
-                        <span class="material-symbols-outlined chevron" aria-hidden="true">expand_more</span>
+                        <div class="group-header-main">
+                            <div class="group-header-row">
+                                ${typeTrendIconMarkup}
+                                <div class="section-title-inline">${localizedType}</div>
+                            </div>
+                            <div class="group-header-progress-expanded">${typeProgressMarkup}</div>
+                        </div>
+                        <div class="group-header-trailing">
+                            <span class="material-symbols-outlined chevron" aria-hidden="true">expand_more</span>
+                        </div>
                     </div>
                     <div class="group-body" id="${groupId}"></div>
                 `;
