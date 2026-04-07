@@ -176,6 +176,38 @@ function normalizeCoinsRecords(records) {
     return normalized.length > 0 ? normalized : [createDefaultCoinsRecord()];
 }
 
+function isValidDateKey(dateKey) {
+    return typeof dateKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateKey);
+}
+
+function createFrozenDayRecord(date, now = new Date().toISOString()) {
+    return {
+        date,
+        createdAt: now,
+        updatedAt: now
+    };
+}
+
+function normalizeFrozenDayRecords(records) {
+    if (!Array.isArray(records) || records.length === 0) return [];
+    const seen = new Set();
+    return records
+        .filter(record => record && typeof record === 'object' && isValidDateKey(record.date))
+        .filter(record => {
+            if (seen.has(record.date)) return false;
+            seen.add(record.date);
+            return true;
+        })
+        .map(record => {
+            const now = new Date().toISOString();
+            return {
+                date: record.date,
+                createdAt: record.createdAt || now,
+                updatedAt: record.updatedAt || now
+            };
+        });
+}
+
 db.version(14).stores({
     catalog_exercises: '++id, name, namePT, type, imageId',
     catalog_images: '++id',
@@ -195,6 +227,18 @@ db.version(14).upgrade(async (tx) => {
     } catch (err) {
         console.warn('[DB Migration] coins migration failed', err);
     }
+});
+
+db.version(15).stores({
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId',
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight',
+    coins: 'id, balance',
+    frozen_days: 'date, createdAt'
 });
 
 // Canonical list of available exercise types used across the app
@@ -260,6 +304,8 @@ db.isImageValid = isImageValid;
 db.sanitizeCatalogImages = sanitizeCatalogImages;
 db.createDefaultCoinsRecord = createDefaultCoinsRecord;
 db.normalizeCoinsRecords = normalizeCoinsRecords;
+db.createFrozenDayRecord = createFrozenDayRecord;
+db.normalizeFrozenDayRecords = normalizeFrozenDayRecords;
 
 // Migration: remove exercises with invalid/undefined types or missing required fields
 async function cleanInvalidExerciseTypes() {
@@ -307,6 +353,51 @@ async function ensureCoinsInitialized() {
 }
 
 db.ensureCoinsInitialized = ensureCoinsInitialized;
+
+async function getEffectiveWorkoutDates() {
+    await ensureDbOpen();
+    const [historyRows, frozenRows] = await Promise.all([
+        db.history ? db.history.toArray() : [],
+        db.frozen_days ? db.frozen_days.toArray() : []
+    ]);
+    return [...new Set([
+        ...historyRows.map(row => row && row.date),
+        ...frozenRows.map(row => row && row.date)
+    ].filter(Boolean))].sort();
+}
+
+async function freezeDay(dateKey) {
+    await ensureDbOpen();
+    if (!isValidDateKey(dateKey) || !db.history || !db.coins || !db.frozen_days) {
+        return { ok: false, reason: 'invalid' };
+    }
+
+    return db.transaction('rw', [db.history, db.coins, db.frozen_days], async () => {
+        const historyCount = await db.history.where('date').equals(dateKey).count();
+        if (historyCount > 0) return { ok: false, reason: 'has_history' };
+
+        const alreadyFrozen = await db.frozen_days.get(dateKey);
+        if (alreadyFrozen) return { ok: false, reason: 'already_frozen' };
+
+        const now = new Date().toISOString();
+        const wallet = (await db.coins.get(COINS_WALLET_ID)) || createDefaultCoinsRecord(now);
+        const balance = Math.max(0, Number(wallet.balance) || 0);
+        if (balance <= 0) return { ok: false, reason: 'no_coins' };
+
+        await db.coins.put({
+            ...wallet,
+            id: COINS_WALLET_ID,
+            balance: balance - 1,
+            createdAt: wallet.createdAt || now,
+            updatedAt: now
+        });
+        await db.frozen_days.put(createFrozenDayRecord(dateKey, now));
+        return { ok: true, balance: balance - 1 };
+    });
+}
+
+db.getEffectiveWorkoutDates = getEffectiveWorkoutDates;
+db.freezeDay = freezeDay;
 
 function calculateStreaks(dates) {
     if (!dates || dates.length === 0) return { current: 0, longest: 0, daysSince: 0 };

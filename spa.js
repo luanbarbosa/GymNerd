@@ -230,6 +230,7 @@
                 } else if (pageName === 'statistics.html') {
                     try { if (typeof renderCalendar === 'function') renderCalendar(); } catch(e){}
                     try { if (typeof renderCharts === 'function') renderCharts(); } catch(e){}
+                    try { if (typeof updateStreakBadge === 'function') updateStreakBadge(); } catch(e){}
                     try { if (typeof updateFrequencyChart === 'function') updateFrequencyChart(); } catch(e){}
                     try { if (typeof updateRadarChart === 'function') updateRadarChart(); } catch(e){}
                 }

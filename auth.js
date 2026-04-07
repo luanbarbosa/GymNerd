@@ -373,7 +373,7 @@
             // Apply into DB if available
             if (typeof db !== 'undefined') {
                 try {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins, db.frozen_days], async () => {
                         let sanitizedCatalogImages = null;
                         if (db.catalog_images) {
                             await db.catalog_images.clear();
@@ -460,6 +460,14 @@
                                 : (Array.isArray(data.coins) ? data.coins : []);
                             await db.coins.clear();
                             await db.coins.bulkPut(normalizedCoins);
+                        }
+
+                        if (db.frozen_days) {
+                            const normalizedFrozenDays = (typeof db.normalizeFrozenDayRecords === 'function')
+                                ? db.normalizeFrozenDayRecords(data.frozen_days)
+                                : (Array.isArray(data.frozen_days) ? data.frozen_days : []);
+                            await db.frozen_days.clear();
+                            await db.frozen_days.bulkPut(normalizedFrozenDays);
                         }
                     });
                 } catch (e) {

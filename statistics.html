@@ -79,6 +79,7 @@
         
         .past-no-workout { background: rgb(205, 91, 82); color: #000; }
         .has-workout { background: var(--accent-color); color: #000; font-weight: bold; }
+        .frozen-day { background: #ec4899; color: #fff; font-weight: bold; }
         .future-day { background: rgba(255,255,255,0.02); color: #475569; border: 1px solid rgba(255,255,255,0.05); }
         .today { border: 1.5px solid var(--primary); }
 
@@ -453,7 +454,7 @@
                 // Ensure empty placeholder hidden when data exists
             } catch (e) { /* ignore */ }
             try { const empty = document.getElementById('statsEmpty'); if (empty) empty.style.display = 'none'; } catch(e) {}
-            renderCalendar(logs);
+            await renderCalendar(logs);
             renderCharts(logs);
             updateStreakBadge();
             updateFrequencyChart(logs);
@@ -485,10 +486,15 @@
         }
 
         async function renderCalendar(logs) {
+            const renderCalendarToken = (window.__gn_stats_renderCalendarToken || 0) + 1;
+            window.__gn_stats_renderCalendarToken = renderCalendarToken;
+            const isRenderCalendarStale = () => window.__gn_stats_renderCalendarToken !== renderCalendarToken;
+
             if (!logs) logs = await db.history.toArray();
             const grid = document.getElementById('calendarGrid');
             const display = document.getElementById('monthDisplay');
             const dayNamesContainer = document.getElementById('dayNames');
+            if (!grid || !display || !dayNamesContainer) return;
             const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             const locale = lang === 'pt' ? 'pt' : 'en';
             // render localized short weekday names; start Monday for Portuguese
@@ -510,6 +516,7 @@
                 }
                 dayNamesContainer.innerHTML += `<div class="day-name">${short}</div>`;
             }
+            if (isRenderCalendarStale()) return;
             grid.innerHTML = "";
             const year = currentViewDate.getFullYear(), month = currentViewDate.getMonth();
             const today = new Date(); today.setHours(0,0,0,0);
@@ -517,6 +524,10 @@
             const firstDayIndex = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const workoutDates = new Set(logs.map(l => l.date));
+            const frozenDates = new Set(
+                db.frozen_days ? (await db.frozen_days.toArray()).map(item => item && item.date).filter(Boolean) : []
+            );
+            if (isRenderCalendarStale()) return;
 
             // Adjust first day index when week starts on Monday
             const adjustedFirstDayIndex = weekStartsOnMonday ? ((firstDayIndex + 6) % 7) : firstDayIndex;
@@ -524,7 +535,9 @@
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const dateObj = new Date(year, month, d);
-                let status = workoutDates.has(dateStr) ? "has-workout" : (dateObj < today ? "past-no-workout" : "future-day");
+                let status = workoutDates.has(dateStr)
+                    ? "has-workout"
+                    : (frozenDates.has(dateStr) ? "frozen-day" : (dateObj < today ? "past-no-workout" : "future-day"));
                 if (dateObj.getTime() === today.getTime()) status += " today";
                 grid.innerHTML += `<div class="calendar-day ${status}">${d}</div>`;
             }
@@ -1284,8 +1297,9 @@
             // Ensure DB is open (iOS fix)
             await ensureDbOpen();
             
-            const allLogs = await db.history.toArray();
-            const workoutDates = [...new Set(allLogs.map(l => l.date))].sort();
+            const workoutDates = db.getEffectiveWorkoutDates
+                ? await db.getEffectiveWorkoutDates()
+                : [...new Set((await db.history.toArray()).map(l => l.date))].sort();
             
             if (workoutDates.length === 0) {
                 overview.innerHTML = `

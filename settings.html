@@ -220,7 +220,17 @@
         // Import/export/restore/sync functions copied from home to keep behavior consistent
         async function exportData() {
             await ensureDbOpen();
+            try {
+                if (typeof db.ensureCoinsInitialized === 'function') await db.ensureCoinsInitialized();
+            } catch (e) {
+                console.error('Failed to initialize coins before export', e);
+            }
             const date = new Date().toISOString().slice(0,10);
+            const exportedCoins = db.coins
+                ? ((typeof db.normalizeCoinsRecords === 'function')
+                    ? db.normalizeCoinsRecords(await db.coins.toArray())
+                    : await db.coins.toArray())
+                : (typeof db.normalizeCoinsRecords === 'function' ? db.normalizeCoinsRecords([]) : []);
             const data = {
                 // exclude catalog_... tables from local exports (catalog is app-provided)
                 custom_exercises: await db.custom_exercises.toArray(),
@@ -228,7 +238,8 @@
                 routines: await db.routines.toArray(),
                 history: await db.history.toArray(),
                 weights: await db.weights.toArray(),
-                coins: db.coins ? await db.coins.toArray() : (typeof db.normalizeCoinsRecords === 'function' ? db.normalizeCoinsRecords([]) : [])
+                coins: exportedCoins,
+                frozen_days: db.frozen_days ? await db.frozen_days.toArray() : (typeof db.normalizeFrozenDayRecords === 'function' ? db.normalizeFrozenDayRecords([]) : [])
             };
 
             try {
@@ -264,7 +275,8 @@
                         routines: ['routines.json'],
                         history: ['history.json'],
                         weights: ['weights.json'],
-                        coins: ['coins.json']
+                        coins: ['coins.json'],
+                        frozen_days: ['frozen_days.json']
                     };
 
                     // Read files found in ZIP
@@ -280,7 +292,7 @@
                     }
 
                     // Now write to DB similar to restoreFromDrive behavior
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins, db.frozen_days], async () => {
                         let normalizedCatalogImages = null;
                         if (Array.isArray(extracted.catalog_images)) {
                             normalizedCatalogImages = extracted.catalog_images.map(img => ({
@@ -356,6 +368,14 @@
                                 : (Array.isArray(extracted.coins) ? extracted.coins : []);
                             await db.coins.clear();
                             await db.coins.bulkPut(normalizedCoins);
+                        }
+
+                        if (db.frozen_days) {
+                            const normalizedFrozenDays = (typeof db.normalizeFrozenDayRecords === 'function')
+                                ? db.normalizeFrozenDayRecords(extracted.frozen_days)
+                                : (Array.isArray(extracted.frozen_days) ? extracted.frozen_days : []);
+                            await db.frozen_days.clear();
+                            await db.frozen_days.bulkPut(normalizedFrozenDays);
                         }
                     });
 
@@ -437,7 +457,7 @@
                         }
                 const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins, db.frozen_days], async () => {
                         await db.catalog_images.clear();
                         let normalizedCatalogImages = null;
                         if (data.catalog_images) {
@@ -511,6 +531,14 @@
                                 : (Array.isArray(data.coins) ? data.coins : []);
                             await db.coins.clear();
                             await db.coins.bulkPut(normalizedCoins);
+                        }
+
+                        if (db.frozen_days) {
+                            const normalizedFrozenDays = (typeof db.normalizeFrozenDayRecords === 'function')
+                                ? db.normalizeFrozenDayRecords(data.frozen_days)
+                                : (Array.isArray(data.frozen_days) ? data.frozen_days : []);
+                            await db.frozen_days.clear();
+                            await db.frozen_days.bulkPut(normalizedFrozenDays);
                         }
                     });
 
@@ -651,7 +679,10 @@
                 const msg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('delete_history_attention') || 'Attention! You will lose all your history and statistics locally and on Google Drive') : 'Attention! You will lose all your history and statistics locally and on Google Drive';
                 if (!confirm(msg)) return;
                 // Clear history
-                try { await db.history.clear(); } catch (e) { console.error('[UI] failed to clear history', e); throw e; }
+                try {
+                    await db.history.clear();
+                    if (db.frozen_days) await db.frozen_days.clear();
+                } catch (e) { console.error('[UI] failed to clear history', e); throw e; }
                 // Try to sync the removal to Drive
                 try {
                     if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
