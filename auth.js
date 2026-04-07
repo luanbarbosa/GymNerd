@@ -373,7 +373,7 @@
             // Apply into DB if available
             if (typeof db !== 'undefined') {
                 try {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins], async () => {
                         let sanitizedCatalogImages = null;
                         if (db.catalog_images) {
                             await db.catalog_images.clear();
@@ -452,6 +452,14 @@
                                 newCount = await db.weights.count();
                             }
                             console.info('[AutoRestore] weights write complete', { newCount });
+                        }
+
+                        if (db.coins) {
+                            const normalizedCoins = (typeof db.normalizeCoinsRecords === 'function')
+                                ? db.normalizeCoinsRecords(data.coins)
+                                : (Array.isArray(data.coins) ? data.coins : []);
+                            await db.coins.clear();
+                            await db.coins.bulkPut(normalizedCoins);
                         }
                     });
                 } catch (e) {

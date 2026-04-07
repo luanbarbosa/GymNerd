@@ -227,7 +227,8 @@
                 custom_images: await db.custom_images.toArray(),
                 routines: await db.routines.toArray(),
                 history: await db.history.toArray(),
-                weights: await db.weights.toArray()
+                weights: await db.weights.toArray(),
+                coins: db.coins ? await db.coins.toArray() : (typeof db.normalizeCoinsRecords === 'function' ? db.normalizeCoinsRecords([]) : [])
             };
 
             try {
@@ -262,7 +263,8 @@
                         custom_exercises: ['custom_exercises.json'],
                         routines: ['routines.json'],
                         history: ['history.json'],
-                        weights: ['weights.json']
+                        weights: ['weights.json'],
+                        coins: ['coins.json']
                     };
 
                     // Read files found in ZIP
@@ -278,7 +280,7 @@
                     }
 
                     // Now write to DB similar to restoreFromDrive behavior
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins], async () => {
                         let normalizedCatalogImages = null;
                         if (Array.isArray(extracted.catalog_images)) {
                             normalizedCatalogImages = extracted.catalog_images.map(img => ({
@@ -346,6 +348,14 @@
                                     }
                                 }
                             }
+                        }
+
+                        if (db.coins) {
+                            const normalizedCoins = (typeof db.normalizeCoinsRecords === 'function')
+                                ? db.normalizeCoinsRecords(extracted.coins)
+                                : (Array.isArray(extracted.coins) ? extracted.coins : []);
+                            await db.coins.clear();
+                            await db.coins.bulkPut(normalizedCoins);
                         }
                     });
 
@@ -427,7 +437,7 @@
                         }
                 const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins], async () => {
                         await db.catalog_images.clear();
                         let normalizedCatalogImages = null;
                         if (data.catalog_images) {
@@ -493,6 +503,14 @@
                                 newCount = await db.weights.count();
                             }
                             console.info('[Restore UI] weights write complete', { newCount });
+                        }
+
+                        if (db.coins) {
+                            const normalizedCoins = (typeof db.normalizeCoinsRecords === 'function')
+                                ? db.normalizeCoinsRecords(data.coins)
+                                : (Array.isArray(data.coins) ? data.coins : []);
+                            await db.coins.clear();
+                            await db.coins.bulkPut(normalizedCoins);
                         }
                     });
 

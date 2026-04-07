@@ -143,6 +143,60 @@ db.version(13).upgrade(async (tx) => {
     }
 });
 
+const COINS_WALLET_ID = 1;
+
+function createDefaultCoinsRecord(now = new Date().toISOString()) {
+    return {
+        id: COINS_WALLET_ID,
+        balance: 0,
+        createdAt: now,
+        updatedAt: now
+    };
+}
+
+function normalizeCoinsRecords(records) {
+    if (!Array.isArray(records) || records.length === 0) {
+        return [createDefaultCoinsRecord()];
+    }
+
+    const normalized = records
+        .filter(record => record && typeof record === 'object')
+        .map(record => {
+            const now = new Date().toISOString();
+            const balance = Number.isFinite(Number(record.balance)) ? Math.max(0, Number(record.balance)) : 0;
+            return {
+                ...record,
+                id: record.id !== undefined && record.id !== null ? record.id : COINS_WALLET_ID,
+                balance,
+                createdAt: record.createdAt || now,
+                updatedAt: record.updatedAt || now
+            };
+        });
+
+    return normalized.length > 0 ? normalized : [createDefaultCoinsRecord()];
+}
+
+db.version(14).stores({
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId',
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight',
+    coins: 'id, balance'
+});
+
+db.version(14).upgrade(async (tx) => {
+    try {
+        const coinsTable = tx.table('coins');
+        const count = await coinsTable.count();
+        if (count === 0) await coinsTable.add(createDefaultCoinsRecord());
+    } catch (err) {
+        console.warn('[DB Migration] coins migration failed', err);
+    }
+});
+
 // Canonical list of available exercise types used across the app
 const AVAILABLE_EXERCISE_TYPES = ['abs','arms','back','cardio','chest','legs','shoulder','other'];
 // Expose on db and window for easy access
@@ -204,6 +258,8 @@ function sanitizeCatalogImages(images) {
 
 db.isImageValid = isImageValid;
 db.sanitizeCatalogImages = sanitizeCatalogImages;
+db.createDefaultCoinsRecord = createDefaultCoinsRecord;
+db.normalizeCoinsRecords = normalizeCoinsRecords;
 
 // Migration: remove exercises with invalid/undefined types or missing required fields
 async function cleanInvalidExerciseTypes() {
@@ -242,6 +298,15 @@ async function cleanInvalidExerciseTypes() {
 async function ensureDbOpen() {
     if (!db.isOpen()) await db.open();
 }
+
+async function ensureCoinsInitialized() {
+    await ensureDbOpen();
+    if (!db.coins) return;
+    const count = await db.coins.count();
+    if (count === 0) await db.coins.add(createDefaultCoinsRecord());
+}
+
+db.ensureCoinsInitialized = ensureCoinsInitialized;
 
 function calculateStreaks(dates) {
     if (!dates || dates.length === 0) return { current: 0, longest: 0, daysSince: 0 };
@@ -397,6 +462,7 @@ async function initializeCatalog() {
 
 // Run migrations then initialize catalog on load
 (async function runStartup() {
+    try { await ensureCoinsInitialized(); } catch (e) { console.error('Coins init error', e); }
     try { await cleanInvalidExerciseTypes(); } catch (e) { console.error('Migration error', e); }
     try { await initializeCatalog(); } catch (e) { console.error('Catalog init error', e); }
 })();
