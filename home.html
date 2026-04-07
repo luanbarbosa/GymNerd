@@ -830,6 +830,116 @@
 			margin-bottom: 4px;
 		}
 
+		.coins-banner {
+			display: flex;
+			flex-direction: column;
+			gap: 14px;
+			width: 100%;
+			max-width: none;
+			margin: 12px 0;
+			box-sizing: border-box;
+			background-color: var(--card-background);
+			color: var(--text);
+			padding: 16px;
+			border-radius: 12px;
+			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+			align-items: flex-start;
+		}
+
+		.coins-banner__content {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			width: 100%;
+		}
+
+		.coins-banner__summary {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+			min-width: 0;
+		}
+
+		.coins-banner__icon {
+			width: 54px;
+			height: 54px;
+			border-radius: 999px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			background: rgba(245, 158, 11, 0.14);
+			color: #f59e0b;
+			flex-shrink: 0;
+		}
+
+		.coins-banner__icon .material-symbols-outlined {
+			font-size: 28px;
+			font-variation-settings: 'wght' 300;
+		}
+
+		.coins-banner__text {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			min-width: 0;
+		}
+
+		.coins-banner__count {
+			font-size: 2rem;
+			line-height: 1;
+			font-weight: 900;
+			display: flex;
+			align-items: baseline;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+
+		.coins-banner__count-label {
+			font-size: 0.95rem;
+			font-weight: 800;
+			color: var(--text-dim);
+			letter-spacing: 0.02em;
+			text-transform: uppercase;
+		}
+
+		.coins-banner__hint {
+			color: var(--text-dim);
+			font-size: 0.92rem;
+			line-height: 1.4;
+		}
+
+		.coins-banner__freeze {
+			appearance: none;
+			border: 0;
+			border-radius: 999px;
+			padding: 12px 18px;
+			font-size: 0.95rem;
+			font-weight: 800;
+			line-height: 1;
+			color: #1f2937;
+			background: linear-gradient(135deg, #fbbf24, #f59e0b);
+			box-shadow: 0 10px 24px rgba(245, 158, 11, 0.2);
+			cursor: pointer;
+			white-space: nowrap;
+		}
+
+		.coins-banner__freeze:focus-visible {
+			outline: 2px solid rgba(245, 158, 11, 0.45);
+			outline-offset: 3px;
+		}
+
+		@media (max-width: 640px) {
+			.coins-banner__content {
+				flex-direction: column;
+				align-items: stretch;
+			}
+
+			.coins-banner__freeze {
+				width: 100%;
+			}
+		}
+
 		.home-chart-pill-filter {
 			margin: 24px 0 12px;
 			padding-top: 2px;
@@ -1245,6 +1355,25 @@
 
 		<div id="body">
 			<div style="padding: 0 20px;">
+				<div id="coins-banner" class="coins-banner" role="region" aria-live="polite">
+					<div class="streak-title" data-i18n="coins_title">Coins</div>
+					<div class="coins-banner__content">
+						<div class="coins-banner__summary">
+							<div class="coins-banner__icon" aria-hidden="true">
+								<span class="material-symbols-outlined">monetization_on</span>
+							</div>
+							<div class="coins-banner__text">
+								<div class="coins-banner__count">
+									<span id="coins-number">0</span>
+									<span class="coins-banner__count-label" data-i18n="coins_count_label">coins</span>
+								</div>
+								<div class="coins-banner__hint" data-i18n="coins_hint">Free passes available to protect your streak.</div>
+							</div>
+						</div>
+						<button id="freeze-day-btn" type="button" class="coins-banner__freeze" data-i18n="freeze_day">Freeze day</button>
+					</div>
+				</div>
+
 				<!-- Streak banner: shows current consecutive-day streak. Ordered as column per design -->
 				<div id="streak-banner" class="streak-banner" role="region" aria-live="polite" style="display:none;">
 					<div class="streak-title" data-i18n="streak_title">Your streak</div>
@@ -1362,11 +1491,13 @@
 							updateHomeChartFilterVisibility(historyCount);
 							initHomeChartPillFilter();
 							await renderWeekDots();
+							try { if (typeof renderCoinsBanner === 'function') await renderCoinsBanner(); } catch (e) { }
 							if (historyCount > 0) {
 								try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch (e) { }
 								try { if (typeof renderHomeInsightWidgets === 'function') await renderHomeInsightWidgets(); } catch (e) { }
 								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'none'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'none'; } } catch (e) { }
 							} else {
+								try { const cb = document.getElementById('coins-banner'); if (cb) cb.style.display = 'none'; } catch (e) { }
 								try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
 								try { const hf = document.getElementById('home-chart-pill-filter'); if (hf) hf.style.display = 'none'; } catch (e) { }
 								try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
@@ -1568,6 +1699,38 @@
 					}
 					banner.style.display = 'flex';
 				} catch (err) { console.error('renderStreakBanner failed', err); }
+			}
+
+			async function renderCoinsBanner() {
+				try {
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const banner = document.getElementById('coins-banner');
+					const numberEl = document.getElementById('coins-number');
+					const freezeBtn = document.getElementById('freeze-day-btn');
+					if (!banner || !numberEl) return;
+					let historyCount = 0;
+					try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
+					if (!historyCount) {
+						banner.style.display = 'none';
+						return;
+					}
+
+					let balance = 0;
+					try {
+						if (db && db.coins) {
+							const wallet = await db.coins.get(1);
+							const parsedBalance = Number(wallet && wallet.balance);
+							if (Number.isFinite(parsedBalance) && parsedBalance > 0) balance = parsedBalance;
+						}
+					} catch (e) { balance = 0; }
+
+					numberEl.textContent = String(balance);
+					banner.style.display = 'flex';
+					if (freezeBtn && !freezeBtn.dataset.bound) {
+						freezeBtn.addEventListener('click', () => {});
+						freezeBtn.dataset.bound = 'true';
+					}
+				} catch (err) { console.error('renderCoinsBanner failed', err); }
 			}
 
 			// Global favorite-exercise renderer (uses the same parent widget as favorite-type)
@@ -2174,6 +2337,7 @@
 					updateHomeChartFilterVisibility(historyCount);
 					initHomeChartPillFilter();
 					try { await renderWeekDots(); } catch (e) { }
+					try { if (typeof renderCoinsBanner === 'function') await renderCoinsBanner(); } catch (e) { }
 					if (historyCount > 0) {
 						try { if (typeof renderStreakBanner === 'function') await renderStreakBanner(); } catch (e) { }
 						try { if (typeof renderFavoriteType === 'function') await renderFavoriteType('year'); } catch (e) { }
@@ -2187,6 +2351,7 @@
 							}
 						} catch (e) { }
 					} else {
+						try { const cb = document.getElementById('coins-banner'); if (cb) cb.style.display = 'none'; } catch (e) { }
 						try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
 						try { const hf = document.getElementById('home-chart-pill-filter'); if (hf) hf.style.display = 'none'; } catch (e) { }
 						try { const wc = document.getElementById('weight-change-widget'); if (wc) wc.style.display = 'none'; } catch (e) { }
