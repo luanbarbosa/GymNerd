@@ -277,7 +277,7 @@
                 finished_good_job: 'Good job!',
                 finished_new_record: 'New record!',
                 finished_new_record_subtext: 'You\u2019re on a {n}-day streak!',
-                finished_token_reward_preview: 'You will earn {n} Token',
+                finished_token_reward_preview: 'You will earn {n} token!',
 
                 routine_done: 'Routine done!',
                 exercises_completed: 'Exercises completed',
@@ -596,7 +596,7 @@
                 finished_good_job: 'Bom trabalho!',
                 finished_new_record: 'Novo recorde!',
                 finished_new_record_subtext: 'Você está com uma sequência de {n} dias!',
-                finished_token_reward_preview: 'Você vai ganhar {n} Token',
+                finished_token_reward_preview: 'Você vai ganhar {n} token!',
 
                 routine_done: 'Fim do treino!',
                 exercises_completed: 'Exercícios concluídos',
