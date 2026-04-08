@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 90 89" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-6,-5)">
+        <g id="Master-Pau-Barbaro-Happy-Flame" serif:id="Master/Pau Barbaro/Happy Flame" transform="matrix(0.147273,0,0,0.14339,-29.172111,-18.328215)">
+            <g transform="matrix(6.790111,0,0,6.973987,198.081868,127.820734)">
+                <circle cx="50.5" cy="49.5" r="44.5" style="fill:rgb(242,194,75);"/>
+            </g>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-6,-5)">
+        <g transform="matrix(1.871984,0,0,1.871984,-24.696159,-1.378028)">
+            <g transform="matrix(1,0,0,1,27.068385,-4.739348)">
+                <g transform="matrix(11.752237,0,0,11.752237,26.788025,31.544373)">
+                </g>
+                <text x="20.424px" y="31.544px" style="font-family:'EuphemiaUCAS', 'Euphemia UCAS', sans-serif;font-size:11.752px;">Z</text>
+            </g>
+            <g transform="matrix(1,0,0,1,17.068385,-0.13677)">
+                <g transform="matrix(12.286429,0,0,12.286429,27.077293,31.544373)">
+                </g>
+                <text x="20.424px" y="31.544px" style="font-family:'EuphemiaUCAS', 'Euphemia UCAS', sans-serif;font-size:12.286px;">Z</text>
+            </g>
+            <g transform="matrix(1,0,0,1,6,5)">
+                <g transform="matrix(14.957392,0,0,14.957392,28.52363,31.544373)">
+                </g>
+                <text x="20.424px" y="31.544px" style="font-family:'EuphemiaUCAS', 'Euphemia UCAS', sans-serif;font-size:14.957px;">Z</text>
+            </g>
+        </g>
+    </g>
+</svg>
