@@ -865,10 +865,46 @@
 		}
 
 		.tokens-banner .streak-title {
+			box-sizing: border-box;
+			padding: 0;
+			margin: 0;
+		}
+
+		.tokens-banner__header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
 			width: 100%;
 			box-sizing: border-box;
 			padding: 16px 16px 2px;
+		}
+
+		.tokens-banner__info {
+			appearance: none;
+			border: 0;
+			background: transparent;
+			padding: 0;
 			margin: 0;
+			width: 22px;
+			height: 22px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--text-dim);
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+
+		.tokens-banner__info svg {
+			display: block;
+			width: 18px;
+			height: 18px;
+		}
+
+		.tokens-banner__info:focus-visible {
+			outline: 2px solid rgba(255, 255, 255, 0.25);
+			outline-offset: 3px;
 		}
 
 		.tokens-banner__content {
@@ -954,6 +990,13 @@
 		.tokens-banner__freeze:focus-visible {
 			outline: 2px solid rgba(245, 158, 11, 0.45);
 			outline-offset: 3px;
+		}
+
+		.tokens-banner__freeze:disabled {
+			cursor: not-allowed;
+			opacity: 0.55;
+			box-shadow: none;
+			filter: saturate(0.65);
 		}
 
 		@media (max-width: 640px) {
@@ -1383,7 +1426,16 @@
 		<div id="body">
 			<div style="padding: 0 20px;">
 				<div id="tokens-banner" class="tokens-banner" role="region" aria-live="polite">
-					<div class="streak-title" data-i18n="tokens_title">Tokens</div>
+					<div class="tokens-banner__header">
+						<div class="streak-title" data-i18n="tokens_title">Tokens</div>
+						<button id="tokens-info-btn" type="button" class="tokens-banner__info" aria-label="Info">
+							<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+								<path d="M12 10.25V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+								<circle cx="12" cy="7.25" r="1.1" fill="currentColor"/>
+							</svg>
+						</button>
+					</div>
 					<div class="tokens-banner__hint weight-change-subtitle" data-i18n="tokens_hint">Protect your streak.</div>
 					<div class="tokens-banner__content">
 						<div class="tokens-banner__summary">
@@ -1748,6 +1800,7 @@
 					const banner = document.getElementById('tokens-banner');
 					const numberEl = document.getElementById('tokens-number');
 					const countLabelEl = document.getElementById('tokens-count-label');
+					const infoBtn = document.getElementById('tokens-info-btn');
 					const freezeBtn = document.getElementById('freeze-day-btn');
 					if (!banner || !numberEl) return;
 					let historyCount = 0;
@@ -1776,16 +1829,33 @@
 					if (countLabelEl) {
 						countLabelEl.textContent = (Number(balance) === 1) ? 'Token' : 'Tokens';
 					}
+					if (infoBtn && !infoBtn.dataset.bound) {
+						infoBtn.addEventListener('click', () => {
+							try {
+								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+									? (GN_I18N.t('tokens_help_text') || 'You earn 1 token every 3 consecutive days of workout. You can rest a day protecting your streak by spending a token.')
+									: 'You earn 1 token every 3 consecutive days of workout. You can rest a day protecting your streak by spending a token.';
+								alert(message);
+							} catch (e) {
+								console.error('Failed to show tokens help dialog', e);
+							}
+						});
+						infoBtn.dataset.bound = 'true';
+					}
 					if (freezeBtn) {
 						let todayHistoryCount = 0;
 						let isTodayFrozen = false;
 						try { todayHistoryCount = await db.history.where('date').equals(dateToYMD(new Date())).count(); } catch (e) { todayHistoryCount = 0; }
 						try { isTodayFrozen = db.frozen_days ? !!(await db.frozen_days.get(dateToYMD(new Date()))) : false; } catch (e) { isTodayFrozen = false; }
-						freezeBtn.style.display = (balance > 0 && todayHistoryCount === 0 && !isTodayFrozen) ? 'inline-flex' : 'none';
+						const canSpendToken = balance > 0 && todayHistoryCount === 0 && !isTodayFrozen;
+						freezeBtn.style.display = 'inline-flex';
+						freezeBtn.disabled = !canSpendToken;
+						freezeBtn.setAttribute('aria-disabled', canSpendToken ? 'false' : 'true');
 					}
 					banner.style.display = 'flex';
 					if (freezeBtn && !freezeBtn.dataset.bound) {
 						freezeBtn.addEventListener('click', async () => {
+							if (freezeBtn.disabled) return;
 							try {
 								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
 									? (GN_I18N.t('freeze_day_confirm') || 'Spend 1 Token to freeze today?')
