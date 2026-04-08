@@ -220,14 +220,31 @@
         // Import/export/restore/sync functions copied from home to keep behavior consistent
         async function exportData() {
             await ensureDbOpen();
+            try {
+                if (typeof db.ensureTokensInitialized === 'function') await db.ensureTokensInitialized();
+            } catch (e) {
+                console.error('Failed to initialize tokens before export', e);
+            }
             const date = new Date().toISOString().slice(0,10);
+            const exportedTokens = db.tokens
+                ? ((typeof db.normalizeTokensRecords === 'function')
+                    ? db.normalizeTokensRecords(await db.tokens.toArray())
+                    : await db.tokens.toArray())
+                : (typeof db.normalizeTokensRecords === 'function' ? db.normalizeTokensRecords([]) : []);
             const data = {
                 // exclude catalog_... tables from local exports (catalog is app-provided)
                 custom_exercises: await db.custom_exercises.toArray(),
                 custom_images: await db.custom_images.toArray(),
                 routines: await db.routines.toArray(),
                 history: await db.history.toArray(),
-                weights: await db.weights.toArray()
+                weights: await db.weights.toArray(),
+                tokens: exportedTokens,
+                frozen_days: db.frozen_days ? await db.frozen_days.toArray() : (typeof db.normalizeFrozenDayRecords === 'function' ? db.normalizeFrozenDayRecords([]) : []),
+                token_events: db.token_events
+                    ? ((typeof db.normalizeTokenEventRecords === 'function')
+                        ? db.normalizeTokenEventRecords(await db.token_events.toArray())
+                        : await db.token_events.toArray())
+                    : (typeof db.normalizeTokenEventRecords === 'function' ? db.normalizeTokenEventRecords([]) : [])
             };
 
             try {
@@ -262,7 +279,10 @@
                         custom_exercises: ['custom_exercises.json'],
                         routines: ['routines.json'],
                         history: ['history.json'],
-                        weights: ['weights.json']
+                        weights: ['weights.json'],
+                         tokens: ['tokens.json'],
+                        frozen_days: ['frozen_days.json'],
+                        token_events: ['token_events.json']
                     };
 
                     // Read files found in ZIP
@@ -278,7 +298,7 @@
                     }
 
                     // Now write to DB similar to restoreFromDrive behavior
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.tokens, db.frozen_days, db.token_events], async () => {
                         let normalizedCatalogImages = null;
                         if (Array.isArray(extracted.catalog_images)) {
                             normalizedCatalogImages = extracted.catalog_images.map(img => ({
@@ -346,6 +366,30 @@
                                     }
                                 }
                             }
+                        }
+
+                        if (db.tokens) {
+                            const normalizedTokens = (typeof db.normalizeTokensRecords === 'function')
+                                ? db.normalizeTokensRecords(extracted.tokens)
+                                : (Array.isArray(extracted.tokens) ? extracted.tokens : []);
+                            await db.tokens.clear();
+                            await db.tokens.bulkPut(normalizedTokens);
+                        }
+
+                        if (db.frozen_days) {
+                            const normalizedFrozenDays = (typeof db.normalizeFrozenDayRecords === 'function')
+                                ? db.normalizeFrozenDayRecords(extracted.frozen_days)
+                                : (Array.isArray(extracted.frozen_days) ? extracted.frozen_days : []);
+                            await db.frozen_days.clear();
+                            await db.frozen_days.bulkPut(normalizedFrozenDays);
+                        }
+
+                        if (db.token_events) {
+                            const normalizedTokenEvents = (typeof db.normalizeTokenEventRecords === 'function')
+                                ? db.normalizeTokenEventRecords(extracted.token_events)
+                                : (Array.isArray(extracted.token_events) ? extracted.token_events : []);
+                            await db.token_events.clear();
+                            await db.token_events.bulkPut(normalizedTokenEvents);
                         }
                     });
 
@@ -427,7 +471,7 @@
                         }
                 const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.tokens, db.frozen_days, db.token_events], async () => {
                         await db.catalog_images.clear();
                         let normalizedCatalogImages = null;
                         if (data.catalog_images) {
@@ -493,6 +537,30 @@
                                 newCount = await db.weights.count();
                             }
                             console.info('[Restore UI] weights write complete', { newCount });
+                        }
+
+                        if (db.tokens) {
+                            const normalizedTokens = (typeof db.normalizeTokensRecords === 'function')
+                                ? db.normalizeTokensRecords(data.tokens)
+                                : (Array.isArray(data.tokens) ? data.tokens : []);
+                            await db.tokens.clear();
+                            await db.tokens.bulkPut(normalizedTokens);
+                        }
+
+                        if (db.frozen_days) {
+                            const normalizedFrozenDays = (typeof db.normalizeFrozenDayRecords === 'function')
+                                ? db.normalizeFrozenDayRecords(data.frozen_days)
+                                : (Array.isArray(data.frozen_days) ? data.frozen_days : []);
+                            await db.frozen_days.clear();
+                            await db.frozen_days.bulkPut(normalizedFrozenDays);
+                        }
+
+                        if (db.token_events) {
+                            const normalizedTokenEvents = (typeof db.normalizeTokenEventRecords === 'function')
+                                ? db.normalizeTokenEventRecords(data.token_events)
+                                : (Array.isArray(data.token_events) ? data.token_events : []);
+                            await db.token_events.clear();
+                            await db.token_events.bulkPut(normalizedTokenEvents);
                         }
                     });
 
@@ -633,7 +701,11 @@
                 const msg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('delete_history_attention') || 'Attention! You will lose all your history and statistics locally and on Google Drive') : 'Attention! You will lose all your history and statistics locally and on Google Drive';
                 if (!confirm(msg)) return;
                 // Clear history
-                try { await db.history.clear(); } catch (e) { console.error('[UI] failed to clear history', e); throw e; }
+                try {
+                    await db.history.clear();
+                    if (db.frozen_days) await db.frozen_days.clear();
+                    if (db.token_events) await db.token_events.clear();
+                } catch (e) { console.error('[UI] failed to clear history', e); throw e; }
                 // Try to sync the removal to Drive
                 try {
                     if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {

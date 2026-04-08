@@ -128,7 +128,7 @@
 
 			if (typeof db !== 'undefined') {
 				try {
-					await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights], async () => {
+					await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.tokens, db.frozen_days, db.token_events], async () => {
 						if (db.catalog_images) {
 							await db.catalog_images.clear();
 							if (data.catalog_images) {
@@ -199,6 +199,30 @@
 								newCount = await db.weights.count();
 							}
 							console.info('[StartupWatchdog] weights write complete', { newCount });
+						}
+
+						if (db.tokens) {
+							const normalizedTokens = (typeof db.normalizeTokensRecords === 'function')
+								? db.normalizeTokensRecords(data.tokens)
+								: (Array.isArray(data.tokens) ? data.tokens : []);
+							await db.tokens.clear();
+							await db.tokens.bulkPut(normalizedTokens);
+						}
+
+						if (db.frozen_days) {
+							const normalizedFrozenDays = (typeof db.normalizeFrozenDayRecords === 'function')
+								? db.normalizeFrozenDayRecords(data.frozen_days)
+								: (Array.isArray(data.frozen_days) ? data.frozen_days : []);
+							await db.frozen_days.clear();
+							await db.frozen_days.bulkPut(normalizedFrozenDays);
+						}
+
+						if (db.token_events) {
+							const normalizedTokenEvents = (typeof db.normalizeTokenEventRecords === 'function')
+								? db.normalizeTokenEventRecords(data.token_events)
+								: (Array.isArray(data.token_events) ? data.token_events : []);
+							await db.token_events.clear();
+							await db.token_events.bulkPut(normalizedTokenEvents);
 						}
 					});
 				} catch (e) {
@@ -822,6 +846,172 @@
 			margin-bottom: 4px;
 		}
 
+		.tokens-banner {
+			display: flex;
+			flex-direction: column;
+			gap: 0;
+			width: 100%;
+			max-width: none;
+			margin: 12px 0;
+			box-sizing: border-box;
+			background-color: var(--card-background);
+			color: var(--text);
+			padding: 0;
+			border-radius: 12px;
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+			align-items: flex-start;
+			overflow: hidden;
+		}
+
+		.tokens-banner .streak-title {
+			box-sizing: border-box;
+			padding: 0;
+			margin: 0;
+		}
+
+		.tokens-banner__header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			width: 100%;
+			box-sizing: border-box;
+			padding: 16px 16px 2px;
+		}
+
+		.tokens-banner__info {
+			appearance: none;
+			border: 0;
+			background: transparent;
+			padding: 0;
+			margin: 0;
+			width: 22px;
+			height: 22px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--text-dim);
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+
+		.tokens-banner__info svg {
+			display: block;
+			width: 18px;
+			height: 18px;
+		}
+
+		.tokens-banner__info:focus-visible {
+			outline: 2px solid rgba(255, 255, 255, 0.25);
+			outline-offset: 3px;
+		}
+
+		.tokens-banner__content {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			width: 100%;
+			box-sizing: border-box;
+			padding: 0 16px 16px;
+		}
+
+		.tokens-banner__summary {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+			min-width: 0;
+			flex: 1;
+		}
+
+		.tokens-banner__icon {
+			width: 54px;
+			height: 54px;
+			border-radius: 999px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			background: rgba(245, 158, 11, 0.14);
+			color: #f59e0b;
+			flex-shrink: 0;
+		}
+
+		.tokens-banner__icon img {
+			display: block;
+			width: 28px;
+			height: 28px;
+			object-fit: contain;
+		}
+
+		.tokens-banner__text {
+			display: flex;
+			align-items: center;
+			min-width: 0;
+		}
+
+		.tokens-banner__count {
+			font-size: 2rem;
+			line-height: 1;
+			font-weight: 900;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			flex-wrap: nowrap;
+			width: auto;
+			min-width: 0;
+		}
+
+		.tokens-banner__count-label {
+			font-size: 0.95rem;
+			font-weight: 800;
+			color: var(--text-dim);
+			letter-spacing: 0.02em;
+			text-transform: uppercase;
+		}
+
+		.tokens-banner__freeze {
+			appearance: none;
+			border: 0;
+			border-radius: 999px;
+			padding: 12px 18px;
+			font-size: 0.95rem;
+			font-weight: 800;
+			line-height: 1;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			color: #1f2937;
+			background: linear-gradient(135deg, #fbbf24, #f59e0b);
+			box-shadow: 0 10px 24px rgba(245, 158, 11, 0.2);
+			cursor: pointer;
+			white-space: nowrap;
+		}
+
+		.tokens-banner__freeze:focus-visible {
+			outline: 2px solid rgba(245, 158, 11, 0.45);
+			outline-offset: 3px;
+		}
+
+		.tokens-banner__freeze:disabled {
+			cursor: not-allowed;
+			opacity: 0.55;
+			box-shadow: none;
+			filter: saturate(0.65);
+		}
+
+		@media (max-width: 640px) {
+			.tokens-banner__content {
+				flex-direction: column;
+				align-items: stretch;
+			}
+
+			.tokens-banner__freeze {
+				width: 100%;
+			}
+		}
+
 		.home-chart-pill-filter {
 			margin: 24px 0 12px;
 			padding-top: 2px;
@@ -1237,6 +1427,34 @@
 
 		<div id="body">
 			<div style="padding: 0 20px;">
+				<div id="tokens-banner" class="tokens-banner" role="region" aria-live="polite">
+					<div class="tokens-banner__header">
+						<div class="streak-title" data-i18n="tokens_title">Tokens</div>
+						<button id="tokens-info-btn" type="button" class="tokens-banner__info" aria-label="Info">
+							<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+								<path d="M12 10.25V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+								<circle cx="12" cy="7.25" r="1.1" fill="currentColor"/>
+							</svg>
+						</button>
+					</div>
+					<div class="tokens-banner__hint weight-change-subtitle" data-i18n="tokens_hint">Protect your streak.</div>
+						<div class="tokens-banner__content">
+							<div class="tokens-banner__summary">
+								<div class="tokens-banner__icon" aria-hidden="true">
+									<img src="icons/coin3.svg" alt="">
+								</div>
+							<div class="tokens-banner__text">
+								<div class="tokens-banner__count">
+									<span id="tokens-number">0</span>
+									<span id="tokens-count-label" class="tokens-banner__count-label">Tokens</span>
+								</div>
+							</div>
+						</div>
+						<button id="freeze-day-btn" type="button" class="tokens-banner__freeze" data-i18n="freeze_day">Rest today</button>
+					</div>
+				</div>
+
 				<!-- Streak banner: shows current consecutive-day streak. Ordered as column per design -->
 				<div id="streak-banner" class="streak-banner" role="region" aria-live="polite" style="display:none;">
 					<div class="streak-title" data-i18n="streak_title">Your streak</div>
@@ -1354,11 +1572,13 @@
 							updateHomeChartFilterVisibility(historyCount);
 							initHomeChartPillFilter();
 							await renderWeekDots();
+							try { if (typeof renderTokensBanner === 'function') await renderTokensBanner(); } catch (e) { }
 							if (historyCount > 0) {
 								try { if (typeof renderStreakBanner === 'function') renderStreakBanner(); } catch (e) { }
 								try { if (typeof renderHomeInsightWidgets === 'function') await renderHomeInsightWidgets(); } catch (e) { }
 								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'none'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'none'; } } catch (e) { }
 							} else {
+								try { const cb = document.getElementById('tokens-banner'); if (cb) cb.style.display = 'none'; } catch (e) { }
 								try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
 								try { const hf = document.getElementById('home-chart-pill-filter'); if (hf) hf.style.display = 'none'; } catch (e) { }
 								try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
@@ -1402,6 +1622,9 @@
 					const daysContainer = container.querySelector('.days');
 					const lang = (window.GN_I18N && GN_I18N.getLang) ? GN_I18N.getLang() : 'en';
 					const locale = (lang === 'pt') ? 'pt' : 'en';
+					const frozenDates = new Set(
+						db.frozen_days ? (await db.frozen_days.toArray()).map(item => item && item.date).filter(Boolean) : []
+					);
 					const today = new Date();
 					const start = new Date(today);
 					start.setHours(0, 0, 0, 0);
@@ -1419,6 +1642,7 @@
 
 						let count = 0;
 						try { count = await db.history.where('date').equals(dateStr).count(); } catch (e) { count = 0; }
+						const isFrozenDay = frozenDates.has(dateStr) && count === 0;
 
 						const level = (count === 0) ? 0 : Math.min(4, 1 + Math.floor(Math.log2(count)));
 						// Ensure short weekday labels are 3 letters with no trailing dot.
@@ -1443,11 +1667,15 @@
 						let dotClass = '';
 						let imgName = '';
 						let statusText = '';
-						const isFuture = (dateObj.getTime() > todayMid.getTime()) || (dateObj.getTime() === todayMid.getTime() && count === 0);
+						const isFuture = (dateObj.getTime() > todayMid.getTime()) || (dateObj.getTime() === todayMid.getTime() && count === 0 && !isFrozenDay);
 						if (isFuture) {
 							dotClass = 'future';
 							imgName = 'icons/day-future.svg';
 							statusText = 'Future';
+						} else if (isFrozenDay) {
+							dotClass = 'done';
+							imgName = 'icons/day-rest.svg';
+							statusText = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('frozen_day') || 'Frozen') : 'Frozen';
 						} else if (count === 0) {
 							dotClass = 'missed';
 							imgName = 'icons/day-missed.svg';
@@ -1476,6 +1704,9 @@
 					const iconImg = document.getElementById('streak-icon-img');
 					const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
 					function dateToYMD(d) { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; }
+					const frozenDates = new Set(
+						db.frozen_days ? (await db.frozen_days.toArray()).map(item => item && item.date).filter(Boolean) : []
+					);
 					let streak = 0;
 					const today = new Date(); today.setHours(0, 0, 0, 0);
 					const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
@@ -1485,8 +1716,8 @@
 					try { yesterdayCount = await db.history.where('date').equals(dateToYMD(yesterday)).count(); } catch (e) { yesterdayCount = 0; }
 					// Determine anchor day: prefer today if there's an entry, otherwise keep streak valid through today if yesterday has an entry.
 					let anchor = null;
-					if (todayCount > 0) anchor = new Date(today);
-					else if (yesterdayCount > 0) anchor = new Date(yesterday);
+					if (todayCount > 0 || frozenDates.has(dateToYMD(today))) anchor = new Date(today);
+					else if (yesterdayCount > 0 || frozenDates.has(dateToYMD(yesterday))) anchor = new Date(yesterday);
 					if (!anchor) {
 						// No active streak
 						streak = 0;
@@ -1499,8 +1730,9 @@
 						let cursor = new Date(anchor);
 						while (true) {
 							let c = 0;
-							try { c = await db.history.where('date').equals(dateToYMD(cursor)).count(); } catch (e) { c = 0; }
-							if (c > 0) { streak++; cursor.setDate(cursor.getDate() - 1); } else break;
+							const cursorKey = dateToYMD(cursor);
+							try { c = await db.history.where('date').equals(cursorKey).count(); } catch (e) { c = 0; }
+							if (c > 0 || frozenDates.has(cursorKey)) { streak++; cursor.setDate(cursor.getDate() - 1); } else break;
 						}
 						// show a happy flame illustration when the streak is active
 						iconImg.src = basePath + 'illustrations/happy-flame-face.svg';
@@ -1531,8 +1763,10 @@
 						try {
 							let best = 0;
 							try {
-								const items = await db.history.toArray();
-								const uniq = Array.from(new Set(items.map(it => it.date))).filter(Boolean).map(s => {
+								const effectiveDates = db.getEffectiveWorkoutDates
+									? await db.getEffectiveWorkoutDates()
+									: Array.from(new Set((await db.history.toArray()).map(it => it.date))).filter(Boolean).sort();
+								const uniq = Array.from(new Set(effectiveDates)).filter(Boolean).map(s => {
 									const d = new Date(s);
 									d.setHours(0, 0, 0, 0);
 									return d.getTime();
@@ -1560,6 +1794,95 @@
 					}
 					banner.style.display = 'flex';
 				} catch (err) { console.error('renderStreakBanner failed', err); }
+			}
+
+			async function renderTokensBanner() {
+				try {
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const banner = document.getElementById('tokens-banner');
+					const numberEl = document.getElementById('tokens-number');
+					const countLabelEl = document.getElementById('tokens-count-label');
+					const infoBtn = document.getElementById('tokens-info-btn');
+					const freezeBtn = document.getElementById('freeze-day-btn');
+					if (!banner || !numberEl) return;
+					let historyCount = 0;
+					try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
+					if (!historyCount) {
+						banner.style.display = 'none';
+						return;
+					}
+					function dateToYMD(d) {
+						const y = d.getFullYear();
+						const m = String(d.getMonth() + 1).padStart(2, '0');
+						const day = String(d.getDate()).padStart(2, '0');
+						return `${y}-${m}-${day}`;
+					}
+
+					let balance = 0;
+					try {
+						if (db && db.tokens) {
+							const wallet = await db.tokens.get(1);
+							const parsedBalance = Number(wallet && wallet.balance);
+							if (Number.isFinite(parsedBalance) && parsedBalance > 0) balance = parsedBalance;
+						}
+					} catch (e) { balance = 0; }
+
+					numberEl.textContent = String(balance);
+					if (countLabelEl) {
+						countLabelEl.textContent = (Number(balance) === 1) ? 'Token' : 'Tokens';
+					}
+					if (infoBtn && !infoBtn.dataset.bound) {
+						infoBtn.addEventListener('click', () => {
+							try {
+								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+									? (GN_I18N.t('tokens_help_text') || 'You earn 1 token every 3 consecutive days of workout. You can rest a day protecting your streak by spending a token.')
+									: 'You earn 1 token every 3 consecutive days of workout. You can rest a day protecting your streak by spending a token.';
+								alert(message);
+							} catch (e) {
+								console.error('Failed to show tokens help dialog', e);
+							}
+						});
+						infoBtn.dataset.bound = 'true';
+					}
+					if (freezeBtn) {
+						let todayHistoryCount = 0;
+						let isTodayFrozen = false;
+						try { todayHistoryCount = await db.history.where('date').equals(dateToYMD(new Date())).count(); } catch (e) { todayHistoryCount = 0; }
+						try { isTodayFrozen = db.frozen_days ? !!(await db.frozen_days.get(dateToYMD(new Date()))) : false; } catch (e) { isTodayFrozen = false; }
+						const canSpendToken = balance > 0 && todayHistoryCount === 0 && !isTodayFrozen;
+						freezeBtn.style.display = 'inline-flex';
+						freezeBtn.disabled = !canSpendToken;
+						freezeBtn.setAttribute('aria-disabled', canSpendToken ? 'false' : 'true');
+					}
+					banner.style.display = 'flex';
+					if (freezeBtn && !freezeBtn.dataset.bound) {
+						freezeBtn.addEventListener('click', async () => {
+							if (freezeBtn.disabled) return;
+							try {
+								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+									? (GN_I18N.t('freeze_day_confirm') || 'Spend 1 Token to freeze today?')
+									: 'Spend 1 Token to freeze today?';
+								if (!confirm(message)) return;
+								const todayKey = dateToYMD(new Date());
+								if (db && typeof db.freezeDay === 'function') {
+									const result = await db.freezeDay(todayKey);
+									if (result && result.ok) {
+										try { localStorage.setItem('has_local_changes', 'true'); } catch (e) {}
+										try {
+											if (!window.DEMO_MODE && typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
+												await DriveStorage.sync(db, ['tokens', 'frozen_days'], { showAlert: false });
+											}
+										} catch (e) {
+											console.error('Freeze day sync failed', e);
+										}
+										try { if (typeof refreshHomeData === 'function') await refreshHomeData(); } catch (e) {}
+									}
+								}
+							} catch (e) {}
+						});
+						freezeBtn.dataset.bound = 'true';
+					}
+				} catch (err) { console.error('renderTokensBanner failed', err); }
 			}
 
 			// Global favorite-exercise renderer (uses the same parent widget as favorite-type)
@@ -2166,6 +2489,7 @@
 					updateHomeChartFilterVisibility(historyCount);
 					initHomeChartPillFilter();
 					try { await renderWeekDots(); } catch (e) { }
+					try { if (typeof renderTokensBanner === 'function') await renderTokensBanner(); } catch (e) { }
 					if (historyCount > 0) {
 						try { if (typeof renderStreakBanner === 'function') await renderStreakBanner(); } catch (e) { }
 						try { if (typeof renderFavoriteType === 'function') await renderFavoriteType('year'); } catch (e) { }
@@ -2179,6 +2503,7 @@
 							}
 						} catch (e) { }
 					} else {
+						try { const cb = document.getElementById('tokens-banner'); if (cb) cb.style.display = 'none'; } catch (e) { }
 						try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
 						try { const hf = document.getElementById('home-chart-pill-filter'); if (hf) hf.style.display = 'none'; } catch (e) { }
 						try { const wc = document.getElementById('weight-change-widget'); if (wc) wc.style.display = 'none'; } catch (e) { }

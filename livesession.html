@@ -27,6 +27,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="tokens-logic.js"></script>
     <script src="gn-i18n.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
@@ -418,6 +419,14 @@
             z-index: 2200;
             display: none;
         }
+        #tokenRain {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 2150;
+            display: none;
+        }
         .streak-confetti-piece {
             position: absolute;
             width: 8px;
@@ -431,6 +440,28 @@
         @keyframes streakConfettiFall {
             0% { transform: translateY(0) rotate(0deg); }
             100% { transform: translateY(110vh) rotate(360deg); }
+        }
+        .token-rain-piece {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            opacity: 0.95;
+            animation-name: tokenRainFall;
+            animation-iteration-count: 2;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+            will-change: transform;
+        }
+        .token-rain-piece img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22));
+        }
+        @keyframes tokenRainFall {
+            0% { transform: translate3d(0, -18vh, 0) rotate(0deg); }
+            100% { transform: translate3d(var(--token-drift, 0px), 165vh, 0) rotate(360deg); }
         }
         /* Fullscreen illustration: position absolutely to fill viewport but stop above content
               The bottom offset is controlled by the CSS variable --finished-content-height set by JS. */
@@ -508,6 +539,10 @@
             color: rgba(255, 255, 255, 0.9);
             letter-spacing: 0.5px;
             text-align: center;
+        }
+        .finished-message-subtext.token-reward-preview {
+            color: #f6d365;
+            font-style: italic;
         }
         /* Background SVG illustration (bottom-aligned, subtle alpha) */
         .finished-illustration::before {
@@ -826,6 +861,7 @@
                 </div>
             </div>
             <div id="streakConfetti" aria-hidden="true"></div>
+            <div id="tokenRain" aria-hidden="true"></div>
                 <div class="finished-content">
                     <div class="finished-message" aria-live="polite"></div>
                 </div>
@@ -1185,9 +1221,14 @@
         /* Helpers used for the streak celebration confetti overlay */
         const STREAK_CONFETTI_COLORS = ['#f97316', '#34d399', '#60a5fa', '#a855f7', '#facc15', '#22d3ee'];
         const STREAK_CONFETTI_COUNT = 36;
+        const TOKEN_RAIN_ICONS = ['icons/coin1.svg', 'icons/coin2.svg', 'icons/coin3.svg', 'icons/coin4.svg', 'icons/coin5.svg', 'icons/coin6.svg'];
+        const TOKEN_RAIN_COUNT = 32;
         let _streakConfettiRunning = false;
+        let _tokenRainRunning = false;
+        let _tokenRainStopTimer = null;
         let _streakRecordBreaking = false;
         let _streakRecordsCache = null;
+        let _tokenRewardPreviewCache = null;
 
         function getTodayDateKey() {
             const now = new Date();
@@ -1214,6 +1255,18 @@
         function clearStreakSnapshot() {
             _streakRecordsCache = null;
             _streakRecordBreaking = false;
+            _tokenRewardPreviewCache = null;
+        }
+
+        async function loadTokenRewardPreview(forceRefresh = false, overrideTodayStr) {
+            if (!forceRefresh && _tokenRewardPreviewCache) return _tokenRewardPreviewCache;
+            const todayStr = overrideTodayStr || getTodayDateKey();
+            if (!window.GNTokensLogic || typeof GNTokensLogic.getTokenMilestonePreview !== 'function') {
+                _tokenRewardPreviewCache = { ok: false, wouldAward: false, awarded: 0 };
+                return _tokenRewardPreviewCache;
+            }
+            _tokenRewardPreviewCache = await GNTokensLogic.getTokenMilestonePreview(db, todayStr);
+            return _tokenRewardPreviewCache;
         }
 
         function startStreakConfetti() {
@@ -1246,6 +1299,58 @@
             _streakConfettiRunning = false;
         }
 
+        function startTokenRain() {
+            if (_tokenRainRunning) return;
+            const container = document.getElementById('tokenRain');
+            if (!container) return;
+            if (_tokenRainStopTimer) {
+                clearTimeout(_tokenRainStopTimer);
+                _tokenRainStopTimer = null;
+            }
+            container.innerHTML = '';
+            container.style.display = 'block';
+            let longestRuntimeMs = 0;
+            for (let i = 0; i < TOKEN_RAIN_COUNT; i++) {
+                const piece = document.createElement('span');
+                piece.className = 'token-rain-piece';
+                piece.style.left = `${Math.random() * 100}%`;
+                piece.style.top = `${-8 - Math.random() * 26}vh`;
+                const size = 20 + Math.random() * 20;
+                piece.style.width = `${size}px`;
+                piece.style.height = `${size}px`;
+                const durationSeconds = 3.8 + Math.random() * 2.6;
+                const delaySeconds = 0;
+                piece.style.animationDuration = `${durationSeconds}s`;
+                piece.style.animationDelay = `${delaySeconds}s`;
+                piece.style.setProperty('--token-drift', `${-36 + Math.random() * 72}px`);
+                piece.style.opacity = `${0.6 + Math.random() * 0.35}`;
+                longestRuntimeMs = Math.max(longestRuntimeMs, Math.ceil((delaySeconds + (durationSeconds * 2)) * 1000));
+
+                const img = document.createElement('img');
+                img.src = TOKEN_RAIN_ICONS[Math.floor(Math.random() * TOKEN_RAIN_ICONS.length)];
+                img.alt = '';
+                img.setAttribute('aria-hidden', 'true');
+                piece.appendChild(img);
+                container.appendChild(piece);
+            }
+            _tokenRainRunning = true;
+            _tokenRainStopTimer = setTimeout(() => {
+                stopTokenRain();
+            }, longestRuntimeMs + 150);
+        }
+
+        function stopTokenRain() {
+            const container = document.getElementById('tokenRain');
+            if (!container) return;
+            if (_tokenRainStopTimer) {
+                clearTimeout(_tokenRainStopTimer);
+                _tokenRainStopTimer = null;
+            }
+            container.innerHTML = '';
+            container.style.display = 'none';
+            _tokenRainRunning = false;
+        }
+
         async function evaluateStreakCelebration() {
             try {
                 const { oldRecord, newRecord } = await loadStreakSnapshot();
@@ -1260,6 +1365,7 @@
             } catch (err) {
                 console.warn('streak celebration check failed', err);
                 stopStreakConfetti();
+                stopTokenRain();
                 return { shouldCelebrate: false, streakDays: 0 };
             }
         }
@@ -1429,6 +1535,22 @@
                             sub.textContent = subText;
                             msgEl.appendChild(sub);
                         }
+                        const tokenPreview = await loadTokenRewardPreview(false);
+                        if (tokenPreview && tokenPreview.wouldAward && Number(tokenPreview.awarded) > 0) {
+                            const rewardTemplate = (GN_I18N && GN_I18N.t)
+                                ? (GN_I18N.t('finished_token_reward_preview') || 'You will earn {n} Token')
+                                : 'You will earn {n} Token';
+                            const rewardText = rewardTemplate.replace('{n}', String(tokenPreview.awarded));
+                            const reward = document.createElement('span');
+                            reward.className = 'finished-message-subtext token-reward-preview';
+                            reward.textContent = rewardText;
+                            msgEl.appendChild(reward);
+                            startTokenRain();
+                        } else {
+                            stopTokenRain();
+                        }
+                    } else {
+                        stopTokenRain();
                     }
                 } catch (e) { /* ignore */ }
 
@@ -2735,6 +2857,7 @@
                 return;
             } else {
                 stopStreakConfetti();
+                stopTokenRain();
                 clearStreakSnapshot();
                 if (finishedView) finishedView.style.display = 'none';
                 const saveOpt = document.getElementById('saveRoutineOpt');
@@ -2986,6 +3109,7 @@
 
                 // Calculate streak record before saving (Avoid uniqueKeys on iOS)
                 const { oldRecord, newRecord } = await loadStreakSnapshot(true, todayStr);
+                const tokenRewardPreview = await loadTokenRewardPreview(true, todayStr);
 
                 // Update the workout template with the values used in this session only if user opted in
                 const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
@@ -3047,6 +3171,14 @@
                 // Persist logs (no deduplication)
                 if (logs.length > 0) {
                     await db.history.bulkAdd(logs);
+                }
+
+                if (logs.length > 0 && tokenRewardPreview && tokenRewardPreview.wouldAward && window.GNTokensLogic && typeof GNTokensLogic.maybeAwardTokenMilestone === 'function') {
+                    try {
+                        await GNTokensLogic.maybeAwardTokenMilestone(db, todayStr);
+                    } catch (e) {
+                        console.error('Failed to award token milestone after finishing live session', e);
+                    }
                 }
 
                 // Clear in-memory/active session state now that session was recorded locally

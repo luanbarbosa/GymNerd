@@ -75,11 +75,14 @@
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
         .day-name { font-size: 0.6rem; text-align: center; color: var(--text-dim); font-weight: bold; padding-bottom: 4px; }
-        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.7rem; }
+        .calendar-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(255,255,255,0.05); }
+        .calendar-day img { width: 18px; height: 18px; object-fit: contain; }
+        .calendar-day__num { line-height: 1; }
         
-        .past-no-workout { background: rgb(205, 91, 82); color: #000; }
-        .has-workout { background: var(--accent-color); color: #000; font-weight: bold; }
-        .future-day { background: rgba(255,255,255,0.02); color: #475569; border: 1px solid rgba(255,255,255,0.05); }
+        .past-no-workout { color: var(--text-main-color); font-weight: bold; }
+        .has-workout { color: var(--text-main-color); font-weight: bold; }
+        .frozen-day { color: var(--text-main-color); font-weight: bold; }
+        .future-day { background: rgba(255,255,255,0.02); color: #475569; }
         .today { border: 1.5px solid var(--primary); }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
@@ -404,27 +407,27 @@
             const logs = await db.history.toArray();
             // If there is no history data, hide the stats sections but keep the top-card/topbar visible
             try {
+                const main = document.querySelector('.main-content');
+                const pageContent = document.querySelector('.page-content');
+                const empty = document.getElementById('statsEmpty');
                 if (!logs || logs.length === 0) {
-                    const main = document.querySelector('.main-content');
-                    const empty = document.getElementById('statsEmpty');
-                    if (main) {
+                    if (main && pageContent) {
                         // keep top-card visible
                         const top = main.querySelector('.top-card');
                         try { if (top) top.style.display = ''; } catch(e) {}
 
-                        // hide all other children of .main-content except the top-card
+                        // hide all page sections except the empty placeholder
                         try {
-                            Array.from(main.children).forEach(ch => {
-                                if (ch === top) return;
+                            Array.from(pageContent.children).forEach(ch => {
                                 if (ch === empty) return;
                                 ch.style.display = 'none';
                             });
                         } catch(e) {}
 
-                        // ensure the empty placeholder is a direct child right after the top-card
+                        // ensure the empty placeholder is visible inside page-content
                         try {
                             if (empty) {
-                                main.insertBefore(empty, top.nextSibling);
+                                pageContent.insertBefore(empty, pageContent.firstChild.nextSibling);
                                 empty.style.display = '';
                                 // compute available space between bottom of top-card and top of bottom-nav
                                 try {
@@ -450,15 +453,29 @@
                     }
                     return;
                 }
-                // Ensure empty placeholder hidden when data exists
+                if (main) {
+                    const top = main.querySelector('.top-card');
+                    try {
+                        Array.from((pageContent && pageContent.children) || []).forEach(ch => {
+                            ch.style.display = '';
+                        });
+                    } catch (e) {}
+                }
+                if (empty) {
+                    empty.style.display = 'none';
+                    empty.style.height = '';
+                    empty.style.padding = '';
+                    empty.style.background = '';
+                }
             } catch (e) { /* ignore */ }
-            try { const empty = document.getElementById('statsEmpty'); if (empty) empty.style.display = 'none'; } catch(e) {}
-            renderCalendar(logs);
+            await renderCalendar(logs);
             renderCharts(logs);
             updateStreakBadge();
             updateFrequencyChart(logs);
             updateRadarChart(logs);
         }
+
+        window.initStatisticsPage = init;
 
         
 
@@ -485,10 +502,15 @@
         }
 
         async function renderCalendar(logs) {
+            const renderCalendarToken = (window.__gn_stats_renderCalendarToken || 0) + 1;
+            window.__gn_stats_renderCalendarToken = renderCalendarToken;
+            const isRenderCalendarStale = () => window.__gn_stats_renderCalendarToken !== renderCalendarToken;
+
             if (!logs) logs = await db.history.toArray();
             const grid = document.getElementById('calendarGrid');
             const display = document.getElementById('monthDisplay');
             const dayNamesContainer = document.getElementById('dayNames');
+            if (!grid || !display || !dayNamesContainer) return;
             const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
             const locale = lang === 'pt' ? 'pt' : 'en';
             // render localized short weekday names; start Monday for Portuguese
@@ -510,6 +532,7 @@
                 }
                 dayNamesContainer.innerHTML += `<div class="day-name">${short}</div>`;
             }
+            if (isRenderCalendarStale()) return;
             grid.innerHTML = "";
             const year = currentViewDate.getFullYear(), month = currentViewDate.getMonth();
             const today = new Date(); today.setHours(0,0,0,0);
@@ -517,6 +540,10 @@
             const firstDayIndex = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const workoutDates = new Set(logs.map(l => l.date));
+            const frozenDates = new Set(
+                db.frozen_days ? (await db.frozen_days.toArray()).map(item => item && item.date).filter(Boolean) : []
+            );
+            if (isRenderCalendarStale()) return;
 
             // Adjust first day index when week starts on Monday
             const adjustedFirstDayIndex = weekStartsOnMonday ? ((firstDayIndex + 6) % 7) : firstDayIndex;
@@ -524,9 +551,17 @@
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const dateObj = new Date(year, month, d);
-                let status = workoutDates.has(dateStr) ? "has-workout" : (dateObj < today ? "past-no-workout" : "future-day");
+                const hasWorkout = workoutDates.has(dateStr);
+                const isFrozenDay = frozenDates.has(dateStr);
+                let status = hasWorkout
+                    ? "has-workout"
+                    : (isFrozenDay ? "frozen-day" : (dateObj < today ? "past-no-workout" : "future-day"));
                 if (dateObj.getTime() === today.getTime()) status += " today";
-                grid.innerHTML += `<div class="calendar-day ${status}">${d}</div>`;
+                let icon = '';
+                if (hasWorkout) icon = '<img src="icons/day-done.svg" alt="" aria-hidden="true">';
+                else if (isFrozenDay) icon = '<img src="icons/day-rest.svg" alt="" aria-hidden="true">';
+                else if (dateObj < today) icon = '<img src="icons/day-missed.svg" alt="" aria-hidden="true">';
+                grid.innerHTML += `<div class="calendar-day ${status}">${icon}<span class="calendar-day__num">${d}</span></div>`;
             }
         }
         
@@ -1284,8 +1319,9 @@
             // Ensure DB is open (iOS fix)
             await ensureDbOpen();
             
-            const allLogs = await db.history.toArray();
-            const workoutDates = [...new Set(allLogs.map(l => l.date))].sort();
+            const workoutDates = db.getEffectiveWorkoutDates
+                ? await db.getEffectiveWorkoutDates()
+                : [...new Set((await db.history.toArray()).map(l => l.date))].sort();
             
             if (workoutDates.length === 0) {
                 overview.innerHTML = `
@@ -1336,7 +1372,7 @@
         }
 
         initChartPillFilter();
-        init();
+        initStatisticsPage();
         </script>
         </div>
     </div>

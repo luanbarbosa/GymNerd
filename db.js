@@ -143,6 +143,156 @@ db.version(13).upgrade(async (tx) => {
     }
 });
 
+const TOKENS_WALLET_ID = 1;
+
+function createDefaultTokensRecord(now = new Date().toISOString()) {
+    return {
+        id: TOKENS_WALLET_ID,
+        balance: 0,
+        createdAt: now,
+        updatedAt: now
+    };
+}
+
+function normalizeTokensRecords(records) {
+    if (!Array.isArray(records) || records.length === 0) {
+        return [createDefaultTokensRecord()];
+    }
+
+    const normalized = records
+        .filter(record => record && typeof record === 'object')
+        .map(record => {
+            const now = new Date().toISOString();
+            const balance = Number.isFinite(Number(record.balance)) ? Math.max(0, Number(record.balance)) : 0;
+            return {
+                ...record,
+                id: record.id !== undefined && record.id !== null ? record.id : TOKENS_WALLET_ID,
+                balance,
+                createdAt: record.createdAt || now,
+                updatedAt: record.updatedAt || now
+            };
+        });
+
+    return normalized.length > 0 ? normalized : [createDefaultTokensRecord()];
+}
+
+function isValidDateKey(dateKey) {
+    return typeof dateKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateKey);
+}
+
+function createFrozenDayRecord(date, now = new Date().toISOString()) {
+    return {
+        date,
+        createdAt: now,
+        updatedAt: now
+    };
+}
+
+function normalizeFrozenDayRecords(records) {
+    if (!Array.isArray(records) || records.length === 0) return [];
+    const seen = new Set();
+    return records
+        .filter(record => record && typeof record === 'object' && isValidDateKey(record.date))
+        .filter(record => {
+            if (seen.has(record.date)) return false;
+            seen.add(record.date);
+            return true;
+        })
+        .map(record => {
+            const now = new Date().toISOString();
+            return {
+                date: record.date,
+                createdAt: record.createdAt || now,
+                updatedAt: record.updatedAt || now
+            };
+        });
+}
+
+function createTokenEventRecord(event, now = new Date().toISOString()) {
+    const milestone = Number.isFinite(Number(event && event.milestone)) ? Math.max(0, Number(event.milestone)) : 0;
+    return {
+        id: String(event && event.id ? event.id : ''),
+        type: String(event && event.type ? event.type : 'streak_milestone'),
+        date: (event && isValidDateKey(event.date)) ? event.date : '',
+        milestone,
+        tokensDelta: Number.isFinite(Number(event && event.tokensDelta)) ? Number(event.tokensDelta) : 0,
+        createdAt: (event && event.createdAt) || now,
+        updatedAt: (event && event.updatedAt) || now
+    };
+}
+
+function normalizeTokenEventRecords(records) {
+    if (!Array.isArray(records) || records.length === 0) return [];
+    const seen = new Set();
+    return records
+        .filter(record => record && typeof record === 'object')
+        .map(record => createTokenEventRecord(record))
+        .filter(record => record.id && record.date && !seen.has(record.id))
+        .filter(record => {
+            seen.add(record.id);
+            return true;
+        });
+}
+
+db.version(14).stores({
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId',
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight',
+    tokens: 'id, balance'
+});
+
+db.version(14).upgrade(async (tx) => {
+    try {
+        const tokensTable = tx.table('tokens');
+        const count = await tokensTable.count();
+        if (count === 0) await tokensTable.add(createDefaultTokensRecord());
+    } catch (err) {
+        console.warn('[DB Migration] tokens migration failed', err);
+    }
+});
+
+db.version(15).stores({
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId',
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight',
+    tokens: 'id, balance',
+    frozen_days: 'date, createdAt'
+});
+
+db.version(16).stores({
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId',
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight',
+    tokens: 'id, balance',
+    frozen_days: 'date, createdAt',
+    token_events: 'id, date, type, milestone'
+});
+
+db.version(17).stores({
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId',
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight',
+    tokens: 'id, balance',
+    frozen_days: 'date, createdAt',
+    token_events: 'id, date, type, milestone'
+});
+
 // Canonical list of available exercise types used across the app
 const AVAILABLE_EXERCISE_TYPES = ['abs','arms','back','cardio','chest','legs','shoulder','other'];
 // Expose on db and window for easy access
@@ -204,6 +354,12 @@ function sanitizeCatalogImages(images) {
 
 db.isImageValid = isImageValid;
 db.sanitizeCatalogImages = sanitizeCatalogImages;
+db.createDefaultTokensRecord = createDefaultTokensRecord;
+db.normalizeTokensRecords = normalizeTokensRecords;
+db.createFrozenDayRecord = createFrozenDayRecord;
+db.normalizeFrozenDayRecords = normalizeFrozenDayRecords;
+db.createTokenEventRecord = createTokenEventRecord;
+db.normalizeTokenEventRecords = normalizeTokenEventRecords;
 
 // Migration: remove exercises with invalid/undefined types or missing required fields
 async function cleanInvalidExerciseTypes() {
@@ -242,6 +398,60 @@ async function cleanInvalidExerciseTypes() {
 async function ensureDbOpen() {
     if (!db.isOpen()) await db.open();
 }
+
+async function ensureTokensInitialized() {
+    await ensureDbOpen();
+    if (!db.tokens) return;
+    const count = await db.tokens.count();
+    if (count === 0) await db.tokens.add(createDefaultTokensRecord());
+}
+
+db.ensureTokensInitialized = ensureTokensInitialized;
+
+async function getEffectiveWorkoutDates() {
+    await ensureDbOpen();
+    const [historyRows, frozenRows] = await Promise.all([
+        db.history ? db.history.toArray() : [],
+        db.frozen_days ? db.frozen_days.toArray() : []
+    ]);
+    return [...new Set([
+        ...historyRows.map(row => row && row.date),
+        ...frozenRows.map(row => row && row.date)
+    ].filter(Boolean))].sort();
+}
+
+async function freezeDay(dateKey) {
+    await ensureDbOpen();
+    if (!isValidDateKey(dateKey) || !db.history || !db.tokens || !db.frozen_days) {
+        return { ok: false, reason: 'invalid' };
+    }
+
+    return db.transaction('rw', [db.history, db.tokens, db.frozen_days], async () => {
+        const historyCount = await db.history.where('date').equals(dateKey).count();
+        if (historyCount > 0) return { ok: false, reason: 'has_history' };
+
+        const alreadyFrozen = await db.frozen_days.get(dateKey);
+        if (alreadyFrozen) return { ok: false, reason: 'already_frozen' };
+
+        const now = new Date().toISOString();
+        const wallet = (await db.tokens.get(TOKENS_WALLET_ID)) || createDefaultTokensRecord(now);
+        const balance = Math.max(0, Number(wallet.balance) || 0);
+        if (balance <= 0) return { ok: false, reason: 'no_tokens' };
+
+        await db.tokens.put({
+            ...wallet,
+            id: TOKENS_WALLET_ID,
+            balance: balance - 1,
+            createdAt: wallet.createdAt || now,
+            updatedAt: now
+        });
+        await db.frozen_days.put(createFrozenDayRecord(dateKey, now));
+        return { ok: true, balance: balance - 1 };
+    });
+}
+
+db.getEffectiveWorkoutDates = getEffectiveWorkoutDates;
+db.freezeDay = freezeDay;
 
 function calculateStreaks(dates) {
     if (!dates || dates.length === 0) return { current: 0, longest: 0, daysSince: 0 };
@@ -397,6 +607,7 @@ async function initializeCatalog() {
 
 // Run migrations then initialize catalog on load
 (async function runStartup() {
+    try { await ensureTokensInitialized(); } catch (e) { console.error('Tokens init error', e); }
     try { await cleanInvalidExerciseTypes(); } catch (e) { console.error('Migration error', e); }
     try { await initializeCatalog(); } catch (e) { console.error('Catalog init error', e); }
 })();
