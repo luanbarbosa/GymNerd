@@ -407,27 +407,27 @@
             const logs = await db.history.toArray();
             // If there is no history data, hide the stats sections but keep the top-card/topbar visible
             try {
+                const main = document.querySelector('.main-content');
+                const pageContent = document.querySelector('.page-content');
+                const empty = document.getElementById('statsEmpty');
                 if (!logs || logs.length === 0) {
-                    const main = document.querySelector('.main-content');
-                    const empty = document.getElementById('statsEmpty');
-                    if (main) {
+                    if (main && pageContent) {
                         // keep top-card visible
                         const top = main.querySelector('.top-card');
                         try { if (top) top.style.display = ''; } catch(e) {}
 
-                        // hide all other children of .main-content except the top-card
+                        // hide all page sections except the empty placeholder
                         try {
-                            Array.from(main.children).forEach(ch => {
-                                if (ch === top) return;
+                            Array.from(pageContent.children).forEach(ch => {
                                 if (ch === empty) return;
                                 ch.style.display = 'none';
                             });
                         } catch(e) {}
 
-                        // ensure the empty placeholder is a direct child right after the top-card
+                        // ensure the empty placeholder is visible inside page-content
                         try {
                             if (empty) {
-                                main.insertBefore(empty, top.nextSibling);
+                                pageContent.insertBefore(empty, pageContent.firstChild.nextSibling);
                                 empty.style.display = '';
                                 // compute available space between bottom of top-card and top of bottom-nav
                                 try {
@@ -453,15 +453,29 @@
                     }
                     return;
                 }
-                // Ensure empty placeholder hidden when data exists
+                if (main) {
+                    const top = main.querySelector('.top-card');
+                    try {
+                        Array.from((pageContent && pageContent.children) || []).forEach(ch => {
+                            ch.style.display = '';
+                        });
+                    } catch (e) {}
+                }
+                if (empty) {
+                    empty.style.display = 'none';
+                    empty.style.height = '';
+                    empty.style.padding = '';
+                    empty.style.background = '';
+                }
             } catch (e) { /* ignore */ }
-            try { const empty = document.getElementById('statsEmpty'); if (empty) empty.style.display = 'none'; } catch(e) {}
             await renderCalendar(logs);
             renderCharts(logs);
             updateStreakBadge();
             updateFrequencyChart(logs);
             updateRadarChart(logs);
         }
+
+        window.initStatisticsPage = init;
 
         
 
@@ -1358,7 +1372,7 @@
         }
 
         initChartPillFilter();
-        init();
+        initStatisticsPage();
         </script>
         </div>
     </div>
