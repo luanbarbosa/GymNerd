@@ -208,6 +208,32 @@ function normalizeFrozenDayRecords(records) {
         });
 }
 
+function createCoinEventRecord(event, now = new Date().toISOString()) {
+    const milestone = Number.isFinite(Number(event && event.milestone)) ? Math.max(0, Number(event.milestone)) : 0;
+    return {
+        id: String(event && event.id ? event.id : ''),
+        type: String(event && event.type ? event.type : 'streak_milestone'),
+        date: (event && isValidDateKey(event.date)) ? event.date : '',
+        milestone,
+        coinsDelta: Number.isFinite(Number(event && event.coinsDelta)) ? Number(event.coinsDelta) : 0,
+        createdAt: (event && event.createdAt) || now,
+        updatedAt: (event && event.updatedAt) || now
+    };
+}
+
+function normalizeCoinEventRecords(records) {
+    if (!Array.isArray(records) || records.length === 0) return [];
+    const seen = new Set();
+    return records
+        .filter(record => record && typeof record === 'object')
+        .map(record => createCoinEventRecord(record))
+        .filter(record => record.id && record.date && !seen.has(record.id))
+        .filter(record => {
+            seen.add(record.id);
+            return true;
+        });
+}
+
 db.version(14).stores({
     catalog_exercises: '++id, name, namePT, type, imageId',
     catalog_images: '++id',
@@ -239,6 +265,19 @@ db.version(15).stores({
     weights: 'date, weight',
     coins: 'id, balance',
     frozen_days: 'date, createdAt'
+});
+
+db.version(16).stores({
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId',
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight',
+    coins: 'id, balance',
+    frozen_days: 'date, createdAt',
+    coin_events: 'id, date, type, milestone'
 });
 
 // Canonical list of available exercise types used across the app
@@ -306,6 +345,8 @@ db.createDefaultCoinsRecord = createDefaultCoinsRecord;
 db.normalizeCoinsRecords = normalizeCoinsRecords;
 db.createFrozenDayRecord = createFrozenDayRecord;
 db.normalizeFrozenDayRecords = normalizeFrozenDayRecords;
+db.createCoinEventRecord = createCoinEventRecord;
+db.normalizeCoinEventRecords = normalizeCoinEventRecords;
 
 // Migration: remove exercises with invalid/undefined types or missing required fields
 async function cleanInvalidExerciseTypes() {

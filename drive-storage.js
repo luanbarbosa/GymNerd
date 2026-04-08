@@ -242,7 +242,7 @@ const DriveStorage = {
             
             const data = {};
             // Catalog images and exercises are always synced from URL source and should not have destructive changes
-            const tables = tableNames || ['custom_exercises', 'custom_images', 'routines', 'history', 'weights', 'coins', 'frozen_days'];
+            const tables = tableNames || ['custom_exercises', 'custom_images', 'routines', 'history', 'weights', 'coins', 'frozen_days', 'coin_events'];
             
             for (const table of tables) {
                 if (db[table]) {

@@ -18,6 +18,7 @@
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="coins-logic.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/colors.css">
     <link rel="stylesheet" href="styles/mode-support.css">
@@ -544,6 +545,17 @@
     async function saveSession() {
         const date = document.getElementById('logDate').value;
         const logs = [];
+        let awardedCoins = 0;
+        let wasDateEffectiveBeforeSave = false;
+        try {
+            const [historyCount, frozenRecord] = await Promise.all([
+                db.history.where('date').equals(date).count(),
+                db.frozen_days ? db.frozen_days.get(date) : null
+            ]);
+            wasDateEffectiveBeforeSave = historyCount > 0 || !!frozenRecord;
+        } catch (e) {
+            console.warn('Failed to inspect existing effective date before saving history', e);
+        }
         // Determine sessionId: reuse existing sessionId when editing, otherwise generate a new one
         let sessionId = Date.now();
         if (isEditMode) {
@@ -674,6 +686,14 @@
         } else {
             await db.history.bulkAdd(logs);
         }
+        if (!wasDateEffectiveBeforeSave && logs.length > 0 && window.GNCoinsLogic && typeof GNCoinsLogic.maybeAwardCoinMilestone === 'function') {
+            try {
+                const rewardResult = await GNCoinsLogic.maybeAwardCoinMilestone(db, date);
+                awardedCoins = Math.max(0, Number(rewardResult && rewardResult.awarded) || 0);
+            } catch (e) {
+                console.error('Failed to evaluate coin milestone after saving history', e);
+            }
+        }
         localStorage.setItem('has_local_changes', 'true');
         // Perform a blocking Google Drive sync showing the full-screen loader.
         try {
@@ -683,6 +703,16 @@
                     await DriveStorage.sync(db);
                 } catch (e) {
                     console.error('Drive sync error', e);
+                }
+            }
+            if (awardedCoins > 0) {
+                try {
+                    const template = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+                        ? (GN_I18N.t('coin_milestone_reward') || 'You won {n} coin!')
+                        : 'You won {n} coin!';
+                    alert(template.replace('{n}', String(awardedCoins)));
+                } catch (e) {
+                    console.error('Failed to alert coin milestone reward', e);
                 }
             }
         } finally {
