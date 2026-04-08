@@ -937,9 +937,11 @@
 			flex-shrink: 0;
 		}
 
-		.tokens-banner__icon .material-symbols-outlined {
-			font-size: 28px;
-			font-variation-settings: 'wght' 300;
+		.tokens-banner__icon img {
+			display: block;
+			width: 28px;
+			height: 28px;
+			object-fit: contain;
 		}
 
 		.tokens-banner__text {
@@ -1437,11 +1439,11 @@
 						</button>
 					</div>
 					<div class="tokens-banner__hint weight-change-subtitle" data-i18n="tokens_hint">Protect your streak.</div>
-					<div class="tokens-banner__content">
-						<div class="tokens-banner__summary">
-							<div class="tokens-banner__icon" aria-hidden="true">
-								<span class="material-symbols-outlined">monetization_on</span>
-							</div>
+						<div class="tokens-banner__content">
+							<div class="tokens-banner__summary">
+								<div class="tokens-banner__icon" aria-hidden="true">
+									<img src="icons/coin3.svg" alt="">
+								</div>
 							<div class="tokens-banner__text">
 								<div class="tokens-banner__count">
 									<span id="tokens-number">0</span>
