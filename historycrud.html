@@ -691,7 +691,7 @@
                 const rewardResult = await GNTokensLogic.maybeAwardTokenMilestone(db, date);
                 awardedTokens = Math.max(0, Number(rewardResult && rewardResult.awarded) || 0);
             } catch (e) {
-                console.error('Failed to evaluate coin milestone after saving history', e);
+                console.error('Failed to evaluate token milestone after saving history', e);
             }
         }
         localStorage.setItem('has_local_changes', 'true');

@@ -846,7 +846,7 @@
 			margin-bottom: 4px;
 		}
 
-		.coins-banner {
+		.tokens-banner {
 			display: flex;
 			flex-direction: column;
 			gap: 0;
@@ -864,14 +864,14 @@
 			overflow: hidden;
 		}
 
-		.coins-banner .streak-title {
+		.tokens-banner .streak-title {
 			width: 100%;
 			box-sizing: border-box;
 			padding: 16px 16px 2px;
 			margin: 0;
 		}
 
-		.coins-banner__content {
+		.tokens-banner__content {
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
@@ -881,7 +881,7 @@
 			padding: 0 16px 16px;
 		}
 
-		.coins-banner__summary {
+		.tokens-banner__summary {
 			display: flex;
 			align-items: center;
 			gap: 14px;
@@ -889,7 +889,7 @@
 			flex: 1;
 		}
 
-		.coins-banner__icon {
+		.tokens-banner__icon {
 			width: 54px;
 			height: 54px;
 			border-radius: 999px;
@@ -901,18 +901,18 @@
 			flex-shrink: 0;
 		}
 
-		.coins-banner__icon .material-symbols-outlined {
+		.tokens-banner__icon .material-symbols-outlined {
 			font-size: 28px;
 			font-variation-settings: 'wght' 300;
 		}
 
-		.coins-banner__text {
+		.tokens-banner__text {
 			display: flex;
 			align-items: center;
 			min-width: 0;
 		}
 
-		.coins-banner__count {
+		.tokens-banner__count {
 			font-size: 2rem;
 			line-height: 1;
 			font-weight: 900;
@@ -924,7 +924,7 @@
 			min-width: 0;
 		}
 
-		.coins-banner__count-label {
+		.tokens-banner__count-label {
 			font-size: 0.95rem;
 			font-weight: 800;
 			color: var(--text-dim);
@@ -932,7 +932,7 @@
 			text-transform: uppercase;
 		}
 
-		.coins-banner__freeze {
+		.tokens-banner__freeze {
 			appearance: none;
 			border: 0;
 			border-radius: 999px;
@@ -951,18 +951,18 @@
 			white-space: nowrap;
 		}
 
-		.coins-banner__freeze:focus-visible {
+		.tokens-banner__freeze:focus-visible {
 			outline: 2px solid rgba(245, 158, 11, 0.45);
 			outline-offset: 3px;
 		}
 
 		@media (max-width: 640px) {
-			.coins-banner__content {
+			.tokens-banner__content {
 				flex-direction: column;
 				align-items: stretch;
 			}
 
-			.coins-banner__freeze {
+			.tokens-banner__freeze {
 				width: 100%;
 			}
 		}
@@ -1382,22 +1382,22 @@
 
 		<div id="body">
 			<div style="padding: 0 20px;">
-				<div id="tokens-banner" class="coins-banner" role="region" aria-live="polite">
+				<div id="tokens-banner" class="tokens-banner" role="region" aria-live="polite">
 					<div class="streak-title" data-i18n="tokens_title">Tokens</div>
-					<div class="coins-banner__hint weight-change-subtitle" data-i18n="tokens_hint">Protect your streak.</div>
-					<div class="coins-banner__content">
-						<div class="coins-banner__summary">
-							<div class="coins-banner__icon" aria-hidden="true">
+					<div class="tokens-banner__hint weight-change-subtitle" data-i18n="tokens_hint">Protect your streak.</div>
+					<div class="tokens-banner__content">
+						<div class="tokens-banner__summary">
+							<div class="tokens-banner__icon" aria-hidden="true">
 								<span class="material-symbols-outlined">monetization_on</span>
 							</div>
-							<div class="coins-banner__text">
-								<div class="coins-banner__count">
+							<div class="tokens-banner__text">
+								<div class="tokens-banner__count">
 									<span id="tokens-number">0</span>
-									<span id="tokens-count-label" class="coins-banner__count-label">Tokens</span>
+									<span id="tokens-count-label" class="tokens-banner__count-label">Tokens</span>
 								</div>
 							</div>
 						</div>
-						<button id="freeze-day-btn" type="button" class="coins-banner__freeze" data-i18n="freeze_day">Rest today</button>
+						<button id="freeze-day-btn" type="button" class="tokens-banner__freeze" data-i18n="freeze_day">Rest today</button>
 					</div>
 				</div>
 

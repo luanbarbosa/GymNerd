@@ -242,16 +242,16 @@ db.version(14).stores({
     routines: '++id, name, exerciseIds',
     history: '++id, exerciseId, weight, reps, date, sessionId',
     weights: 'date, weight',
-    coins: 'id, balance'
+    tokens: 'id, balance'
 });
 
 db.version(14).upgrade(async (tx) => {
     try {
-        const coinsTable = tx.table('coins');
-        const count = await coinsTable.count();
-        if (count === 0) await coinsTable.add(createDefaultTokensRecord());
+        const tokensTable = tx.table('tokens');
+        const count = await tokensTable.count();
+        if (count === 0) await tokensTable.add(createDefaultTokensRecord());
     } catch (err) {
-        console.warn('[DB Migration] coins migration failed', err);
+        console.warn('[DB Migration] tokens migration failed', err);
     }
 });
 
@@ -263,7 +263,7 @@ db.version(15).stores({
     routines: '++id, name, exerciseIds',
     history: '++id, exerciseId, weight, reps, date, sessionId',
     weights: 'date, weight',
-    coins: 'id, balance',
+    tokens: 'id, balance',
     frozen_days: 'date, createdAt'
 });
 
@@ -275,7 +275,7 @@ db.version(16).stores({
     routines: '++id, name, exerciseIds',
     history: '++id, exerciseId, weight, reps, date, sessionId',
     weights: 'date, weight',
-    coins: 'id, balance',
+    tokens: 'id, balance',
     frozen_days: 'date, createdAt',
     token_events: 'id, date, type, milestone'
 });

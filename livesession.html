@@ -510,7 +510,7 @@
             letter-spacing: 0.5px;
             text-align: center;
         }
-        .finished-message-subtext.coin-reward-preview {
+        .finished-message-subtext.token-reward-preview {
             color: #f6d365;
         }
         /* Background SVG illustration (bottom-aligned, subtle alpha) */
@@ -1453,7 +1453,7 @@
                                 : 'You will earn {n} Token';
                             const rewardText = rewardTemplate.replace('{n}', String(tokenPreview.awarded));
                             const reward = document.createElement('span');
-                            reward.className = 'finished-message-subtext coin-reward-preview';
+                            reward.className = 'finished-message-subtext token-reward-preview';
                             reward.textContent = rewardText;
                             msgEl.appendChild(reward);
                         }
