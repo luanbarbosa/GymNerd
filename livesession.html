@@ -27,6 +27,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="coins-logic.js"></script>
     <script src="gn-i18n.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
@@ -508,6 +509,9 @@
             color: rgba(255, 255, 255, 0.9);
             letter-spacing: 0.5px;
             text-align: center;
+        }
+        .finished-message-subtext.coin-reward-preview {
+            color: #f6d365;
         }
         /* Background SVG illustration (bottom-aligned, subtle alpha) */
         .finished-illustration::before {
@@ -1188,6 +1192,7 @@
         let _streakConfettiRunning = false;
         let _streakRecordBreaking = false;
         let _streakRecordsCache = null;
+        let _coinRewardPreviewCache = null;
 
         function getTodayDateKey() {
             const now = new Date();
@@ -1214,6 +1219,18 @@
         function clearStreakSnapshot() {
             _streakRecordsCache = null;
             _streakRecordBreaking = false;
+            _coinRewardPreviewCache = null;
+        }
+
+        async function loadCoinRewardPreview(forceRefresh = false, overrideTodayStr) {
+            if (!forceRefresh && _coinRewardPreviewCache) return _coinRewardPreviewCache;
+            const todayStr = overrideTodayStr || getTodayDateKey();
+            if (!window.GNCoinsLogic || typeof GNCoinsLogic.getCoinMilestonePreview !== 'function') {
+                _coinRewardPreviewCache = { ok: false, wouldAward: false, awarded: 0 };
+                return _coinRewardPreviewCache;
+            }
+            _coinRewardPreviewCache = await GNCoinsLogic.getCoinMilestonePreview(db, todayStr);
+            return _coinRewardPreviewCache;
         }
 
         function startStreakConfetti() {
@@ -1428,6 +1445,17 @@
                             sub.className = 'finished-message-subtext';
                             sub.textContent = subText;
                             msgEl.appendChild(sub);
+                        }
+                        const coinPreview = await loadCoinRewardPreview(false);
+                        if (coinPreview && coinPreview.wouldAward && Number(coinPreview.awarded) > 0) {
+                            const rewardTemplate = (GN_I18N && GN_I18N.t)
+                                ? (GN_I18N.t('finished_coin_reward_preview') || 'You will earn {n} coin')
+                                : 'You will earn {n} coin';
+                            const rewardText = rewardTemplate.replace('{n}', String(coinPreview.awarded));
+                            const reward = document.createElement('span');
+                            reward.className = 'finished-message-subtext coin-reward-preview';
+                            reward.textContent = rewardText;
+                            msgEl.appendChild(reward);
                         }
                     }
                 } catch (e) { /* ignore */ }
@@ -2986,6 +3014,7 @@
 
                 // Calculate streak record before saving (Avoid uniqueKeys on iOS)
                 const { oldRecord, newRecord } = await loadStreakSnapshot(true, todayStr);
+                const coinRewardPreview = await loadCoinRewardPreview(true, todayStr);
 
                 // Update the workout template with the values used in this session only if user opted in
                 const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
@@ -3047,6 +3076,14 @@
                 // Persist logs (no deduplication)
                 if (logs.length > 0) {
                     await db.history.bulkAdd(logs);
+                }
+
+                if (logs.length > 0 && coinRewardPreview && coinRewardPreview.wouldAward && window.GNCoinsLogic && typeof GNCoinsLogic.maybeAwardCoinMilestone === 'function') {
+                    try {
+                        await GNCoinsLogic.maybeAwardCoinMilestone(db, todayStr);
+                    } catch (e) {
+                        console.error('Failed to award coin milestone after finishing live session', e);
+                    }
                 }
 
                 // Clear in-memory/active session state now that session was recorded locally

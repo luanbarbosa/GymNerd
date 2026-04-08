@@ -47,6 +47,41 @@
         return `${COIN_EVENT_TYPE_STREAK_MILESTONE}:${dateKey}:${milestone}`;
     }
 
+    function evaluateCoinMilestone(dateKeys, dateKey) {
+        const streakLength = getStreakLengthEndingAt(dateKeys, dateKey);
+        const milestone = getMilestoneForStreakLength(streakLength);
+        const wouldAward = milestone > 0 && isMilestoneBoundary(streakLength);
+        return { streakLength, milestone, wouldAward };
+    }
+
+    async function getCoinMilestonePreview(db, dateKey) {
+        if (!db || !isValidDateKey(dateKey) || !db.history) {
+            return { ok: false, reason: 'invalid', wouldAward: false, awarded: 0, streakLength: 0, milestone: 0 };
+        }
+
+        if (typeof global.ensureDbOpen === 'function') {
+            await global.ensureDbOpen();
+        }
+
+        const effectiveDates = db.getEffectiveWorkoutDates
+            ? await db.getEffectiveWorkoutDates()
+            : [...new Set((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey))].sort();
+
+        const effectiveDateSet = new Set(getSortedUniqueDateKeys(effectiveDates));
+        if (effectiveDateSet.has(dateKey)) {
+            return { ok: true, wouldAward: false, awarded: 0, streakLength: 0, milestone: 0, reason: 'already_effective' };
+        }
+
+        const preview = evaluateCoinMilestone([...effectiveDateSet, dateKey], dateKey);
+        return {
+            ok: true,
+            wouldAward: preview.wouldAward,
+            awarded: preview.wouldAward ? 1 : 0,
+            streakLength: preview.streakLength,
+            milestone: preview.milestone
+        };
+    }
+
     async function maybeAwardCoinMilestone(db, dateKey) {
         if (!db || !isValidDateKey(dateKey) || !db.history || !db.coins || !db.coin_events) {
             return { ok: false, reason: 'invalid' };
@@ -63,9 +98,9 @@
             ? await db.getEffectiveWorkoutDates()
             : [...new Set((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey))].sort();
 
-        const streakLength = getStreakLengthEndingAt(effectiveDates, dateKey);
-        const milestone = getMilestoneForStreakLength(streakLength);
-        if (milestone <= 0 || !isMilestoneBoundary(streakLength)) {
+        const preview = evaluateCoinMilestone(effectiveDates, dateKey);
+        const { streakLength, milestone, wouldAward } = preview;
+        if (!wouldAward) {
             return { ok: true, awarded: 0, streakLength, milestone };
         }
 
@@ -124,6 +159,8 @@
         getMilestoneForStreakLength,
         isMilestoneBoundary,
         buildMilestoneEventId,
+        evaluateCoinMilestone,
+        getCoinMilestonePreview,
         maybeAwardCoinMilestone
     };
 
