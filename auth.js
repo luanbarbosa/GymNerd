@@ -373,7 +373,7 @@
             // Apply into DB if available
             if (typeof db !== 'undefined') {
                 try {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins, db.frozen_days, db.coin_events], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.tokens, db.frozen_days, db.token_events], async () => {
                         let sanitizedCatalogImages = null;
                         if (db.catalog_images) {
                             await db.catalog_images.clear();
@@ -454,12 +454,12 @@
                             console.info('[AutoRestore] weights write complete', { newCount });
                         }
 
-                        if (db.coins) {
-                            const normalizedCoins = (typeof db.normalizeCoinsRecords === 'function')
-                                ? db.normalizeCoinsRecords(data.coins)
-                                : (Array.isArray(data.coins) ? data.coins : []);
-                            await db.coins.clear();
-                            await db.coins.bulkPut(normalizedCoins);
+                        if (db.tokens) {
+                            const normalizedTokens = (typeof db.normalizeTokensRecords === 'function')
+                                ? db.normalizeTokensRecords(data.tokens)
+                                : (Array.isArray(data.tokens) ? data.tokens : []);
+                            await db.tokens.clear();
+                            await db.tokens.bulkPut(normalizedTokens);
                         }
 
                         if (db.frozen_days) {
@@ -470,12 +470,12 @@
                             await db.frozen_days.bulkPut(normalizedFrozenDays);
                         }
 
-                        if (db.coin_events) {
-                            const normalizedCoinEvents = (typeof db.normalizeCoinEventRecords === 'function')
-                                ? db.normalizeCoinEventRecords(data.coin_events)
-                                : (Array.isArray(data.coin_events) ? data.coin_events : []);
-                            await db.coin_events.clear();
-                            await db.coin_events.bulkPut(normalizedCoinEvents);
+                        if (db.token_events) {
+                            const normalizedTokenEvents = (typeof db.normalizeTokenEventRecords === 'function')
+                                ? db.normalizeTokenEventRecords(data.token_events)
+                                : (Array.isArray(data.token_events) ? data.token_events : []);
+                            await db.token_events.clear();
+                            await db.token_events.bulkPut(normalizedTokenEvents);
                         }
                     });
                 } catch (e) {

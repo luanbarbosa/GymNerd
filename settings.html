@@ -221,16 +221,16 @@
         async function exportData() {
             await ensureDbOpen();
             try {
-                if (typeof db.ensureCoinsInitialized === 'function') await db.ensureCoinsInitialized();
+                if (typeof db.ensureTokensInitialized === 'function') await db.ensureTokensInitialized();
             } catch (e) {
-                console.error('Failed to initialize coins before export', e);
+                console.error('Failed to initialize tokens before export', e);
             }
             const date = new Date().toISOString().slice(0,10);
-            const exportedCoins = db.coins
-                ? ((typeof db.normalizeCoinsRecords === 'function')
-                    ? db.normalizeCoinsRecords(await db.coins.toArray())
-                    : await db.coins.toArray())
-                : (typeof db.normalizeCoinsRecords === 'function' ? db.normalizeCoinsRecords([]) : []);
+            const exportedTokens = db.tokens
+                ? ((typeof db.normalizeTokensRecords === 'function')
+                    ? db.normalizeTokensRecords(await db.tokens.toArray())
+                    : await db.tokens.toArray())
+                : (typeof db.normalizeTokensRecords === 'function' ? db.normalizeTokensRecords([]) : []);
             const data = {
                 // exclude catalog_... tables from local exports (catalog is app-provided)
                 custom_exercises: await db.custom_exercises.toArray(),
@@ -238,13 +238,13 @@
                 routines: await db.routines.toArray(),
                 history: await db.history.toArray(),
                 weights: await db.weights.toArray(),
-                coins: exportedCoins,
+                tokens: exportedTokens,
                 frozen_days: db.frozen_days ? await db.frozen_days.toArray() : (typeof db.normalizeFrozenDayRecords === 'function' ? db.normalizeFrozenDayRecords([]) : []),
-                coin_events: db.coin_events
-                    ? ((typeof db.normalizeCoinEventRecords === 'function')
-                        ? db.normalizeCoinEventRecords(await db.coin_events.toArray())
-                        : await db.coin_events.toArray())
-                    : (typeof db.normalizeCoinEventRecords === 'function' ? db.normalizeCoinEventRecords([]) : [])
+                token_events: db.token_events
+                    ? ((typeof db.normalizeTokenEventRecords === 'function')
+                        ? db.normalizeTokenEventRecords(await db.token_events.toArray())
+                        : await db.token_events.toArray())
+                    : (typeof db.normalizeTokenEventRecords === 'function' ? db.normalizeTokenEventRecords([]) : [])
             };
 
             try {
@@ -280,9 +280,9 @@
                         routines: ['routines.json'],
                         history: ['history.json'],
                         weights: ['weights.json'],
-                        coins: ['coins.json'],
+                         tokens: ['tokens.json'],
                         frozen_days: ['frozen_days.json'],
-                        coin_events: ['coin_events.json']
+                        token_events: ['token_events.json']
                     };
 
                     // Read files found in ZIP
@@ -298,7 +298,7 @@
                     }
 
                     // Now write to DB similar to restoreFromDrive behavior
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins, db.frozen_days, db.coin_events], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.tokens, db.frozen_days, db.token_events], async () => {
                         let normalizedCatalogImages = null;
                         if (Array.isArray(extracted.catalog_images)) {
                             normalizedCatalogImages = extracted.catalog_images.map(img => ({
@@ -368,12 +368,12 @@
                             }
                         }
 
-                        if (db.coins) {
-                            const normalizedCoins = (typeof db.normalizeCoinsRecords === 'function')
-                                ? db.normalizeCoinsRecords(extracted.coins)
-                                : (Array.isArray(extracted.coins) ? extracted.coins : []);
-                            await db.coins.clear();
-                            await db.coins.bulkPut(normalizedCoins);
+                        if (db.tokens) {
+                            const normalizedTokens = (typeof db.normalizeTokensRecords === 'function')
+                                ? db.normalizeTokensRecords(extracted.tokens)
+                                : (Array.isArray(extracted.tokens) ? extracted.tokens : []);
+                            await db.tokens.clear();
+                            await db.tokens.bulkPut(normalizedTokens);
                         }
 
                         if (db.frozen_days) {
@@ -384,12 +384,12 @@
                             await db.frozen_days.bulkPut(normalizedFrozenDays);
                         }
 
-                        if (db.coin_events) {
-                            const normalizedCoinEvents = (typeof db.normalizeCoinEventRecords === 'function')
-                                ? db.normalizeCoinEventRecords(extracted.coin_events)
-                                : (Array.isArray(extracted.coin_events) ? extracted.coin_events : []);
-                            await db.coin_events.clear();
-                            await db.coin_events.bulkPut(normalizedCoinEvents);
+                        if (db.token_events) {
+                            const normalizedTokenEvents = (typeof db.normalizeTokenEventRecords === 'function')
+                                ? db.normalizeTokenEventRecords(extracted.token_events)
+                                : (Array.isArray(extracted.token_events) ? extracted.token_events : []);
+                            await db.token_events.clear();
+                            await db.token_events.bulkPut(normalizedTokenEvents);
                         }
                     });
 
@@ -471,7 +471,7 @@
                         }
                 const proceed = isAuto || confirm((typeof GN_I18N !== 'undefined') ? GN_I18N.t('overwrite_confirm') : "This will overwrite all local data with the version from Google Drive. Continue?");
                 if (proceed) {
-                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.coins, db.frozen_days, db.coin_events], async () => {
+                    await db.transaction('rw', [db.catalog_exercises, db.catalog_images, db.custom_exercises, db.custom_images, db.routines, db.history, db.weights, db.tokens, db.frozen_days, db.token_events], async () => {
                         await db.catalog_images.clear();
                         let normalizedCatalogImages = null;
                         if (data.catalog_images) {
@@ -539,12 +539,12 @@
                             console.info('[Restore UI] weights write complete', { newCount });
                         }
 
-                        if (db.coins) {
-                            const normalizedCoins = (typeof db.normalizeCoinsRecords === 'function')
-                                ? db.normalizeCoinsRecords(data.coins)
-                                : (Array.isArray(data.coins) ? data.coins : []);
-                            await db.coins.clear();
-                            await db.coins.bulkPut(normalizedCoins);
+                        if (db.tokens) {
+                            const normalizedTokens = (typeof db.normalizeTokensRecords === 'function')
+                                ? db.normalizeTokensRecords(data.tokens)
+                                : (Array.isArray(data.tokens) ? data.tokens : []);
+                            await db.tokens.clear();
+                            await db.tokens.bulkPut(normalizedTokens);
                         }
 
                         if (db.frozen_days) {
@@ -555,12 +555,12 @@
                             await db.frozen_days.bulkPut(normalizedFrozenDays);
                         }
 
-                        if (db.coin_events) {
-                            const normalizedCoinEvents = (typeof db.normalizeCoinEventRecords === 'function')
-                                ? db.normalizeCoinEventRecords(data.coin_events)
-                                : (Array.isArray(data.coin_events) ? data.coin_events : []);
-                            await db.coin_events.clear();
-                            await db.coin_events.bulkPut(normalizedCoinEvents);
+                        if (db.token_events) {
+                            const normalizedTokenEvents = (typeof db.normalizeTokenEventRecords === 'function')
+                                ? db.normalizeTokenEventRecords(data.token_events)
+                                : (Array.isArray(data.token_events) ? data.token_events : []);
+                            await db.token_events.clear();
+                            await db.token_events.bulkPut(normalizedTokenEvents);
                         }
                     });
 
@@ -704,7 +704,7 @@
                 try {
                     await db.history.clear();
                     if (db.frozen_days) await db.frozen_days.clear();
-                    if (db.coin_events) await db.coin_events.clear();
+                    if (db.token_events) await db.token_events.clear();
                 } catch (e) { console.error('[UI] failed to clear history', e); throw e; }
                 // Try to sync the removal to Drive
                 try {

@@ -143,20 +143,20 @@ db.version(13).upgrade(async (tx) => {
     }
 });
 
-const COINS_WALLET_ID = 1;
+const TOKENS_WALLET_ID = 1;
 
-function createDefaultCoinsRecord(now = new Date().toISOString()) {
+function createDefaultTokensRecord(now = new Date().toISOString()) {
     return {
-        id: COINS_WALLET_ID,
+        id: TOKENS_WALLET_ID,
         balance: 0,
         createdAt: now,
         updatedAt: now
     };
 }
 
-function normalizeCoinsRecords(records) {
+function normalizeTokensRecords(records) {
     if (!Array.isArray(records) || records.length === 0) {
-        return [createDefaultCoinsRecord()];
+        return [createDefaultTokensRecord()];
     }
 
     const normalized = records
@@ -166,14 +166,14 @@ function normalizeCoinsRecords(records) {
             const balance = Number.isFinite(Number(record.balance)) ? Math.max(0, Number(record.balance)) : 0;
             return {
                 ...record,
-                id: record.id !== undefined && record.id !== null ? record.id : COINS_WALLET_ID,
+                id: record.id !== undefined && record.id !== null ? record.id : TOKENS_WALLET_ID,
                 balance,
                 createdAt: record.createdAt || now,
                 updatedAt: record.updatedAt || now
             };
         });
 
-    return normalized.length > 0 ? normalized : [createDefaultCoinsRecord()];
+    return normalized.length > 0 ? normalized : [createDefaultTokensRecord()];
 }
 
 function isValidDateKey(dateKey) {
@@ -208,25 +208,25 @@ function normalizeFrozenDayRecords(records) {
         });
 }
 
-function createCoinEventRecord(event, now = new Date().toISOString()) {
+function createTokenEventRecord(event, now = new Date().toISOString()) {
     const milestone = Number.isFinite(Number(event && event.milestone)) ? Math.max(0, Number(event.milestone)) : 0;
     return {
         id: String(event && event.id ? event.id : ''),
         type: String(event && event.type ? event.type : 'streak_milestone'),
         date: (event && isValidDateKey(event.date)) ? event.date : '',
         milestone,
-        coinsDelta: Number.isFinite(Number(event && event.coinsDelta)) ? Number(event.coinsDelta) : 0,
+        tokensDelta: Number.isFinite(Number(event && event.tokensDelta)) ? Number(event.tokensDelta) : 0,
         createdAt: (event && event.createdAt) || now,
         updatedAt: (event && event.updatedAt) || now
     };
 }
 
-function normalizeCoinEventRecords(records) {
+function normalizeTokenEventRecords(records) {
     if (!Array.isArray(records) || records.length === 0) return [];
     const seen = new Set();
     return records
         .filter(record => record && typeof record === 'object')
-        .map(record => createCoinEventRecord(record))
+        .map(record => createTokenEventRecord(record))
         .filter(record => record.id && record.date && !seen.has(record.id))
         .filter(record => {
             seen.add(record.id);
@@ -249,7 +249,7 @@ db.version(14).upgrade(async (tx) => {
     try {
         const coinsTable = tx.table('coins');
         const count = await coinsTable.count();
-        if (count === 0) await coinsTable.add(createDefaultCoinsRecord());
+        if (count === 0) await coinsTable.add(createDefaultTokensRecord());
     } catch (err) {
         console.warn('[DB Migration] coins migration failed', err);
     }
@@ -277,7 +277,20 @@ db.version(16).stores({
     weights: 'date, weight',
     coins: 'id, balance',
     frozen_days: 'date, createdAt',
-    coin_events: 'id, date, type, milestone'
+    token_events: 'id, date, type, milestone'
+});
+
+db.version(17).stores({
+    catalog_exercises: '++id, name, namePT, type, imageId',
+    catalog_images: '++id',
+    custom_exercises: '++id, name, namePT, type, imageId',
+    custom_images: '++id',
+    routines: '++id, name, exerciseIds',
+    history: '++id, exerciseId, weight, reps, date, sessionId',
+    weights: 'date, weight',
+    tokens: 'id, balance',
+    frozen_days: 'date, createdAt',
+    token_events: 'id, date, type, milestone'
 });
 
 // Canonical list of available exercise types used across the app
@@ -341,12 +354,12 @@ function sanitizeCatalogImages(images) {
 
 db.isImageValid = isImageValid;
 db.sanitizeCatalogImages = sanitizeCatalogImages;
-db.createDefaultCoinsRecord = createDefaultCoinsRecord;
-db.normalizeCoinsRecords = normalizeCoinsRecords;
+db.createDefaultTokensRecord = createDefaultTokensRecord;
+db.normalizeTokensRecords = normalizeTokensRecords;
 db.createFrozenDayRecord = createFrozenDayRecord;
 db.normalizeFrozenDayRecords = normalizeFrozenDayRecords;
-db.createCoinEventRecord = createCoinEventRecord;
-db.normalizeCoinEventRecords = normalizeCoinEventRecords;
+db.createTokenEventRecord = createTokenEventRecord;
+db.normalizeTokenEventRecords = normalizeTokenEventRecords;
 
 // Migration: remove exercises with invalid/undefined types or missing required fields
 async function cleanInvalidExerciseTypes() {
@@ -386,14 +399,14 @@ async function ensureDbOpen() {
     if (!db.isOpen()) await db.open();
 }
 
-async function ensureCoinsInitialized() {
+async function ensureTokensInitialized() {
     await ensureDbOpen();
-    if (!db.coins) return;
-    const count = await db.coins.count();
-    if (count === 0) await db.coins.add(createDefaultCoinsRecord());
+    if (!db.tokens) return;
+    const count = await db.tokens.count();
+    if (count === 0) await db.tokens.add(createDefaultTokensRecord());
 }
 
-db.ensureCoinsInitialized = ensureCoinsInitialized;
+db.ensureTokensInitialized = ensureTokensInitialized;
 
 async function getEffectiveWorkoutDates() {
     await ensureDbOpen();
@@ -409,11 +422,11 @@ async function getEffectiveWorkoutDates() {
 
 async function freezeDay(dateKey) {
     await ensureDbOpen();
-    if (!isValidDateKey(dateKey) || !db.history || !db.coins || !db.frozen_days) {
+    if (!isValidDateKey(dateKey) || !db.history || !db.tokens || !db.frozen_days) {
         return { ok: false, reason: 'invalid' };
     }
 
-    return db.transaction('rw', [db.history, db.coins, db.frozen_days], async () => {
+    return db.transaction('rw', [db.history, db.tokens, db.frozen_days], async () => {
         const historyCount = await db.history.where('date').equals(dateKey).count();
         if (historyCount > 0) return { ok: false, reason: 'has_history' };
 
@@ -421,13 +434,13 @@ async function freezeDay(dateKey) {
         if (alreadyFrozen) return { ok: false, reason: 'already_frozen' };
 
         const now = new Date().toISOString();
-        const wallet = (await db.coins.get(COINS_WALLET_ID)) || createDefaultCoinsRecord(now);
+        const wallet = (await db.tokens.get(TOKENS_WALLET_ID)) || createDefaultTokensRecord(now);
         const balance = Math.max(0, Number(wallet.balance) || 0);
-        if (balance <= 0) return { ok: false, reason: 'no_coins' };
+        if (balance <= 0) return { ok: false, reason: 'no_tokens' };
 
-        await db.coins.put({
+        await db.tokens.put({
             ...wallet,
-            id: COINS_WALLET_ID,
+            id: TOKENS_WALLET_ID,
             balance: balance - 1,
             createdAt: wallet.createdAt || now,
             updatedAt: now
@@ -594,7 +607,7 @@ async function initializeCatalog() {
 
 // Run migrations then initialize catalog on load
 (async function runStartup() {
-    try { await ensureCoinsInitialized(); } catch (e) { console.error('Coins init error', e); }
+    try { await ensureTokensInitialized(); } catch (e) { console.error('Tokens init error', e); }
     try { await cleanInvalidExerciseTypes(); } catch (e) { console.error('Migration error', e); }
     try { await initializeCatalog(); } catch (e) { console.error('Catalog init error', e); }
 })();

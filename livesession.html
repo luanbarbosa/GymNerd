@@ -27,7 +27,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
-    <script src="coins-logic.js"></script>
+    <script src="tokens-logic.js"></script>
     <script src="gn-i18n.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
@@ -1192,7 +1192,7 @@
         let _streakConfettiRunning = false;
         let _streakRecordBreaking = false;
         let _streakRecordsCache = null;
-        let _coinRewardPreviewCache = null;
+        let _tokenRewardPreviewCache = null;
 
         function getTodayDateKey() {
             const now = new Date();
@@ -1219,18 +1219,18 @@
         function clearStreakSnapshot() {
             _streakRecordsCache = null;
             _streakRecordBreaking = false;
-            _coinRewardPreviewCache = null;
+            _tokenRewardPreviewCache = null;
         }
 
-        async function loadCoinRewardPreview(forceRefresh = false, overrideTodayStr) {
-            if (!forceRefresh && _coinRewardPreviewCache) return _coinRewardPreviewCache;
+        async function loadTokenRewardPreview(forceRefresh = false, overrideTodayStr) {
+            if (!forceRefresh && _tokenRewardPreviewCache) return _tokenRewardPreviewCache;
             const todayStr = overrideTodayStr || getTodayDateKey();
-            if (!window.GNCoinsLogic || typeof GNCoinsLogic.getCoinMilestonePreview !== 'function') {
-                _coinRewardPreviewCache = { ok: false, wouldAward: false, awarded: 0 };
-                return _coinRewardPreviewCache;
+            if (!window.GNTokensLogic || typeof GNTokensLogic.getTokenMilestonePreview !== 'function') {
+                _tokenRewardPreviewCache = { ok: false, wouldAward: false, awarded: 0 };
+                return _tokenRewardPreviewCache;
             }
-            _coinRewardPreviewCache = await GNCoinsLogic.getCoinMilestonePreview(db, todayStr);
-            return _coinRewardPreviewCache;
+            _tokenRewardPreviewCache = await GNTokensLogic.getTokenMilestonePreview(db, todayStr);
+            return _tokenRewardPreviewCache;
         }
 
         function startStreakConfetti() {
@@ -1446,12 +1446,12 @@
                             sub.textContent = subText;
                             msgEl.appendChild(sub);
                         }
-                        const coinPreview = await loadCoinRewardPreview(false);
-                        if (coinPreview && coinPreview.wouldAward && Number(coinPreview.awarded) > 0) {
+                        const tokenPreview = await loadTokenRewardPreview(false);
+                        if (tokenPreview && tokenPreview.wouldAward && Number(tokenPreview.awarded) > 0) {
                             const rewardTemplate = (GN_I18N && GN_I18N.t)
-                                ? (GN_I18N.t('finished_coin_reward_preview') || 'You will earn {n} Rest Token')
-                                : 'You will earn {n} Rest Token';
-                            const rewardText = rewardTemplate.replace('{n}', String(coinPreview.awarded));
+                                ? (GN_I18N.t('finished_token_reward_preview') || 'You will earn {n} Token')
+                                : 'You will earn {n} Token';
+                            const rewardText = rewardTemplate.replace('{n}', String(tokenPreview.awarded));
                             const reward = document.createElement('span');
                             reward.className = 'finished-message-subtext coin-reward-preview';
                             reward.textContent = rewardText;
@@ -3014,7 +3014,7 @@
 
                 // Calculate streak record before saving (Avoid uniqueKeys on iOS)
                 const { oldRecord, newRecord } = await loadStreakSnapshot(true, todayStr);
-                const coinRewardPreview = await loadCoinRewardPreview(true, todayStr);
+                const tokenRewardPreview = await loadTokenRewardPreview(true, todayStr);
 
                 // Update the workout template with the values used in this session only if user opted in
                 const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
@@ -3078,11 +3078,11 @@
                     await db.history.bulkAdd(logs);
                 }
 
-                if (logs.length > 0 && coinRewardPreview && coinRewardPreview.wouldAward && window.GNCoinsLogic && typeof GNCoinsLogic.maybeAwardCoinMilestone === 'function') {
+                if (logs.length > 0 && tokenRewardPreview && tokenRewardPreview.wouldAward && window.GNTokensLogic && typeof GNTokensLogic.maybeAwardTokenMilestone === 'function') {
                     try {
-                        await GNCoinsLogic.maybeAwardCoinMilestone(db, todayStr);
+                        await GNTokensLogic.maybeAwardTokenMilestone(db, todayStr);
                     } catch (e) {
-                        console.error('Failed to award coin milestone after finishing live session', e);
+                        console.error('Failed to award token milestone after finishing live session', e);
                     }
                 }
 

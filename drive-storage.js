@@ -236,13 +236,13 @@ const DriveStorage = {
             console.info('[DriveStorage] sync start');
             if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...');
 
-            if (db && typeof db.ensureCoinsInitialized === 'function') {
-                await db.ensureCoinsInitialized();
+            if (db && typeof db.ensureTokensInitialized === 'function') {
+                await db.ensureTokensInitialized();
             }
             
             const data = {};
             // Catalog images and exercises are always synced from URL source and should not have destructive changes
-            const tables = tableNames || ['custom_exercises', 'custom_images', 'routines', 'history', 'weights', 'coins', 'frozen_days', 'coin_events'];
+            const tables = tableNames || ['custom_exercises', 'custom_images', 'routines', 'history', 'weights', 'tokens', 'frozen_days', 'token_events'];
             
             for (const table of tables) {
                 if (db[table]) {
