@@ -1449,8 +1449,8 @@
                         const coinPreview = await loadCoinRewardPreview(false);
                         if (coinPreview && coinPreview.wouldAward && Number(coinPreview.awarded) > 0) {
                             const rewardTemplate = (GN_I18N && GN_I18N.t)
-                                ? (GN_I18N.t('finished_coin_reward_preview') || 'You will earn {n} coin')
-                                : 'You will earn {n} coin';
+                                ? (GN_I18N.t('finished_coin_reward_preview') || 'You will earn {n} Rest Token')
+                                : 'You will earn {n} Rest Token';
                             const rewardText = rewardTemplate.replace('{n}', String(coinPreview.awarded));
                             const reward = document.createElement('span');
                             reward.className = 'finished-message-subtext coin-reward-preview';

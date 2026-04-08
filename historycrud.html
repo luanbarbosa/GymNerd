@@ -708,8 +708,8 @@
             if (awardedCoins > 0) {
                 try {
                     const template = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
-                        ? (GN_I18N.t('coin_milestone_reward') || 'You won {n} coin!')
-                        : 'You won {n} coin!';
+                        ? (GN_I18N.t('coin_milestone_reward') || 'You won {n} Rest Token!')
+                        : 'You won {n} Rest Token!';
                     alert(template.replace('{n}', String(awardedCoins)));
                 } catch (e) {
                     console.error('Failed to alert coin milestone reward', e);

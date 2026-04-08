@@ -849,17 +849,26 @@
 		.coins-banner {
 			display: flex;
 			flex-direction: column;
-			gap: 14px;
+			gap: 0;
 			width: 100%;
 			max-width: none;
 			margin: 12px 0;
 			box-sizing: border-box;
 			background-color: var(--card-background);
 			color: var(--text);
-			padding: 16px;
+			padding: 0;
 			border-radius: 12px;
+			border: 1px solid rgba(255, 255, 255, 0.05);
 			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
 			align-items: flex-start;
+			overflow: hidden;
+		}
+
+		.coins-banner .streak-title {
+			width: 100%;
+			box-sizing: border-box;
+			padding: 16px 16px 2px;
+			margin: 0;
 		}
 
 		.coins-banner__content {
@@ -868,6 +877,8 @@
 			justify-content: space-between;
 			gap: 16px;
 			width: 100%;
+			box-sizing: border-box;
+			padding: 0 16px 16px;
 		}
 
 		.coins-banner__summary {
@@ -875,6 +886,7 @@
 			align-items: center;
 			gap: 14px;
 			min-width: 0;
+			flex: 1;
 		}
 
 		.coins-banner__icon {
@@ -896,8 +908,7 @@
 
 		.coins-banner__text {
 			display: flex;
-			flex-direction: column;
-			gap: 4px;
+			align-items: center;
 			min-width: 0;
 		}
 
@@ -906,9 +917,11 @@
 			line-height: 1;
 			font-weight: 900;
 			display: flex;
-			align-items: baseline;
+			align-items: center;
 			gap: 8px;
-			flex-wrap: wrap;
+			flex-wrap: nowrap;
+			width: auto;
+			min-width: 0;
 		}
 
 		.coins-banner__count-label {
@@ -919,12 +932,6 @@
 			text-transform: uppercase;
 		}
 
-		.coins-banner__hint {
-			color: var(--text-dim);
-			font-size: 0.92rem;
-			line-height: 1.4;
-		}
-
 		.coins-banner__freeze {
 			appearance: none;
 			border: 0;
@@ -933,6 +940,10 @@
 			font-size: 0.95rem;
 			font-weight: 800;
 			line-height: 1;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
 			color: #1f2937;
 			background: linear-gradient(135deg, #fbbf24, #f59e0b);
 			box-shadow: 0 10px 24px rgba(245, 158, 11, 0.2);
@@ -1372,7 +1383,8 @@
 		<div id="body">
 			<div style="padding: 0 20px;">
 				<div id="coins-banner" class="coins-banner" role="region" aria-live="polite">
-					<div class="streak-title" data-i18n="coins_title">Coins</div>
+					<div class="streak-title" data-i18n="coins_title">Rest Token</div>
+					<div class="coins-banner__hint weight-change-subtitle" data-i18n="coins_hint">Free passes available to protect your streak.</div>
 					<div class="coins-banner__content">
 						<div class="coins-banner__summary">
 							<div class="coins-banner__icon" aria-hidden="true">
@@ -1381,12 +1393,11 @@
 							<div class="coins-banner__text">
 								<div class="coins-banner__count">
 									<span id="coins-number">0</span>
-									<span class="coins-banner__count-label" data-i18n="coins_count_label">coins</span>
+									<span id="coins-count-label" class="coins-banner__count-label">Tokens</span>
 								</div>
-								<div class="coins-banner__hint" data-i18n="coins_hint">Free passes available to protect your streak.</div>
 							</div>
 						</div>
-						<button id="freeze-day-btn" type="button" class="coins-banner__freeze" data-i18n="freeze_day">Freeze day</button>
+						<button id="freeze-day-btn" type="button" class="coins-banner__freeze" data-i18n="freeze_day">Rest today</button>
 					</div>
 				</div>
 
@@ -1736,6 +1747,7 @@
 					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 					const banner = document.getElementById('coins-banner');
 					const numberEl = document.getElementById('coins-number');
+					const countLabelEl = document.getElementById('coins-count-label');
 					const freezeBtn = document.getElementById('freeze-day-btn');
 					if (!banner || !numberEl) return;
 					let historyCount = 0;
@@ -1761,6 +1773,9 @@
 					} catch (e) { balance = 0; }
 
 					numberEl.textContent = String(balance);
+					if (countLabelEl) {
+						countLabelEl.textContent = (Number(balance) === 1) ? 'Token' : 'Tokens';
+					}
 					if (freezeBtn) {
 						let todayHistoryCount = 0;
 						let isTodayFrozen = false;
@@ -1773,8 +1788,8 @@
 						freezeBtn.addEventListener('click', async () => {
 							try {
 								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
-									? (GN_I18N.t('freeze_day_confirm') || 'Spend 1 coin to freeze today?')
-									: 'Spend 1 coin to freeze today?';
+									? (GN_I18N.t('freeze_day_confirm') || 'Spend 1 Rest Token to freeze today?')
+									: 'Spend 1 Rest Token to freeze today?';
 								if (!confirm(message)) return;
 								const todayKey = dateToYMD(new Date());
 								if (db && typeof db.freezeDay === 'function') {
