@@ -603,7 +603,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: min(500px, calc(100% - 32px));
-            padding: 12px 0 0;
+            padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px));
             box-sizing: border-box;
             display:flex;
             flex-direction: column;
@@ -612,8 +612,7 @@
             align-items: stretch;
             margin: 0 auto;
         }
-        .finished-bottom-actions .finish-btn { margin-top: 0; width: 100%; margin-bottom: 16px; padding: 12px 12px; }
-        .ios-bottom-padding .finished-bottom-actions .finish-btn { margin-bottom: 0; }
+        .finished-bottom-actions .finish-btn { margin-top: 0; width: 100%; margin-bottom: 0; padding: 12px 12px; }
         /* Exercise progress graph styles */
         .exercise-graph { padding:8px 18px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; overflow:visible; }
         #playerView {
