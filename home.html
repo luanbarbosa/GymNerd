@@ -745,6 +745,7 @@
 		.streak-banner {
 			display: flex;
 			flex-direction: column;
+			position: relative;
 			width: 100%;
 			max-width: none;
 			margin: 12px 0;
@@ -799,8 +800,43 @@
 			font-size: 2.2rem;
 			line-height: 1;
 			display: flex;
+			position: relative;
 			align-items: baseline;
 			gap: 8px;
+		}
+
+		.streak-token-rain {
+			position: fixed;
+			inset: 0;
+			pointer-events: none;
+			overflow: hidden;
+			z-index: 1400;
+			display: none;
+		}
+
+		.streak-token-rain__coin {
+			position: absolute;
+			width: 28px;
+			height: 28px;
+			opacity: 0.95;
+			animation-name: streakTokenRainFall;
+			animation-iteration-count: 1;
+			animation-timing-function: linear;
+			animation-fill-mode: forwards;
+			will-change: transform;
+		}
+
+		.streak-token-rain__coin img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: contain;
+			filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.22));
+		}
+
+		@keyframes streakTokenRainFall {
+			0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+			100% { transform: translate3d(var(--token-drift, 0px), 140vh, 0) rotate(360deg); }
 		}
 
 		.streak-banner .streak-days {
@@ -1618,6 +1654,66 @@
 
 			try { updatePendingButtonVisibility(); } catch (e) { }
 
+			const HOME_TOKEN_RAIN_ICONS = ['icons/coin1.svg', 'icons/coin2.svg', 'icons/coin3.svg', 'icons/coin4.svg', 'icons/coin5.svg', 'icons/coin6.svg'];
+			const HOME_TOKEN_RAIN_COUNT = 16;
+			let _homeTokenRainTimer = null;
+
+			async function playTokenSpendRain() {
+				try {
+					let rain = document.body.querySelector('.streak-token-rain');
+					if (!rain) {
+						rain = document.createElement('div');
+						rain.className = 'streak-token-rain';
+						rain.setAttribute('aria-hidden', 'true');
+						document.body.appendChild(rain);
+					}
+					if (_homeTokenRainTimer) {
+						clearTimeout(_homeTokenRainTimer);
+						_homeTokenRainTimer = null;
+					}
+
+					rain.innerHTML = '';
+					rain.style.display = 'block';
+					const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+					let longestRuntimeMs = 0;
+
+					for (let i = 0; i < HOME_TOKEN_RAIN_COUNT; i++) {
+						const piece = document.createElement('span');
+						piece.className = 'streak-token-rain__coin';
+						const laneWidth = 100 / HOME_TOKEN_RAIN_COUNT;
+						const laneCenter = (i + 0.5) * laneWidth;
+						const laneJitter = (Math.random() - 0.5) * laneWidth * 0.65;
+						piece.style.left = `${Math.max(0, Math.min(100, laneCenter + laneJitter))}%`;
+						piece.style.top = `${-60 - Math.random() * 180}px`;
+						const size = 34 + Math.random() * 24;
+						piece.style.width = `${size}px`;
+						piece.style.height = `${size}px`;
+						const durationSeconds = 2.05 + Math.random() * 1.05;
+						const delaySeconds = Math.random() * 0.18;
+						piece.style.animationDuration = `${durationSeconds}s`;
+						piece.style.animationDelay = `${delaySeconds}s`;
+						piece.style.setProperty('--token-drift', `${-28 + Math.random() * 56}px`);
+						piece.style.opacity = `${0.72 + Math.random() * 0.26}`;
+						longestRuntimeMs = Math.max(longestRuntimeMs, Math.ceil((delaySeconds + durationSeconds) * 1000));
+
+						const img = document.createElement('img');
+						img.src = `${basePath}${HOME_TOKEN_RAIN_ICONS[Math.floor(Math.random() * HOME_TOKEN_RAIN_ICONS.length)]}`;
+						img.alt = '';
+						img.setAttribute('aria-hidden', 'true');
+						piece.appendChild(img);
+						rain.appendChild(piece);
+					}
+
+					_homeTokenRainTimer = setTimeout(() => {
+						rain.innerHTML = '';
+						rain.style.display = 'none';
+						_homeTokenRainTimer = null;
+					}, longestRuntimeMs + 160);
+				} catch (e) {
+					console.error('playTokenSpendRain failed', e);
+				}
+			}
+
 			async function renderWeekDots() {
 				try {
 					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
@@ -1868,6 +1964,7 @@
 									? (GN_I18N.t('freeze_day_confirm') || 'Spend 1 Token to freeze today?')
 									: 'Spend 1 Token to freeze today?';
 								if (!confirm(message)) return;
+								try { playTokenSpendRain(); } catch (e) {}
 								const todayKey = dateToYMD(new Date());
 								if (db && typeof db.freezeDay === 'function') {
 									const result = await db.freezeDay(todayKey);
