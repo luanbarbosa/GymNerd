@@ -75,9 +75,39 @@
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
         .day-name { font-size: 0.6rem; text-align: center; color: var(--text-dim); font-weight: bold; padding-bottom: 4px; }
-        .calendar-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(255,255,255,0.05); }
-        .calendar-day img { width: 18px; height: 18px; object-fit: contain; }
-        .calendar-day__num { line-height: 1; }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            align-items: stretch;
+            justify-items: center;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            overflow: hidden;
+            padding: 2px 1px 3px;
+            box-sizing: border-box;
+        }
+        .calendar-day__icon {
+            width: 23px;
+            height: 23px;
+            object-fit: contain;
+            opacity: 0.95;
+            align-self: center;
+        }
+        .calendar-day__num {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            color: inherit;
+            font-size: 0.52rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.01em;
+            min-height: 10px;
+            margin-top: 1px;
+        }
         
         .past-no-workout { color: var(--text-main-color); font-weight: bold; }
         .has-workout { color: var(--text-main-color); font-weight: bold; }
@@ -558,9 +588,9 @@
                     : (isFrozenDay ? "frozen-day" : (dateObj < today ? "past-no-workout" : "future-day"));
                 if (dateObj.getTime() === today.getTime()) status += " today";
                 let icon = '';
-                if (hasWorkout) icon = '<img src="icons/day-done.svg" alt="" aria-hidden="true">';
-                else if (isFrozenDay) icon = '<img src="icons/day-rest.svg" alt="" aria-hidden="true">';
-                else if (dateObj < today) icon = '<img src="icons/day-missed.svg" alt="" aria-hidden="true">';
+                if (hasWorkout) icon = '<img class="calendar-day__icon" src="icons/day-done.svg" alt="" aria-hidden="true">';
+                else if (isFrozenDay) icon = '<img class="calendar-day__icon" src="icons/day-rest.svg" alt="" aria-hidden="true">';
+                else if (dateObj < today) icon = '<img class="calendar-day__icon" src="icons/day-missed.svg" alt="" aria-hidden="true">';
                 grid.innerHTML += `<div class="calendar-day ${status}">${icon}<span class="calendar-day__num">${d}</span></div>`;
             }
         }
