@@ -1,7 +1,7 @@
 (function (global) {
     'use strict';
 
-    const TOKEN_MILESTONE_INTERVAL = 3;
+    const TOKEN_MILESTONE_INTERVAL = 2;
     const TOKEN_EVENT_TYPE_STREAK_MILESTONE = 'streak_milestone';
     const TOKENS_WALLET_ID = 1;
 

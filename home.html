@@ -1835,8 +1835,8 @@
 						infoBtn.addEventListener('click', () => {
 							try {
 								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
-									? (GN_I18N.t('tokens_help_text') || 'You earn 1 token every 3 consecutive days of workout. You can rest a day protecting your streak by spending a token.')
-									: 'You earn 1 token every 3 consecutive days of workout. You can rest a day protecting your streak by spending a token.';
+									? (GN_I18N.t('tokens_help_text') || 'You earn 1 token every 2 consecutive days of workout. You can rest a day protecting your streak by spending a token.')
+									: 'You earn 1 token every 2 consecutive days of workout. You can rest a day protecting your streak by spending a token.';
 								alert(message);
 							} catch (e) {
 								console.error('Failed to show tokens help dialog', e);
