@@ -77,36 +77,40 @@
         .day-name { font-size: 0.6rem; text-align: center; color: var(--text-dim); font-weight: bold; padding-bottom: 4px; }
         .calendar-day {
             aspect-ratio: 1;
-            display: grid;
-            grid-template-rows: 1fr auto;
-            align-items: stretch;
-            justify-items: center;
-            border-radius: 4px;
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            border-radius: 5px;
             font-size: 0.7rem;
             border: 1px solid rgba(255,255,255,0.05);
             overflow: hidden;
-            padding: 2px 1px 3px;
+            padding: 4px;
             box-sizing: border-box;
         }
         .calendar-day__icon {
-            width: 23px;
-            height: 23px;
+            position: absolute;
+            right: -7px;
+            bottom: -7px;
+            width: 38px;
+            height: 38px;
             object-fit: contain;
-            opacity: 0.95;
-            align-self: center;
+            opacity: 0.9;
+            pointer-events: none;
         }
         .calendar-day__num {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
+            min-width: 16px;
             color: inherit;
-            font-size: 0.52rem;
+            font-size: 0.56rem;
             font-weight: 800;
             line-height: 1;
             letter-spacing: -0.01em;
-            min-height: 10px;
-            margin-top: 1px;
+            min-height: 16px;
+            padding: 0;
+            z-index: 1;
         }
         
         .past-no-workout { color: var(--text-main-color); font-weight: bold; }
