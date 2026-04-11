@@ -768,61 +768,67 @@
                     </span>
                 `;
             };
-            const aggregateSeriesByDate = (entries, mapper) => {
-                const grouped = new Map();
-                (Array.isArray(entries) ? entries : []).forEach((entry) => {
-                    if (!entry || !entry.date) return;
-                    const value = Number(mapper(entry));
-                    if (!Number.isFinite(value)) return;
-                    if (!grouped.has(entry.date)) grouped.set(entry.date, []);
-                    grouped.get(entry.date).push(value);
+            const getStrengthWeightPerRepSeries = (entries) => (Array.isArray(entries) ? entries : [])
+                .slice()
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map((entry) => {
+                    const weight = Number(entry && entry.weight) || 0;
+                    const reps = (entry && entry.reps !== undefined && entry.reps !== null) ? Number(entry.reps) : 1;
+                    return safeMetricValue(reps > 0 ? weight / reps : weight);
+                });
+            const getCardioMetricSeries = (entries) => {
+                const sortedEntries = (Array.isArray(entries) ? entries : [])
+                    .slice()
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                return {
+                    distance: sortedEntries.map((entry) => safeMetricValue(entry.distance)),
+                    duration: sortedEntries.map((entry) => safeMetricValue(getCardioDurationValue(entry), 0))
+                };
+            };
+            const getGroupEndpointSeries = (exercisesInType, metricBuilder) => {
+                const firstValues = [];
+                const lastValues = [];
+
+                Object.values(exercisesInType || {}).forEach((entries) => {
+                    const series = metricBuilder(entries).filter((value) => Number.isFinite(Number(value)));
+                    if (series.length < 2) return;
+                    firstValues.push(Number(series[0]));
+                    lastValues.push(Number(series[series.length - 1]));
                 });
 
-                return Array.from(grouped.entries())
-                    .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([, values]) => safeMetricValue(values.reduce((sum, value) => sum + value, 0) / values.length));
+                if (!firstValues.length || firstValues.length !== lastValues.length) return [];
+                const avgFirst = safeMetricValue(firstValues.reduce((sum, value) => sum + value, 0) / firstValues.length);
+                const avgLast = safeMetricValue(lastValues.reduce((sum, value) => sum + value, 0) / lastValues.length);
+                return [avgFirst, avgLast];
             };
             const getTypeTrendMeta = (typeKey, exercisesInType) => {
-                const allEntries = Object.values(exercisesInType || {}).flat();
-                if (!allEntries.length) return null;
-
                 const isCardioType = typeKey === 'cardio';
                 if (isCardioType) {
-                    const distanceSeries = aggregateSeriesByDate(allEntries, (entry) => safeMetricValue(entry.distance));
-                    const durationSeries = aggregateSeriesByDate(allEntries, (entry) => safeMetricValue(getCardioDurationValue(entry), 0));
+                    const distanceSeries = getGroupEndpointSeries(exercisesInType, (entries) => getCardioMetricSeries(entries).distance);
+                    const durationSeries = getGroupEndpointSeries(exercisesInType, (entries) => getCardioMetricSeries(entries).duration);
                     const distanceChange = getChangeMeta(distanceSeries, translate('cardio_distance_unit', 'km'));
                     if (distanceChange.state !== 'neutral') return distanceChange;
                     const durationChange = getChangeMeta(durationSeries, translate('cardio_time_unit', 'min'));
-                    return durationChange.state !== 'neutral' ? durationChange : null;
+                    if (durationChange.state !== 'neutral') return durationChange;
+                    return (distanceSeries.length || durationSeries.length) ? distanceChange : null;
                 }
 
-                const weightSeries = aggregateSeriesByDate(allEntries, (entry) => {
-                    const weight = Number(entry && entry.weight) || 0;
-                    const reps = (entry && entry.reps !== undefined && entry.reps !== null) ? Number(entry.reps) : 1;
-                    return reps > 0 ? weight / reps : weight;
-                });
+                const weightSeries = getGroupEndpointSeries(exercisesInType, getStrengthWeightPerRepSeries);
                 const weightChange = getChangeMeta(weightSeries, translate('history_fmt_kg_suffix', 'kg'));
-                return weightChange.state !== 'neutral' ? weightChange : null;
+                return weightSeries.length ? weightChange : null;
             };
             const getTypeProgressBadgesMarkup = (typeKey, exercisesInType) => {
-                const allEntries = Object.values(exercisesInType || {}).flat();
-                if (!allEntries.length) return '';
-
                 const isCardioType = typeKey === 'cardio';
                 if (isCardioType) {
-                    const distanceSeries = aggregateSeriesByDate(allEntries, (entry) => safeMetricValue(entry.distance));
-                    const durationSeries = aggregateSeriesByDate(allEntries, (entry) => safeMetricValue(getCardioDurationValue(entry), 0));
+                    const distanceSeries = getGroupEndpointSeries(exercisesInType, (entries) => getCardioMetricSeries(entries).distance);
+                    const durationSeries = getGroupEndpointSeries(exercisesInType, (entries) => getCardioMetricSeries(entries).duration);
                     return [
                         renderChangeBadge(distanceSeries, translate('cardio_distance_label', 'Distance'), translate('cardio_distance_unit', 'km')),
                         renderChangeBadge(durationSeries, translate('cardio_time_label', 'Time'), translate('cardio_time_unit', 'min'))
                     ].join('');
                 }
 
-                const weightSeries = aggregateSeriesByDate(allEntries, (entry) => {
-                    const weight = Number(entry && entry.weight) || 0;
-                    const reps = (entry && entry.reps !== undefined && entry.reps !== null) ? Number(entry.reps) : 1;
-                    return reps > 0 ? weight / reps : weight;
-                });
+                const weightSeries = getGroupEndpointSeries(exercisesInType, getStrengthWeightPerRepSeries);
                 return renderChangeBadge(weightSeries, '', translate('history_fmt_kg_suffix', 'kg'));
             };
             const stripBadgeIcons = (markup) => String(markup || '').replace(/<span class="material-symbols-outlined" aria-hidden="true">.*?<\/span>/g, '');
