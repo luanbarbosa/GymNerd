@@ -728,7 +728,7 @@
 
                 if (first === 0) {
                     if (delta === 0) return { state: 'neutral', icon: 'trending_flat', text: '0%', percentage: 0, deltaText };
-                    return { state: delta > 0 ? 'positive' : 'negative', icon: delta > 0 ? 'arrow_upward' : 'arrow_downward', text: 'N/A', percentage: null, deltaText };
+                    return { state: delta > 0 ? 'positive' : 'negative', icon: delta > 0 ? 'trending_up' : 'trending_down', text: 'N/A', percentage: null, deltaText };
                 }
 
                 const percentage = (delta / Math.abs(first)) * 100;
@@ -739,7 +739,7 @@
 
                 return {
                     state: rounded > 0 ? 'positive' : 'negative',
-                    icon: rounded > 0 ? 'arrow_upward' : 'arrow_downward',
+                    icon: rounded > 0 ? 'trending_up' : 'trending_down',
                     text: `${rounded > 0 ? '+' : ''}${rounded}%`,
                     percentage: rounded,
                     deltaText
