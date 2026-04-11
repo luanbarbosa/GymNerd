@@ -19,6 +19,10 @@
         return [...new Set((Array.isArray(dateKeys) ? dateKeys : []).filter(isValidDateKey))].sort();
     }
 
+    function toDayNumberSet(dateKeys) {
+        return new Set(getSortedUniqueDateKeys(dateKeys).map(dateKeyToDayNumber).filter(Number.isFinite));
+    }
+
     function getStreakLengthEndingAt(dateKeys, targetDateKey) {
         if (!isValidDateKey(targetDateKey)) return 0;
         const dayNumbers = new Set(getSortedUniqueDateKeys(dateKeys).map(dateKeyToDayNumber).filter(Number.isFinite));
@@ -47,11 +51,112 @@
         return `${TOKEN_EVENT_TYPE_STREAK_MILESTONE}:${dateKey}:${milestone}`;
     }
 
-    function evaluateTokenMilestone(dateKeys, dateKey) {
-        const streakLength = getStreakLengthEndingAt(dateKeys, dateKey);
+    function countWorkoutDaysInCurrentProtectedStreak(workoutDateKeys, effectiveDateKeys, targetDateKey) {
+        if (!isValidDateKey(targetDateKey)) return 0;
+
+        const workoutDays = toDayNumberSet(workoutDateKeys);
+        const effectiveDays = toDayNumberSet(effectiveDateKeys);
+        const targetDay = dateKeyToDayNumber(targetDateKey);
+        if (!Number.isFinite(targetDay) || !workoutDays.has(targetDay) || !effectiveDays.has(targetDay)) return 0;
+
+        let cursor = targetDay;
+        while (effectiveDays.has(cursor - 1)) {
+            cursor -= 1;
+        }
+
+        let workoutCount = 0;
+        for (let day = cursor; day <= targetDay; day += 1) {
+            if (workoutDays.has(day)) workoutCount += 1;
+        }
+        return workoutCount;
+    }
+
+    function evaluateTokenMilestone(workoutDateKeys, effectiveDateKeys, dateKey) {
+        const streakLength = countWorkoutDaysInCurrentProtectedStreak(workoutDateKeys, effectiveDateKeys, dateKey);
         const milestone = getMilestoneForStreakLength(streakLength);
         const wouldAward = milestone > 0 && isMilestoneBoundary(streakLength);
         return { streakLength, milestone, wouldAward };
+    }
+
+    async function reconcileTokenMilestones(db) {
+        if (!db || !db.history || !db.tokens || !db.token_events) {
+            return { ok: false, reason: 'invalid', awarded: 0 };
+        }
+
+        if (typeof global.ensureDbOpen === 'function') {
+            await global.ensureDbOpen();
+        }
+        if (typeof db.ensureTokensInitialized === 'function') {
+            await db.ensureTokensInitialized();
+        }
+
+        const historyDates = getSortedUniqueDateKeys((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey));
+        if (historyDates.length === 0) {
+            return { ok: true, awarded: 0 };
+        }
+
+        const effectiveDates = db.getEffectiveWorkoutDates
+            ? await db.getEffectiveWorkoutDates()
+            : historyDates;
+
+        return db.transaction('rw', [db.tokens, db.token_events], async () => {
+            const existingEvents = new Set(
+                (await db.token_events.toArray())
+                    .map(event => event && event.id)
+                    .filter(Boolean)
+            );
+
+            const now = new Date().toISOString();
+            const defaultWallet = (typeof db.createDefaultTokensRecord === 'function')
+                ? db.createDefaultTokensRecord(now)
+                : { id: TOKENS_WALLET_ID, balance: 0, createdAt: now, updatedAt: now };
+            const wallet = (await db.tokens.get(TOKENS_WALLET_ID)) || defaultWallet;
+            let nextBalance = Math.max(0, Number(wallet.balance) || 0);
+            let awarded = 0;
+
+            for (const historyDate of historyDates) {
+                const preview = evaluateTokenMilestone(historyDates, effectiveDates, historyDate);
+                if (!preview.wouldAward) continue;
+
+                const eventId = buildMilestoneEventId(historyDate, preview.milestone);
+                if (existingEvents.has(eventId)) continue;
+
+                const eventRecord = (typeof db.createTokenEventRecord === 'function')
+                    ? db.createTokenEventRecord({
+                        id: eventId,
+                        type: TOKEN_EVENT_TYPE_STREAK_MILESTONE,
+                        date: historyDate,
+                        milestone: preview.milestone,
+                        tokensDelta: 1
+                    }, now)
+                    : {
+                        id: eventId,
+                        type: TOKEN_EVENT_TYPE_STREAK_MILESTONE,
+                        date: historyDate,
+                        milestone: preview.milestone,
+                        tokensDelta: 1,
+                        createdAt: now,
+                        updatedAt: now
+                    };
+
+                await db.token_events.put(eventRecord);
+                existingEvents.add(eventId);
+                nextBalance += 1;
+                awarded += 1;
+            }
+
+            if (awarded > 0) {
+                await db.tokens.put({
+                    ...wallet,
+                    id: TOKENS_WALLET_ID,
+                    balance: nextBalance,
+                    createdAt: wallet.createdAt || now,
+                    updatedAt: now
+                });
+            }
+
+            return { ok: true, awarded, balance: nextBalance };
+        });
     }
 
     async function getTokenMilestonePreview(db, dateKey) {
@@ -63,16 +168,22 @@
             await global.ensureDbOpen();
         }
 
+        const historyDates = getSortedUniqueDateKeys((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey));
         const effectiveDates = db.getEffectiveWorkoutDates
             ? await db.getEffectiveWorkoutDates()
-            : [...new Set((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey))].sort();
+            : historyDates;
 
-        const effectiveDateSet = new Set(getSortedUniqueDateKeys(effectiveDates));
-        if (effectiveDateSet.has(dateKey)) {
-            return { ok: true, wouldAward: false, awarded: 0, streakLength: 0, milestone: 0, reason: 'already_effective' };
+        const historyDateSet = new Set(historyDates);
+        if (historyDateSet.has(dateKey)) {
+            return { ok: true, wouldAward: false, awarded: 0, streakLength: 0, milestone: 0, reason: 'already_logged' };
         }
 
-        const preview = evaluateTokenMilestone([...effectiveDateSet, dateKey], dateKey);
+        const effectiveDateSet = new Set(getSortedUniqueDateKeys(effectiveDates));
+        const preview = evaluateTokenMilestone(
+            [...historyDateSet, dateKey],
+            [...effectiveDateSet, dateKey],
+            dateKey
+        );
         return {
             ok: true,
             wouldAward: preview.wouldAward,
@@ -94,11 +205,12 @@
             await db.ensureTokensInitialized();
         }
 
+        const historyDates = getSortedUniqueDateKeys((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey));
         const effectiveDates = db.getEffectiveWorkoutDates
             ? await db.getEffectiveWorkoutDates()
-            : [...new Set((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey))].sort();
+            : historyDates;
 
-        const preview = evaluateTokenMilestone(effectiveDates, dateKey);
+        const preview = evaluateTokenMilestone(historyDates, effectiveDates, dateKey);
         const { streakLength, milestone, wouldAward } = preview;
         if (!wouldAward) {
             return { ok: true, awarded: 0, streakLength, milestone };
@@ -161,7 +273,8 @@
         buildMilestoneEventId,
         evaluateTokenMilestone,
         getTokenMilestonePreview,
-        maybeAwardTokenMilestone
+        maybeAwardTokenMilestone,
+        reconcileTokenMilestones
     };
 
     global.GNTokensLogic = api;
@@ -169,6 +282,9 @@
     if (global.db) {
         global.db.maybeAwardTokenMilestone = function (dateKey) {
             return maybeAwardTokenMilestone(global.db, dateKey);
+        };
+        global.db.reconcileTokenMilestones = function () {
+            return reconcileTokenMilestones(global.db);
         };
     }
 })(window);
