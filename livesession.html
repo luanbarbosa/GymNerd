@@ -3191,7 +3191,7 @@
                 } else if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
                     try {
                         try {
-                            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...');
+                            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...');
                         } catch (e) {}
 
                         syncOk = await Promise.race([

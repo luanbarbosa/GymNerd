@@ -24,10 +24,14 @@ const DriveStorage = {
     async _authFetch(url, options = {}) {
         const fetchOptions = { ...options };
         const skipLoader = Boolean(fetchOptions._skipLoader);
+        const loadingMessageKey = fetchOptions._loadingMessageKey || 'syncing_with_drive';
+        const loadingFallback = fetchOptions._loadingFallback || 'Syncing with Google Drive...';
         delete fetchOptions._skipLoader;
+        delete fetchOptions._loadingMessageKey;
+        delete fetchOptions._loadingFallback;
 
         try {
-            try { if (!skipLoader && window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...'); } catch(e){}
+            try { if (!skipLoader && window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t(loadingMessageKey) : loadingFallback); } catch(e){}
 
             const headers = await this._getHeaders();
             fetchOptions.headers = { ...(fetchOptions.headers || {}), ...headers };
@@ -84,9 +88,13 @@ const DriveStorage = {
         return response.json();
     },
 
-    async getFolderId(createIfMissing = true, { skipLoader = false } = {}) {
+    async getFolderId(createIfMissing = true, { skipLoader = false, loadingMessageKey = 'syncing_with_drive', loadingFallback = 'Syncing with Google Drive...' } = {}) {
         const q = `name='${this.FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-        const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, { _skipLoader: skipLoader });
+        const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, {
+            _skipLoader: skipLoader,
+            _loadingMessageKey: loadingMessageKey,
+            _loadingFallback: loadingFallback
+        });
         const data = await this._handleResponse(response);
         
         if (data.files && data.files.length > 0) return data.files[0].id;
@@ -96,26 +104,35 @@ const DriveStorage = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: this.FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' }),
-            _skipLoader: skipLoader
+            _skipLoader: skipLoader,
+            _loadingMessageKey: loadingMessageKey,
+            _loadingFallback: loadingFallback
         });
         const folder = await this._handleResponse(createResponse);
         return folder.id;
     },
 
-    async findFileId(name, folderId, { skipLoader = false } = {}) {
+    async findFileId(name, folderId, { skipLoader = false, loadingMessageKey = 'syncing_with_drive', loadingFallback = 'Syncing with Google Drive...' } = {}) {
         const q = `name='${name}' and '${folderId}' in parents and trashed=false`;
-        const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, { _skipLoader: skipLoader });
+        const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, {
+            _skipLoader: skipLoader,
+            _loadingMessageKey: loadingMessageKey,
+            _loadingFallback: loadingFallback
+        });
         const data = await this._handleResponse(response);
         return data.files && data.files.length > 0 ? data.files[0].id : null;
     },
 
     async load() {
         try {
-            const folderId = await this.getFolderId(false);
+            const folderId = await this.getFolderId(false, { loadingMessageKey: 'receiving_data_from_drive', loadingFallback: 'Receiving data from Google Drive...' });
             if (!folderId) {
                 return null;
             }
-            const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false`);
+            const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false`, {
+                _loadingMessageKey: 'receiving_data_from_drive',
+                _loadingFallback: 'Receiving data from Google Drive...'
+            });
             const data = await this._handleResponse(response);
             
             if (!data.files || data.files.length === 0) return null;
@@ -124,7 +141,10 @@ const DriveStorage = {
             for (const file of data.files) {
                 const key = file.name.replace('.json', '');
                 // loading file
-                const contentResponse = await this._authFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`);
+                const contentResponse = await this._authFetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
+                    _loadingMessageKey: 'receiving_data_from_drive',
+                    _loadingFallback: 'Receiving data from Google Drive...'
+                });
                 if (contentResponse.ok) {
                     result[key] = await contentResponse.json();
                 }
@@ -164,12 +184,11 @@ const DriveStorage = {
 
     async save(data) {
         try {
-            const folderId = await this.getFolderId();
-            const tables = Object.keys(data || {});
+            const folderId = await this.getFolderId(true, { loadingMessageKey: 'sending_data_to_drive', loadingFallback: 'Sending data to Google Drive...' });
             
             for (const [key, content] of Object.entries(data)) {
                 const fileName = `${key}.json`;
-                const fileId = await this.findFileId(fileName, folderId);
+                const fileId = await this.findFileId(fileName, folderId, { loadingMessageKey: 'sending_data_to_drive', loadingFallback: 'Sending data to Google Drive...' });
                 
                 const metadata = { name: fileName };
                 
@@ -193,7 +212,9 @@ const DriveStorage = {
                 const response = await this._authFetch(url, {
                     method,
                     headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
-                    body
+                    body,
+                    _loadingMessageKey: 'sending_data_to_drive',
+                    _loadingFallback: 'Sending data to Google Drive...'
                 });
 
                 await this._handleResponse(response);
@@ -234,7 +255,7 @@ const DriveStorage = {
 
         try {
             console.info('[DriveStorage] sync start');
-            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_with_drive') : 'Syncing with Google Drive...');
+            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...');
 
             if (db && typeof db.ensureTokensInitialized === 'function') {
                 await db.ensureTokensInitialized();
