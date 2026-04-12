@@ -220,7 +220,7 @@
         }
 
         .player-card { text-align: center; padding: 0; overflow: hidden; }
-        .player-card-body { padding: 6px 20px 20px; }
+        .player-card-body { padding: 6px 20px 20px; background: var(--card-background); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; }
         .current-ex-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 10px; color: var(--text); line-height: 1.15; text-align: center; word-break: break-word; }
         /* Reserve space for up to 2 lines; center vertically when only one line */
         .current-ex-title {
@@ -281,7 +281,7 @@
         .image-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); z-index: 2200; }
         .image-modal .modal-inner { position: relative; max-width: 92vw; max-height: 92vh; padding: 12px; box-sizing: border-box; background: #fff; border-radius: 12px; }
         .image-modal img { max-width: 100%; max-height: 84vh; border-radius: 8px; display: block; background: #fff; }
-        .image-modal .close-btn { position: absolute; top: 8px; right: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: var(--primary); border: none; color: #fff; border-radius: 50%; cursor: pointer; font-weight: 800; box-shadow: 0 6px 18px rgba(37,99,235,0.22); }
+        .image-modal .close-btn { position: absolute; top: 8px; right: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: #000; border: none; color: #fff; border-radius: 50%; cursor: pointer; font-weight: 800; font-size: 1.75rem; line-height: 1; box-shadow: 0 6px 18px rgba(0,0,0,0.28); }
         .image-modal .close-btn:hover { filter: brightness(0.95); }
         .image-modal .close-btn:focus { outline: 3px solid rgba(59,130,246,0.18); }
         .timer-reset { background: none; border: none; color: inherit; cursor: pointer; padding: 0; display: flex; align-items: center; transition: color 0.2s; width: auto !important; }
