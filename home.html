@@ -2149,11 +2149,11 @@
 						return;
 					}
 						const counts = {};
-						const totals = {}; // totals[key] = { reps: number, weight: number }
-						function addTotalsForKey(key, repsToAdd, weightToAdd) {
-							if (!totals[key]) totals[key] = { reps: 0, weight: 0 };
-							totals[key].reps += repsToAdd;
-							totals[key].weight += weightToAdd;
+							const totals = {}; // totals[key] = { sets: number, weight: number }
+							function addTotalsForKey(key, setsToAdd, weightToAdd) {
+								if (!totals[key]) totals[key] = { sets: 0, weight: 0 };
+								totals[key].sets += setsToAdd;
+								totals[key].weight += weightToAdd;
 						}
 						function getEntrySetCount(entry) {
 							if (Array.isArray(entry && entry.sets) && entry.sets.length > 0) {
@@ -2174,26 +2174,24 @@
 						for (const it of items) {
 							const key = (it.isCustom === true ? 'c' : 'k') + '|' + it.exerciseId;
 							counts[key] = (counts[key] || 0) + getEntrySetCount(it);
-							// attempt to extract reps/weight information from the history entry
+							// attempt to extract set-count/weight information from the history entry
 							try {
-								let entryReps = 0, entryWeight = 0;
+								let entrySets = 0, entryWeight = 0;
 							if (Array.isArray(it.sets) && it.sets.length > 0) {
 								for (const s of it.sets) {
 									// s may be {sets, reps, weight} or {reps, weight}
 									const setsCount = (s && s.sets !== undefined && s.sets !== '') ? Number(s.sets) : (s && (s.reps !== undefined || s.weight !== undefined) ? 1 : 0);
-									const repsPer = (s && s.reps !== undefined && s.reps !== '') ? Number(s.reps) : 0;
 									const weightPer = (s && s.weight !== undefined && s.weight !== '') ? Number(s.weight) : 0;
-									const repsDone = (isFinite(setsCount) ? setsCount : 0) * (isFinite(repsPer) ? repsPer : 0);
-									entryReps += repsDone;
-									entryWeight += repsDone * (isFinite(weightPer) ? weightPer : 0);
+									const safeSetsCount = (isFinite(setsCount) && setsCount > 0) ? setsCount : 0;
+									entrySets += safeSetsCount;
+									entryWeight += safeSetsCount * (isFinite(weightPer) ? weightPer : 0);
 								}
 							} else if (it.reps !== undefined || it.weight !== undefined) {
-								const reps = (it.reps !== undefined && it.reps !== '') ? Number(it.reps) : 0;
 								const weight = (it.weight !== undefined && it.weight !== '') ? Number(it.weight) : 0;
-								entryReps += isFinite(reps) ? reps : 0;
-								entryWeight += (isFinite(reps) ? reps : 0) * (isFinite(weight) ? weight : 0);
+								entrySets += 1;
+								entryWeight += isFinite(weight) ? weight : 0;
 							}
-							if (entryReps > 0 || entryWeight > 0) addTotalsForKey(key, entryReps, entryWeight);
+							if (entrySets > 0 || entryWeight > 0) addTotalsForKey(key, entrySets, entryWeight);
 						} catch (e) { /* ignore parse errors */ }
 					}
 						let bestKey = null, bestCount = 0, bestAvg = 0;
@@ -2201,10 +2199,10 @@
 							const c = counts[k] || 0;
 							if (c <= 0) continue;
 							if (c > bestCount) {
-								bestCount = c; bestKey = k; bestAvg = ((totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0);
+								bestCount = c; bestKey = k; bestAvg = ((totals[k] && totals[k].sets) ? (totals[k].weight / totals[k].sets) : 0);
 							} else if (c === bestCount) {
-							// tie-breaker: pick the one with higher average weight per rep
-							const avg = (totals[k] && totals[k].reps) ? (totals[k].weight / totals[k].reps) : 0;
+							// tie-breaker: pick the one with higher average weight per set
+							const avg = (totals[k] && totals[k].sets) ? (totals[k].weight / totals[k].sets) : 0;
 							if (avg > bestAvg) {
 								bestKey = k; bestAvg = avg;
 							}
