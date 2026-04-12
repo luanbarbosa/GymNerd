@@ -15,7 +15,7 @@
     <style>
         body {
             margin: 0;
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            font-family: var(--app-font-family);
             /* Hide by default to avoid flashing the login UI while auth.js refreshes tokens */
             visibility: hidden;
             background-color: var(--shell-background);
@@ -141,6 +141,7 @@
         a.lang-link { color:#94a3b8 }
     </style>
     <link rel="stylesheet" href="styles/colors.css" />
+    <link rel="stylesheet" href="styles/fonts.css" />
     <link rel="stylesheet" href="styles/mode-support.css" />
 
 </head>
@@ -351,7 +352,7 @@
                     modal.id = 'auth-refresh-modal';
                     modal.style = 'position:fixed;inset:0;background:rgba(15,17,26,0.98);display:flex;align-items:center;justify-content:center;z-index:1000000;padding:20px;';
                     modal.innerHTML = `
-                        <div style="max-width:420px;width:100%;color:white;font-family:system-ui, -apple-system,\"Segoe UI\", Roboto,\"Helvetica Neue\", Arial;">
+                        <div style="max-width:420px;width:100%;color:white;font-family:var(--app-font-family);">
                             <h2 style="margin:0 0 8px 0; font-size:1.6rem">${safeText(detail.title)}</h2>
                             <p style="color:#94a3b8;margin:0 0 18px 0">${safeText(detail.message)}</p>
                             <div style="display:flex;gap:10px">

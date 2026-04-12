@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
     <link rel="stylesheet" href="styles/colors.css">
+    <link rel="stylesheet" href="styles/fonts.css">
     <style>
         :root { 
             --primary: var(--accent-color); 
@@ -35,7 +36,7 @@
             --card-border: rgba(255, 255, 255, 0.08);
         }
         html { background-color: var(--shell-background); }
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; line-height: 1.5; }
+        body { font-family: var(--app-font-family); background: var(--shell-background); color: var(--text); max-width: 500px; margin: 0 auto; padding: 0; animation: fadeIn 0.3s ease-out; line-height: 1.5; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         /* Top-card (same as history) */
