@@ -80,7 +80,13 @@
         </div>
 
         <div class="card" style="margin-top:12px;">
-            <h3 style="margin:0 0 12px 0;" data-i18n="weight_progress">Weight progress</h3>
+            <div class="measure-progress-header">
+                <h3 style="margin:0;" data-i18n="weight_progress">Weight progress</h3>
+                <div id="weight-progress-indicator" class="measure-change-badge is-neutral" aria-live="polite" style="display:none;">
+                    <span class="material-symbols-outlined" aria-hidden="true">trending_flat</span>
+                    <span id="weight-progress-delta">0 kg</span>
+                </div>
+            </div>
             <div class="canvas-wrapper" style="height:200px;">
                 <canvas id="weightChartMeasure"></canvas>
             </div>
@@ -109,7 +115,30 @@
         text-align:center;
         display:block;
     }
+    .measure-progress-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
     .save-btn { background:var(--accent-color); color:var(--text-on-accent-color); border:none; padding:12px 16px; border-radius:10px; cursor:pointer; font-weight:700; width:100%; box-sizing:border-box; box-shadow: none; }
+    .measure-change-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        color: #94a3b8;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+    .measure-change-badge .material-symbols-outlined { font-size: 20px; line-height: 1; }
+    .measure-change-badge.is-positive { color: #10b981; }
+    .measure-change-badge.is-negative { color: #ef4444; }
+    .measure-change-badge.is-neutral { color: #94a3b8; }
 
     .scale-container { position:relative; height:96px; overflow-x: hidden; overflow-y:hidden; background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06)); border-radius:10px; padding:12px 0; margin-bottom:18px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.20); touch-action: none; cursor: grab; -webkit-user-select:none; user-select:none; }
     .scale-inner { display:flex; align-items:flex-end; height:100%; position:relative; }
@@ -432,9 +461,41 @@ function withAlpha(color, alpha) {
     return trimmed;
 }
 
+function updateMeasureWeightProgressIndicator(values) {
+    const indicator = document.getElementById('weight-progress-indicator');
+    const deltaEl = document.getElementById('weight-progress-delta');
+    if (!indicator || !deltaEl) return;
+
+    const series = Array.isArray(values)
+        ? values.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+        : [];
+
+    if (series.length < 2) {
+        indicator.style.display = 'none';
+        return;
+    }
+
+    const first = Number(series[0]);
+    const last = Number(series[series.length - 1]);
+    const delta = Number((last - first).toFixed(1));
+
+    if (delta === 0) {
+        indicator.style.display = 'none';
+        return;
+    }
+
+    const state = delta > 0 ? 'positive' : 'negative';
+    const icon = delta > 0 ? 'trending_up' : 'trending_down';
+    indicator.className = `measure-change-badge is-${state}`;
+    indicator.querySelector('.material-symbols-outlined').textContent = icon;
+    deltaEl.textContent = `${delta > 0 ? '+' : ''}${delta.toFixed(1)} kg`;
+    indicator.style.display = 'inline-flex';
+}
+
 async function renderMeasureWeightChart() {
     try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) {}
     let weights = [];
+    updateMeasureWeightProgressIndicator([]);
     try {
         if (window.db && db.weights) {
             weights = await db.weights.orderBy('date').toArray();
@@ -479,6 +540,7 @@ async function renderMeasureWeightChart() {
 
     const labels = valid.map(w => formatDateDisplay(w.date));
     const data = valid.map(w => Number(w.weight));
+    updateMeasureWeightProgressIndicator(data);
     const rootStyles = getComputedStyle(document.documentElement);
     const accentPrimary = (rootStyles.getPropertyValue('--accent-color') || '#f2c24b').trim();
     const accentTransparent = withAlpha(accentPrimary, 0.15);
