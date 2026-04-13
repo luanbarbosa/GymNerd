@@ -1360,9 +1360,12 @@
             // Ensure DB is open (iOS fix)
             await ensureDbOpen();
             
-            const workoutDates = db.getEffectiveWorkoutDates
+            const workoutDates = db.getWorkoutDates
+                ? await db.getWorkoutDates()
+                : [...new Set((await db.history.toArray()).map(l => l.date))].filter(Boolean).sort();
+            const effectiveDates = db.getEffectiveWorkoutDates
                 ? await db.getEffectiveWorkoutDates()
-                : [...new Set((await db.history.toArray()).map(l => l.date))].sort();
+                : workoutDates;
             
             if (workoutDates.length === 0) {
                 overview.innerHTML = `
@@ -1380,7 +1383,9 @@
                 return;
             }
 
-            const streaks = calculateStreaks(workoutDates);
+            const streaks = db.calculateProtectedWorkoutStreaks
+                ? db.calculateProtectedWorkoutStreaks(workoutDates, effectiveDates)
+                : calculateStreaks(workoutDates);
             const { current, longest, daysSince } = streaks;
 
             overview.innerHTML = `

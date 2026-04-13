@@ -1806,36 +1806,23 @@
 					const iconImg = document.getElementById('streak-icon-img');
 					const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
 					function dateToYMD(d) { const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${y}-${m}-${day}`; }
-					const frozenDates = new Set(
-						db.frozen_days ? (await db.frozen_days.toArray()).map(item => item && item.date).filter(Boolean) : []
-					);
-					let streak = 0;
 					const today = new Date(); today.setHours(0, 0, 0, 0);
-					const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-					let todayCount = 0;
-					let yesterdayCount = 0;
-					try { todayCount = await db.history.where('date').equals(dateToYMD(today)).count(); } catch (e) { todayCount = 0; }
-					try { yesterdayCount = await db.history.where('date').equals(dateToYMD(yesterday)).count(); } catch (e) { yesterdayCount = 0; }
-					// Determine anchor day: prefer today if there's an entry, otherwise keep streak valid through today if yesterday has an entry.
-					let anchor = null;
-					if (todayCount > 0 || frozenDates.has(dateToYMD(today))) anchor = new Date(today);
-					else if (yesterdayCount > 0 || frozenDates.has(dateToYMD(yesterday))) anchor = new Date(yesterday);
-					if (!anchor) {
+					const workoutDates = db.getWorkoutDates
+						? await db.getWorkoutDates()
+						: Array.from(new Set((await db.history.toArray()).map(it => it && it.date))).filter(Boolean).sort();
+					const effectiveDates = db.getEffectiveWorkoutDates
+						? await db.getEffectiveWorkoutDates()
+						: workoutDates;
+					const streakStats = (db.calculateProtectedWorkoutStreaks && effectiveDates)
+						? db.calculateProtectedWorkoutStreaks(workoutDates, effectiveDates, dateToYMD(today))
+						: calculateStreaks(workoutDates);
+					const streak = streakStats.current;
+					if (streak <= 0) {
 						// No active streak
-						streak = 0;
 						// show a friendly sad-flame illustration instead of the default missed-day icon
 						iconImg.src = basePath + 'illustrations/sad-flame-face.svg';
 						iconImg.alt = 'no streak';
 					} else {
-						// Count consecutive days backwards from the anchor (today or yesterday)
-						streak = 0;
-						let cursor = new Date(anchor);
-						while (true) {
-							let c = 0;
-							const cursorKey = dateToYMD(cursor);
-							try { c = await db.history.where('date').equals(cursorKey).count(); } catch (e) { c = 0; }
-							if (c > 0 || frozenDates.has(cursorKey)) { streak++; cursor.setDate(cursor.getDate() - 1); } else break;
-						}
 						// show a happy flame illustration when the streak is active
 						iconImg.src = basePath + 'illustrations/happy-flame-face.svg';
 						iconImg.alt = 'streak active';
@@ -1865,24 +1852,7 @@
 						try {
 							let best = 0;
 							try {
-								const effectiveDates = db.getEffectiveWorkoutDates
-									? await db.getEffectiveWorkoutDates()
-									: Array.from(new Set((await db.history.toArray()).map(it => it.date))).filter(Boolean).sort();
-								const uniq = Array.from(new Set(effectiveDates)).filter(Boolean).map(s => {
-									const d = new Date(s);
-									d.setHours(0, 0, 0, 0);
-									return d.getTime();
-								}).sort((a, b) => a - b);
-								if (uniq.length > 0) {
-									let run = 1;
-									for (let i = 1; i < uniq.length; i++) {
-										const diffDays = Math.round((uniq[i] - uniq[i - 1]) / (24 * 3600 * 1000));
-										if (diffDays === 1) run++;
-										else run = 1;
-										best = Math.max(best, run);
-									}
-									best = Math.max(best, run);
-								}
+								best = streakStats.longest || 0;
 							} catch (e) { best = 0; }
 							if (best > 0) {
 								const recLabel = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? (GN_I18N.t('best_record') || 'Best Record') : 'Best Record';

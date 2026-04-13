@@ -408,16 +408,46 @@ async function ensureTokensInitialized() {
 
 db.ensureTokensInitialized = ensureTokensInitialized;
 
+function getSortedUniqueValidDateKeys(dateKeys) {
+    return [...new Set((Array.isArray(dateKeys) ? dateKeys : []).filter(isValidDateKey))].sort();
+}
+
+function dateKeyToDayNumber(dateKey) {
+    if (!isValidDateKey(dateKey)) return null;
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return Math.floor(Date.UTC(year, month - 1, day) / 86400000);
+}
+
+function countWorkoutDaysInRange(workoutDays, startDay, endDay) {
+    if (!Number.isFinite(startDay) || !Number.isFinite(endDay) || endDay < startDay) return 0;
+    let workoutCount = 0;
+    for (let day = startDay; day <= endDay; day += 1) {
+        if (workoutDays.has(day)) workoutCount += 1;
+    }
+    return workoutCount;
+}
+
+function getTodayDateKey() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+async function getWorkoutDates() {
+    await ensureDbOpen();
+    const historyRows = db.history ? await db.history.toArray() : [];
+    return getSortedUniqueValidDateKeys(historyRows.map(row => row && row.date));
+}
+
 async function getEffectiveWorkoutDates() {
     await ensureDbOpen();
     const [historyRows, frozenRows] = await Promise.all([
         db.history ? db.history.toArray() : [],
         db.frozen_days ? db.frozen_days.toArray() : []
     ]);
-    return [...new Set([
+    return getSortedUniqueValidDateKeys([
         ...historyRows.map(row => row && row.date),
         ...frozenRows.map(row => row && row.date)
-    ].filter(Boolean))].sort();
+    ]);
 }
 
 async function freezeDay(dateKey) {
@@ -450,8 +480,62 @@ async function freezeDay(dateKey) {
     });
 }
 
+function calculateProtectedWorkoutStreaks(workoutDates, effectiveDates, todayKey = getTodayDateKey()) {
+    const sortedWorkoutDates = getSortedUniqueValidDateKeys(workoutDates);
+    const sortedEffectiveDates = getSortedUniqueValidDateKeys(
+        Array.isArray(effectiveDates) && effectiveDates.length > 0 ? effectiveDates : sortedWorkoutDates
+    );
+
+    if (sortedWorkoutDates.length === 0) return { current: 0, longest: 0, daysSince: 0 };
+
+    const workoutDays = new Set(sortedWorkoutDates.map(dateKeyToDayNumber).filter(Number.isFinite));
+    const effectiveDayNumbers = sortedEffectiveDates.map(dateKeyToDayNumber).filter(Number.isFinite);
+    const effectiveDays = new Set(effectiveDayNumbers);
+
+    let longest = 0;
+    let segmentStart = null;
+    let prevDay = null;
+    for (const day of effectiveDayNumbers) {
+        if (segmentStart === null || prevDay === null || day !== prevDay + 1) {
+            if (segmentStart !== null && prevDay !== null) {
+                longest = Math.max(longest, countWorkoutDaysInRange(workoutDays, segmentStart, prevDay));
+            }
+            segmentStart = day;
+        }
+        prevDay = day;
+    }
+    if (segmentStart !== null && prevDay !== null) {
+        longest = Math.max(longest, countWorkoutDaysInRange(workoutDays, segmentStart, prevDay));
+    }
+
+    const todayDay = dateKeyToDayNumber(todayKey);
+    let anchorDay = null;
+    if (Number.isFinite(todayDay)) {
+        if (effectiveDays.has(todayDay)) anchorDay = todayDay;
+        else if (effectiveDays.has(todayDay - 1)) anchorDay = todayDay - 1;
+    }
+
+    let current = 0;
+    if (Number.isFinite(anchorDay)) {
+        let streakStart = anchorDay;
+        while (effectiveDays.has(streakStart - 1)) {
+            streakStart -= 1;
+        }
+        current = countWorkoutDaysInRange(workoutDays, streakStart, anchorDay);
+    }
+
+    const lastWorkoutDay = dateKeyToDayNumber(sortedWorkoutDates[sortedWorkoutDates.length - 1]);
+    const daysSince = Number.isFinite(todayDay) && Number.isFinite(lastWorkoutDay)
+        ? Math.max(0, todayDay - lastWorkoutDay)
+        : 0;
+
+    return { current, longest, daysSince };
+}
+
+db.getWorkoutDates = getWorkoutDates;
 db.getEffectiveWorkoutDates = getEffectiveWorkoutDates;
 db.freezeDay = freezeDay;
+db.calculateProtectedWorkoutStreaks = calculateProtectedWorkoutStreaks;
 
 function calculateStreaks(dates) {
     if (!dates || dates.length === 0) return { current: 0, longest: 0, daysSince: 0 };
