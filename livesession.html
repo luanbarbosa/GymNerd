@@ -1237,13 +1237,37 @@
 
         async function computeStreakRecords(overrideTodayStr) {
             await ensureDbOpen();
-            const allLogs = await db.history.toArray();
-            const uniqueDates = [...new Set(allLogs.map(entry => entry.date))];
-            uniqueDates.sort();
             const todayStr = overrideTodayStr || getTodayDateKey();
-            const oldRecord = calculateStreaks(uniqueDates).longest;
-            const newRecord = calculateStreaks([...uniqueDates, todayStr]).longest;
-            return { existingDates: uniqueDates, todayStr, oldRecord, newRecord };
+            const isDateKey = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+            const uniqSorted = (values) => [...new Set((Array.isArray(values) ? values : []).filter(isDateKey))].sort();
+            const calculateStats = (workoutDates, effectiveDates) => {
+                if (db.calculateProtectedWorkoutStreaks && Array.isArray(effectiveDates)) {
+                    return db.calculateProtectedWorkoutStreaks(workoutDates, effectiveDates, todayStr);
+                }
+                return calculateStreaks(workoutDates);
+            };
+
+            const workoutDates = db.getWorkoutDates
+                ? await db.getWorkoutDates()
+                : uniqSorted((await db.history.toArray()).map(entry => entry && entry.date));
+            const effectiveDates = db.getEffectiveWorkoutDates
+                ? await db.getEffectiveWorkoutDates()
+                : workoutDates;
+
+            const normalizedWorkoutDates = uniqSorted(workoutDates);
+            const normalizedEffectiveDates = uniqSorted(effectiveDates);
+            const oldStats = calculateStats(normalizedWorkoutDates, normalizedEffectiveDates);
+
+            const workoutWithToday = uniqSorted([...normalizedWorkoutDates, todayStr]);
+            const effectiveWithToday = uniqSorted([...normalizedEffectiveDates, todayStr]);
+            const newStats = calculateStats(workoutWithToday, effectiveWithToday);
+
+            return {
+                existingDates: normalizedWorkoutDates,
+                todayStr,
+                oldRecord: Number(oldStats && oldStats.longest) || 0,
+                newRecord: Number(newStats && newStats.longest) || 0
+            };
         }
 
         async function loadStreakSnapshot(forceRefresh = false, overrideTodayStr) {
