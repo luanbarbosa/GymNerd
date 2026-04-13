@@ -766,6 +766,36 @@
 			width: 100%;
 		}
 
+		.streak-banner__info {
+			appearance: none;
+			border: 0;
+			background: transparent;
+			padding: 0;
+			margin: 0;
+			width: 22px;
+			height: 22px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--text-dim);
+			cursor: pointer;
+			flex-shrink: 0;
+			position: absolute;
+			top: 14px;
+			right: 14px;
+		}
+
+		.streak-banner__info svg {
+			display: block;
+			width: 18px;
+			height: 18px;
+		}
+
+		.streak-banner__info:focus-visible {
+			outline: 2px solid rgba(255, 255, 255, 0.25);
+			outline-offset: 3px;
+		}
+
 		.streak-banner .week-dots {
 			margin: 0;
 			align-self: center;
@@ -1500,6 +1530,13 @@
 				<!-- Streak banner: shows current consecutive-day streak. Ordered as column per design -->
 				<div id="streak-banner" class="streak-banner" role="region" aria-live="polite" style="display:none;">
 					<div class="streak-title" data-i18n="streak_title">Your streak</div>
+					<button id="streak-info-btn" type="button" class="streak-banner__info" aria-label="Info">
+						<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+							<path d="M12 10.25V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+							<circle cx="12" cy="7.25" r="1.1" fill="currentColor"/>
+						</svg>
+					</button>
 					<div class="streak-inner">
 						<div class="streak-icon-wrap">
 							<img id="streak-icon-img" src="" alt="streak icon" />
@@ -1801,6 +1838,7 @@
 				try {
 					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 					const banner = document.getElementById('streak-banner');
+					const infoBtn = document.getElementById('streak-info-btn');
 					if (!banner) return;
 					const numEl = document.getElementById('streak-number');
 					const iconImg = document.getElementById('streak-icon-img');
@@ -1863,6 +1901,19 @@
 								recordEl.style.display = 'none';
 							}
 						} catch (e) { recordEl.style.display = 'none'; }
+					}
+					if (infoBtn && !infoBtn.dataset.bound) {
+						infoBtn.addEventListener('click', () => {
+							try {
+								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+									? (GN_I18N.t('streak_help_text') || 'Rest days are not counted to your streak or record')
+									: 'Rest days are not counted to your streak or record';
+								alert(message);
+							} catch (e) {
+								console.error('Failed to show streak help dialog', e);
+							}
+						});
+						infoBtn.dataset.bound = 'true';
 					}
 					banner.style.display = 'flex';
 				} catch (err) { console.error('renderStreakBanner failed', err); }
