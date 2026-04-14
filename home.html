@@ -1116,9 +1116,9 @@
 
 		.home-chart-pill-option.is-active {
 			background: rgba(255, 255, 255, 0.03);
-			border-color: var(--accent-color);
-			color: var(--accent-color);
-			box-shadow: 0 0 0 1px var(--accent-color);
+			border-color: #ffffff;
+			color: #ffffff;
+			box-shadow: 0 0 0 1px #ffffff;
 		}
 
 		.home-chart-pill-option:focus-visible {
@@ -1126,13 +1126,31 @@
 			outline-offset: 2px;
 		}
 
+		.home-widget-heading {
+			font-weight: 800;
+			color: var(--text-dim);
+			font-size: 0.95rem;
+			margin: 14px 0 8px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			width: 100%;
+		}
+
 		/* Favorite type widget tweaks: match streak-banner spacing and full width */
 		#fav-type-widget {
 			width: 100%;
 			max-width: none;
-			margin: 12px 0;
+			margin: 20px 0 10px;
 			box-sizing: border-box;
-			padding: 14px;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			gap: 4px;
+			background: transparent;
+			border: 0;
+			box-shadow: none;
 		}
 
 		#fav-type-widget select {
@@ -1143,41 +1161,62 @@
 		#type-distribution-widget {
 			width: 100%;
 			max-width: none;
-			margin: 12px 0;
+			margin: 20px 0 10px;
+			box-sizing: border-box;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			align-items: flex-start;
+			background: transparent;
+			border: 0;
+			box-shadow: none;
+		}
+
+		#type-distribution-widget-card {
+			width: 100%;
 			box-sizing: border-box;
 			padding: 16px;
 			border-radius: 12px;
 			background-color: var(--card-background);
 			border: 1px solid rgba(255, 255, 255, 0.05);
 			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
-			display: flex;
-			flex-direction: column;
-			gap: 12px;
-			align-items: flex-start;
 		}
 
 		#weight-change-widget {
 			width: 100%;
 			max-width: none;
-			margin: 12px 0;
+			margin: 20px 0 10px;
 			box-sizing: border-box;
 			padding: 0;
-			border-radius: 12px;
-			background-color: var(--card-background);
-			border: 1px solid rgba(255, 255, 255, 0.05);
-			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
 			display: flex;
 			flex-direction: column;
 			gap: 0;
 			align-items: flex-start;
+			background: transparent;
+			border: 0;
+			box-shadow: none;
+		}
+
+		#weight-change-widget-card {
+			width: 100%;
+			border-radius: 12px;
+			background-color: var(--card-background);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
 			overflow: hidden;
 		}
 
-		#weight-change-widget .streak-title {
+		#weight-change-widget .home-widget-heading {
 			width: 100%;
 			box-sizing: border-box;
-			padding: 16px 16px 2px;
-			margin: 0;
+			padding: 0;
+			margin: 0 0 6px;
+		}
+
+		#type-distribution-widget .home-widget-heading,
+		#fav-type-widget .home-widget-heading {
+			margin: 0 0 6px;
 		}
 
 		.weight-change-subtitle {
@@ -1219,7 +1258,6 @@
 			object-position: center;
 			background: #fff;
 			display: block;
-			box-shadow: 0 8px 24px rgba(2, 6, 23, 0.14);
 		}
 
 		.weight-change-row-content {
@@ -1285,7 +1323,7 @@
 			}
 		}
 
-		#type-distribution-widget .streak-title {
+		#type-distribution-widget .home-widget-heading {
 			text-align: left;
 		}
 
@@ -1331,7 +1369,7 @@
 
 		.type-distribution-bar {
 			position: relative;
-			height: 16px;
+			height: 24px;
 			width: 100%;
 			border-radius: 999px;
 			background: rgba(255, 255, 255, 0.04);
@@ -1373,21 +1411,54 @@
 		.fav-ex-cell {
 			display: flex;
 			flex-direction: column;
-			gap: 8px;
+			gap: 0;
 		}
 
 		.fav-ex-row {
 			display: flex;
 			flex-direction: column;
 			align-items: flex-start;
-			gap: 8px;
+			gap: 0;
+		}
+
+		#fav-type-widget-card {
+			width: 100%;
+			border-radius: 12px;
+			background-color: var(--card-background);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+			overflow: hidden;
+		}
+
+		#fav-ex-name-and-count {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			justify-content: flex-start;
+			gap: 4px;
+			width: 100%;
+			padding: 14px 16px 10px;
+			box-sizing: border-box;
+		}
+
+		#fav-ex-name {
+			font-weight: 500;
+			color: var(--text);
+			font-size: 1rem;
+		}
+
+		#fav-ex-count {
+			font-style: normal;
+			font-size: 0.82rem;
+			color: var(--text-dim);
+			white-space: normal;
 		}
 
 		#fav-ex-preview {
 			width: 100%;
 			height: auto;
 			aspect-ratio: 16/9;
-			border-radius: 10px;
+			border-radius: 0;
 			overflow: hidden;
 			background: #ffffff;
 			display: block;
@@ -1559,9 +1630,10 @@
 				</div>
 
 				<div id="weight-change-widget" class="nav-card" role="region" aria-live="polite" style="display:none;" aria-label="Biggest weight changes">
-					<div class="streak-title" data-i18n="biggest_weight_changes_title">Biggest weight changes</div>
-					<div class="weight-change-subtitle" data-i18n="weight_per_rep">Weight per rep</div>
-					<div id="weight-change-list"></div>
+					<div class="home-widget-heading" data-i18n="biggest_weight_changes_title">Biggest weight changes</div>
+					<div id="weight-change-widget-card">
+						<div id="weight-change-list"></div>
+					</div>
 				</div>
 
 				<!-- Favorite exercise widget -->
@@ -1569,28 +1641,29 @@
 
 				<!-- Favorite exercise TYPE widget (type first, exercise below) -->
 				<div id="type-distribution-widget" class="nav-card" role="region" aria-live="polite" style="display:none;" aria-label="Exercise type mix">
-					<div class="streak-title" data-i18n="exercise_type_mix_title">Exercise type mix</div>
-					<div id="type-distribution-list"></div>
+					<div class="home-widget-heading" data-i18n="exercise_type_mix_title">Exercise type mix</div>
+					<div id="type-distribution-widget-card">
+						<div id="type-distribution-list"></div>
+					</div>
 				</div>
 
 				<div id="fav-type-widget" class="nav-card"
-					style="display:none; width:100%; margin:12px 0; padding:14px; max-width:none; box-sizing:border-box; position:relative;">
+					style="display:none; width:100%; margin:20px 0 10px; padding:0; max-width:none; box-sizing:border-box; position:relative;">
+					<div class="home-widget-heading" data-i18n="favorite_exercise">Most frequent exercise</div>
 					<!-- Range selector removed — widget always shows Year range -->
-					<div class="fav-grid">
-						<div class="fav-ex-cell">
-							<div id="fav-ex-label" class="streak-title" data-i18n="favorite_exercise">Favorite exercise
-							</div>
-							<div class="fav-ex-row">
-								<div id="fav-ex-preview">
-									<img id="fav-ex-img" src="" alt="" />
-									<span id="fav-ex-initial">—</span>
-								</div>
-
-									<div id="fav-ex-name-and-count"
-										style="color:var(--text); font-weight:400; word-break:break-word; width:100%;">
+					<div id="fav-type-widget-card">
+						<div class="fav-grid">
+							<div class="fav-ex-cell">
+								<div class="fav-ex-row">
+									<div id="fav-ex-name-and-count">
 										<span id="fav-ex-name">—</span>
 										<span id="fav-ex-count" class="streak-record"> </span>
 									</div>
+									<div id="fav-ex-preview">
+										<img id="fav-ex-img" src="" alt="" />
+										<span id="fav-ex-initial">—</span>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -2263,7 +2336,7 @@
 							const exCountEl = document.getElementById('fav-ex-count');
 							if (exCountEl) {
 								const setWord = (window.GN_I18N && typeof GN_I18N.getSetCountLabel === 'function') ? GN_I18N.getSetCountLabel(bestCount) : (bestCount === 1 ? 'set' : 'sets');
-								exCountEl.textContent = `\u00A0(${bestCount} ${setWord})`;
+								exCountEl.textContent = `${bestCount} ${setWord}`;
 							}
 						} catch (e) { }
 					// Ensure preview container is visible, then try to show image preview if available
@@ -2523,12 +2596,9 @@
 						labelEl.textContent = row.label;
 						const stats = document.createElement('span');
 						stats.className = 'type-distribution-row-stats';
-							const percentSpan = document.createElement('span');
-							percentSpan.textContent = `${row.percentLabel}%`;
-							const countSpan = document.createElement('span');
-							const setWord = (window.GN_I18N && typeof GN_I18N.getSetCountLabel === 'function') ? GN_I18N.getSetCountLabel(row.count) : (row.count === 1 ? 'set' : 'sets');
-							countSpan.textContent = `${row.count} ${setWord}`;
-						stats.appendChild(percentSpan);
+						const countSpan = document.createElement('span');
+						const setWord = (window.GN_I18N && typeof GN_I18N.getSetCountLabel === 'function') ? GN_I18N.getSetCountLabel(row.count) : (row.count === 1 ? 'set' : 'sets');
+						countSpan.textContent = `${row.count} ${setWord}`;
 						stats.appendChild(countSpan);
 						main.appendChild(labelEl);
 						main.appendChild(stats);
