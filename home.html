@@ -1214,6 +1214,37 @@
 			margin: 0 0 6px;
 		}
 
+		.home-widget-heading__text {
+			min-width: 0;
+		}
+
+		.home-widget-heading__info {
+			appearance: none;
+			border: 0;
+			background: transparent;
+			padding: 0;
+			margin: 0 0 0 8px;
+			width: 22px;
+			height: 22px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--text-dim);
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+
+		.home-widget-heading__info svg {
+			display: block;
+			width: 18px;
+			height: 18px;
+		}
+
+		.home-widget-heading__info:focus-visible {
+			outline: 2px solid rgba(255, 255, 255, 0.25);
+			outline-offset: 3px;
+		}
+
 		#type-distribution-widget .home-widget-heading,
 		#fav-type-widget .home-widget-heading {
 			margin: 0 0 6px;
@@ -1630,7 +1661,16 @@
 				</div>
 
 				<div id="weight-change-widget" class="nav-card" role="region" aria-live="polite" style="display:none;" aria-label="Biggest weight changes">
-					<div class="home-widget-heading" data-i18n="biggest_weight_changes_title">Biggest weight changes</div>
+					<div class="home-widget-heading">
+						<span class="home-widget-heading__text" data-i18n="biggest_weight_changes_title">Biggest weight changes</span>
+						<button id="weight-change-info-btn" type="button" class="home-widget-heading__info" aria-label="Info">
+							<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+								<path d="M12 10.25V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+								<circle cx="12" cy="7.25" r="1.1" fill="currentColor"/>
+							</svg>
+						</button>
+					</div>
 					<div id="weight-change-widget-card">
 						<div id="weight-change-list"></div>
 					</div>
@@ -2443,12 +2483,26 @@
 					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
 					const widget = document.getElementById('weight-change-widget');
 					const list = document.getElementById('weight-change-list');
+					const infoBtn = document.getElementById('weight-change-info-btn');
 					if (!widget || !list) return;
 					try {
 						if (window.GN_I18N && typeof GN_I18N.t === 'function') {
 							widget.setAttribute('aria-label', GN_I18N.t('biggest_weight_changes_title') || 'Biggest weight changes');
 						}
 					} catch (e) { }
+					if (infoBtn && !infoBtn.dataset.bound) {
+						infoBtn.addEventListener('click', () => {
+							try {
+								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+									? (GN_I18N.t('weight_change_help_text') || 'Change based on weight per set')
+									: 'Change based on weight per set';
+								alert(message);
+							} catch (e) {
+								console.error('Failed to show weight change help dialog', e);
+							}
+						});
+						infoBtn.dataset.bound = 'true';
+					}
 
 					let historyCount = 0;
 					try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
