@@ -5,6 +5,43 @@
     // Include OpenID scopes so we can fetch user's profile (name + picture)
     const SCOPES = 'openid profile email https://www.googleapis.com/auth/drive.file';
     const REDIRECT_PATH = '/oauth2callback.html';
+    const FIREBASE_CONFIG = window.GYMNERD_FIREBASE_CONFIG || {
+        apiKey: "AIzaSyDroq8l5OT9s4uKRgHZe8Y9vNCXSiaxvQA",
+        authDomain: "gymnerd-9cabd.firebaseapp.com",
+        projectId: "gymnerd-9cabd",
+        storageBucket: "gymnerd-9cabd.firebasestorage.app",
+        messagingSenderId: "671159530968",
+        appId: "1:671159530968:web:a005844ca9128109f96ead",
+        measurementId: "G-MBE58M7EX8"
+    };
+
+    async function initFirebaseAnalytics() {
+        if (!FIREBASE_CONFIG || !FIREBASE_CONFIG.measurementId || FIREBASE_CONFIG.measurementId === 'REPLACE_ME') {
+            console.warn('Firebase config missing. Analytics not initialized.');
+            return;
+        }
+
+        if (window.__gn_firebase_analytics_initialized) return;
+        window.__gn_firebase_analytics_initialized = true;
+
+        try {
+            const firebaseAppModule = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
+            const firebaseAnalyticsModule = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js');
+            const existingApps = firebaseAppModule.getApps();
+            const app = existingApps.length ? existingApps[0] : firebaseAppModule.initializeApp(FIREBASE_CONFIG);
+            const analyticsSupported = await firebaseAnalyticsModule.isSupported();
+            if (analyticsSupported) {
+                firebaseAnalyticsModule.getAnalytics(app);
+                console.log('Firebase Analytics initialized.');
+            } else {
+                console.warn('Firebase Analytics not supported in this environment.');
+            }
+        } catch (error) {
+            console.warn('Failed to initialize Firebase Analytics:', error);
+        }
+    }
+
+    initFirebaseAnalytics();
 
     // Internal: promise used to dedupe concurrent refresh attempts
     // Use `var` and prefer an existing window property so re-loading the
