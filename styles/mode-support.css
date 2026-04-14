@@ -6,3 +6,13 @@
 *, *::before, *::after {
     forced-color-adjust: none;
 }
+
+/* Keep scrolling enabled while hiding scrollbar indicators everywhere. */
+* {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and legacy Edge */
+}
+
+*::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Chromium-based Edge */
+}
