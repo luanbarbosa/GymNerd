@@ -1,30 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="100%" height="100%" viewBox="0 0 90 89" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
-    <g transform="matrix(1,0,0,1,-6,-5)">
-        <g id="Master-Pau-Barbaro-Happy-Flame" serif:id="Master/Pau Barbaro/Happy Flame" transform="matrix(0.147273,0,0,0.14339,-29.172111,-18.328215)">
-            <g transform="matrix(6.790111,0,0,6.973987,198.081868,127.820734)">
-                <circle cx="50.5" cy="49.5" r="44.5" style="fill:rgb(242,194,75);"/>
-            </g>
+<svg width="100%" height="100%" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g id="Master-Pau-Barbaro-Happy-Flame" serif:id="Master/Pau Barbaro/Happy Flame" transform="matrix(0.147273,0,0,0.14339,-29.172111,-18.328215)">
+        <g transform="matrix(6.790111,0,0,6.973987,198.081868,127.820734)">
+            <circle cx="50.5" cy="49.5" r="44.5" style="fill:url(#_Linear1);"/>
         </g>
-    </g>
-    <g transform="matrix(1,0,0,1,-6,-5)">
-        <g transform="matrix(1.871984,0,0,1.871984,-24.696159,-1.378028)">
-            <g transform="matrix(1,0,0,1,27.068385,-4.739348)">
-                <g transform="matrix(1,0,0,1,20.424,31.544)">
-                    <text x="0px" y="0px" style="font-family:'EuphemiaUCAS-Bold', 'Euphemia UCAS', sans-serif;font-weight:700;font-size:11.752px;stroke:black;stroke-width:0.4px;">Z</text>
-                </g>
-            </g>
-            <g transform="matrix(1,0,0,1,17.068385,-0.13677)">
-                <g transform="matrix(1,0,0,1,20.424,31.544)">
-                    <text x="0px" y="0px" style="font-family:'EuphemiaUCAS-Bold', 'Euphemia UCAS', sans-serif;font-weight:700;font-size:12.286px;stroke:black;stroke-width:0.4px;">Z</text>
-                </g>
-            </g>
-            <g transform="matrix(1,0,0,1,6,5)">
-                <g transform="matrix(1,0,0,1,20.424,31.544)">
-                    <text x="0px" y="0px" style="font-family:'EuphemiaUCAS-Bold', 'Euphemia UCAS', sans-serif;font-weight:700;font-size:14.957px;stroke:black;stroke-width:0.37px;">Z</text>
+        <g transform="matrix(24.331231,0,0,24.99012,533.452272,488.02985)">
+            <g transform="matrix(1,0,0,1,-12,-12)">
+                <g transform="matrix(0.569767,0,0,0.569767,12.309487,11.399892)">
+                    <g transform="matrix(1,0,0,1,-12,-12)">
+                        <g transform="matrix(0.025,0,0,0.025,0,24)">
+                            <path d="M484,-80C428,-80 375.5,-90.667 326.5,-112C277.5,-133.333 234.833,-162.167 198.5,-198.5C162.167,-234.833 133.333,-277.5 112,-326.5C90.667,-375.5 80,-428 80,-484C80,-581.333 111,-667.167 173,-741.5C235,-815.833 314,-862 410,-880C398,-814 401.667,-749.5 421,-686.5C440.333,-623.5 473.667,-568.333 521,-521C568.333,-473.667 623.5,-440.333 686.5,-421C749.5,-401.667 814,-398 880,-410C862.667,-314 816.667,-235 742,-173C667.333,-111 581.333,-80 484,-80ZM484,-160C542.667,-160 597,-174.667 647,-204C697,-233.333 736.333,-273.667 765,-325C707.667,-330.333 653.333,-344.833 602,-368.5C550.667,-392.167 504.667,-424.333 464,-465C423.333,-505.667 391,-551.667 367,-603C343,-654.333 328.667,-708.667 324,-766C272.667,-737.333 232.5,-697.833 203.5,-647.5C174.5,-597.167 160,-542.667 160,-484C160,-394 191.5,-317.5 254.5,-254.5C317.5,-191.5 394,-160 484,-160Z" style="fill:white;fill-rule:nonzero;stroke:white;stroke-width:40px;"/>
+                        </g>
+                    </g>
                 </g>
             </g>
         </g>
     </g>
+    <defs>
+        <linearGradient id="_Linear1" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(89,0,0,89,6,49.5)"><stop offset="0" style="stop-color:rgb(241,190,73);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(234,165,60);stop-opacity:1"/></linearGradient>
+    </defs>
 </svg>
