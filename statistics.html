@@ -761,14 +761,24 @@
                         const { ctx } = chart;
                         ctx.save();
                         ctx.fillStyle = '#94a3b8';
-                        ctx.font = 'bold 12px sans-serif';
+                        ctx.font = 'bold 11px sans-serif';
                         ctx.textAlign = 'center';
 
                         chart.data.datasets.forEach((dataset, i) => {
+                            let lastValue = null;
                             chart.getDatasetMeta(i).data.forEach((point, index) => {
                                 const value = dataset.data[index];
-                                if (!value) return;
-                                ctx.fillText(value + ' kg', point.x, point.y - 10);
+                                if (value === undefined || value === null) return;
+                                
+                                // Only draw if value changed or it's the first/last point
+                                const isFirst = index === 0;
+                                const isLast = index === dataset.data.length - 1;
+                                const hasChanged = value !== lastValue;
+
+                                if (hasChanged || isFirst || isLast) {
+                                    ctx.fillText(value + ' kg', point.x, point.y - 10);
+                                }
+                                lastValue = value;
                             });
                         });
 
