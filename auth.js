@@ -664,7 +664,10 @@
                 if (resp.ok && data.access_token) {
                     console.log('refreshAccessToken: success');
                     localStorage.setItem('google_token', data.access_token);
-                    localStorage.setItem('google_token_expires_at', Date.now() + (data.expires_in * 1000));
+                    // Ensure we have a valid expires_at (default to 1 hour if missing)
+                    const expiresIn = parseInt(data.expires_in) || 3600;
+                    localStorage.setItem('google_token_expires_at', (Date.now() + (expiresIn * 1000)).toString());
+                    
                     // Google may or may not return a new refresh_token. If it does, store it.
                     if (data.refresh_token) localStorage.setItem('google_refresh_token', data.refresh_token);
                                 try {
@@ -687,8 +690,11 @@
                 }
 
                 console.warn('Refresh failed', { status: resp.status, data });
-                // Remove stored refresh token to force a fresh login next.
-                localStorage.removeItem('google_refresh_token');
+                // Only remove the refresh token if the error is explicit and terminal (400 Bad Request).
+                // 5xx errors or network issues should NOT clear the refresh token.
+                if (resp.status === 400) {
+                    localStorage.removeItem('google_refresh_token');
+                }
                 return false;
             } catch (e) {
                 console.error('Refresh error', e);
@@ -829,7 +835,9 @@
                 if (tokenData && tokenData.access_token) {
                 try { localStorage.removeItem('local_mode'); } catch(e){}
                 localStorage.setItem('google_token', tokenData.access_token);
-                localStorage.setItem('google_token_expires_at', Date.now() + (tokenData.expires_in * 1000));
+                // Ensure we have a valid expires_at (default to 1 hour if missing)
+                const expiresIn = parseInt(tokenData.expires_in) || 3600;
+                localStorage.setItem('google_token_expires_at', (Date.now() + (expiresIn * 1000)).toString());
                 if (tokenData.refresh_token) localStorage.setItem('google_refresh_token', tokenData.refresh_token);
                 try {
                     if (typeof window.fetchGoogleUserProfile === 'function') {
