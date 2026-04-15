@@ -186,7 +186,7 @@
                 empty_home_cta: "Let's start working out!",
                 best_record: 'Your record',
                 biggest_weight_changes_title: 'Biggest changes',
-                weight_change_help_text: 'Strength Gains based on e1RM calculations.',
+                weight_change_help_text: 'The progress is represented by e1RM calculations which means something like "Strength Gains".',
                 biggest_weight_change_gain: 'Top gain',
                 biggest_weight_change_drop: 'Top drop',
                 exercise_type_mix_title: 'Type distribution',
@@ -322,7 +322,8 @@
                 keep_device_awake: 'Keep device awake on workouts',
                 keep_device_awake_help: 'Prevent the device from sleeping during workouts.',
                 device: 'Device',
-                general: 'General'
+                general: 'General',
+                progress_title: 'Progress',
             },
             pt: {
                 new_routine_btn: 'Novo treino',
@@ -508,7 +509,7 @@
                 empty_home_cta: 'Vamos começar a treinar!',
                 best_record: 'Seu recorde',
                 biggest_weight_changes_title: 'Maiores mudanças',
-                weight_change_help_text: 'Ganho de força baseado em cálculos de e1RM.',
+                weight_change_help_text: 'O progresso é representado pelos cálculos de e1RM, que significam algo como "Ganhos de Força".',
                 biggest_weight_change_gain: 'Maior alta',
                 biggest_weight_change_drop: 'Maior queda',
                 no_records_yet: 'Nenhum registro ainda',
@@ -645,7 +646,8 @@
                 keep_device_awake: 'Manter dispositivo acordado durante treinos',
                 keep_device_awake_help: 'Evita que o dispositivo desligue a tela durante o treino.',
                 device: 'Dispositivo',
-                general: 'Geral'
+                general: 'Geral',
+                progress_title: 'Progresso',
             }
         },
         getLang: function () {

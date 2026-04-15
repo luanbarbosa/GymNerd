@@ -187,8 +187,8 @@
         .radar-edit .radar-refresh-btn { margin-left: 8px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); color: var(--text); cursor: pointer; font-weight: 700; font-size: 0.85rem; display: none; }
         .radar-edit .radar-refresh-btn:hover { background: rgba(255,255,255,0.035); transform: translateY(-1px); }
         .chart-pill-filter {
-            margin-top: 16px;
-            padding-top: 14px;
+            margin-top: 0;
+            padding-top: 0;
             display: flex;
             flex-wrap: nowrap;
             gap: clamp(4px, 1.5vw, 8px);
@@ -231,6 +231,43 @@
             outline: 2px solid rgba(242, 194, 75, 0.75);
             outline-offset: 2px;
         }
+        .home-widget-heading {
+			font-weight: 800;
+			color: var(--text-dim);
+			font-size: 0.95rem;
+			margin: 14px 0 0;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			width: 100%;
+		}
+
+        .home-widget-heading__info {
+			appearance: none;
+			border: 0;
+			background: transparent;
+			padding: 0;
+			margin: 0 0 0 8px;
+			width: 22px;
+			height: 22px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--text-dim);
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+
+		.home-widget-heading__info svg {
+			display: block;
+			width: 18px;
+			height: 18px;
+		}
+
+		.home-widget-heading__info:focus-visible {
+			outline: 2px solid rgba(255, 255, 255, 0.25);
+			outline-offset: 3px;
+		}
     </style>
 </head>
 <body>
@@ -318,6 +355,18 @@
                 <div id="radarTypesContainer" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:8px;"></div>
             </details>
         </div>
+
+        <div class="home-widget-heading">
+            <span data-i18n="progress_title">Progress</span>
+            <button id="progress-info-btn" type="button" class="home-widget-heading__info" aria-label="Info">
+				<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+				    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+				    <path d="M12 10.25V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+				    <circle cx="12" cy="7.25" r="1.1" fill="currentColor"/>
+			    </svg>
+			</button>
+        </div>
+
         <div class="chart-pill-filter" role="tablist" aria-label="Chart period quick filter">
             <button type="button" class="chart-pill-option is-active" data-period="all" aria-selected="true" data-i18n="all_time">All</button>
             <button type="button" class="chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
@@ -602,6 +651,21 @@
         
 
         async function renderCharts(logs, requestedPeriod = getStoredChartPillSelection(), useFallback = true) {
+            const infoBtn = document.getElementById('progress-info-btn');
+            if (infoBtn && !infoBtn.dataset.bound) {
+				infoBtn.addEventListener('click', () => {
+					try {
+						const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+		    				? (GN_I18N.t('weight_change_help_text') || 'Change based on estimated 1RM')
+							: 'Change based on estimated 1RM';
+								alert(message);
+					} catch (e) {
+						console.error('Failed to show weight change help dialog', e);
+					}
+				});
+				infoBtn.dataset.bound = 'true';
+			}
+
             const renderChartsToken = (window.__gn_stats_renderChartsToken || 0) + 1;
             window.__gn_stats_renderChartsToken = renderChartsToken;
 
