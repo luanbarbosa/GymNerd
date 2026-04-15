@@ -222,10 +222,10 @@
             transform: translateY(-1px);
         }
         .chart-pill-option.is-active {
-            background: rgba(255,255,255,0.03);
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-            box-shadow: 0 0 0 1px var(--accent-color);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            box-shadow: none;
         }
         .chart-pill-option:focus-visible {
             outline: 2px solid rgba(242, 194, 75, 0.75);
@@ -760,23 +760,33 @@
                     afterDatasetsDraw(chart) {
                         const { ctx } = chart;
                         ctx.save();
-                        ctx.fillStyle = '#94a3b8';
+                        
+                        // Use a brighter color for better contrast
+                        ctx.fillStyle = '#f8fafc'; 
                         ctx.font = 'bold 11px sans-serif';
                         ctx.textAlign = 'center';
+                        
+                        // Add a dark halo/stroke to ensure text is readable over lines and fills
+                        ctx.strokeStyle = 'rgba(18, 24, 38, 0.9)'; // Match card background area
+                        ctx.lineWidth = 3;
+                        ctx.lineJoin = 'round';
 
                         chart.data.datasets.forEach((dataset, i) => {
                             let lastValue = null;
-                            chart.getDatasetMeta(i).data.forEach((point, index) => {
+                            const points = chart.getDatasetMeta(i).data;
+                            points.forEach((point, index) => {
                                 const value = dataset.data[index];
                                 if (value === undefined || value === null) return;
                                 
-                                // Only draw if value changed or it's the first/last point
                                 const isFirst = index === 0;
                                 const isLast = index === dataset.data.length - 1;
                                 const hasChanged = value !== lastValue;
 
                                 if (hasChanged || isFirst || isLast) {
-                                    ctx.fillText(value + ' kg', point.x, point.y - 10);
+                                    const text = value + ' kg';
+                                    // Increased offset to 12px for better clearance
+                                    ctx.strokeText(text, point.x, point.y - 12);
+                                    ctx.fillText(text, point.x, point.y - 12);
                                 }
                                 lastValue = value;
                             });
