@@ -2412,12 +2412,35 @@
 				return exercise.name || exercise.namePT || fallback;
 			}
 
+			/**
+			 * Helper to get the best estimated 1RM for a history entry.
+			 * If the entry has multiple sets, it calculates e1RM for each and takes the max.
+			 */
 			function getHomeWeightPerRep(entry) {
-				const weight = Number(entry && entry.weight) || 0;
-				const reps = (entry && entry.reps !== undefined && entry.reps !== null) ? Number(entry.reps) : 1;
-				const value = reps > 0 ? weight / reps : weight;
-				if (!Number.isFinite(value)) return 0;
-				return Number(value.toFixed(2));
+				if (!entry) return 0;
+				
+				// If the entry has a sets array, find the best e1RM among them
+				if (Array.isArray(entry.sets) && entry.sets.length > 0) {
+					if (window.getBest1RM) {
+					// Use the helper from stat_calculator.js
+					return window.getBest1RM(entry.sets);
+					} else if (window.estimate1RM) {
+					// Manual fallback if only the estimator is available
+					const e1RMs = entry.sets.map(s => window.estimate1RM(Number(s.weight) || 0, Number(s.reps) || 0));
+					return Math.max(...e1RMs, 0);
+					}
+				}
+
+				// Fallback for flat entries (older data format or single-set entries)
+				const weight = Number(entry.weight) || 0;
+				const reps = Number(entry.reps) || 1;
+				
+				if (window.estimate1RM) {
+					const value = window.estimate1RM(weight, reps);
+					return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+				}
+				
+				return weight;
 			}
 
 			function getHomeWeightChangeMeta(values, unit = 'kg') {
@@ -2495,8 +2518,8 @@
 						infoBtn.addEventListener('click', () => {
 							try {
 								const message = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
-									? (GN_I18N.t('weight_change_help_text') || 'Change based on weight per set')
-									: 'Change based on weight per set';
+									? (GN_I18N.t('weight_change_help_text') || 'Change based on estimated 1RM')
+									: 'Change based on estimated 1RM';
 								alert(message);
 							} catch (e) {
 								console.error('Failed to show weight change help dialog', e);
