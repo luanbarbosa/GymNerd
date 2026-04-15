@@ -19,6 +19,7 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="stat_calculator.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
     <link rel="stylesheet" href="styles/colors.css">
@@ -604,403 +605,387 @@
         async function renderCharts(logs, requestedPeriod = getStoredChartPillSelection(), useFallback = true) {
             const renderChartsToken = (window.__gn_stats_renderChartsToken || 0) + 1;
             window.__gn_stats_renderChartsToken = renderChartsToken;
-            // Prevent overlapping renders from appending duplicate groups when SPA re-initializes the page.
+
             const isRenderChartsStale = () => window.__gn_stats_renderChartsToken !== renderChartsToken;
 
             if (!logs) logs = await db.history.toArray();
+
             const normalizedPeriod = CHART_PILL_FILTER_VALUES.includes(requestedPeriod) ? requestedPeriod : 'all';
             const effectivePeriod = useFallback ? resolveEffectiveChartPillPeriod(logs, normalizedPeriod) : normalizedPeriod;
+
             applyChartPillSelection(effectivePeriod);
             logs = filterLogsForChartBoxes(logs, effectivePeriod);
+
             if (isRenderChartsStale()) return;
+
             const wrapper = document.getElementById('chartsWrapper');
             if (!wrapper) return;
 
-            // exercise type localization is provided by GN_I18N.localizeExerciseType
             const [catalogEx, customEx] = await Promise.all([
                 db.catalog_exercises.toArray(),
                 db.custom_exercises.toArray()
             ]);
+
             if (isRenderChartsStale()) return;
+
             const allExercises = [
                 ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
                 ...customEx.map(ex => ({ ...ex, isCustom: true }))
             ];
-            const exMap = allExercises.reduce((acc, ex) => { acc[`${ex.id}-${!!ex.isCustom}`] = ex; return acc; }, {});
+
+            const exMap = allExercises.reduce((acc, ex) => {
+                acc[`${ex.id}-${!!ex.isCustom}`] = ex;
+                return acc;
+            }, {});
 
             const groupedByType = {};
-            const lineDataLabelsPlugin = {
-                id: 'lineDataLabels',
-                afterDatasetsDraw(chart) {
-                    const { ctx, data } = chart;
-                    ctx.save();
-                    ctx.font = 'bold 10px sans-serif';
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'bottom';
-                    const dataset = data.datasets[0];
-                    const defaultUnit = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg';
-                    const unit = (dataset && dataset.unit) ? dataset.unit : defaultUnit;
-                    const meta = chart.getDatasetMeta(0);
-                    const area = chart.chartArea || { left: 6, right: chart.width - 6 };
-                    const minX = (area.left || 6) + 12;
-                    const maxX = (area.right || (chart.width - 6)) - 12;
-                    const minY = (area.top || 6) + 12;
-                    const drawnRects = [];
-                    const formatValue = (value) => {
-                        const num = Number(value);
-                        if (!Number.isFinite(num)) return String(value);
-                        return Number(num.toFixed(2)).toString();
-                    };
-                    const overlaps = (a, b) => !(
-                        a.right < b.left ||
-                        a.left > b.right ||
-                        a.bottom < b.top ||
-                        a.top > b.bottom
-                    );
-                    meta.data.forEach((point, index) => {
-                        const value = dataset.data[index];
-                        const prevValue = index > 0 ? dataset.data[index - 1] : null;
-                        const nextValue = index < dataset.data.length - 1 ? dataset.data[index + 1] : null;
-                        const isFlatMiddle = prevValue === value && nextValue === value;
-                        if (isFlatMiddle) return;
 
-                        const label = `${formatValue(value)} ${unit}`.trim();
-                        const x = Math.min(Math.max(point.x, minX), maxX);
-                        const textWidth = ctx.measureText(label).width;
-                        const labelHeight = 10;
-                        const yCandidates = [
-                            point.y - 10,
-                            point.y - 24,
-                            point.y + 18
-                        ];
+            logs.forEach(l => {
+                const exKey = `${l.exerciseId}-${l.isCustom !== undefined ? !!l.isCustom : l.exerciseId > 0}`;
+                const ex = exMap[exKey];
 
-                        for (const candidateY of yCandidates) {
-                            const safeY = Math.max(candidateY, minY);
-                            const rect = {
-                                left: x - (textWidth / 2) - 3,
-                                right: x + (textWidth / 2) + 3,
-                                top: safeY - labelHeight - 2,
-                                bottom: safeY + 2
-                            };
-                            if (drawnRects.some(existing => overlaps(rect, existing))) continue;
-                            ctx.fillText(label, x, safeY);
-                            drawnRects.push(rect);
-                            return;
-                        }
-                    });
-                    ctx.restore();
-                }
-            };
-            const translate = (key, fallback) => {
-                if (typeof GN_I18N !== 'undefined' && typeof GN_I18N.t === 'function') {
-                    try {
-                        const value = GN_I18N.t(key);
-                        if (value) return value;
-                    } catch (e) {
-                        // ignore translation errors
-                    }
-                }
-                return fallback || '';
-            };
-            const safeMetricValue = (value, precision = 2) => {
-                const num = Number(value);
-                if (!Number.isFinite(num)) return 0;
-                if (precision >= 0) return Number(num.toFixed(precision));
-                return num;
-            };
-            const formatMetricDelta = (value, unit = '') => {
-                const num = Number(value);
-                if (!Number.isFinite(num)) return '--';
-                const rounded = Number(num.toFixed(2));
-                const sign = rounded > 0 ? '+' : '';
-                return `${sign}${rounded}${unit ? ` ${unit}` : ''}`;
-            };
-            const getChangeMeta = (values, unit = '') => {
-                const numericValues = (Array.isArray(values) ? values : []).map((value) => Number(value)).filter((value) => Number.isFinite(value));
-                if (numericValues.length < 2) {
-                    return { state: 'neutral', icon: 'trending_flat', text: '--', percentage: null, deltaText: '--' };
+                const typeInfo = normalizeExerciseType(ex ? ex.type : 'Other');
+
+                if (!groupedByType[typeInfo.key]) {
+                    groupedByType[typeInfo.key] = { label: typeInfo.label, exercises: {} };
                 }
 
-                const first = numericValues[0];
-                const last = numericValues[numericValues.length - 1];
-                const delta = last - first;
-                const deltaText = formatMetricDelta(delta, unit);
+                const bucket = groupedByType[typeInfo.key].exercises;
 
-                if (first === 0) {
-                    if (delta === 0) return { state: 'neutral', icon: 'trending_flat', text: '0%', percentage: 0, deltaText };
-                    return { state: delta > 0 ? 'positive' : 'negative', icon: delta > 0 ? 'trending_up' : 'trending_down', text: 'N/A', percentage: null, deltaText };
-                }
+                if (!bucket[exKey]) bucket[exKey] = [];
+                bucket[exKey].push(l);
+            });
 
-                const percentage = (delta / Math.abs(first)) * 100;
-                if (!Number.isFinite(percentage)) return { state: 'neutral', icon: 'trending_flat', text: '--', percentage: null, deltaText };
+            const typeEntries = Object.keys(groupedByType).map(key => {
+                const entry = groupedByType[key];
+                const label = entry.label || key;
 
-                const rounded = Number(percentage.toFixed(1));
-                if (rounded === 0) return { state: 'neutral', icon: 'trending_flat', text: '0%', percentage: 0, deltaText };
+                const localizedLabel =
+                    (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function')
+                        ? (GN_I18N.localizeExerciseType(label) || label)
+                        : label;
 
-                return {
-                    state: rounded > 0 ? 'positive' : 'negative',
-                    icon: rounded > 0 ? 'trending_up' : 'trending_down',
-                    text: `${rounded > 0 ? '+' : ''}${rounded}%`,
-                    percentage: rounded,
-                    deltaText
-                };
-            };
-            const escapeHtml = (value) => String(value ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-            const renderChangeBadge = (values, label = '', unit = '') => {
-                const change = getChangeMeta(values, unit);
-                const shouldHideBadge =
-                    change.state === 'neutral' &&
-                    (change.percentage === 0 || change.percentage === null || change.text === '--');
-                if (shouldHideBadge) return '';
-                const labelMarkup = label ? `<span class="chart-change-label">${escapeHtml(label)}</span>` : '';
-                return `
-                    <span class="chart-change-badge is-${change.state}">
-                        ${labelMarkup}
-                        <span class="material-symbols-outlined" aria-hidden="true">${change.icon}</span>
-                        <span>${change.text}</span>
-                        <span aria-hidden="true">&nbsp;&nbsp;</span>
-                        <span>${change.deltaText}</span>
-                    </span>
-                `;
-            };
-            const getStrengthWeightPerRepSeries = (entries) => (Array.isArray(entries) ? entries : [])
-                .slice()
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .map((entry) => {
-                    const weight = Number(entry && entry.weight) || 0;
-                    const reps = (entry && entry.reps !== undefined && entry.reps !== null) ? Number(entry.reps) : 1;
-                    return safeMetricValue(reps > 0 ? weight / reps : weight);
-                });
-            const getCardioMetricSeries = (entries) => {
-                const sortedEntries = (Array.isArray(entries) ? entries : [])
-                    .slice()
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-                return {
-                    distance: sortedEntries.map((entry) => safeMetricValue(entry.distance)),
-                    duration: sortedEntries.map((entry) => safeMetricValue(getCardioDurationValue(entry), 0))
-                };
-            };
-            const getGroupEndpointSeries = (exercisesInType, metricBuilder) => {
-                const firstValues = [];
-                const lastValues = [];
+                return { key, entry, localizedLabel };
+            });
 
-                Object.values(exercisesInType || {}).forEach((entries) => {
-                    const series = metricBuilder(entries).filter((value) => Number.isFinite(Number(value)));
-                    if (series.length < 2) return;
-                    firstValues.push(Number(series[0]));
-                    lastValues.push(Number(series[series.length - 1]));
-                });
+            typeEntries.sort((a, b) => {
+                const left = a.localizedLabel || a.entry.label || a.key;
+                const right = b.localizedLabel || b.entry.label || b.key;
+                return left.localeCompare(right);
+            });
 
-                if (!firstValues.length || firstValues.length !== lastValues.length) return [];
-                const avgFirst = safeMetricValue(firstValues.reduce((sum, value) => sum + value, 0) / firstValues.length);
-                const avgLast = safeMetricValue(lastValues.reduce((sum, value) => sum + value, 0) / lastValues.length);
-                return [avgFirst, avgLast];
-            };
-            const getTypeTrendMeta = (typeKey, exercisesInType) => {
-                const isCardioType = typeKey === 'cardio';
-                if (isCardioType) {
-                    const distanceSeries = getGroupEndpointSeries(exercisesInType, (entries) => getCardioMetricSeries(entries).distance);
-                    const durationSeries = getGroupEndpointSeries(exercisesInType, (entries) => getCardioMetricSeries(entries).duration);
-                    const distanceChange = getChangeMeta(distanceSeries, translate('cardio_distance_unit', 'km'));
-                    if (distanceChange.state !== 'neutral') return distanceChange;
-                    const durationChange = getChangeMeta(durationSeries, translate('cardio_time_unit', 'min'));
-                    if (durationChange.state !== 'neutral') return durationChange;
-                    return (distanceSeries.length || durationSeries.length) ? distanceChange : null;
-                }
+            if (isRenderChartsStale()) return;
 
-                const weightSeries = getGroupEndpointSeries(exercisesInType, getStrengthWeightPerRepSeries);
-                const weightChange = getChangeMeta(weightSeries, translate('history_fmt_kg_suffix', 'kg'));
-                return weightSeries.length ? weightChange : null;
-            };
-            const getTypeProgressBadgesMarkup = (typeKey, exercisesInType) => {
-                const isCardioType = typeKey === 'cardio';
-                if (isCardioType) {
-                    const distanceSeries = getGroupEndpointSeries(exercisesInType, (entries) => getCardioMetricSeries(entries).distance);
-                    const durationSeries = getGroupEndpointSeries(exercisesInType, (entries) => getCardioMetricSeries(entries).duration);
-                    return [
-                        renderChangeBadge(distanceSeries, translate('cardio_distance_label', 'Distance'), translate('cardio_distance_unit', 'km')),
-                        renderChangeBadge(durationSeries, translate('cardio_time_label', 'Time'), translate('cardio_time_unit', 'min'))
-                    ].join('');
-                }
+            wrapper.innerHTML = "";
 
-                const weightSeries = getGroupEndpointSeries(exercisesInType, getStrengthWeightPerRepSeries);
-                return renderChangeBadge(weightSeries, '', translate('history_fmt_kg_suffix', 'kg'));
-            };
-            const stripBadgeIcons = (markup) => String(markup || '').replace(/<span class="material-symbols-outlined" aria-hidden="true">.*?<\/span>/g, '');
-            const renderTypeTrendIcon = (typeKey, exercisesInType) => {
-                const trend = getTypeTrendMeta(typeKey, exercisesInType);
-                if (!trend) {
-                    return '<span class="group-header-trend is-neutral" aria-hidden="true"><span class="material-symbols-outlined">horizontal_rule</span></span>';
-                }
-                const icon = trend.state === 'positive' ? 'trending_up' : 'trending_down';
-                return `<span class="group-header-trend is-${trend.state}" aria-hidden="true"><span class="material-symbols-outlined">${icon}</span></span>`;
-            };
-            const getCardioDurationValue = (entry) => {
-                if (!entry) return 0;
-                if (entry.duration !== undefined && entry.duration !== null) return entry.duration;
-                if (entry.time !== undefined && entry.time !== null) return entry.time;
-                if (entry.durationMinutes !== undefined && entry.durationMinutes !== null) return entry.durationMinutes;
-                return 0;
-            };
+            let typeIndex = 0;
+
             const renderMetricChart = (canvasId, labels, values, opts = {}) => {
                 const canvasEl = document.getElementById(canvasId);
                 if (!canvasEl) return;
-                const axisTitle = translate(opts.axisTitleKey, opts.axisTitleFallback);
-                const unitText = translate(opts.unitKey, opts.unitFallback);
+
+                const axisTitle = (window.GN_I18N && GN_I18N.t)
+                    ? (GN_I18N.t(opts.axisTitleKey) || opts.axisTitleFallback)
+                    : opts.axisTitleFallback;
+
+                const unitText = (window.GN_I18N && GN_I18N.t)
+                    ? (GN_I18N.t(opts.unitKey) || opts.unitFallback)
+                    : opts.unitFallback;
+
+                const valueLabelsPlugin = {
+                    id: 'valueLabels',
+                    afterDatasetsDraw(chart) {
+                        const { ctx } = chart;
+                        ctx.save();
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.font = 'bold 12px sans-serif';
+                        ctx.textAlign = 'center';
+
+                        chart.data.datasets.forEach((dataset, i) => {
+                            chart.getDatasetMeta(i).data.forEach((point, index) => {
+                                const value = dataset.data[index];
+                                if (!value) return;
+                                ctx.fillText(value + ' kg', point.x, point.y - 10);
+                            });
+                        });
+
+                        ctx.restore();
+                    }
+                };
+
                 new Chart(canvasEl, {
                     type: 'line',
-                    plugins: [lineDataLabelsPlugin],
+                    plugins: [valueLabelsPlugin],
                     data: {
                         labels,
                         datasets: [{
                             data: values,
                             borderColor: accentColorBase,
                             borderWidth: 3,
-                            tension: 0.4,
+                            tension: 0.3,
                             fill: true,
-                            backgroundColor: accentWithAlpha(0.1),
-                            pointRadius: 4,
+                            backgroundColor: accentWithAlpha(0.15), // 🔥 soft fill like v1
+                            pointRadius: 5,
                             pointBackgroundColor: accentColorBase,
-                            pointHoverRadius: 6,
-                            unit: unitText || ''
+                            pointBorderWidth: 0,
+                            pointHoverRadius: 6
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        layout: { padding: { left: 18, right: 18 } },
+                        layout: {
+                            padding: {
+                                top: 20,
+                                bottom: 10,
+                                left: 10,
+                                right: 10
+                            }
+                        },
                         plugins: {
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
                                     label(ctx) {
-                                        const val = ctx.parsed && ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
+                                        const val = ctx.parsed?.y ?? ctx.raw;
                                         return val + (unitText ? ' ' + unitText : '');
                                     }
                                 }
                             }
                         },
+                        elements: {
+                            line: {
+                                capBezierPoints: true
+                            }
+                        },
                         scales: {
                             x: {
-                                display: true,
+                                display: false,
                                 offset: true,
-                                ticks: { display: false },
-                                grid: { drawBorder: false },
-                                title: axisTitle ? { display: true, text: axisTitle } : { display: false }
+                                bounds: 'ticks',
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(255,255,255,0.05)',
+                                    drawBorder: false
+                                }
                             },
                             y: {
-                                grace: '15%',
-                                grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
-                                ticks: { display: false },
-                                title: { display: false }
+                                display: true,
+                                ticks: {
+                                    display: false
+                                },
+                                grid: {
+                                    color: 'rgba(255,255,255,0.05)', // 🔥 THIS restores depth
+                                    drawBorder: false
+                                }
                             }
                         }
                     }
                 });
             };
 
-            logs.forEach(l => {
-                const exKey = `${l.exerciseId}-${l.isCustom !== undefined ? !!l.isCustom : l.exerciseId > 0}`;
-                const ex = exMap[exKey];
-                const exId = exKey;
-                const typeInfo = normalizeExerciseType(ex ? ex.type : 'Other');
-                if (!groupedByType[typeInfo.key]) groupedByType[typeInfo.key] = { label: typeInfo.label, exercises: {} };
-                const bucket = groupedByType[typeInfo.key].exercises;
-                if (!bucket[exId]) bucket[exId] = [];
-                bucket[exId].push(l);
-            });
+            const getProgressData = (values) => {
+                if (!values || values.length < 2) return null;
 
-            const typeEntries = Object.keys(groupedByType).map(key => {
-                const entry = groupedByType[key];
-                const label = entry.label || key;
-                const localizedLabel = (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') ? (GN_I18N.localizeExerciseType(label) || label) : label;
-                return { key, entry, localizedLabel };
-            });
-            typeEntries.sort((a, b) => {
-                const left = a.localizedLabel || a.entry.label || a.key;
-                const right = b.localizedLabel || b.entry.label || b.key;
-                return left.localeCompare(right);
-            });
-            if (isRenderChartsStale()) return;
+                const first = values[0];
+                const last = values[values.length - 1];
 
-            wrapper.innerHTML = "";
+                if (!first || !last) return null;
 
-            let typeIndex = 0;
+                const diff = last - first;
+                const percent = (diff / first) * 100;
+
+                return {
+                    diff,
+                    percent
+                };
+            };
+
+            const renderProgressBadge = (values) => {
+                const data = getProgressData(values);
+                if (!data) return '';
+
+                const isPositive = data.diff > 0;
+                const isNegative = data.diff < 0;
+
+                const cls = isPositive
+                    ? 'is-positive'
+                    : isNegative
+                        ? 'is-negative'
+                        : 'is-neutral';
+
+                const icon = isPositive
+                    ? 'trending_up'
+                    : isNegative
+                        ? 'trending_down'
+                        : 'horizontal_rule';
+
+                const percentText = `${data.percent > 0 ? '+' : ''}${data.percent.toFixed(1)}%`;
+                const diffText = `${data.diff > 0 ? '+' : ''}${data.diff.toFixed(2)} kg`;
+
+                return `
+                    <div class="chart-change-badge ${cls}">
+                        <span class="material-symbols-outlined">${icon}</span>
+                        <span>${percentText}</span>
+                        <span>${diffText}</span>
+                    </div>
+                `;
+            };
+
+            const safeMetricValue = (value, precision = 2) => {
+                const num = Number(value);
+                if (!Number.isFinite(num)) return 0;
+                if (precision >= 0) return Number(num.toFixed(precision));
+                return num;
+            };
+
+            const getStrength1RMSeries = (entries) => (Array.isArray(entries) ? entries : [])
+                .slice()
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map((entry) => {
+                    const weight = Number(entry && entry.weight) || 0;
+                    const reps = (entry && entry.reps !== undefined && entry.reps !== null)
+                        ? Number(entry.reps)
+                        : 1;
+
+                    return safeMetricValue(window.estimate1RM(weight, reps));
+                });
+
+            const getGroupEndpointSeries = (exercisesInType, metricBuilder) => {
+                const firstValues = [];
+                const lastValues = [];
+
+                Object.values(exercisesInType || {}).forEach((entries) => {
+                    const series = metricBuilder(entries)
+                        .map(v => Number(v))
+                        .filter(v => Number.isFinite(v));
+
+                    if (series.length < 2) return;
+
+                    firstValues.push(series[0]);
+                    lastValues.push(series[series.length - 1]);
+                });
+
+                if (!firstValues.length || firstValues.length !== lastValues.length) {
+                    return [];
+                }
+
+                const avgFirst = firstValues.reduce((a, b) => a + b, 0) / firstValues.length;
+                const avgLast = lastValues.reduce((a, b) => a + b, 0) / lastValues.length;
+
+                return [avgFirst, avgLast];
+            };
+
+            const renderTypeTrendIcon = (typeKey, exercisesInType) => {
+                const values = getGroupEndpointSeries(exercisesInType, getStrength1RMSeries);
+
+                if (!values || values.length < 2) {
+                    return '<span class="group-header-trend is-neutral"><span class="material-symbols-outlined">horizontal_rule</span></span>';
+                }
+
+                const first = values[0];
+                const last = values[1];
+
+                if (last > first) {
+                    return '<span class="group-header-trend is-positive"><span class="material-symbols-outlined">trending_up</span></span>';
+                }
+
+                if (last < first) {
+                    return '<span class="group-header-trend is-negative"><span class="material-symbols-outlined">trending_down</span></span>';
+                }
+
+                return '<span class="group-header-trend is-neutral"><span class="material-symbols-outlined">horizontal_rule</span></span>';
+            };
+
             for (const typeInfo of typeEntries) {
                 if (isRenderChartsStale()) return;
+
                 const groupId = 'grp_' + (typeIndex++);
-                const localizedType = typeInfo.localizedLabel || typeInfo.entry.label || typeInfo.key;
-                const typeTrendIconMarkup = renderTypeTrendIcon(typeInfo.key, typeInfo.entry.exercises);
-                const typeProgressMarkup = stripBadgeIcons(getTypeProgressBadgesMarkup(typeInfo.key, typeInfo.entry.exercises));
+
+                const localizedType =
+                    typeInfo.localizedLabel || typeInfo.entry.label || typeInfo.key;
+
+                const exercisesInType = typeInfo.entry.exercises;
+
+                const typeTrendIconMarkup =
+                    renderTypeTrendIcon(typeInfo.key, exercisesInType);
+
+                const weightSeries =
+                    getGroupEndpointSeries(exercisesInType, getStrength1RMSeries);
+                
+                const groupProgressMarkup = renderProgressBadge(weightSeries);
 
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'exercise-group';
+
                 groupContainer.innerHTML = `
-                    <div class="group-header" data-group="${groupId}" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroup('${groupId}')" onkeydown="if(event.key==='Enter' || event.key===' ') toggleGroup('${groupId}');">
+                    <div class="group-header" data-group="${groupId}" role="button" tabindex="0"
+                        aria-expanded="false"
+                        onclick="toggleGroup('${groupId}')"
+                        onkeydown="if(event.key==='Enter' || event.key===' ') toggleGroup('${groupId}');">
+                        
                         <div class="group-header-main">
                             <div class="group-header-row">
                                 ${typeTrendIconMarkup}
                                 <div class="section-title-inline">${localizedType}</div>
                             </div>
-                            <div class="group-header-progress-expanded">${typeProgressMarkup}</div>
+                            <div class="group-header-progress-expanded">${groupProgressMarkup}</div>
                         </div>
+
                         <div class="group-header-trailing">
                             <span class="material-symbols-outlined chevron" aria-hidden="true">expand_more</span>
                         </div>
                     </div>
+
                     <div class="group-body" id="${groupId}"></div>
                 `;
+
                 wrapper.appendChild(groupContainer);
 
-                const exercisesInType = typeInfo.entry.exercises;
                 const body = groupContainer.querySelector('.group-body');
+
                 for (const exId of Object.keys(exercisesInType)) {
                     if (isRenderChartsStale()) return;
-                    const entries = exercisesInType[exId].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+                    const entries = exercisesInType[exId]
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
                     const lastEntry = entries[entries.length - 1];
                     const currentEx = exMap[exId];
+
                     const lang = GN_I18N && GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
-                    const displayName = currentEx ? ((lang === 'pt' && currentEx.namePT) ? currentEx.namePT : currentEx.name) : GN_I18N.t('unknown_exercise');
+
+                    const displayName = currentEx
+                        ? ((lang === 'pt' && currentEx.namePT)
+                            ? currentEx.namePT
+                            : currentEx.name)
+                        : GN_I18N.t('unknown_exercise');
+
                     const imgSrc = await getImg(currentEx?.imageId, currentEx?.isCustom);
+
                     if (isRenderChartsStale()) return;
 
-                    const box = document.createElement('div'); 
+                    const box = document.createElement('div');
                     box.className = 'chart-box';
+
                     const canvasId = `c-${lastEntry.exerciseId}-${!!lastEntry.isCustom}`.replace(/-/g, '_');
+
                     const isCardioType = typeInfo.key === 'cardio';
+
                     const chartLabels = entries.map(e => e.date.slice(5));
-                    const distanceValues = isCardioType ? entries.map(e => safeMetricValue(e.distance)) : null;
-                    const durationValues = isCardioType ? entries.map(e => safeMetricValue(getCardioDurationValue(e), 0)) : null;
-                    const weightValues = !isCardioType ? entries.map(e => {
-                        const w = Number(e.weight) || 0;
-                        const r = (e.reps !== undefined && e.reps !== null) ? Number(e.reps) : 1;
-                        const value = r > 0 ? w / r : w;
-                        return safeMetricValue(value);
-                    }) : null;
-                    const cardioCanvasIds = {
-                        distance: `${canvasId}_distance`,
-                        duration: `${canvasId}_duration`
-                    };
-                    const changeBadgesMarkup = isCardioType
-                        ? [
-                            renderChangeBadge(distanceValues, translate('cardio_distance_label', 'Distance'), translate('cardio_distance_unit', 'km')),
-                            renderChangeBadge(durationValues, translate('cardio_time_label', 'Time'), translate('cardio_time_unit', 'min'))
-                        ].join('')
-                        : renderChangeBadge(weightValues, '', translate('history_fmt_kg_suffix', 'kg'));
-                    const chartMarkup = isCardioType ? `
-                        <div class="cardio-charts">
-                            <div class="canvas-wrapper"><canvas id="${cardioCanvasIds.distance}"></canvas></div>
-                            <div class="canvas-wrapper"><canvas id="${cardioCanvasIds.duration}"></canvas></div>
-                        </div>
-                    ` : `
-                        <div class="canvas-wrapper"><canvas id="${canvasId}"></canvas></div>
-                    `;
+
+                    const weightValues = !isCardioType
+                        ? entries.map(e => {
+                            const w = Number(e.weight) || 0;
+                            const r = (e.reps !== undefined && e.reps !== null)
+                                ? Number(e.reps)
+                                : 1;
+
+                            return safeMetricValue(window.estimate1RM(w, r));
+                        })
+                        : null;
+
+                    const progressMarkup = renderProgressBadge(weightValues);
 
                     box.innerHTML = `
                         <div class="chart-header">
@@ -1008,38 +993,27 @@
                                 <img src="${imgSrc}" class="chart-thumb">
                                 <div class="chart-title-wrap">
                                     <div class="chart-title">${displayName}</div>
-                                    <div class="chart-change-list">${changeBadgesMarkup}</div>
+                                    <div class="chart-change-list">${progressMarkup}</div>
                                 </div>
                             </div>
                         </div>
-                        ${chartMarkup}`;
+                        <div class="canvas-wrapper">
+                            <canvas id="${canvasId}"></canvas>
+                        </div>
+                    `;
+
                     body.appendChild(box);
 
                     if (isRenderChartsStale()) return;
-                    if (isCardioType) {
-                        renderMetricChart(cardioCanvasIds.distance, chartLabels, distanceValues, {
-                            axisTitleKey: 'cardio_distance_label',
-                            axisTitleFallback: 'Distance (km)',
-                            unitKey: 'cardio_distance_unit',
-                            unitFallback: 'km'
-                        });
-                        if (isRenderChartsStale()) return;
-                        renderMetricChart(cardioCanvasIds.duration, chartLabels, durationValues, {
-                            axisTitleKey: 'cardio_time_label',
-                            axisTitleFallback: 'Time (min)',
-                            unitKey: 'cardio_time_unit',
-                            unitFallback: 'min'
-                        });
-                    } else {
-                        if (isRenderChartsStale()) return;
+
+                    if (!isCardioType) {
                         renderMetricChart(canvasId, chartLabels, weightValues, {
-                            axisTitleKey: 'weight_per_rep',
-                            axisTitleFallback: 'Weight per rep',
+                            axisTitleKey: 'estimated_1rm',
+                            axisTitleFallback: 'Estimated 1RM',
                             unitKey: 'history_fmt_kg_suffix',
                             unitFallback: 'kg'
                         });
                     }
-
                 }
             }
         }
@@ -1280,6 +1254,7 @@
                 }
             });
         }
+        
         async function updateFrequencyChart(logs) {
             if (!logs) logs = await db.history.toArray();
             const period = document.getElementById('frequencyFilter').value;
