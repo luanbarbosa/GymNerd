@@ -48,6 +48,52 @@
         /* Snackbar (temporary) */
         #snackbar { position: fixed; left: 50%; transform: translateX(-50%) translateY(8px); bottom: 18px; background: rgba(2,6,23,0.88); color: #ffffff; padding: 10px 14px; border-radius: 10px; box-shadow: 0 8px 20px rgba(2,6,23,0.6); opacity: 0; pointer-events: none; transition: opacity 200ms ease, transform 200ms ease; z-index: 9999; font-weight: 700; font-family: var(--app-font-family); }
         #snackbar.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+        /* Filter pill styles matching statistics.html */
+        .chart-pill-filter {
+            margin: 12px 0;
+            display: flex;
+            flex-wrap: nowrap;
+            gap: clamp(4px, 1.5vw, 8px);
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-width: 0;
+        }
+        .chart-pill-option {
+            appearance: none;
+            flex: 1 1 0;
+            min-width: 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-dim);
+            border-radius: 999px;
+            padding: clamp(6px, 1.8vw, 8px) clamp(8px, 2.6vw, 14px);
+            font-size: clamp(0.62rem, 2.1vw, 0.8rem);
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+            cursor: pointer;
+            transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+        }
+        .chart-pill-option:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+        .chart-pill-option.is-active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            box-shadow: none;
+        }
+        .chart-pill-option:focus-visible {
+            outline: 2px solid rgba(242, 194, 75, 0.75);
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body>
@@ -79,7 +125,14 @@
             </div>
         </div>
 
-        <div class="card" style="margin-top:12px;">
+        <div class="chart-pill-filter" id="weight-chart-filter" role="tablist" aria-label="Weight chart period filter">
+            <button type="button" class="chart-pill-option is-active" data-period="all" aria-selected="true" data-i18n="all_time">All</button>
+            <button type="button" class="chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
+            <button type="button" class="chart-pill-option" data-period="6m" aria-selected="false" data-i18n="last_6_months">6 months</button>
+            <button type="button" class="chart-pill-option" data-period="month" aria-selected="false" data-i18n="this_month">This month</button>
+        </div>
+
+        <div class="card" style="margin-top:0;">
             <div class="measure-progress-header">
                 <h3 style="margin:0;" data-i18n="weight_progress">Weight progress</h3>
                 <div id="weight-progress-indicator" class="measure-change-badge is-neutral" aria-live="polite" style="display:none;">
@@ -492,6 +545,67 @@ function updateMeasureWeightProgressIndicator(values) {
     indicator.style.display = 'inline-flex';
 }
 
+const MEASURE_CHART_FILTER_KEY = 'gn_measurements_chart_pill_filter';
+const CHART_PILL_FILTER_VALUES = ['all', 'yoy', '6m', 'month'];
+
+function getStoredFilter() {
+    try {
+        const stored = localStorage.getItem(MEASURE_CHART_FILTER_KEY);
+        return CHART_PILL_FILTER_VALUES.includes(stored) ? stored : 'all';
+    } catch (e) { return 'all'; }
+}
+
+function applyFilterUI(period) {
+    const pills = document.querySelectorAll('#weight-chart-filter .chart-pill-option');
+    pills.forEach(p => {
+        const active = p.dataset.period === period;
+        p.classList.toggle('is-active', active);
+        p.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+}
+
+function getFilterStartDate(period) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (period === 'month') return new Date(today.getFullYear(), today.getMonth(), 1);
+    if (period === '6m') {
+        const start = new Date(today);
+        start.setMonth(start.getMonth() - 6);
+        return start;
+    }
+    if (period === 'yoy') {
+        const start = new Date(today);
+        start.setMonth(start.getMonth() - 12);
+        return start;
+    }
+    return null;
+}
+
+function filterByDate(items, period) {
+    const start = getFilterStartDate(period);
+    if (!start) return items;
+    return items.filter(item => {
+        if (!item || !item.date) return false;
+        const d = new Date(item.date + 'T00:00:00');
+        return d >= start;
+    });
+}
+
+function initFilter() {
+    const period = getStoredFilter();
+    applyFilterUI(period);
+    const pills = document.querySelectorAll('#weight-chart-filter .chart-pill-option');
+    pills.forEach(p => {
+        p.addEventListener('click', () => {
+            const next = p.dataset.period || 'all';
+            localStorage.setItem(MEASURE_CHART_FILTER_KEY, next);
+            applyFilterUI(next);
+            renderMeasureWeightChart();
+            renderWeightHistory();
+        });
+    });
+}
+
 async function renderMeasureWeightChart() {
     try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) {}
     let weights = [];
@@ -502,15 +616,15 @@ async function renderMeasureWeightChart() {
         }
     } catch (e) { weights = []; }
 
-    // sort by date and filter invalid entries before using
-    try { weights = weights.sort((a,b) => String(a.date).localeCompare(String(b.date))); } catch(e){}
+    // sort by date
+    weights.sort((a,b) => String(a.date).localeCompare(String(b.date)));
 
-    // debug: log retrieved weights
-    try { console.log('[measure] loaded weights from db:', weights.length, weights); } catch(e){}
+    const period = getStoredFilter();
+    weights = filterByDate(weights, period);
 
     if (!weights || weights.length === 0) {
         const stored = parseFloat(localStorage.getItem('user_weight'));
-        if (!Number.isNaN(stored)) {
+        if (!Number.isNaN(stored) && period === 'all') {
             const today = new Date().toISOString().slice(0,10);
             weights = [{ date: today, weight: stored }];
         }
@@ -519,22 +633,20 @@ async function renderMeasureWeightChart() {
     const canvas = document.getElementById('weightChartMeasure');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    if (!weights || weights.length === 0) {
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.font = '14px sans-serif';
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillText((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('measure_no_weight_data') : 'No weight data', 20, 40);
-        return;
-    }
-
+    
     // filter out entries with invalid weight values
     const valid = weights.filter(w => w && w.date && !Number.isNaN(Number(w.weight)));
-    try { console.log('[measure] valid weights:', valid.length, valid); } catch(e){}
+    
     if (!valid || valid.length === 0) {
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        if (window.measureWeightChartInstance) {
+            window.measureWeightChartInstance.destroy();
+            window.measureWeightChartInstance = null;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.font = '14px sans-serif';
         ctx.fillStyle = '#94a3b8';
-        ctx.fillText((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_weight_data') : 'No weight data', 20, 40);
+        ctx.textAlign = 'center';
+        ctx.fillText((window.GN_I18N && GN_I18N.t) ? GN_I18N.t('measure_no_weight_data') : 'No weight data', canvas.width/2, canvas.height/2);
         return;
     }
 
@@ -583,7 +695,11 @@ function formatDateDisplay(dateStr){
 
 async function renderWeightHistory() {
     try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch(e){}
-    const weights = (window.db && db.weights) ? await db.weights.orderBy('date').reverse().toArray() : [];
+    let weights = (window.db && db.weights) ? await db.weights.orderBy('date').reverse().toArray() : [];
+    
+    const period = getStoredFilter();
+    weights = filterByDate(weights, period);
+
     const container = document.getElementById('weight-history');
     if (!container) return;
     container.innerHTML = '';
@@ -630,6 +746,7 @@ async function deleteWeight(date) {
 
 document.addEventListener('DOMContentLoaded', function(){
     try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(document); } catch(e){}
+    initFilter();
     try { renderMeasureWeightChart(); } catch(e){}
     try { if (typeof renderWeightHistory === 'function') renderWeightHistory(); } catch(e){}
 });
