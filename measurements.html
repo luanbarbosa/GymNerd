@@ -467,13 +467,6 @@
                 await db.weights.put({ date: dateStr, weight: Number(value.toFixed(1)) });
                 console.log('[measure] db.weights.put complete');
                     try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
-                    // Perform blocking Drive sync showing full-screen loader
-                    try {
-                        try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...'); } catch(e){}
-                        if (!isLocalModeEnabled() && typeof DriveStorage !== 'undefined' && db) {
-                            try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after weight save failed', e); }
-                        }
-                    } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
             }
         } catch (err) { console.error('[measure] save error', err); }
         // refresh the chart after saving so the UI updates immediately
