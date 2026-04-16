@@ -8,6 +8,73 @@ const BackgroundSync = {
     _syncQueued: false,
 
     /**
+     * Update sync status icon if present in DOM.
+     */
+    updateStatusUI() {
+        const icon = document.getElementById('sync-status-icon');
+        if (!icon) return;
+
+        if (window.DEMO_MODE) {
+            icon.style.display = 'none';
+            return;
+        }
+
+        const hasChanges = localStorage.getItem('has_local_changes') === 'true';
+        const inProgress = this._syncInProgress;
+
+        // Base style: match topbar icons
+        icon.style.display = 'inline-flex';
+        icon.style.alignItems = 'center';
+        icon.style.justifyContent = 'center';
+        icon.style.padding = '6px';
+        icon.style.opacity = '1';
+        icon.style.cursor = 'pointer';
+
+        if (inProgress || hasChanges) {
+            icon.textContent = 'cloud_upload';
+            icon.style.color = 'var(--accent-color)';
+        } else {
+            icon.textContent = 'cloud_done';
+            icon.style.color = 'var(--text-main-color)';
+        }
+
+        // Add click handler
+        if (!icon.dataset.bound) {
+            icon.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const isSyncing = this._syncInProgress || localStorage.getItem('has_local_changes') === 'true';
+                
+                if (isSyncing) {
+                    const msg = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('syncing_in_background') : 'Sending data to Google Drive in the background automatically.';
+                    alert(msg);
+                } else {
+                    const lastSync = localStorage.getItem('last_sync_time');
+                    let timeStr = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('never_synced') : 'Never';
+                    
+                    if (lastSync) {
+                        try {
+                            const date = new Date(lastSync);
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const year = date.getFullYear();
+                            const time = date.toLocaleTimeString();
+                            timeStr = `${day}/${month}/${year}, ${time}`;
+                        } catch (e) {
+                            timeStr = lastSync;
+                        }
+                    }
+                    
+                    const template = (typeof GN_I18N !== 'undefined') ? GN_I18N.t('last_sync_label') : 'Last sync: {t}';
+                    alert(template.replace('{t}', timeStr));
+                }
+            });
+            icon.dataset.bound = 'true';
+        }
+    },
+
+    /**
      * Initialize background sync.
      * Hooks into Dexie database changes.
      */
@@ -34,6 +101,16 @@ const BackgroundSync = {
             console.info('[BackgroundSync] Pending changes detected on startup, triggering sync');
             this.trigger();
         }
+
+        // Trigger sync on page hide/close
+        window.addEventListener('pagehide', () => {
+            if (localStorage.getItem('has_local_changes') === 'true' && !this._syncInProgress) {
+                console.info('[BackgroundSync] App hiding with pending changes, attempting immediate sync');
+                this.sync();
+            }
+        });
+
+        this.updateStatusUI();
     },
 
     /**
@@ -41,6 +118,7 @@ const BackgroundSync = {
      */
     trigger() {
         localStorage.setItem('has_local_changes', 'true');
+        this.updateStatusUI();
         
         if (this._debounceTimer) {
             clearTimeout(this._debounceTimer);
@@ -63,17 +141,20 @@ const BackgroundSync = {
 
         if (window.DEMO_MODE) {
             console.debug('[BackgroundSync] Sync skipped: DEMO_MODE active');
+            this.updateStatusUI();
             return;
         }
 
         const token = localStorage.getItem('google_token');
         if (!token || token === 'local-bypass') {
             console.debug('[BackgroundSync] Sync skipped: No Google token or local bypass');
+            this.updateStatusUI();
             return;
         }
 
         this._syncInProgress = true;
         this._syncQueued = false;
+        this.updateStatusUI();
 
         console.info('[BackgroundSync] Starting stealthy sync');
         
@@ -89,6 +170,7 @@ const BackgroundSync = {
             console.error('[BackgroundSync] Stealthy sync failed with error:', err);
         } finally {
             this._syncInProgress = false;
+            this.updateStatusUI();
             if (this._syncQueued) {
                 console.debug('[BackgroundSync] Running queued sync');
                 this.sync();
@@ -109,3 +191,5 @@ if (window.db) {
         }
     }, 500);
 }
+
+window.BackgroundSync = BackgroundSync;
