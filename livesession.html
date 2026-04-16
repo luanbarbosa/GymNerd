@@ -27,6 +27,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="background-sync.js"></script>
     <script src="tokens-logic.js"></script>
     <script src="gn-i18n.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
@@ -3208,39 +3209,10 @@
                 // Clear in-memory/active session state now that session was recorded locally
                 clearSessionState();
 
-                // Attempt to sync with Drive (with timeout). Wait for a successful sync before completing navigation.
-                let syncOk = false;
-                let lastSyncError = null;
-                if (isLocalModeEnabled()) {
-                    syncOk = true;
-                } else if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
-                    try {
-                        try {
-                            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...');
-                        } catch (e) {}
-
-                        syncOk = await Promise.race([
-                            DriveStorage.sync(db, ['history', 'routines'], { showAlert: false }),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error("Sync timeout")), 8000))
-                        ]).then(res => !!res).catch(e => { throw e; });
-                    } catch (syncErr) {
-                        console.warn("Drive sync failed or timed out:", syncErr);
-                        syncOk = false;
-                        lastSyncError = syncErr;
-                    } finally {
-                        try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-                    }
-                }
-
-                if (!syncOk) {
-                    handleDriveSyncFailure(lastSyncError);
-                    return;
-                }
-
-                // Sync succeeded
-
+                // Set refresh flag for home page
                 try { localStorage.setItem(HOME_REFRESH_FLAG, '1'); } catch(e){}
 
+                // Navigate back immediately. BackgroundSync (via Dexie hooks) will handle the Drive backup.
                 goBack();
             } catch (err) {
                 alert(GN_I18N.t('debug_error_prefix') + err.message + "\n" + err.stack);

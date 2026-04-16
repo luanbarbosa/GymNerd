@@ -26,6 +26,7 @@
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="background-sync.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
@@ -707,15 +708,10 @@
                     if (db.frozen_days) await db.frozen_days.clear();
                     if (db.token_events) await db.token_events.clear();
                 } catch (e) { console.error('[UI] failed to clear history', e); throw e; }
-                // Try to sync the removal to Drive
-                try {
-                    if (typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
-                        await DriveStorage.sync(db);
-                    }
-                } catch (e) {
-                    console.error('[UI] deleteHistory sync failed', e);
-                }
-                try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+                try { 
+                    localStorage.setItem('has_local_changes', 'true');
+                    if (typeof BackgroundSync !== 'undefined') BackgroundSync.trigger();
+                } catch(e){}
                 const okMsg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('delete_history_success') || 'History deleted and synced.') : 'History deleted and synced.';
                 alert(okMsg);
                 try { history.back(); } catch(e) {}

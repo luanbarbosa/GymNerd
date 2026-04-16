@@ -19,6 +19,7 @@
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="background-sync.js"></script>
     <link rel="stylesheet" href="styles/colors.css">
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/fonts.css">
@@ -1041,31 +1042,18 @@
             if (editingId) {
                 await db.routines.update(editingId, { name, exerciseIds });
                 localStorage.setItem('has_local_changes', 'true');
-                // Blocking Drive sync before navigating away
-                try {
-                    try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...'); } catch(e){}
-                    if (!isLocalModeEnabled() && typeof DriveStorage !== 'undefined' && db) {
-                        try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after saving routine (edit) failed', e); }
-                    }
-                } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
                 try { if (window.spaNavigate) { window.spaNavigate('routines.html?id=' + editingId); return; } } catch(e) {}
                 try { history.back(); return; } catch(e) {}
                 location.href = 'routines.html?id=' + editingId;
             } else {
                 const id = await db.routines.add({ name, exerciseIds });
                 localStorage.setItem('has_local_changes', 'true');
-                // Blocking Drive sync before navigating away
-                try {
-                    try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...'); } catch(e){}
-                    if (!isLocalModeEnabled() && typeof DriveStorage !== 'undefined' && db) {
-                        try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after saving routine (create) failed', e); }
-                    }
-                } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
                 try { if (window.spaNavigate) { window.spaNavigate('routines.html?id=' + id); return; } } catch(e) {}
                 try { history.back(); return; } catch(e) {}
                 location.href = 'routines.html?id=' + id;
             }
         }
+
 
         // Minimal custom-exercise handlers (reused)
         function openCreateModal() { 

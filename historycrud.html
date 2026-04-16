@@ -18,6 +18,7 @@
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="background-sync.js"></script>
     <script src="tokens-logic.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/colors.css">
@@ -696,32 +697,19 @@
             }
         }
         localStorage.setItem('has_local_changes', 'true');
-        // Perform a blocking Google Drive sync showing the full-screen loader.
-        try {
-            try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...'); } catch(e){}
-            if (!isLocalModeEnabled() && typeof DriveStorage !== 'undefined' && db) {
-                try {
-                    await DriveStorage.sync(db);
-                } catch (e) {
-                    console.error('Drive sync error', e);
-                }
+        if (awardedTokens > 0) {
+            try {
+                const template = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
+                    ? (GN_I18N.t('token_milestone_reward') || 'You won {n} Token!')
+                    : 'You won {n} Token!';
+                alert(template.replace('{n}', String(awardedTokens)));
+            } catch (e) {
+                console.error('Failed to alert token milestone reward', e);
             }
-            if (awardedTokens > 0) {
-                try {
-                    const template = (typeof GN_I18N !== 'undefined' && GN_I18N.t)
-                        ? (GN_I18N.t('token_milestone_reward') || 'You won {n} Token!')
-                        : 'You won {n} Token!';
-                    alert(template.replace('{n}', String(awardedTokens)));
-                } catch (e) {
-                    console.error('Failed to alert token milestone reward', e);
-                }
-            }
-        } finally {
-            try { if (window.hideLoading) window.hideLoading(); } catch(e){}
-            // Navigate to history view with start flag regardless of sync result
-            try { if (window.spaNavigate) { window.spaNavigate('history.html'); return; } } catch(e) {}
-            location.href = 'history.html';
         }
+        // Navigate to history view with start flag regardless of sync result
+        try { if (window.spaNavigate) { window.spaNavigate('history.html'); return; } } catch(e) {}
+        location.href = 'history.html';
     }
 
     async function deleteDateLogs(date) { /* not used here, but keep for API parity */ }

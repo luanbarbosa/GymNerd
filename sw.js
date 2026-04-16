@@ -8,6 +8,7 @@ const ASSETS = [
   './auth.js',
   './db.js',
   './drive-storage.js',
+  './background-sync.js',
   './gn-i18n.js',
   './icons/icon-192.svg',
   './icons/icon-512.svg'

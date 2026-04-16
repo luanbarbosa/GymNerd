@@ -19,6 +19,7 @@
     <script src="drive-storage.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script src="db.js"></script>
+    <script src="background-sync.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/fonts.css">
     <link rel="stylesheet" href="styles/mode-support.css">
@@ -276,13 +277,6 @@
                     await db.history.where('date').equals(date).delete();
                     localStorage.setItem('has_local_changes', 'true');
                     renderHistory();
-                    // Perform blocking Drive sync for delete action
-                    try {
-                        try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...'); } catch(e){}
-                        if (!isLocalModeEnabled() && typeof DriveStorage !== 'undefined' && db) {
-                            try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after deleteDateLogs failed', e); }
-                        }
-                    } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
                 }
             } else {
                 if(confirm(`Delete all entries for ${fmt}?`)) {
@@ -305,13 +299,6 @@
                 await db.history.delete(id);
                 localStorage.setItem('has_local_changes', 'true');
                 renderHistory();
-                // Perform blocking Drive sync for delete action
-                try {
-                    try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...'); } catch(e){}
-                    if (!isLocalModeEnabled() && typeof DriveStorage !== 'undefined' && db) {
-                        try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after deleteLog failed', e); }
-                    }
-                } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
             } catch (e) {
                 console.error('Failed to delete log', e);
             }
@@ -659,13 +646,6 @@
                     await db.history.where('sessionId').equals(Number(sessionId)).delete();
                     localStorage.setItem('has_local_changes', 'true');
                     renderHistory();
-                    // Perform blocking Drive sync for delete action
-                    try {
-                        try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...'); } catch(e){}
-                        if (!isLocalModeEnabled() && typeof DriveStorage !== 'undefined' && db) {
-                            try { await DriveStorage.sync(db); } catch (e) { console.error('Drive sync after deleteSession failed', e); }
-                        }
-                    } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
                 }
             } else {
                 if (confirm('Delete this session?')) {

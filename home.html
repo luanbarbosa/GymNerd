@@ -309,6 +309,7 @@
 	<script src="drive-storage.js"></script>
 	<script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 	<script src="db.js"></script>
+	<script src="background-sync.js"></script>
 	<script>
 		// Local mode detection: if there's no session token in cookies or localStorage,
 		// enable local mode which disables token refresh and Drive sync.
@@ -1558,7 +1559,11 @@
 				<div id="topbar-title">
 					<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
 				</div>
-				<div id="topbar-actions">
+				<div id="topbar-actions" style="display:flex; align-items:center;">
+					<!-- Sync status icon -->
+					<span id="sync-status-icon" class="material-symbols-outlined" 
+						style="font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24; font-size: 24px; color: var(--text-main-color); margin-right: 8px; vertical-align: middle; opacity: 1; display: inline-flex; align-items: center; justify-content: center; padding: 6px;">cloud_done</span>
+					
 					<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure"
 						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;margin-right:8px;">
 							<span class="material-symbols-outlined" aria-hidden="true"
@@ -1595,11 +1600,6 @@
 				style="color:var(--text-dim); padding:20px; text-align:center; margin-top:0; font-weight:400; font-size:1.15rem; background:transparent;">
 			</div>
 		</div>
-		<button id="sync-pending-btn" class="nav-card"
-			style="display:none; width:calc(100% - 40px); margin:12px 20px; background: #f59e0b; color: white; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);"
-			onclick="syncToDrive()">
-			<span data-i18n="sync_pending">☁️ Sync Pending Changes</span>
-		</button>
 
 		<div id="body">
 			<div style="padding: 0 20px;">
@@ -1783,28 +1783,7 @@
 				}
 			} catch (e) { }
 
-			function updatePendingButtonVisibility() {
-				const btn = document.getElementById('sync-pending-btn');
-				if (!btn) return;
-				try {
-					if (window.DEMO_MODE) { btn.style.display = 'none'; return; }
-					const hasChanges = localStorage.getItem('has_local_changes') === 'true';
-					btn.style.display = hasChanges ? 'block' : 'none';
-				} catch (e) { console.error('Error reading has_local_changes', e); }
-			}
 
-			window.syncToDrive = async function () {
-				try {
-					if (window.DEMO_MODE) { console.info('[DemoMode] syncToDrive skipped'); return false; }
-					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
-					const ok = await DriveStorage.sync(db);
-					if (ok) updatePendingButtonVisibility();
-				} catch (e) {
-					console.error('Sync to Drive failed:', e);
-				}
-			};
-
-			try { updatePendingButtonVisibility(); } catch (e) { }
 
 			const HOME_TOKEN_RAIN_ICONS = ['icons/coin1.svg', 'icons/coin2.svg', 'icons/coin3.svg', 'icons/coin4.svg', 'icons/coin5.svg', 'icons/coin6.svg'];
 			const HOME_TOKEN_RAIN_COUNT = 16;
@@ -2106,13 +2085,6 @@
 									const result = await db.freezeDay(todayKey);
 									if (result && result.ok) {
 										try { localStorage.setItem('has_local_changes', 'true'); } catch (e) {}
-										try {
-											if (!window.DEMO_MODE && typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
-												await DriveStorage.sync(db, ['tokens', 'frozen_days'], { showAlert: false });
-											}
-										} catch (e) {
-											console.error('Freeze day sync failed', e);
-										}
 										try { if (typeof refreshHomeData === 'function') await refreshHomeData(); } catch (e) {}
 									}
 								}

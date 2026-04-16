@@ -88,10 +88,12 @@ const DriveStorage = {
         return response.json();
     },
 
-    async getFolderId(createIfMissing = true, { skipLoader = false, loadingMessageKey = 'syncing_with_drive', loadingFallback = 'Syncing with Google Drive...' } = {}) {
+    async getFolderId(createIfMissing = true, options = {}) {
+        const { skipLoader = false, silent = false, loadingMessageKey = 'syncing_with_drive', loadingFallback = 'Syncing with Google Drive...' } = options;
+        const finalSkipLoader = skipLoader || silent;
         const q = `name='${this.FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
         const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, {
-            _skipLoader: skipLoader,
+            _skipLoader: finalSkipLoader,
             _loadingMessageKey: loadingMessageKey,
             _loadingFallback: loadingFallback
         });
@@ -104,7 +106,7 @@ const DriveStorage = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: this.FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' }),
-            _skipLoader: skipLoader,
+            _skipLoader: finalSkipLoader,
             _loadingMessageKey: loadingMessageKey,
             _loadingFallback: loadingFallback
         });
@@ -112,10 +114,12 @@ const DriveStorage = {
         return folder.id;
     },
 
-    async findFileId(name, folderId, { skipLoader = false, loadingMessageKey = 'syncing_with_drive', loadingFallback = 'Syncing with Google Drive...' } = {}) {
+    async findFileId(name, folderId, options = {}) {
+        const { skipLoader = false, silent = false, loadingMessageKey = 'syncing_with_drive', loadingFallback = 'Syncing with Google Drive...' } = options;
+        const finalSkipLoader = skipLoader || silent;
         const q = `name='${name}' and '${folderId}' in parents and trashed=false`;
         const response = await this._authFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, {
-            _skipLoader: skipLoader,
+            _skipLoader: finalSkipLoader,
             _loadingMessageKey: loadingMessageKey,
             _loadingFallback: loadingFallback
         });
@@ -182,13 +186,22 @@ const DriveStorage = {
         }
     },
 
-    async save(data) {
+    async save(data, options = {}) {
+        const silent = !!options.silent;
         try {
-            const folderId = await this.getFolderId(true, { loadingMessageKey: 'sending_data_to_drive', loadingFallback: 'Sending data to Google Drive...' });
+            const folderId = await this.getFolderId(true, { 
+                silent,
+                loadingMessageKey: 'sending_data_to_drive', 
+                loadingFallback: 'Sending data to Google Drive...' 
+            });
             
             for (const [key, content] of Object.entries(data)) {
                 const fileName = `${key}.json`;
-                const fileId = await this.findFileId(fileName, folderId, { loadingMessageKey: 'sending_data_to_drive', loadingFallback: 'Sending data to Google Drive...' });
+                const fileId = await this.findFileId(fileName, folderId, { 
+                    silent,
+                    loadingMessageKey: 'sending_data_to_drive', 
+                    loadingFallback: 'Sending data to Google Drive...' 
+                });
                 
                 const metadata = { name: fileName };
                 
@@ -209,15 +222,18 @@ const DriveStorage = {
                 const method = fileId ? 'PATCH' : 'POST';
 
                 // uploading file
+                if (silent) console.debug(`[DriveStorage] Uploading ${fileName}...`);
                 const response = await this._authFetch(url, {
                     method,
                     headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
                     body,
+                    _skipLoader: silent,
                     _loadingMessageKey: 'sending_data_to_drive',
                     _loadingFallback: 'Sending data to Google Drive...'
                 });
 
                 await this._handleResponse(response);
+                if (silent) console.debug(`[DriveStorage] Uploaded ${fileName} successfully.`);
                 // uploaded file
             }
         } catch (error) {
@@ -251,11 +267,19 @@ const DriveStorage = {
 
     async sync(db, tableNames = null, options = {}) {
         const token = localStorage.getItem('google_token');
-        if (!token || token === 'local-bypass') return false;
+        if (!token || token === 'local-bypass') {
+            if (options.silent) console.info('[DriveStorage] Silent sync skipped: No Google token');
+            return false;
+        }
 
+        const silent = !!options.silent;
         try {
-            console.info('[DriveStorage] sync start');
-            if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...');
+            if (silent) {
+                console.info('[DriveStorage] Silent sync start');
+            } else {
+                console.info('[DriveStorage] sync start');
+                if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...');
+            }
 
             if (db && typeof db.ensureTokensInitialized === 'function') {
                 await db.ensureTokensInitialized();
@@ -265,6 +289,7 @@ const DriveStorage = {
             // Catalog images and exercises are always synced from URL source and should not have destructive changes
             const tables = tableNames || ['custom_exercises', 'custom_images', 'routines', 'history', 'weights', 'tokens', 'frozen_days', 'token_events'];
             
+            if (silent) console.debug('[DriveStorage] Preparing data for silent sync. Tables:', tables);
             for (const table of tables) {
                 if (db[table]) {
                     data[table] = await db[table].toArray();
@@ -273,15 +298,25 @@ const DriveStorage = {
             
             data.lastSync = { time: new Date().toISOString(), timezone: 'UTC' };
 
-            await this.save(data);
+            // When silent, we skip the loader in internal calls
+            const originalSave = this.save;
+            if (silent) {
+                // Temporarily wrap _authFetch or pass options to save if save was modified
+                // Looking at current save implementation, it uses _authFetch with its own loader options.
+                // I need to modify save to accept silent option as well.
+                await this.save(data, { silent: true });
+            } else {
+                await this.save(data);
+            }
+
             localStorage.setItem('last_sync_time', data.lastSync.time);
             localStorage.setItem('has_local_changes', 'false');
-            // sync complete
+            if (silent) console.info('[DriveStorage] Silent sync complete');
             return true;
         } catch (error) {
-            console.error("Auto-sync failed:", error);
+            console.error(silent ? "[DriveStorage] Silent sync failed:" : "Auto-sync failed:", error);
             const { showAlert = true } = options || {};
-            if (showAlert) {
+            if (!silent && showAlert) {
                 if (error.message === "AUTH_EXPIRED") {
                     alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('google_session_expired') : "Your Google session expired. Please login again to keep syncing.");
                 } else {
@@ -290,7 +325,7 @@ const DriveStorage = {
             }
             return false;
         } finally {
-            if (window.hideLoading) window.hideLoading();
+            if (!silent && window.hideLoading) window.hideLoading();
         }
     }
 };
