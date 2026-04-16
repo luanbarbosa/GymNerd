@@ -726,13 +726,6 @@ async function deleteWeight(date) {
         localStorage.setItem('has_local_changes', 'true');
         await renderWeightHistory();
         try { if (typeof renderMeasureWeightChart === 'function') await renderMeasureWeightChart(); } catch(e){}
-        // Perform blocking Drive sync for weight deletion
-        try {
-            try { if (window.showLoading) window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('sending_data_to_drive') : 'Sending data to Google Drive...'); } catch(e){}
-            if (!isLocalModeEnabled() && typeof DriveStorage !== 'undefined' && db) {
-                try { await DriveStorage.sync(db); } catch (err) { console.error('Drive sync after deleteWeight failed', err); }
-            }
-        } finally { try { if (window.hideLoading) window.hideLoading(); } catch(e){} }
     } catch (e) {
         console.error('Failed to delete weight', e);
     }

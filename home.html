@@ -2107,13 +2107,6 @@
 									const result = await db.freezeDay(todayKey);
 									if (result && result.ok) {
 										try { localStorage.setItem('has_local_changes', 'true'); } catch (e) {}
-										try {
-											if (!window.DEMO_MODE && typeof DriveStorage !== 'undefined' && DriveStorage.sync) {
-												await DriveStorage.sync(db, ['tokens', 'frozen_days'], { showAlert: false });
-											}
-										} catch (e) {
-											console.error('Freeze day sync failed', e);
-										}
 										try { if (typeof refreshHomeData === 'function') await refreshHomeData(); } catch (e) {}
 									}
 								}
