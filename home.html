@@ -1209,6 +1209,15 @@
 			overflow: hidden;
 		}
 
+		#type-change-widget-card {
+			width: 100%;
+			border-radius: 12px;
+			background-color: var(--card-background);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+			overflow: hidden;
+		}
+
 		#weight-change-widget .home-widget-heading {
 			width: 100%;
 			box-sizing: border-box;
@@ -1309,7 +1318,7 @@
 			gap: 5px;
 			padding: 9px 13px;
 			border-radius: 0;
-			font-size: 0.84rem;
+			font-size: 13px;
 			font-weight: 500;
 			line-height: 1;
 			border: 1px solid transparent;
@@ -1331,13 +1340,13 @@
 
 		.weight-change-badge.is-positive {
 			color: var(--success);
-			background: rgba(255, 255, 255, 0.06);
+			background: transparent;
 			border-color: transparent;
 		}
 
 		.weight-change-badge.is-negative {
 			color: var(--danger);
-			background: rgba(255, 255, 255, 0.06);
+			background: transparent;
 			border-color: transparent;
 		}
 
@@ -1352,7 +1361,7 @@
 			}
 
 			.weight-change-badge {
-				font-size: 0.8rem;
+				font-size: 13px;
 				padding: 8px 12px;
 			}
 		}
@@ -1674,6 +1683,12 @@
 					</div>
 					<div id="weight-change-widget-card">
 						<div id="weight-change-list"></div>
+					</div>
+				</div>
+
+				<div id="type-change-widget" role="region" aria-live="polite" style="display:none; width:100%; margin: 8px 0; box-sizing: border-box;" aria-label="Exercise type changes">
+					<div id="type-change-widget-card">
+						<div id="type-change-list" style="display:flex; flex-direction:column; width:100%;"></div>
 					</div>
 				</div>
 
@@ -2187,6 +2202,7 @@
 				const effectivePeriod = useFallback ? resolveEffectiveHomeChartPeriod(items, requestedPeriod) : requestedPeriod;
 				try { applyHomeChartPillSelection(effectivePeriod); } catch (e) { }
 				try { if (typeof renderWeightChangeWidget === 'function') await renderWeightChangeWidget(effectivePeriod, items); } catch (e) { console.error('renderWeightChangeWidget failed', e); }
+				try { if (typeof renderTypeChangeWidget === 'function') await renderTypeChangeWidget(effectivePeriod, items); } catch (e) { console.error('renderTypeChangeWidget failed', e); }
 				try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise(effectivePeriod, items); } catch (e) { console.error('renderFavoriteExercise failed', e); }
 				try { if (typeof renderTypeDistribution === 'function') await renderTypeDistribution(effectivePeriod, items); } catch (e) { console.error('renderTypeDistribution failed', e); }
 			}
@@ -2471,6 +2487,152 @@
 						</div>
 					</div>
 				`;
+			}
+
+			function renderTypeChangeRow(item, isLast = false) {
+				if (!item) return '';
+				const borderStyle = isLast ? '' : 'border-bottom: 1px solid rgba(255,255,255,0.06);';
+				const unit = (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg';
+				const deltaText = `${item.change.deltaValue > 0 ? '+' : ''}${item.change.deltaValue.toFixed(1)} ${unit}`;
+				
+				return `
+					<div style="display:flex; align-items:center; justify-content:space-between; padding: 14px 16px; width:100%; box-sizing:border-box; ${borderStyle}">
+						<div style="font-weight:800; color:var(--text); font-size:1rem;">${item.name}</div>
+						<div class="weight-change-badge is-${item.change.state}" style="width:auto; padding:0; background:transparent; border:none; display:flex; align-items:center; justify-content:flex-end; gap:5px; box-shadow:none; font-size:13px; font-weight:500; text-align:right;">
+							<span class="material-symbols-outlined" style="font-size:17px;">${item.change.icon}</span>
+							<span>${item.change.percentText}</span>
+							<span aria-hidden="true">&nbsp;&nbsp;</span>
+							<span>${deltaText}</span>
+						</div>
+					</div>
+				`;
+			}
+
+			async function renderTypeChangeWidget(range = getStoredHomeChartPillSelection(), sourceItems = null) {
+				try {
+					range = normalizeHomeChartPeriod(range);
+					if (typeof ensureDbOpen === 'function') await ensureDbOpen();
+					const widget = document.getElementById('type-change-widget');
+					const list = document.getElementById('type-change-list');
+					if (!widget || !list) return;
+
+					try {
+						if (window.GN_I18N && typeof GN_I18N.t === 'function') {
+							widget.setAttribute('aria-label', GN_I18N.t('biggest_type_changes_title') || 'Exercise type changes');
+						}
+					} catch (e) { }
+
+					let historyCount = 0;
+					try { historyCount = await db.history.count(); } catch (e) { historyCount = 0; }
+					if (!historyCount) { widget.style.display = 'none'; return; }
+
+					let entries = Array.isArray(sourceItems) ? sourceItems.slice() : await db.history.toArray();
+					if (!entries || !entries.length) { widget.style.display = 'none'; return; }
+					entries = filterHomeEntriesByPeriod(entries, range);
+					if (!entries.length) { widget.style.display = 'none'; return; }
+
+					const [catalogEx, customEx] = await Promise.all([
+						db.catalog_exercises.toArray(),
+						db.custom_exercises.toArray()
+					]);
+					const allExercises = [
+						...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+						...customEx.map(ex => ({ ...ex, isCustom: true }))
+					];
+					const exMap = allExercises.reduce((acc, ex) => {
+						acc[`${ex.id}-${!!ex.isCustom}`] = ex;
+						return acc;
+					}, {});
+
+					// Group entries by exercise key
+					const groupedByEx = {};
+					for (const entry of entries) {
+						const key = `${entry.exerciseId}-${entry.isCustom !== undefined ? !!entry.isCustom : entry.exerciseId > 0}`;
+						if (!groupedByEx[key]) groupedByEx[key] = [];
+						groupedByEx[key].push(entry);
+					}
+
+					// Calculate individual exercise progress and aggregate by type
+					const typeProgress = {}; // type -> { sumPercent: number, count: number, dates: Set }
+					for (const [key, exEntries] of Object.entries(groupedByEx)) {
+						const sorted = exEntries.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+						const values = sorted.map(getHomeWeightPerRep);
+						if (values.length < 2) continue;
+
+						const first = values[0];
+						const last = values[values.length - 1];
+						if (first <= 0 || first === last) continue;
+
+						const ex = exMap[key];
+						const type = (ex && ex.type) ? ex.type : 'other';
+						if (type === 'cardio') continue;
+
+						const percentage = ((last - first) / first) * 100;
+						const delta = last - first;
+						
+						if (!typeProgress[type]) {
+							typeProgress[type] = { sumPercent: 0, sumDelta: 0, count: 0, dates: new Set() };
+						}
+						typeProgress[type].sumPercent += percentage;
+						typeProgress[type].sumDelta += delta;
+						typeProgress[type].count += 1;
+						for (const en of exEntries) typeProgress[type].dates.add(en.date);
+					}
+
+					const candidates = [];
+					for (const [type, data] of Object.entries(typeProgress)) {
+						if (data.count === 0) continue;
+						const avgPercent = data.sumPercent / data.count;
+						const avgDelta = data.sumDelta / data.count;
+						if (Math.abs(avgPercent) < 0.1) continue;
+
+						let typeLabel = type;
+						try { 
+							if (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function') 
+								typeLabel = GN_I18N.localizeExerciseType(type);
+							else
+								typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+						} catch(e) {}
+
+						candidates.push({
+							name: typeLabel,
+							count: data.dates.size,
+							percentValue: avgPercent,
+							change: {
+								state: avgPercent > 0 ? 'positive' : 'negative',
+								icon: avgPercent > 0 ? 'trending_up' : 'trending_down',
+								percentText: `${avgPercent > 0 ? '+' : ''}${avgPercent.toFixed(1)}%`,
+								deltaValue: avgDelta
+							}
+						});
+					}
+
+					if (!candidates.length) {
+						widget.style.display = 'none';
+						return;
+					}
+
+					const topPositive = candidates
+						.filter(c => c.percentValue > 0)
+						.sort((a, b) => b.percentValue - a.percentValue)[0] || null;
+					const topNegative = candidates
+						.filter(c => c.percentValue < 0)
+						.sort((a, b) => a.percentValue - b.percentValue)[0] || null;
+
+					if (!topPositive && !topNegative) {
+						widget.style.display = 'none';
+						return;
+					}
+
+					const rows = [];
+					if (topPositive) rows.push(renderTypeChangeRow(topPositive, !topNegative));
+					if (topNegative) rows.push(renderTypeChangeRow(topNegative, true));
+					
+					list.innerHTML = rows.join('');
+					widget.style.display = 'flex';
+				} catch (err) {
+					console.error('renderTypeChangeWidget failed', err);
+				}
 			}
 
 			async function renderWeightChangeWidget(range = getStoredHomeChartPillSelection(), sourceItems = null) {
