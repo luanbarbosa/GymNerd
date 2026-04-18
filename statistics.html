@@ -885,8 +885,14 @@
                 };
             };
 
-            const renderProgressBadge = (values) => {
-                const data = getProgressData(values);
+            const renderProgressBadge = (valuesOrData) => {
+                let data = null;
+                if (Array.isArray(valuesOrData)) {
+                    data = getProgressData(valuesOrData);
+                } else {
+                    data = valuesOrData;
+                }
+
                 if (!data) return '';
 
                 const isPositive = data.diff > 0;
@@ -905,7 +911,7 @@
                         : 'horizontal_rule';
 
                 const percentText = `${data.percent > 0 ? '+' : ''}${data.percent.toFixed(1)}%`;
-                const diffText = `${data.diff > 0 ? '+' : ''}${data.diff.toFixed(2)} kg`;
+                const diffText = `${data.diff > 0 ? '+' : ''}${data.diff.toFixed(1)} kg`;
 
                 return `
                     <div class="chart-change-badge ${cls}">
@@ -927,6 +933,9 @@
                 .slice()
                 .sort((a, b) => new Date(a.date) - new Date(b.date))
                 .map((entry) => {
+                    if (Array.isArray(entry.sets) && entry.sets.length > 0 && window.getBest1RM) {
+                        return safeMetricValue(window.getBest1RM(entry.sets));
+                    }
                     const weight = Number(entry && entry.weight) || 0;
                     const reps = (entry && entry.reps !== undefined && entry.reps !== null)
                         ? Number(entry.reps)
@@ -935,9 +944,10 @@
                     return safeMetricValue(window.estimate1RM(weight, reps));
                 });
 
-            const getGroupEndpointSeries = (exercisesInType, metricBuilder) => {
-                const firstValues = [];
-                const lastValues = [];
+            const getGroupProgressData = (exercisesInType, metricBuilder) => {
+                let sumPercent = 0;
+                let sumDelta = 0;
+                let count = 0;
 
                 Object.values(exercisesInType || {}).forEach((entries) => {
                     const series = metricBuilder(entries)
@@ -946,35 +956,44 @@
 
                     if (series.length < 2) return;
 
-                    firstValues.push(series[0]);
-                    lastValues.push(series[series.length - 1]);
+                    const first = series[0];
+                    const last = series[series.length - 1];
+
+                    // Match home.html: ignore if first <= 0 or no change
+                    if (first > 0 && first !== last) {
+                        const percentage = ((last - first) / first) * 100;
+                        const delta = last - first;
+
+                        sumPercent += percentage;
+                        sumDelta += delta;
+                        count++;
+                    }
                 });
 
-                if (!firstValues.length || firstValues.length !== lastValues.length) {
-                    return [];
-                }
+                if (count === 0) return null;
 
-                const avgFirst = firstValues.reduce((a, b) => a + b, 0) / firstValues.length;
-                const avgLast = lastValues.reduce((a, b) => a + b, 0) / lastValues.length;
+                const avgPercent = sumPercent / count;
+                // Match home.html: ignore if average change is negligible
+                if (Math.abs(avgPercent) < 0.1) return null;
 
-                return [avgFirst, avgLast];
+                return {
+                    percent: avgPercent,
+                    diff: sumDelta / count
+                };
             };
 
             const renderTypeTrendIcon = (typeKey, exercisesInType) => {
-                const values = getGroupEndpointSeries(exercisesInType, getStrength1RMSeries);
+                const data = getGroupProgressData(exercisesInType, getStrength1RMSeries);
 
-                if (!values || values.length < 2) {
+                if (!data) {
                     return '<span class="group-header-trend is-neutral"><span class="material-symbols-outlined">horizontal_rule</span></span>';
                 }
 
-                const first = values[0];
-                const last = values[1];
-
-                if (last > first) {
+                if (data.diff > 0) {
                     return '<span class="group-header-trend is-positive"><span class="material-symbols-outlined">trending_up</span></span>';
                 }
 
-                if (last < first) {
+                if (data.diff < 0) {
                     return '<span class="group-header-trend is-negative"><span class="material-symbols-outlined">trending_down</span></span>';
                 }
 
@@ -994,10 +1013,10 @@
                 const typeTrendIconMarkup =
                     renderTypeTrendIcon(typeInfo.key, exercisesInType);
 
-                const weightSeries =
-                    getGroupEndpointSeries(exercisesInType, getStrength1RMSeries);
-                
-                const groupProgressMarkup = renderProgressBadge(weightSeries);
+                const groupProgressData =
+                    getGroupProgressData(exercisesInType, getStrength1RMSeries);
+
+                const groupProgressMarkup = renderProgressBadge(groupProgressData);
 
                 const groupContainer = document.createElement('div');
                 groupContainer.className = 'exercise-group';
@@ -1058,16 +1077,7 @@
 
                     const chartLabels = entries.map(e => e.date.slice(5));
 
-                    const weightValues = !isCardioType
-                        ? entries.map(e => {
-                            const w = Number(e.weight) || 0;
-                            const r = (e.reps !== undefined && e.reps !== null)
-                                ? Number(e.reps)
-                                : 1;
-
-                            return safeMetricValue(window.estimate1RM(w, r));
-                        })
-                        : null;
+                    const weightValues = !isCardioType ? getStrength1RMSeries(entries) : null;
 
                     const progressMarkup = renderProgressBadge(weightValues);
 
