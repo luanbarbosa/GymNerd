@@ -1567,12 +1567,11 @@
 			<div class="topbar">
 				<div id="topbar-title">
 					<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
-				</div>
-				<div id="topbar-actions" style="display:flex; align-items:center;">
 					<!-- Sync status icon -->
 					<span id="sync-status-icon" class="material-symbols-outlined" 
-						style="font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24; font-size: 24px; color: var(--text-main-color); margin-right: 8px; vertical-align: middle; opacity: 1; display: inline-flex; align-items: center; justify-content: center; padding: 6px;">cloud_done</span>
-					
+						style="font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24; font-size: 24px; color: var(--text-main-color); margin-left: 8px; vertical-align: middle; opacity: 1; display: inline-flex; align-items: center; justify-content: center; padding: 6px;">cloud_done</span>
+				</div>
+				<div id="topbar-actions" style="display:flex; align-items:center;">
 					<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure"
 						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;margin-right:8px;">
 							<span class="material-symbols-outlined" aria-hidden="true"
@@ -1757,12 +1756,20 @@
 				const container = document.getElementById('topbar-title');
 				if (!container) return;
 				container.innerHTML = `
-				<div style="display:flex; align-items:center; gap:12px;">
-					<div style="flex:1; min-width:0;">
+				<div style="display:flex; align-items:center; gap:0px;">
+					<div style="flex:0 1 auto; min-width:0;">
 						<div class="app-title-compact" data-i18n="title_main">GymNerd</div>
 					</div>
+					<!-- Sync status icon -->
+					<span id="sync-status-icon" class="material-symbols-outlined" 
+						style="font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24; font-size: 24px; color: var(--text-main-color); margin-left: 8px; vertical-align: middle; opacity: 1; display: inline-flex; align-items: center; justify-content: center; padding: 6px;">cloud_done</span>
 				</div>
 			`;
+				try {
+					if (window.BackgroundSync && typeof window.BackgroundSync.updateStatusUI === 'function') {
+						window.BackgroundSync.updateStatusUI();
+					}
+				} catch (e) { }
 				try {
 					const s = document.getElementById('topbar-settings');
 					if (s) s.setAttribute('aria-label', (typeof GN_I18N !== 'undefined') ? GN_I18N.t('menu_settings') : 'Settings');
