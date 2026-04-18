@@ -3186,6 +3186,7 @@
 
                 // All logs belonging to this finish operation share the same sessionId
                 const sessionId = now.getTime();
+                const workoutDuration = getWorkoutElapsedSeconds();
                 for (const id in groups) {
                     const g = groups[id];
                     logs.push({
@@ -3198,7 +3199,8 @@
                         exerciseType: g.exerciseType || '',
                         date: todayStr,
                         sets: g.count,
-                        sessionId
+                        sessionId,
+                        workoutDuration
                     });
                 }
 

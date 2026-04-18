@@ -280,13 +280,13 @@ db.version(16).stores({
     token_events: 'id, date, type, milestone'
 });
 
-db.version(17).stores({
+db.version(18).stores({
     catalog_exercises: '++id, name, namePT, type, imageId',
     catalog_images: '++id',
     custom_exercises: '++id, name, namePT, type, imageId',
     custom_images: '++id',
     routines: '++id, name, exerciseIds',
-    history: '++id, exerciseId, weight, reps, date, sessionId',
+    history: '++id, exerciseId, weight, reps, date, sessionId, workoutDuration',
     weights: 'date, weight',
     tokens: 'id, balance',
     frozen_days: 'date, createdAt',
