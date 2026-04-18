@@ -83,7 +83,12 @@ const DriveStorage = {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('[DriveStorage] API error response', { status: response.status, errorData });
-            throw new Error(`Drive API error: ${errorData.error?.message || response.statusText}`);
+            
+            const message = errorData.error?.message || response.statusText;
+            if (message.includes("Insufficient Permission") || message.includes("insufficient authentication scopes")) {
+                throw new Error("Insufficient Permission");
+            }
+            throw new Error(`Drive API error: ${message}`);
         }
         return response.json();
     },
@@ -319,11 +324,13 @@ const DriveStorage = {
             if (!silent && showAlert) {
                 if (error.message === "AUTH_EXPIRED") {
                     alert((typeof GN_I18N !== 'undefined') ? GN_I18N.t('google_session_expired') : "Your Google session expired. Please login again to keep syncing.");
+                } else if (error.message === "Insufficient Permission") {
+                    // Handled by background sync alert/icon
                 } else {
                     alert((typeof GN_I18N !== 'undefined') ? (GN_I18N.t('auto_sync_failed_prefix') + error.message) : ("Auto-sync failed: " + error.message));
                 }
             }
-            return false;
+            throw error;
         } finally {
             if (!silent && window.hideLoading) window.hideLoading();
         }

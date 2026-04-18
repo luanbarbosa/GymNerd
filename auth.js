@@ -531,7 +531,15 @@
             try { location.reload(); } catch(e){}
         } catch (err) {
             console.error('[AutoRestore] failed', err);
-            try { if (err && err.message === 'AUTH_EXPIRED') { renderRefreshError(); } } catch(e){}
+            if (err && err.message === 'AUTH_EXPIRED') { try { renderRefreshError(); } catch(e){} }
+            if (err && err.message && err.message.includes('Insufficient Permission')) {
+                window.__gn_permission_error = true;
+                if (typeof BackgroundSync !== 'undefined') {
+                    BackgroundSync._permissionError = true;
+                    BackgroundSync.updateStatusUI();
+                    BackgroundSync._showPermissionAlert();
+                }
+            }
             try { __auth_hideLoading && __auth_hideLoading(); } catch(e){}
         }
     };
@@ -921,8 +929,15 @@
                 }
             } catch (err) {
                 console.error('[DriveSyncCheck] startup comparison failed', err);
-            }
-        }
+                if (err.message && err.message.includes('Insufficient Permission')) {
+                    window.__gn_permission_error = true;
+                    if (typeof BackgroundSync !== 'undefined') {
+                        BackgroundSync._permissionError = true;
+                        BackgroundSync.updateStatusUI();
+                        BackgroundSync._showPermissionAlert();
+                    }
+                }
+            }        }
 
         callShowApp();
     }

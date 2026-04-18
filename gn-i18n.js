@@ -145,6 +145,7 @@
                 retrying: 'Retrying...',
                 failed_to_refresh_session: 'Could not refresh your session automatically. Please sign in again.'
                 ,
+                drive_permission_missing: 'Google Drive permission is missing. Your data is not being backed up. Fix now?',
 	                /* Statistics page */
 	                workout_frequency: 'Workout Frequency',
 	                workout_frequency_subtext: 'Number of workout days',
@@ -473,6 +474,7 @@
                 retry: 'Tentar novamente',
                 retrying: 'Tentando...',
                 failed_to_refresh_session: 'Não foi possível atualizar sua sessão automaticamente. Por favor, entre novamente.',
+                drive_permission_missing: 'A permissão do Google Drive está faltando. Seus dados não estão sendo salvos. Corrigir agora?',
                 last_sync_label: 'Última sincronização: {t}',
                 syncing_in_background: 'Enviando dados para o Google Drive em segundo plano automaticamente.',
                 never_synced: 'Nunca',

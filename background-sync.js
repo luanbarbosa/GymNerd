@@ -6,6 +6,7 @@ const BackgroundSync = {
     _debounceTimer: null,
     _syncInProgress: false,
     _syncQueued: false,
+    _permissionError: false,
 
     /**
      * Update sync status icon if present in DOM.
@@ -21,6 +22,7 @@ const BackgroundSync = {
 
         const hasChanges = localStorage.getItem('has_local_changes') === 'true';
         const inProgress = this._syncInProgress;
+        const hasPermissionError = this._permissionError;
 
         // Base style: match topbar icons
         icon.style.display = 'inline-flex';
@@ -29,8 +31,15 @@ const BackgroundSync = {
         icon.style.padding = '6px';
         icon.style.opacity = '1';
         icon.style.cursor = 'pointer';
+        
+        // Reset special styles
+        icon.style.fontVariationSettings = "'wght' 300";
 
-        if (inProgress || hasChanges) {
+        if (hasPermissionError) {
+            icon.textContent = 'cloud_alert';
+            icon.style.color = '#ef4444'; // Red
+            icon.style.fontVariationSettings = "'wght' 300, 'FILL' 1";
+        } else if (inProgress || hasChanges) {
             icon.textContent = 'cloud_upload';
             icon.style.color = 'var(--accent-color)';
         } else {
@@ -44,6 +53,16 @@ const BackgroundSync = {
                 e.preventDefault();
                 e.stopPropagation();
                 
+                if (this._permissionError) {
+                    const msg = (typeof GN_I18N !== 'undefined') 
+                        ? (GN_I18N.t('drive_permission_missing') || "Google Drive permission is missing. Your data is not being backed up. Fix now?") 
+                        : "Google Drive permission is missing. Your data is not being backed up. Fix now?";
+                    if (confirm(msg)) {
+                        if (typeof window.handleAuth === 'function') window.handleAuth();
+                    }
+                    return;
+                }
+
                 const isSyncing = this._syncInProgress || localStorage.getItem('has_local_changes') === 'true';
                 
                 if (isSyncing) {
@@ -72,6 +91,24 @@ const BackgroundSync = {
             });
             icon.dataset.bound = 'true';
         }
+    },
+
+    /**
+     * Show permission alert once per session
+     */
+    _showPermissionAlert() {
+        try {
+            if (sessionStorage.getItem('gn_permission_alert_shown')) return;
+            sessionStorage.setItem('gn_permission_alert_shown', '1');
+
+            const msg = (typeof GN_I18N !== 'undefined') 
+                ? (GN_I18N.t('drive_permission_missing') || "Google Drive permission is missing. Your data is not being backed up. Fix now?") 
+                : "Google Drive permission is missing. Your data is not being backed up. Fix now?";
+            
+            if (confirm(msg)) {
+                if (typeof window.handleAuth === 'function') window.handleAuth();
+            }
+        } catch(e) {}
     },
 
     /**
@@ -111,6 +148,12 @@ const BackgroundSync = {
         });
 
         this.updateStatusUI();
+
+        if (window.__gn_permission_error) {
+            this._permissionError = true;
+            this.updateStatusUI();
+            this._showPermissionAlert();
+        }
     },
 
     /**
@@ -163,11 +206,16 @@ const BackgroundSync = {
             if (ok) {
                 console.info('[BackgroundSync] Stealthy sync successful');
                 localStorage.setItem('has_local_changes', 'false');
+                this._permissionError = false;
             } else {
                 console.warn('[BackgroundSync] Stealthy sync returned failure');
             }
         } catch (err) {
             console.error('[BackgroundSync] Stealthy sync failed with error:', err);
+            if (err.message && err.message.includes("Insufficient Permission")) {
+                this._permissionError = true;
+                this._showPermissionAlert();
+            }
         } finally {
             this._syncInProgress = false;
             this.updateStatusUI();
