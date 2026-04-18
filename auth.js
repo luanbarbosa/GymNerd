@@ -31,7 +31,14 @@
             const app = existingApps.length ? existingApps[0] : firebaseAppModule.initializeApp(FIREBASE_CONFIG);
             const analyticsSupported = await firebaseAnalyticsModule.isSupported();
             if (analyticsSupported) {
-                firebaseAnalyticsModule.getAnalytics(app);
+                const analytics = firebaseAnalyticsModule.getAnalytics(app);
+                window.logEvent = (name, params) => {
+                    try {
+                        firebaseAnalyticsModule.logEvent(analytics, name, params);
+                    } catch (e) {
+                        console.warn('Analytics logEvent failed:', e);
+                    }
+                };
                 console.log('Firebase Analytics initialized.');
             } else {
                 console.warn('Firebase Analytics not supported in this environment.');

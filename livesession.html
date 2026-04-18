@@ -2038,6 +2038,7 @@
 
         async function confirmGiveUpSession() {
             try {
+                if (window.logEvent) window.logEvent('workout', { status: 'cancelled' });
                 clearSessionState();
                 try { await releaseWakeResources(); } catch (e) { console.warn('releaseWakeResources failed in confirmGiveUpSession', e); }
                 goBack();
@@ -2163,6 +2164,7 @@
 
         async function discardSession() {
             if (confirm(GN_I18N.t('discard_confirm'))) {
+                if (window.logEvent) window.logEvent('workout', { status: 'cancelled' });
                 clearSessionState();
                 // Stop any wake resources (wake lock or silent audio) before leaving
                 try { await releaseWakeResources(); } catch (e) { console.warn('Error releasing wake resources', e); }
@@ -3209,6 +3211,9 @@
                     await db.history.bulkAdd(logs);
                 }
 
+                // Log analytics event
+                if (window.logEvent) window.logEvent('workout', { status: 'done' });
+
                 if (logs.length > 0 && tokenRewardPreview && tokenRewardPreview.wouldAward && window.GNTokensLogic && typeof GNTokensLogic.maybeAwardTokenMilestone === 'function') {
                     try {
                         await GNTokensLogic.maybeAwardTokenMilestone(db, todayStr);
@@ -3409,20 +3414,31 @@
             stopSilentAudio();
         }
 
+        function logPausedEvent() {
+            // Only log if a session is active and not already finished/locked
+            if (sessionStartMs && finalWorkoutDuration === null && window.logEvent) {
+                window.logEvent('workout', { status: 'paused' });
+            }
+        }
+
         // If Wake Lock API is present, keep trying to re-acquire when visibility changes
         document.addEventListener('visibilitychange', async () => {
             if (document.visibilityState === 'visible') {
                 if ('wakeLock' in navigator) {
                     await requestWakeLock();
                 }
+            } else if (document.visibilityState === 'hidden') {
+                logPausedEvent();
             }
         });
         // Clean up when page is hidden or unloaded
         window.addEventListener('pagehide', () => {
+            logPausedEvent();
             try { saveSessionState(); } catch (e) {}
             try { releaseWakeResources(); } catch(e){}
         });
         window.addEventListener('beforeunload', () => {
+            logPausedEvent();
             try { saveSessionState(); } catch (e) {}
             try { releaseWakeResources(); } catch(e){}
         });
