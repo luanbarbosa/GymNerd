@@ -395,7 +395,7 @@
         // long-press selection removed — selection is handled via explicit buttons/clicks
         function handleCardClick(exId, isCustom, el, e) {
             if (selectMode) { if (typeof toggleSelect === 'function') toggleSelect(exId, isCustom, el); return; }
-            addExerciseToRoutine(exId, [], isCustom); closeSearchModal();
+            addExerciseToRoutine(exId, [], isCustom, undefined, true); closeSearchModal();
         }
         function enterSelectMode() {
             selectMode = true;
@@ -428,7 +428,17 @@
                 if (window.GN_I18N && GN_I18N.t) addBtn.textContent = GN_I18N.t('add_selected');
             }
         }
-        function addSelectedExercisesFromModal() { for (const key of Array.from(selectedExercises)) { const [prefix, idStr] = key.split(':'); const isCustom = prefix === 'c'; const id = parseInt(idStr); addExerciseToRoutine(id, [], isCustom); } exitSelectMode(); closeSearchModal(); }
+        function addSelectedExercisesFromModal() { 
+            const keys = Array.from(selectedExercises).reverse();
+            for (const key of keys) { 
+                const [prefix, idStr] = key.split(':'); 
+                const isCustom = prefix === 'c'; 
+                const id = parseInt(idStr); 
+                addExerciseToRoutine(id, [], isCustom, undefined, true); 
+            } 
+            exitSelectMode(); 
+            closeSearchModal(); 
+        }
 
         function populateExerciseTypeSelect(){
             try {
@@ -593,7 +603,7 @@
             const renderItems = (items) => items.map(ex => {
                 // subtitle removed - no secondary line under exercise title
                 const editBtn = ex.isCustom ? `<button class="icon-btn" onclick="event.stopPropagation(); editExercise(${ex.id})" title="Edit">✎</button>` : '';
-                const selectBtn = `<button class="icon-btn" onclick="event.stopPropagation(); addExerciseToRoutine(${ex.id}, [], ${!!ex.isCustom}); closeSearchModal();" title="${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('select') : 'Select'}">${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('select') : 'Select'}</button>`;
+                const selectBtn = `<button class="icon-btn" onclick="event.stopPropagation(); addExerciseToRoutine(${ex.id}, [], ${!!ex.isCustom}, undefined, true); closeSearchModal();" title="${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('select') : 'Select'}">${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('select') : 'Select'}</button>`;
                 const customTag = ex.isCustom ? `<span class="badge">${(window.GN_I18N && GN_I18N.t) ? GN_I18N.t('custom_exercise_title') : 'Custom'}</span>` : '';
                 return `<div class="exercise-card" onclick="handleCardClick(${ex.id}, ${!!ex.isCustom}, this, event)" oncontextmenu="event.preventDefault()">
                             <div style="width:100%"><img src="${images[ex.imageId] || defaultImage}" class="ex-thumb"></div>
@@ -669,7 +679,7 @@
             try { const clearBtn = document.getElementById('clearSearchBtn'); if (clearBtn) clearBtn.style.display = 'none'; } catch(e){}
         }
 
-        function addExerciseToRoutine(exId, sets = [], isCustom = false, restSeconds) {
+        function addExerciseToRoutine(exId, sets = [], isCustom = false, restSeconds, atTop = false) {
             const ex = allExercises.find(e => e.id === exId && !!e.isCustom === !!isCustom);
             if (!ex) return;
             const container = document.getElementById('selectedList');
@@ -770,7 +780,11 @@
             appendTarget.appendChild(restControl);
             try { if (window.GN_I18N) GN_I18N.applyTranslations(restControl); } catch(e) {}
 
-            container.appendChild(card);
+            if (atTop) {
+                container.prepend(card);
+            } else {
+                container.appendChild(card);
+            }
             ensureEmptyHint();
         }
         
