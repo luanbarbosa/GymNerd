@@ -1021,7 +1021,7 @@
 			line-height: 1;
 			font-weight: 900;
 			display: flex;
-			align-items: center;
+			align-items: baseline;
 			gap: 8px;
 			flex-wrap: nowrap;
 			width: auto;
@@ -1630,7 +1630,7 @@
 							<div class="tokens-banner__text">
 								<div class="tokens-banner__count">
 									<span id="tokens-number">0</span>
-									<span id="tokens-count-label" class="tokens-banner__count-label">Tokens</span>
+									<span id="tokens-count-label" class="tokens-banner__count-label" data-i18n="tokens_count_label">Tokens</span>
 								</div>
 							</div>
 						</div>
@@ -2067,7 +2067,7 @@
 
 					numberEl.textContent = String(balance);
 					if (countLabelEl) {
-						countLabelEl.textContent = (Number(balance) === 1) ? 'Token' : 'Tokens';
+						countLabelEl.textContent = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? GN_I18N.t('tokens_count_label') : 'Tokens';
 					}
 					if (infoBtn && !infoBtn.dataset.bound) {
 						infoBtn.addEventListener('click', () => {
