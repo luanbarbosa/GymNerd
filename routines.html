@@ -708,13 +708,16 @@
                     this.classList.add('active');
                     // ensure the active tab is fully visible when the tab row is scrollable
                     try { this.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' }); } catch (e) {}
-                    renderRoutineContent(parseInt(this.dataset.id));
+                    const rid = parseInt(this.dataset.id);
+                    localStorage.setItem('active_routine_id', rid);
+                    renderRoutineContent(rid);
                 };
                 tabsContainer.appendChild(btn);
             });
-            // Activate a tab: prefer id from querystring if present, otherwise first tab
-            const params = new URLSearchParams(window.location.search);
-            const selectedId = params.get('id');
+            // Activate a tab: prefer id from querystring if present, then localStorage, otherwise first tab
+            const search = (window.__spa_last_href && window.__spa_last_href.includes('?')) ? window.__spa_last_href.split('?')[1] : (window.location.search || '');
+            const params = new URLSearchParams(search);
+            const selectedId = params.get('id') || localStorage.getItem('active_routine_id');
             const first = tabsContainer.querySelector('.tab-btn');
             if (selectedId) {
                 const btn = tabsContainer.querySelector(`[data-id="${selectedId}"]`);

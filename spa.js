@@ -41,6 +41,7 @@
     function hideLoader(){ try { ensureLoader().style.display = 'none'; } catch(e){} }
 
     async function spaNavigate(href, addHistory = false){
+        window.__spa_last_href = href;
         showLoader();
         try {
             // hide login shell if present
@@ -149,7 +150,7 @@
             if (doc.title) document.title = doc.title;
             // hide login illustration on app pages
             try {
-                const nameKey = (href.split('/').pop() || 'index.html');
+                const nameKey = (href.split('/').pop() || 'index.html').split(/[?#]/)[0];
                 const loginImg = document.querySelector('img[src$="illustration-login.svg"]');
                 if (loginImg) {
                     if (nameKey === '' || nameKey === 'index.html') loginImg.style.display = '';
@@ -199,7 +200,7 @@
 
             // If navigating to home and an initial Drive restore was requested
             try {
-                const pageName = (href.split('/').pop() || 'index.html');
+                const pageName = (href.split('/').pop() || 'index.html').split(/[?#]/)[0];
                 if (pageName === 'home.html' && localStorage.getItem && localStorage.getItem('needs_initial_download') === 'true') {
                     if (typeof window.autoRestoreFromDrive === 'function') {
                         try { if (typeof window.showLoading === 'function') window.showLoading((typeof GN_I18N !== 'undefined') ? GN_I18N.t('welcome_back_syncing') : 'Welcome back! Syncing your data...'); } catch(e){}
@@ -214,7 +215,7 @@
             // across pages. Call unique per-page helpers to ensure correct
             // initialization when inline scripts are skipped due to dedup.
             try {
-                const pageName = (href.split('/').pop() || 'index.html');
+                const pageName = (href.split('/').pop() || 'index.html').split(/[?#]/)[0];
                 if (pageName === 'routines.html') {
                     try { if (typeof renderTabs === 'function') renderTabs(); } catch(e){}
                     try { if (typeof renderWorkouts === 'function') renderWorkouts(); } catch(e){}
@@ -238,7 +239,7 @@
             // content injection without changing the visible URL.
             if (addHistory) {
                 try {
-                    const name = (href.split('/').pop() || 'index.html');
+                    const name = (href.split('/').pop() || 'index.html').split(/[?#]/)[0];
                     const short = name.replace(/\.html$/i, '');
                     const pushUrl = '/#' + short;
                     history.pushState({ spa:true, url: href }, doc.title || '', pushUrl);
@@ -249,7 +250,7 @@
                 // Update active bottom-nav item if present and show/hide nav
             try {
                 const map = { 'home.html':'nav-home','index.html':'nav-home','routines.html':'nav-routines','routinecrud.html':'nav-routines','history.html':'nav-history','historycrud.html':'nav-history','statistics.html':'nav-statistics' };
-                const key = (href.split('/').pop() || 'index.html');
+                const key = (href.split('/').pop() || 'index.html').split(/[?#]/)[0];
                 Object.values(map).forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
                 const aid = map[key];
                 if (aid) {
