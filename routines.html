@@ -133,7 +133,7 @@
         /* `.main` wrapper removed; make `.exercise-meta` provide the vertical stacking and growth */
         .exercise-row .exercise-meta { flex: 1 1 auto; display:flex; flex-direction:column; gap:8px; }
         .exercise-row .ex-thumb { width: 100%; height: 110px; border-radius: 10px; object-fit: contain; object-position: center; background: #fff; }
-        .exercise-row .exercise-title { font-weight:700; font-size: 1rem; color: var(--text); margin: 0; }
+        .exercise-row .exercise-title { font-weight:700; font-size: 0.95rem; color: var(--text); margin: 0; line-height: 1.2; }
         /* New card layout: preview square + meta column + sets table */
         .ex-preview-wrapper { width:110px; flex-shrink:0; align-self:stretch; border-radius:0; background:#fff; overflow:hidden; display:flex; }
         .ex-preview-square { width:100%; height:100%; object-fit:contain; object-position:center; }
@@ -144,8 +144,8 @@
         .sets-table th, .sets-table td { text-align:left; padding:6px 8px; font-size:0.85rem; color:var(--text-dim); border-bottom:1px solid rgba(255,255,255,0.03); }
         .sets-table th { color:var(--text-dim); font-weight:800; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; }
         .set-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; justify-content: flex-start; }
-        .set-pill { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; color: var(--text-dim); font-weight: 600; }
-        .sets-compact { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:0.75rem; line-height:1.1; }
+        .set-pill { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 6px; font-size: 0.65rem; color: var(--text-dim); font-weight: 600; }
+        .sets-compact { display:flex; align-items:center; gap:4px; flex-wrap:wrap; font-size:0.7rem; line-height:1.1; }
             .reorder-btn { display: inline-flex; align-items: center; gap:8px; border: none; background: rgba(255,255,255,0.05); color: var(--text-secondary-color); padding: 8px 10px; border-radius: 10px; cursor: pointer; font-weight: 800; transition: background 0.12s, box-shadow 0.12s, color 0.12s, transform 0.08s; }
         .reorder-btn svg { stroke: currentColor; transition: stroke 0.12s, transform 0.12s; }
         .reorder-btn:active { transform: scale(0.98); }
@@ -783,13 +783,9 @@
                             if (isCardioExercise) {
                                 const cardioLabel = g.label;
                                 if (!cardioLabel) return '';
-                                return (g.count === 1)
-                                    ? `<span class="set-pill">${cardioLabel}</span>`
-                                    : `<span class="set-pill">${g.count}x ${cardioLabel}</span>`;
+                                return `<span class="set-pill">${g.count}x ${cardioLabel}</span>`;
                             }
-                            return (g.count === 1)
-                                ? `<span class="set-pill">${g.reps}reps - ${g.weight}kg</span>`
-                                : `<span class="set-pill">${g.count}x ${g.reps}reps - ${g.weight}kg</span>`;
+                            return `<span class="set-pill">${g.count}x ${g.reps}reps - ${g.weight}kg</span>`;
                         }).filter(Boolean).join('');
                         if (pills) {
                             setsHtml = `<div class="sets-compact">${pills}</div>`;
@@ -802,14 +798,13 @@
                     if (isCardioExercise) {
                         const cardioLabel = formatCardioSetLabel(it.distance, it.time);
                         if (cardioLabel) {
-                            const prefix = (count === 1) ? '' : `${count}x `;
-                            setsHtml = `<div class="sets-compact"><span class="set-pill">${prefix + cardioLabel}</span></div>`;
+                            setsHtml = `<div class="sets-compact"><span class="set-pill">${count}x ${cardioLabel}</span></div>`;
                         }
                     } else {
                         const repsValid = (it.reps !== undefined && it.reps !== null && it.reps !== '' && !isNaN(Number(it.reps)));
                         const weightValid = (it.weight !== undefined && it.weight !== null && it.weight !== '' && !isNaN(Number(it.weight)));
                         if (repsValid && weightValid) {
-                            const pill = (count === 1) ? `<span class="set-pill">${it.reps}reps - ${it.weight}kg</span>` : `<span class="set-pill">${count}x ${it.reps}reps - ${it.weight}kg</span>`;
+                            const pill = `<span class="set-pill">${count}x ${it.reps}reps - ${it.weight}kg</span>`;
                             setsHtml = `<div class="sets-compact">${pill}</div>`;
                         } else {
                             setsHtml = '';
@@ -1144,4 +1139,5 @@
         </div>
     </div>
 </body>
+</html>
 </html>
