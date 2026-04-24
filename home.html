@@ -2067,7 +2067,8 @@
 
 					numberEl.textContent = String(balance);
 					if (countLabelEl) {
-						countLabelEl.textContent = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? GN_I18N.t('tokens_count_label') : 'Tokens';
+						const labelKey = (balance === 1) ? 'tokens_count_label_singular' : 'tokens_count_label_plural';
+						countLabelEl.textContent = (typeof GN_I18N !== 'undefined' && GN_I18N.t) ? GN_I18N.t(labelKey) : (balance === 1 ? 'Rest token' : 'Rest tokens');
 					}
 					if (infoBtn && !infoBtn.dataset.bound) {
 						infoBtn.addEventListener('click', () => {
