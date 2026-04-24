@@ -588,6 +588,9 @@
             try {
                 console.info('[UI] syncToDrive start');
                 const ok = await DriveStorage.sync(db);
+                if (ok) {
+                    localStorage.setItem('has_local_changes', 'false');
+                }
                 console.info('[UI] syncToDrive finished', { ok });
                 checkSyncStatus();
             } catch (error) {

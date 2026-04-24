@@ -182,6 +182,13 @@ const BackgroundSync = {
             return;
         }
 
+        if (localStorage.getItem('has_local_changes') !== 'true') {
+            console.debug('[BackgroundSync] Sync skipped: No local changes');
+            this._syncQueued = false; // Nothing to sync, clear queue
+            this.updateStatusUI();
+            return;
+        }
+
         if (window.DEMO_MODE) {
             console.debug('[BackgroundSync] Sync skipped: DEMO_MODE active');
             this.updateStatusUI();
@@ -205,7 +212,10 @@ const BackgroundSync = {
             const ok = await DriveStorage.sync(window.db, null, { silent: true });
             if (ok) {
                 console.info('[BackgroundSync] Stealthy sync successful');
-                localStorage.setItem('has_local_changes', 'false');
+                // Only clear if no new changes were queued during this run
+                if (!this._syncQueued) {
+                    localStorage.setItem('has_local_changes', 'false');
+                }
                 this._permissionError = false;
             } else {
                 console.warn('[BackgroundSync] Stealthy sync returned failure');

@@ -191,6 +191,13 @@ const DriveStorage = {
         }
     },
 
+    async _sha256(str) {
+        const buf = new TextEncoder().encode(str);
+        const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+        const arr = Array.from(new Uint8Array(hashBuf));
+        return arr.map(b => b.toString(16).padStart(2, '0')).join('');
+    },
+
     async save(data, options = {}) {
         const silent = !!options.silent;
         try {
@@ -200,8 +207,35 @@ const DriveStorage = {
                 loadingFallback: 'Sending data to Google Drive...' 
             });
             
-            for (const [key, content] of Object.entries(data)) {
+            let uploadedAny = false;
+            const entries = Object.entries(data);
+            
+            // Process tables first, lastSync last
+            const sortedEntries = entries.sort(([a], [b]) => {
+                if (a === 'lastSync') return 1;
+                if (b === 'lastSync') return -1;
+                return 0;
+            });
+
+            for (const [key, content] of sortedEntries) {
                 const fileName = `${key}.json`;
+                const contentStr = JSON.stringify(content);
+                
+                // Optimization: skip if content hasn't changed since last successful upload
+                const contentHash = await this._sha256(contentStr);
+                const lastHash = localStorage.getItem(`last_upload_hash_${key}`);
+                
+                // If it's lastSync, only upload if something else was uploaded in this session
+                if (key === 'lastSync' && !uploadedAny && lastHash) {
+                    if (silent) console.debug(`[DriveStorage] Skipping ${fileName}, no other changes in this sync.`);
+                    continue;
+                }
+
+                if (lastHash === contentHash) {
+                    if (silent) console.debug(`[DriveStorage] Skipping ${fileName}, no changes.`);
+                    continue;
+                }
+
                 const fileId = await this.findFileId(fileName, folderId, { 
                     silent,
                     loadingMessageKey: 'sending_data_to_drive', 
@@ -219,7 +253,7 @@ const DriveStorage = {
 
                 const body = 
                     delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) +
-                    delimiter + 'Content-Type: application/json\r\n\r\n' + JSON.stringify(content) +
+                    delimiter + 'Content-Type: application/json\r\n\r\n' + contentStr +
                     close_delim;
 
                 const url = `https://www.googleapis.com/upload/drive/v3/files${fileId ? '/' + fileId : ''}?uploadType=multipart`;
@@ -238,6 +272,8 @@ const DriveStorage = {
                 });
 
                 await this._handleResponse(response);
+                localStorage.setItem(`last_upload_hash_${key}`, contentHash);
+                uploadedAny = true;
                 if (silent) console.debug(`[DriveStorage] Uploaded ${fileName} successfully.`);
                 // uploaded file
             }
@@ -315,7 +351,6 @@ const DriveStorage = {
             }
 
             localStorage.setItem('last_sync_time', data.lastSync.time);
-            localStorage.setItem('has_local_changes', 'false');
             if (silent) console.info('[DriveStorage] Silent sync complete');
             return true;
         } catch (error) {
