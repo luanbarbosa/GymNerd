@@ -467,6 +467,7 @@
                 console.log('[measure] putting to db.weights', dateStr, value);
                 await db.weights.put({ date: dateStr, weight: Number(value.toFixed(1)) });
                 console.log('[measure] db.weights.put complete');
+                if (window.logEvent) window.logEvent('weight_saved');
                     try { localStorage.setItem('has_local_changes', 'true'); } catch(e){}
             }
         } catch (err) { console.error('[measure] save error', err); }

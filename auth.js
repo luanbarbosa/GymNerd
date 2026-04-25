@@ -25,20 +25,112 @@
         window.__gn_firebase_analytics_initialized = true;
 
         try {
-            const firebaseAppModule = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
-            const firebaseAnalyticsModule = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js');
+            // 1. Pre-fetch user and token info while loading modules
+            const userFetch = (async () => {
+                const u = localStorage.getItem('google_user');
+                let tokenCount = 0;
+                try {
+                    let attempts = 0;
+                    while ((typeof db === 'undefined' || !db.isOpen()) && attempts < 15) {
+                        await new Promise(r => setTimeout(r, 200));
+                        attempts++;
+                    }
+                    if (typeof db !== 'undefined') {
+                        if (!db.isOpen()) await db.open();
+                        const wallet = await db.tokens.get(1);
+                        if (wallet) tokenCount = wallet.balance || 0;
+                    }
+                } catch(e) {}
+                return { 
+                    user: u ? JSON.parse(u) : null, 
+                    tokenCount 
+                };
+            })();
+
+            const modulesFetch = Promise.all([
+                import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+                import('https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js')
+            ]);
+
+            const [userData, [firebaseAppModule, firebaseAnalyticsModule]] = await Promise.all([userFetch, modulesFetch]);
+
+            // 2. Enable Debugging
+            try {
+                if (firebaseAppModule.setLogLevel) firebaseAppModule.setLogLevel('debug');
+                // Force gtag debug mode
+                window['ga-debug'] = true;
+                window['dataLayer'] = window['dataLayer'] || [];
+            } catch (e) {}
+
+            // 3. Initialize Firebase
             const existingApps = firebaseAppModule.getApps();
             const app = existingApps.length ? existingApps[0] : firebaseAppModule.initializeApp(FIREBASE_CONFIG);
             const analyticsSupported = await firebaseAnalyticsModule.isSupported();
+            
             if (analyticsSupported) {
                 const analytics = firebaseAnalyticsModule.getAnalytics(app);
+
+                // 4. Setup global helpers
                 window.logEvent = (name, params) => {
                     try {
-                        firebaseAnalyticsModule.logEvent(analytics, name, params);
+                        const enhancedParams = { ...params };
+                        try {
+                            const u = localStorage.getItem('google_user');
+                            if (u) {
+                                const user = JSON.parse(u);
+                                const name = user.name || user.given_name;
+                                if (name) enhancedParams.user_name = name;
+                            }
+                        } catch (e) {}
+
+                        console.log('[Analytics] Event:', name, enhancedParams);
+                        firebaseAnalyticsModule.logEvent(analytics, name, enhancedParams);
                     } catch (e) {
                         console.warn('Analytics logEvent failed:', e);
                     }
                 };
+
+                window.setAnalyticsUser = (userId, properties) => {
+                    try {
+                        console.log('[Analytics] User:', userId, properties);
+                        if (userId) firebaseAnalyticsModule.setUserId(analytics, userId);
+                        if (properties) {
+                            firebaseAnalyticsModule.setUserProperties(analytics, properties);
+                            if (firebaseAnalyticsModule.setDefaultEventParameters) {
+                                firebaseAnalyticsModule.setDefaultEventParameters(analytics, properties);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Analytics setAnalyticsUser failed:', e);
+                    }
+                };
+
+                // 5. Apply User Context Immediately
+                // Set debug_mode for all events
+                if (firebaseAnalyticsModule.setDefaultEventParameters) {
+                    firebaseAnalyticsModule.setDefaultEventParameters(analytics, { debug_mode: true });
+                }
+
+                if (userData.user) {
+                    const userId = userData.user.sub || userData.user.id;
+                    window.setAnalyticsUser(userId, { 
+                        user_name: userData.user.name || userData.user.given_name,
+                        rest_token_count: userData.tokenCount
+                    });
+                    // Log custom app_start event for tracking initialization state
+                    window.logEvent('app_start', {
+                        user_name: userData.user.name || userData.user.given_name,
+                        rest_token_count: userData.tokenCount
+                    });
+                } else if (userData.tokenCount > 0) {
+                    window.setAnalyticsUser(null, { rest_token_count: userData.tokenCount });
+                    window.logEvent('app_start', {
+                        rest_token_count: userData.tokenCount
+                    });
+                } else {
+                    window.logEvent('app_start');
+                }
+
                 console.log('Firebase Analytics initialized.');
             } else {
                 console.warn('Firebase Analytics not supported in this environment.');
@@ -59,6 +151,7 @@
     // Non-UI logout: perform cleanup silently and redirect to login.
     window.logout = async () => {
         try {
+            if (window.setAnalyticsUser) window.setAnalyticsUser(null, { user_name: null, rest_token_count: null });
             try { localStorage.removeItem('local_mode'); } catch(e){}
             localStorage.removeItem('google_token');
             localStorage.removeItem('google_token_expires_at');
@@ -760,6 +853,22 @@
             const data = await resp.json();
             try {
                 localStorage.setItem('google_user', JSON.stringify(data));
+                try {
+                    const userId = data.sub || data.id;
+                    if (userId && window.setAnalyticsUser) {
+                        let tokenCount = 0;
+                        try {
+                            if (typeof db !== 'undefined') {
+                                const wallet = await db.tokens.get(1);
+                                if (wallet) tokenCount = wallet.balance || 0;
+                            }
+                        } catch(e){}
+                        window.setAnalyticsUser(userId, { 
+                            user_name: data.name || data.given_name,
+                            rest_token_count: tokenCount
+                        });
+                    }
+                } catch(e){}
                 try { window.dispatchEvent(new CustomEvent('userchange', { detail: data })); } catch(e){}
             } catch(e){}
             return data;

@@ -2107,8 +2107,12 @@
 								if (db && typeof db.freezeDay === 'function') {
 									const result = await db.freezeDay(todayKey);
 									if (result && result.ok) {
-										try { localStorage.setItem('has_local_changes', 'true'); } catch (e) {}
-										try { if (typeof refreshHomeData === 'function') await refreshHomeData(); } catch (e) {}
+										if (window.logEvent) {
+											window.logEvent('spend_token', { 
+												item: 'rest_day', 
+												remaining_balance: result.balance 
+											});
+										}										try { localStorage.setItem('has_local_changes', 'true'); } catch (e) {}										try { if (typeof refreshHomeData === 'function') await refreshHomeData(); } catch (e) {}
 									}
 								}
 							} catch (e) {}
