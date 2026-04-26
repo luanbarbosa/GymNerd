@@ -488,5 +488,12 @@
     "name": "Neutral Grip Lat Pulldown",
     "namePT": "Puxada na barra com pegada neutra",
     "type": "back"
+  },
+  {
+    "id": 71,
+    "imageId": 71,
+    "name": "Reverse Grip Barbell Curl",
+    "namePT": "Rosca com barra e pegada reversa",
+    "type": "arms"
   }
 ]
