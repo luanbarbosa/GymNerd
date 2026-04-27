@@ -29,6 +29,8 @@
                 add_selected: 'Add Selected',
                 select: 'Select',
                 suggest: 'Suggest',
+                suggest_new_exercise: 'Suggest new exercise',
+
                 apply: 'Apply',
                 edit: 'Edit',
                 title_main: 'GymNerd',
@@ -361,6 +363,8 @@
                 add_selected: 'Adicionar Selecionados',
                 select: 'Selecionar',
                 suggest: 'Sugerir',
+                suggest_new_exercise: 'Sugerir novo exercício',
+
                 apply: 'Aplicar',
                 edit: 'Editar',
                 title_main: 'GymNerd',

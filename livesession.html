@@ -14,6 +14,7 @@
     <meta name="theme-color" content="#ffffff">
     <link href="https://fonts.googleapis.com" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=add_circle,exit_to_app,open_in_new" />
     <script src="auth.js"></script>
     <script>
     // Simple cookie reader for keep-awake logic
@@ -716,8 +717,9 @@
                             <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
                         </button>
                         <div id="playerMenu" class="player-menu" role="menu" aria-label="Player options" hidden>
-                            <button id="playerMenuAddExercise" class="player-menu-item" type="button" role="menuitem" data-i18n="add_exercise_action">Add exercise</button>
-                            <button id="playerMenuGiveUpSession" class="player-menu-item player-menu-item-danger" type="button" role="menuitem" data-i18n="give_up_session">Give up session</button>
+                            <button id="playerMenuAddExercise" class="player-menu-item" type="button" role="menuitem" style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-rounded" style="font-size: 1.1rem; opacity: 0.8;">add_circle</span><span data-i18n="add_exercise_action">Add exercise</span></button>
+                            <button id="playerMenuSuggestExercise" class="player-menu-item" type="button" role="menuitem" style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-rounded" style="font-size: 1.1rem; opacity: 0.8;">open_in_new</span><span data-i18n="suggest_new_exercise">Suggest new exercise</span></button>
+                            <button id="playerMenuGiveUpSession" class="player-menu-item player-menu-item-danger" type="button" role="menuitem" style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-rounded" style="font-size: 1.1rem; opacity: 0.8;">exit_to_app</span><span data-i18n="give_up_session">Give up session</span></button>
                         </div>
                     </div>
                 </div>
@@ -1934,6 +1936,7 @@
         function wirePlayerMenu() {
             const btn = document.getElementById('playerMenuBtn');
             const addExerciseBtn = document.getElementById('playerMenuAddExercise');
+            const suggestBtn = document.getElementById('playerMenuSuggestExercise');
             const giveUpSessionBtn = document.getElementById('playerMenuGiveUpSession');
             if (btn && !btn.dataset.wired) {
                 const onMenuTrigger = (event) => {
@@ -1948,6 +1951,17 @@
                 };
                 addExerciseBtn.addEventListener('click', onAddExercise);
                 addExerciseBtn.dataset.wired = 'true';
+            }
+            if (suggestBtn && !suggestBtn.dataset.wired) {
+                const onSuggest = (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closePlayerMenu();
+                    const url = (window.GN_I18N && GN_I18N.safeGetLang() === 'pt') ? 'https://forms.gle/wdeBbQcUNLNot7KC7' : 'https://forms.gle/tW6CgZDGv8jXAM8h6';
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                };
+                suggestBtn.addEventListener('click', onSuggest);
+                suggestBtn.dataset.wired = 'true';
             }
             if (giveUpSessionBtn && !giveUpSessionBtn.dataset.wired) {
                 const onGiveUpSession = (event) => {
