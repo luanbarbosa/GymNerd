@@ -495,5 +495,12 @@
     "name": "Reverse Grip Barbell Curl",
     "namePT": "Rosca com barra e pegada reversa",
     "type": "arms"
+  },
+  {
+    "id": 72,
+    "imageId": 72,
+    "name": "Machine Hack Squat",
+    "namePT": "Agachamento na máquina hack",
+    "type": "legs"
   }
 ]
