@@ -1178,14 +1178,6 @@
             return Number.isFinite(rest) && rest > 0 ? Math.round(rest) : 0;
         }
 
-        // Ensure display refreshes immediately when page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                updateTimerDisplay();
-                updateWorkoutTimerDisplay();
-            }
-        });
-
         // Ensure the fullscreen illustration doesn't extend under the constrained content
         function updateFinishedIllustration() {
             const finishedView = document.getElementById('finishedView');
@@ -2159,14 +2151,11 @@
                 // Try to keep screen awake if user enabled the setting: prefer Wake Lock API, otherwise start silent audio (iOS fallback)
                 (async () => {
                     try {
-                        const keep = (typeof getCookie === 'function' && getCookie('gn_keep_awake') === '1');
-                        if (keep) {
-                            if ('wakeLock' in navigator) {
-                                await requestWakeLock();
-                            } else {
-                                // start silent audio on user gesture (startSession is a user gesture)
-                                await startSilentAudio();
-                            }
+                        if ('wakeLock' in navigator) {
+                            await requestWakeLock();
+                        } else {
+                            // start silent audio on user gesture (resumeSession is a user gesture)
+                            await startSilentAudio();
                         }
                     } catch (err) {
                         console.warn('Could not acquire wake resources or start silent audio:', err);
@@ -2590,13 +2579,10 @@
             // Try to keep screen awake if user enabled the setting: prefer Wake Lock API, otherwise start silent audio
             (async () => {
                 try {
-                    const keep = (typeof getCookie === 'function' && getCookie('gn_keep_awake') === '1');
-                    if (keep) {
-                        if ('wakeLock' in navigator) {
-                            await requestWakeLock();
-                        } else {
-                            await startSilentAudio();
-                        }
+                    if ('wakeLock' in navigator) {
+                        await requestWakeLock();
+                    } else {
+                        await startSilentAudio();
                     }
                 } catch (err) {
                     console.warn('Could not acquire wake resources:', err);
@@ -3343,6 +3329,10 @@
 
         async function requestWakeLock() {
             try {
+                // Guard: only proceed if keep-awake setting is enabled
+                const keep = (typeof getCookie === 'function' && getCookie('gn_keep_awake') === '1');
+                if (!keep) return false;
+
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
                     wakeLock.addEventListener('release', () => {
@@ -3359,6 +3349,10 @@
         // Attempt to start a silent looping audio as a fallback (works on many iOS versions)
         async function startSilentAudio() {
             try {
+                // Guard: only proceed if keep-awake setting is enabled
+                const keep = (typeof getCookie === 'function' && getCookie('gn_keep_awake') === '1');
+                if (!keep) return false;
+
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
@@ -3435,14 +3429,45 @@
             }
         }
 
-        // If Wake Lock API is present, keep trying to re-acquire when visibility changes
+        // Manage resources and timers based on visibility to save battery
         document.addEventListener('visibilitychange', async () => {
             if (document.visibilityState === 'visible') {
-                if ('wakeLock' in navigator) {
-                    await requestWakeLock();
+                // If a session is active and not finished, re-acquire wake resources
+                if (sessionStartMs && finalWorkoutDuration === null) {
+                    try {
+                        if ('wakeLock' in navigator) {
+                            await requestWakeLock();
+                        } else {
+                            await startSilentAudio();
+                        }
+                    } catch (e) { console.warn('Visibility resume wake failed', e); }
+                    
+                    startWorkoutTimer();
+                    updateTimerDisplay(); // Refresh UI immediately
+                    
+                    // Resume rest timer interval if it was active
+                    if (timerInterval === null && timerStartMs !== null) {
+                        const elapsedSec = Math.floor((Date.now() - timerStartMs) / 1000);
+                        if (timerMode === 'countdown') {
+                            if (elapsedSec < timerDurationSeconds) {
+                                timerInterval = setInterval(updateTimerDisplay, 1000);
+                            }
+                        } else {
+                            timerInterval = setInterval(updateTimerDisplay, 1000);
+                        }
+                    }
                 }
             } else if (document.visibilityState === 'hidden') {
                 logPausedEvent();
+                // Release battery-intensive resources when backgrounded
+                try { await releaseWakeResources(); } catch (e) {}
+                stopWorkoutTimer();
+                // Clear UI timer interval but keep timerStartMs so it can be resumed
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                try { saveSessionState(); } catch (e) {}
             }
         });
         // Clean up when page is hidden or unloaded

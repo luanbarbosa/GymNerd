@@ -139,11 +139,21 @@ const BackgroundSync = {
             this.trigger();
         }
 
-        // Trigger sync on page hide/close
+        // Trigger sync on page hide/close (forced)
         window.addEventListener('pagehide', () => {
             if (localStorage.getItem('has_local_changes') === 'true' && !this._syncInProgress) {
                 console.info('[BackgroundSync] App hiding with pending changes, attempting immediate sync');
-                this.sync();
+                this.sync({ force: true });
+            }
+        });
+
+        // Trigger deferred sync when app becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                if (localStorage.getItem('has_local_changes') === 'true' && !this._syncInProgress) {
+                    console.info('[BackgroundSync] App visible, triggering deferred sync');
+                    this.trigger();
+                }
             }
         });
 
@@ -175,7 +185,13 @@ const BackgroundSync = {
     /**
      * Execute the sync operation.
      */
-    async sync() {
+    async sync(options = {}) {
+        // If app is hidden and sync is not forced, skip to save battery/bandwidth
+        if (document.visibilityState === 'hidden' && !options.force) {
+            console.debug('[BackgroundSync] Sync deferred: App is hidden');
+            return;
+        }
+
         if (this._syncInProgress) {
             console.debug('[BackgroundSync] Sync already in progress, queuing next run');
             this._syncQueued = true;
