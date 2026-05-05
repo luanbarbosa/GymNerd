@@ -21,6 +21,12 @@
             return;
         }
 
+        // Disable analytics on localhost to avoid polluting production data
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.info('Running on localhost. Firebase Analytics disabled.');
+            return;
+        }
+
         if (window.__gn_firebase_analytics_initialized) return;
         window.__gn_firebase_analytics_initialized = true;
 
