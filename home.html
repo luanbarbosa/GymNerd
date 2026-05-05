@@ -1972,14 +1972,50 @@
 					const streak = streakStats.current;
 					if (streak <= 0) {
 						// No active streak
-						// show a friendly sad-flame illustration instead of the default missed-day icon
-						iconImg.src = basePath + 'illustrations/sad-flame-face.svg';
+						let sadImg;
+						const daysSince = streakStats.daysSince || 0;
+						
+						// Check if we just lost a streak (had a streak yesterday)
+						const yesterday = new Date(today);
+						yesterday.setDate(yesterday.getDate() - 1);
+						const streakStatsYesterday = (db.calculateProtectedWorkoutStreaks && effectiveDates)
+							? db.calculateProtectedWorkoutStreaks(workoutDates, effectiveDates, dateToYMD(yesterday))
+							: null;
+						const wasOnStreak = streakStatsYesterday && streakStatsYesterday.current > 0;
+
+						// Priority 1: Lost streak (was on streak yesterday, but not today)
+						if (wasOnStreak) {
+							sadImg = 'flamo-sad-lost-streak.svg';
+						} 
+						// Priority 2: Inactivity brackets
+						else if (daysSince > 20) {
+							sadImg = 'flamo-sad-dead.svg';
+						} else if (daysSince >= 15) {
+							sadImg = 'flamo-sad-15-20.svg';
+						} else if (daysSince >= 11) {
+							sadImg = 'flamo-sad-11-15.svg';
+						} else if (daysSince >= 6) {
+							sadImg = 'flamo-sad-6-10.svg';
+						} else {
+							sadImg = 'flamo-sad-1-5.svg';
+						}
+						
+						iconImg.src = basePath + 'illustrations/' + sadImg;
 						iconImg.alt = 'no streak';
 					} else {
-						// show a happy flame illustration when the streak is active
-						iconImg.src = basePath + 'illustrations/happy-flame-face.svg';
+						// show a happy flame illustration based on streak level/record
+						let streakImg;
+						if (streakStats.longest > 0 && streak >= streakStats.longest) {
+							streakImg = 'flamo-happy-record.svg';
+						} else if (streak <= 2) {
+							streakImg = 'flamo-happy-1-2.svg';
+						} else if (streak <= 5) {
+							streakImg = 'flamo-happy-3-5.svg';
+						} else {
+							streakImg = 'flamo-happy-6-plus.svg';
+						}
+						iconImg.src = basePath + 'illustrations/' + streakImg;
 						iconImg.alt = 'streak active';
-						// (Visible caption removed — only the counter and icon are shown)
 					}
 					numEl.textContent = String(streak);
 					// Ensure the streak title is translated (or has a sensible default)
