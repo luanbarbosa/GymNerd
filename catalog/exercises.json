@@ -502,5 +502,19 @@
     "name": "Machine Hack Squat",
     "namePT": "Agachamento na máquina hack",
     "type": "legs"
+  },
+  {
+    "id": 73,
+    "imageId": 73,
+    "name": "Incline Treadmill Walk",
+    "namePT": "Caminhada em inclinação na esteira",
+    "type": "cardio"
+  },
+  {
+    "id": 74,
+    "imageId": 74,
+    "name": "Rowing Machine",
+    "namePT": "Máquina de remo",
+    "type": "cardio"
   }
 ]
