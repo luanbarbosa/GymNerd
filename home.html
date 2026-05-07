@@ -1139,7 +1139,10 @@
 			width: 100%;
 		}
 
-		/* Favorite type widget tweaks: match streak-banner spacing and full width */
+		/* Home Widgets: match streak-banner spacing and full width */
+		#weight-change-widget,
+		#type-distribution-widget,
+		#avg-duration-widget,
 		#fav-type-widget {
 			width: 100%;
 			max-width: none;
@@ -1160,22 +1163,8 @@
 			color: var(--text);
 		}
 
-		#type-distribution-widget {
-			width: 100%;
-			max-width: none;
-			margin: 20px 0 10px;
-			box-sizing: border-box;
-			padding: 0;
-			display: flex;
-			flex-direction: column;
-			gap: 4px;
-			align-items: flex-start;
-			background: transparent;
-			border: 0;
-			box-shadow: none;
-		}
-
-		#type-distribution-widget-card {
+		#type-distribution-widget-card,
+		#avg-duration-widget-card {
 			width: 100%;
 			box-sizing: border-box;
 			padding: 16px;
@@ -1185,19 +1174,10 @@
 			box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
 		}
 
-		#weight-change-widget {
-			width: 100%;
-			max-width: none;
-			margin: 20px 0 10px;
-			box-sizing: border-box;
-			padding: 0;
+		#avg-duration-widget-card {
 			display: flex;
-			flex-direction: column;
-			gap: 0;
-			align-items: flex-start;
-			background: transparent;
-			border: 0;
-			box-shadow: none;
+			align-items: baseline;
+			gap: 8px;
 		}
 
 		#weight-change-widget-card {
@@ -1219,11 +1199,14 @@
 			overflow: hidden;
 		}
 
+		#weight-change-widget .home-widget-heading,
+		#type-distribution-widget .home-widget-heading,
+		#avg-duration-widget .home-widget-heading,
+		#fav-type-widget .home-widget-heading {
+			margin: 8px 0 6px;
+		}
+
 		#weight-change-widget .home-widget-heading {
-			width: 100%;
-			box-sizing: border-box;
-			padding: 0;
-			margin: 0 0 6px;
 			justify-content: flex-start;
 		}
 
@@ -1256,11 +1239,6 @@
 		.home-widget-heading__info:focus-visible {
 			outline: 2px solid rgba(255, 255, 255, 0.25);
 			outline-offset: 3px;
-		}
-
-		#type-distribution-widget .home-widget-heading,
-		#fav-type-widget .home-widget-heading {
-			margin: 0 0 6px;
 		}
 
 		.weight-change-subtitle {
@@ -1702,6 +1680,30 @@
 					</div>
 				</div>
 
+				<div id="avg-duration-widget" class="nav-card" role="region" aria-live="polite" style="display:none;" aria-label="Average workout duration">
+					<div class="home-widget-heading" data-i18n="avg_workout_duration_title">Average workout duration</div>
+					<div id="avg-duration-widget-card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
+						<!-- Left column: Average (Focal point) -->
+						<div style="display: flex; align-items: center; justify-content: center; border-right: 1px solid rgba(255,255,255,0.06); height: 100%; padding-right: 12px;">
+							<div style="display: flex; align-items: baseline; gap: 4px;">
+								<span id="avg-duration-value" style="font-size: 2.2rem; font-weight: 900; line-height: 1;"><span style="margin-right: 2px;">~</span>—</span>
+								<span id="avg-duration-unit" style="font-size: 0.85rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">min</span>
+							</div>
+						</div>
+						<!-- Right column: Secondary stats -->
+						<div style="display: flex; flex-direction: column; gap: 12px; justify-content: center; padding-left: 4px;">
+							<div style="display: flex; flex-direction: column; gap: 0px;">
+								<span data-i18n="total_workout_duration" style="font-size: 0.65rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em;">Total time</span>
+								<span id="avg-duration-total" style="font-size: 1rem; font-weight: 800; color: var(--text);">—</span>
+							</div>
+							<div style="display: flex; flex-direction: column; gap: 0px;">
+								<span data-i18n="longest_workout" style="font-size: 0.65rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em;">Longest</span>
+								<span id="avg-duration-longest" style="font-size: 1rem; font-weight: 800; color: var(--text);">—</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
 				<div id="fav-type-widget" class="nav-card"
 					style="display:none; width:100%; margin:20px 0 10px; padding:0; max-width:none; box-sizing:border-box; position:relative;">
 					<div class="home-widget-heading" data-i18n="favorite_exercise">Most frequent exercise</div>
@@ -1797,6 +1799,7 @@
 								try { const sb = document.getElementById('streak-banner'); if (sb) sb.style.display = 'none'; } catch (e) { }
 								try { const hf = document.getElementById('home-chart-pill-filter'); if (hf) hf.style.display = 'none'; } catch (e) { }
 								try { const fw = document.getElementById('fav-type-widget'); if (fw) fw.style.display = 'none'; } catch (e) { }
+								try { const adv = document.getElementById('avg-duration-widget'); if (adv) adv.style.display = 'none'; } catch (e) { }
 								try { const dist = document.getElementById('type-distribution-widget'); if (dist) dist.style.display = 'none'; } catch (e) { }
 								try { const emptyEl = document.getElementById('home-empty-illustration'); if (emptyEl) { emptyEl.style.display = 'flex'; const img = document.getElementById('home-empty-illustration-img'); if (img) img.style.display = 'block'; try { if (typeof window.centerEmptyIllustration === 'function') window.centerEmptyIllustration(); } catch (e) { } } } catch (e) { }
 							}
@@ -2252,6 +2255,7 @@
 				try { if (typeof renderWeightChangeWidget === 'function') await renderWeightChangeWidget(effectivePeriod, items); } catch (e) { console.error('renderWeightChangeWidget failed', e); }
 				try { if (typeof renderTypeChangeWidget === 'function') await renderTypeChangeWidget(effectivePeriod, items); } catch (e) { console.error('renderTypeChangeWidget failed', e); }
 				try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise(effectivePeriod, items); } catch (e) { console.error('renderFavoriteExercise failed', e); }
+				try { if (typeof renderAverageDuration === 'function') await renderAverageDuration(effectivePeriod, items); } catch (e) { console.error('renderAverageDuration failed', e); }
 				try { if (typeof renderTypeDistribution === 'function') await renderTypeDistribution(effectivePeriod, items); } catch (e) { console.error('renderTypeDistribution failed', e); }
 			}
 
@@ -2272,6 +2276,75 @@
 					});
 					pill.dataset.wired = 'true';
 				});
+			}
+
+			async function renderAverageDuration(period, items) {
+				const widget = document.getElementById('avg-duration-widget');
+				const valueEl = document.getElementById('avg-duration-value');
+				const totalEl = document.getElementById('avg-duration-total');
+				const longestEl = document.getElementById('avg-duration-longest');
+				if (!widget || !valueEl) return;
+
+				const filtered = filterHomeEntriesByPeriod(items, period);
+				if (!filtered || filtered.length === 0) {
+					widget.style.display = 'none';
+					return;
+				}
+
+				// Group by date
+				const dailyDurations = {};
+				for (const item of filtered) {
+					if (!item.date || !item.sessionId || !item.workoutDuration) continue;
+					if (!dailyDurations[item.date]) dailyDurations[item.date] = {};
+					// Only take one duration per sessionId
+					dailyDurations[item.date][item.sessionId] = item.workoutDuration;
+				}
+
+				const dailyTotals = [];
+				let maxDuration = 0;
+				for (const date in dailyDurations) {
+					const sessions = dailyDurations[date];
+					let dayTotal = 0;
+					let hasData = false;
+					for (const sid in sessions) {
+						const dur = sessions[sid];
+						dayTotal += dur;
+						if (dur > maxDuration) maxDuration = dur;
+						hasData = true;
+					}
+					if (hasData) dailyTotals.push(dayTotal);
+				}
+
+				if (dailyTotals.length === 0) {
+					widget.style.display = 'none';
+					return;
+				}
+
+				const sum = dailyTotals.reduce((a, b) => a + b, 0);
+				const avgSeconds = sum / dailyTotals.length;
+				const avgMinutes = Math.round(avgSeconds / 60);
+
+				valueEl.innerHTML = `<span style="margin-right: 2px;">~</span>${avgMinutes}`;
+
+				// Format total time
+				if (totalEl) {
+					const totalMinutes = Math.round(sum / 60);
+					if (totalMinutes >= 60) {
+						const h = Math.floor(totalMinutes / 60);
+						const m = totalMinutes % 60;
+						totalEl.textContent = m > 0 ? `${h}h ${m}m` : `${h}h`;
+					} else {
+						totalEl.textContent = `${totalMinutes}m`;
+					}
+				}
+
+				// Format longest workout
+				if (longestEl) {
+					const maxMinutes = Math.round(maxDuration / 60);
+					longestEl.textContent = `${maxMinutes}m`;
+				}
+
+				widget.style.display = 'flex';
 			}
 
 			async function renderFavoriteExercise(range = getStoredHomeChartPillSelection(), sourceItems = null) {
