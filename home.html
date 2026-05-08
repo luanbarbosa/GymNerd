@@ -306,6 +306,7 @@
 		})();
 	</script>
 	<script src="auth.js"></script>
+	<script src="stat_calculator.js"></script>
 	<script src="drive-storage.js"></script>
 	<script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 	<script src="db.js"></script>
@@ -1756,6 +1757,88 @@
 		</div>
 
 		<script>
+			const HOME_CHART_PILL_FILTER_STORAGE_KEY = 'gn_home_chart_pill_filter';
+			const HOME_CHART_PILL_FILTER_VALUES = ['all', 'yoy', '6m', 'month'];
+
+			function normalizeHomeChartPeriod(value) {
+				if (value === 'year') return 'yoy';
+				if (HOME_CHART_PILL_FILTER_VALUES.includes(value)) return value;
+				return 'all';
+			}
+
+			function applyHomeChartPillSelection(value) {
+				const normalized = normalizeHomeChartPeriod(value);
+				const pills = document.querySelectorAll('.home-chart-pill-option');
+				pills.forEach((pill) => {
+					const isActive = pill.dataset.period === normalized;
+					pill.classList.toggle('is-active', isActive);
+					pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
+				});
+				return normalized;
+			}
+
+			function getStoredHomeChartPillSelection() {
+				try {
+					return normalizeHomeChartPeriod(localStorage.getItem(HOME_CHART_PILL_FILTER_STORAGE_KEY));
+				} catch (e) {
+					return 'all';
+				}
+			}
+
+			function getHomeChartFilterStart(period) {
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
+
+				if (period === 'month') return new Date(today.getFullYear(), today.getMonth(), 1);
+				if (period === '6m') {
+					const start = new Date(today);
+					start.setMonth(start.getMonth() - 6);
+					return start;
+				}
+				if (period === 'yoy') {
+					const start = new Date(today);
+					start.setMonth(start.getMonth() - 12);
+					return start;
+				}
+				return null;
+			}
+
+			function filterHomeEntriesByPeriod(items, period) {
+				const normalized = normalizeHomeChartPeriod(period);
+				const start = getHomeChartFilterStart(normalized);
+				if (!start) return Array.isArray(items) ? items : [];
+
+				return (Array.isArray(items) ? items : []).filter((it) => {
+					if (!it || !it.date) return false;
+					const itemDate = new Date(`${it.date}T00:00:00`);
+					if (Number.isNaN(itemDate.getTime())) return false;
+					return itemDate >= start;
+				});
+			}
+
+			function getPreviousHomeChartPeriod(period) {
+				const index = HOME_CHART_PILL_FILTER_VALUES.indexOf(period);
+				if (index <= 0) return null;
+				return HOME_CHART_PILL_FILTER_VALUES[index - 1];
+			}
+
+			function resolveEffectiveHomeChartPeriod(items, requestedPeriod = getStoredHomeChartPillSelection()) {
+				let currentPeriod = normalizeHomeChartPeriod(requestedPeriod);
+				while (currentPeriod) {
+					const filtered = filterHomeEntriesByPeriod(items, currentPeriod);
+					if (filtered.length > 0 || currentPeriod === 'all') return currentPeriod;
+					currentPeriod = getPreviousHomeChartPeriod(currentPeriod);
+				}
+				return 'all';
+			}
+
+			function updateHomeChartFilterVisibility(historyCount) {
+				const filter = document.getElementById('home-chart-pill-filter');
+				if (!filter) return;
+				try {
+					filter.style.display = (historyCount && historyCount > 0) ? 'flex' : 'none';
+				} catch (e) { }
+			}
 
 			// Render compact app title into the sticky topbar
 			function renderCompactApp() {
@@ -2166,89 +2249,6 @@
 			}
 
 			// Global favorite-exercise renderer (uses the same parent widget as favorite-type)
-			const HOME_CHART_PILL_FILTER_STORAGE_KEY = 'gn_home_chart_pill_filter';
-			const HOME_CHART_PILL_FILTER_VALUES = ['all', 'yoy', '6m', 'month'];
-
-			function normalizeHomeChartPeriod(value) {
-				if (value === 'year') return 'yoy';
-				if (HOME_CHART_PILL_FILTER_VALUES.includes(value)) return value;
-				return 'all';
-			}
-
-			function applyHomeChartPillSelection(value) {
-				const normalized = normalizeHomeChartPeriod(value);
-				const pills = document.querySelectorAll('.home-chart-pill-option');
-				pills.forEach((pill) => {
-					const isActive = pill.dataset.period === normalized;
-					pill.classList.toggle('is-active', isActive);
-					pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
-				});
-				return normalized;
-			}
-
-			function getStoredHomeChartPillSelection() {
-				try {
-					return normalizeHomeChartPeriod(localStorage.getItem(HOME_CHART_PILL_FILTER_STORAGE_KEY));
-				} catch (e) {
-					return 'all';
-				}
-			}
-
-			function getHomeChartFilterStart(period) {
-				const today = new Date();
-				today.setHours(0, 0, 0, 0);
-
-				if (period === 'month') return new Date(today.getFullYear(), today.getMonth(), 1);
-				if (period === '6m') {
-					const start = new Date(today);
-					start.setMonth(start.getMonth() - 6);
-					return start;
-				}
-				if (period === 'yoy') {
-					const start = new Date(today);
-					start.setMonth(start.getMonth() - 12);
-					return start;
-				}
-				return null;
-			}
-
-			function filterHomeEntriesByPeriod(items, period) {
-				const normalized = normalizeHomeChartPeriod(period);
-				const start = getHomeChartFilterStart(normalized);
-				if (!start) return Array.isArray(items) ? items : [];
-
-				return (Array.isArray(items) ? items : []).filter((it) => {
-					if (!it || !it.date) return false;
-					const itemDate = new Date(`${it.date}T00:00:00`);
-					if (Number.isNaN(itemDate.getTime())) return false;
-					return itemDate >= start;
-				});
-			}
-
-			function getPreviousHomeChartPeriod(period) {
-				const index = HOME_CHART_PILL_FILTER_VALUES.indexOf(period);
-				if (index <= 0) return null;
-				return HOME_CHART_PILL_FILTER_VALUES[index - 1];
-			}
-
-			function resolveEffectiveHomeChartPeriod(items, requestedPeriod = getStoredHomeChartPillSelection()) {
-				let currentPeriod = normalizeHomeChartPeriod(requestedPeriod);
-				while (currentPeriod) {
-					const filtered = filterHomeEntriesByPeriod(items, currentPeriod);
-					if (filtered.length > 0 || currentPeriod === 'all') return currentPeriod;
-					currentPeriod = getPreviousHomeChartPeriod(currentPeriod);
-				}
-				return 'all';
-			}
-
-			function updateHomeChartFilterVisibility(historyCount) {
-				const filter = document.getElementById('home-chart-pill-filter');
-				if (!filter) return;
-				try {
-					filter.style.display = (historyCount && historyCount > 0) ? 'flex' : 'none';
-				} catch (e) { }
-			}
-
 			async function renderHomeInsightWidgets(period = getStoredHomeChartPillSelection(), useFallback = true) {
 				const requestedPeriod = normalizeHomeChartPeriod(period);
 				try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { }
@@ -2261,6 +2261,18 @@
 				try { if (typeof renderFavoriteExercise === 'function') await renderFavoriteExercise(effectivePeriod, items); } catch (e) { console.error('renderFavoriteExercise failed', e); }
 				try { if (typeof renderAverageDuration === 'function') await renderAverageDuration(effectivePeriod, items); } catch (e) { console.error('renderAverageDuration failed', e); }
 				try { if (typeof renderTypeDistribution === 'function') await renderTypeDistribution(effectivePeriod, items); } catch (e) { console.error('renderTypeDistribution failed', e); }
+
+				// Final check for the shared parent container of weight and type changes
+				try {
+					const parent = document.getElementById('weight-change-widget');
+					const wCard = document.getElementById('weight-change-widget-card');
+					const tCard = document.getElementById('type-change-widget');
+					if (parent && wCard && tCard) {
+						const hasW = (wCard.style.display !== 'none');
+						const hasT = (tCard.style.display !== 'none');
+						parent.style.display = (hasW || hasT) ? 'flex' : 'none';
+					}
+				} catch (e) { }
 			}
 
 			function initHomeChartPillFilter() {
@@ -2734,6 +2746,10 @@
 
 					if (!candidates.length) {
 						widget.style.display = 'none';
+						const broader = getPreviousHomeChartPeriod(range);
+						if (broader) {
+							await renderTypeChangeWidget(broader, sourceItems);
+						}
 						return;
 					}
 
@@ -2746,6 +2762,10 @@
 
 					if (!topPositive && !topNegative) {
 						widget.style.display = 'none';
+						const broader = getPreviousHomeChartPeriod(range);
+						if (broader) {
+							await renderTypeChangeWidget(broader, sourceItems);
+						}
 						return;
 					}
 
@@ -2755,6 +2775,8 @@
 					
 					list.innerHTML = rows.join('');
 					widget.style.display = 'flex';
+					const parent = document.getElementById('weight-change-widget');
+					if (parent) parent.style.display = 'flex';
 				} catch (err) {
 					console.error('renderTypeChangeWidget failed', err);
 				}
@@ -2833,8 +2855,17 @@
 						});
 					}
 
+					const card = document.getElementById('weight-change-widget-card');
+
 					if (!candidates.length) {
-						widget.style.display = 'none';
+						if (card) card.style.display = 'none';
+						// try broader range before hiding parent
+						const broader = getPreviousHomeChartPeriod(range);
+						if (broader) {
+							await renderWeightChangeWidget(broader, sourceItems);
+						} else {
+							// at 'all' and no candidates — parent visibility will be handled by renderHomeInsightWidgets
+						}
 						return;
 					}
 
@@ -2846,9 +2877,16 @@
 						.sort((a, b) => a.change.delta - b.change.delta)[0] || null;
 
 					if (!topPositive && !topNegative) {
-						widget.style.display = 'none';
+						if (card) card.style.display = 'none';
+						const broader = getPreviousHomeChartPeriod(range);
+						if (broader) {
+							await renderWeightChangeWidget(broader, sourceItems);
+						}
 						return;
 					}
+
+					if (card) card.style.display = 'block';
+					if (widget) widget.style.display = 'flex';
 
 					const rows = [
 						topPositive ? renderWeightChangeRow(topPositive) : '',

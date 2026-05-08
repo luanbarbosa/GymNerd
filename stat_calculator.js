@@ -13,6 +13,9 @@ function estimate1RM(weight, reps) {
 
 // expose globally
 window.estimate1RM = estimate1RM;
+window.getBest1RM = getBest1RM;
+window.calculateSet1RMs = calculateSet1RMs;
+window.getAverage1RM = getAverage1RM;
 
 /**
  * Calculate 1RM for multiple sets
