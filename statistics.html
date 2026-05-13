@@ -929,20 +929,26 @@
                 return num;
             };
 
-            const getStrength1RMSeries = (entries) => (Array.isArray(entries) ? entries : [])
-                .slice()
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .map((entry) => {
-                    if (Array.isArray(entry.sets) && entry.sets.length > 0 && window.getBest1RM) {
-                        return safeMetricValue(window.getBest1RM(entry.sets));
-                    }
+            const getStrength1RMSeries = (entries) => {
+                if (!Array.isArray(entries)) return [];
+                const byDate = {};
+                entries.forEach(entry => {
+                    const d = entry.date;
+                    if (!d) return;
                     const weight = Number(entry && entry.weight) || 0;
                     const reps = (entry && entry.reps !== undefined && entry.reps !== null)
                         ? Number(entry.reps)
                         : 1;
-
-                    return safeMetricValue(window.estimate1RM(weight, reps));
+                    const current1RM = window.estimate1RM(weight, reps);
+                    if (!byDate[d] || current1RM > byDate[d]) {
+                        byDate[d] = current1RM;
+                    }
                 });
+
+                return Object.keys(byDate)
+                    .sort((a, b) => new Date(a) - new Date(b))
+                    .map(d => safeMetricValue(byDate[d]));
+            };
 
             const getGroupProgressData = (exercisesInType, metricBuilder) => {
                 let sumPercent = 0;

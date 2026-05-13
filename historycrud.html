@@ -451,7 +451,32 @@
     async function buildSheetFromLogs(logs) {
         const sheet = document.getElementById('workoutSheet');
         sheet.innerHTML = '';
+        
+        // Group logs by occurrenceId (or exerciseId if occurrenceId is missing)
+        const groups = {};
         for (const log of logs) {
+            const key = (log.occurrenceId !== undefined && log.occurrenceId !== null)
+                ? `${log.occurrenceId}::${String(!!log.isCustom)}`
+                : `${log.exerciseId}::${String(!!log.isCustom)}`;
+            
+            if (!groups[key]) {
+                groups[key] = {
+                    ...log,
+                    setsArray: []
+                };
+            }
+            groups[key].setsArray.push({
+                sets: log.sets || 1,
+                reps: log.reps,
+                weight: log.weight,
+                distance: log.distance,
+                time: log.time
+            });
+        }
+
+        const sortedGroups = Object.values(groups).sort((a, b) => (a.occurrenceId || 0) - (b.occurrenceId || 0));
+
+        for (const log of sortedGroups) {
             if (!log) continue;
             const exId = log.exerciseId;
             const isCustom = (typeof log.isCustom === 'boolean') ? log.isCustom : false;
@@ -472,15 +497,14 @@
 
             const type = (ex && ex.type) ? ex.type : (log.exerciseType || '');
             const isCardioExercise = isCardioType(type);
-            const logSet = {
-                sets: (log.sets || ''),
-                ...(isCardioExercise ? { distance: (log.distance || ''), time: (log.time || '') } : { reps: (log.reps || ''), weight: (log.weight || '') })
-            };
-            const setsBlock = renderSetsBlock(type, [logSet]);
+            
+            // setsArray already contains the distinct sets
+            const setsBlock = renderSetsBlock(type, log.setsArray);
             const storedName = (ex && ex.name) ? ex.name : (log.exerciseName || `#${exId}`);
             const displayName = getExerciseDisplayName(ex || { name: log.exerciseName, namePT: log.exerciseNamePT }, storedName);
             const localizedNamePT = (ex && ex.namePT) || (log.exerciseNamePT || '');
-            sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${storedName}" data-name-pt="${localizedNamePT}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}" data-type="${type}">
+            
+            sheet.innerHTML += `<div class="exercise-row" data-id="${exId}" data-name="${storedName}" data-name-pt="${localizedNamePT}" data-imgid="${ex && ex.imageId || log.imageId || ''}" data-iscustom="${isCustom}" data-type="${type}" data-occurrence-id="${log.occurrenceId || ''}">
                 <div class="exercise-header">
                     <div class="exercise-left">
                         <img src="${imgSrc}" class="ex-thumb">
@@ -560,36 +584,41 @@
         }
         // Determine sessionId: reuse existing sessionId when editing, otherwise generate a new one
         let sessionId = Date.now();
+        let workoutDuration = 0;
         if (isEditMode) {
             try {
+                let existing = null;
                 if (editDate) {
-                    const existing = await db.history.where('date').equals(editDate).first();
-                    if (existing && existing.sessionId) sessionId = existing.sessionId;
+                    existing = await db.history.where('date').equals(editDate).first();
                 } else if (editLogId) {
-                    const existing = await db.history.get(editLogId);
-                    if (existing && existing.sessionId) sessionId = existing.sessionId;
+                    existing = await db.history.get(editLogId);
                 } else if (editSession) {
-                    try {
-                        const existing = await db.history.where('sessionId').equals(Number(editSession)).first();
-                        if (existing && existing.sessionId) sessionId = existing.sessionId;
-                    } catch (e) { /* ignore */ }
+                    existing = await db.history.where('sessionId').equals(Number(editSession)).first();
                 }
+                if (existing && existing.sessionId) sessionId = existing.sessionId;
+                if (existing && existing.workoutDuration) workoutDuration = existing.workoutDuration;
             } catch (e) { /* ignore and use generated sessionId */ }
         }
         const lang = GN_I18N.safeGetLang ? GN_I18N.safeGetLang() : 'en';
+        
+        let occurrenceCounter = 0;
+
         document.querySelectorAll('.exercise-row').forEach(r => {
             const rows = r.querySelectorAll('.set-row.data-row');
             if (!rows || rows.length === 0) return;
-            let totalSets = 0;
-            let pickedReps = null;
-            let pickedWeight = null;
-            let pickedDistance = null;
-            let pickedTime = null;
-            let cardioHasValidInput = false;
+            
             const exerciseType = r.dataset.type || '';
             const isCardioExercise = isCardioType(exerciseType);
+            const name = (lang === 'pt' && r.dataset.namePt) ? r.dataset.namePt : (r.dataset.name || null);
+            const exId = parseInt(r.dataset.id);
+            const isCustom = r.dataset.iscustom === 'true';
+            const imageId = parseInt(r.dataset.imgid) || null;
+            const originalOccurrenceId = r.dataset.occurrenceId;
+            
+            occurrenceCounter++;
+            const currentOccurrenceId = originalOccurrenceId ? parseInt(originalOccurrenceId) : (sessionId + occurrenceCounter);
 
-            rows.forEach(row => {
+            rows.forEach((row, setIdx) => {
                 const inputs = row.querySelectorAll('input');
                 if (!inputs || inputs.length < 3) return;
                 const sRaw = (inputs[0].value || '').toString().trim();
@@ -604,55 +633,52 @@
                     const timeVal = hasTimeInput ? normalizeCardioMeasurement(secondaryRaw) : null;
                     const hasValidInput = (hasDistanceInput && distanceVal !== null) || (hasTimeInput && timeVal !== null);
                     if (!hasValidInput) return;
-                    totalSets += sCount;
-                    if (pickedDistance === null && distanceVal !== null) pickedDistance = distanceVal;
-                    if (pickedTime === null && timeVal !== null) pickedTime = timeVal;
-                    cardioHasValidInput = true;
+                    
+                    for (let i = 0; i < sCount; i++) {
+                        logs.push({
+                            exerciseId: exId,
+                            isCustom,
+                            exerciseName: name,
+                            imageId,
+                            sets: 1,
+                            distance: distanceVal !== null ? distanceVal : 0,
+                            time: timeVal !== null ? timeVal : 0,
+                            reps: null,
+                            weight: null,
+                            exerciseType,
+                            date,
+                            sessionId,
+                            workoutDuration,
+                            occurrenceId: currentOccurrenceId,
+                            setNum: setIdx + 1 + i
+                        });
+                    }
                     return;
                 }
 
-                totalSets += sCount;
-                if (!pickedReps && primaryRaw !== '') pickedReps = parseInt(primaryRaw, 10);
-                if (!pickedWeight && secondaryRaw !== '') pickedWeight = (isNaN(Number(secondaryRaw)) ? secondaryRaw : Number(secondaryRaw));
-            });
-
-            if (isCardioExercise) {
-                if (!cardioHasValidInput) return;
-                const name = (lang === 'pt' && r.dataset.namePt) ? r.dataset.namePt : (r.dataset.name || null);
-                const distanceForSave = pickedDistance !== null ? pickedDistance : 0;
-                const timeForSave = pickedTime !== null ? pickedTime : 0;
-                logs.push({
-                    exerciseId: parseInt(r.dataset.id),
-                    isCustom: r.dataset.iscustom === 'true',
-                    exerciseName: name,
-                    imageId: parseInt(r.dataset.imgid) || null,
-                    sets: parseInt(totalSets) || 1,
-                    distance: distanceForSave,
-                    time: timeForSave,
-                    reps: null,
-                    weight: null,
-                    exerciseType,
-                    date,
-                    sessionId
-                });
-                return;
-            }
-
-            if (pickedReps === null || pickedWeight === null) return;
-            const name = (lang === 'pt' && r.dataset.namePt) ? r.dataset.namePt : (r.dataset.name || null);
-            logs.push({
-                exerciseId: parseInt(r.dataset.id),
-                isCustom: r.dataset.iscustom === 'true',
-                exerciseName: name,
-                imageId: parseInt(r.dataset.imgid) || null,
-                sets: parseInt(totalSets) || 1,
-                reps: parseInt(pickedReps),
-                weight: parseFloat(pickedWeight),
-                distance: null,
-                time: null,
-                exerciseType,
-                date,
-                sessionId
+                if (primaryRaw === '' || secondaryRaw === '') return;
+                const reps = parseInt(primaryRaw, 10);
+                const weight = (isNaN(Number(secondaryRaw)) ? secondaryRaw : Number(secondaryRaw));
+                
+                for (let i = 0; i < sCount; i++) {
+                    logs.push({
+                        exerciseId: exId,
+                        isCustom,
+                        exerciseName: name,
+                        imageId,
+                        sets: 1,
+                        reps,
+                        weight,
+                        distance: null,
+                        time: null,
+                        exerciseType,
+                        date,
+                        sessionId,
+                        workoutDuration,
+                        occurrenceId: currentOccurrenceId,
+                        setNum: setIdx + 1 + i
+                    });
+                }
             });
         });
         if (isEditMode) {

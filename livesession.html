@@ -3171,40 +3171,28 @@
                     }
                 }
 
-                const logs = [];
-                const groups = sessionSets.reduce((acc, s) => {
-                    if (!s.completed) return acc; // Only log completed sets
-                    if (!acc[s.exId]) acc[s.exId] = { ...s, count: 0 };
-                    acc[s.exId].isCustom = s.isCustom;
-                    acc[s.exId].count++;
-                    // Use the values from the sets (last completed set values will be stored)
-                    acc[s.exId].weight = s.weight;
-                    acc[s.exId].reps = s.reps;
-                    acc[s.exId].distance = s.distance;
-                    acc[s.exId].time = s.time;
-                    acc[s.exId].exerciseType = s.exerciseType || s.type || '';
-                    return acc;
-                }, {});
-
-                // All logs belonging to this finish operation share the same sessionId
                 const sessionId = now.getTime();
                 const workoutDuration = getWorkoutElapsedSeconds();
-                for (const id in groups) {
-                    const g = groups[id];
+                const logs = [];
+
+                sessionSets.forEach(s => {
+                    if (!s.completed) return;
                     logs.push({
-                        exerciseId: g.exId,
-                        isCustom: g.isCustom,
-                        weight: g.weight,
-                        reps: g.reps,
-                        distance: (g.distance !== undefined) ? g.distance : null,
-                        time: (g.time !== undefined) ? g.time : null,
-                        exerciseType: g.exerciseType || '',
+                        exerciseId: s.exId,
+                        isCustom: s.isCustom,
+                        weight: s.weight,
+                        reps: s.reps,
+                        distance: (s.distance !== undefined) ? s.distance : null,
+                        time: (s.time !== undefined) ? s.time : null,
+                        exerciseType: s.exerciseType || '',
                         date: todayStr,
-                        sets: g.count,
+                        sets: 1,
                         sessionId,
-                        workoutDuration
+                        workoutDuration,
+                        occurrenceId: s.occurrenceId,
+                        setNum: s.setNum
                     });
-                }
+                });
 
                 // Persist logs (no deduplication)
                 if (logs.length > 0) {

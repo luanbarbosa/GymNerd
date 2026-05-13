@@ -450,21 +450,24 @@
                 const delTitle = GN_I18N && GN_I18N.safeT ? GN_I18N.safeT('history_delete_session') : 'Delete Session';
                 const formattedDate = sessionDate ? formatDateDisplay(sessionDate) : '';
                 dateDet.innerHTML = `<summary class="date-header"><span>${formattedDate}</span><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>`;
-                // Merge items by exercise so a single exercise isn't rendered multiple times
+                // Merge items by exercise instance (occurrenceId) or exerciseId if occurrenceId is missing
                 const merged = {};
                 for (const l of entry.items) {
-                    const key = `${l.exerciseId || l.exerciseName || 'unknown'}::${String(!!l.isCustom)}`;
-                    if (!merged[key]) merged[key] = Object.assign({}, l);
-                    else {
-                        // sum sets when possible
+                    const key = (l.occurrenceId !== undefined && l.occurrenceId !== null) 
+                        ? `${l.occurrenceId}::${String(!!l.isCustom)}`
+                        : `${l.exerciseId || l.exerciseName || 'unknown'}::${String(!!l.isCustom)}`;
+                    
+                    if (!merged[key]) {
+                        merged[key] = Object.assign({}, l);
+                        merged[key].setsData = [{ weight: l.weight, reps: l.reps, distance: l.distance, time: l.time }];
+                    } else {
                         const a = merged[key];
-                        const setsA = Number(a.sets || 0);
-                        const setsB = Number(l.sets || 0);
-                        a.sets = (setsA + setsB) || a.sets || l.sets;
-                        // prefer the most-recent non-empty reps/weight
-                        if ((l.reps || l.reps === 0) && !a.reps) a.reps = l.reps;
-                        if ((l.weight || l.weight === 0) && !a.weight) a.weight = l.weight;
-                        if ((l.imageId || l.imageId === 0) && !a.imageId) a.imageId = l.imageId;
+                        a.sets = (Number(a.sets || 0) + Number(l.sets || 0));
+                        if (!a.setsData) a.setsData = [{ weight: a.weight, reps: a.reps, distance: a.distance, time: a.time }];
+                        a.setsData.push({ weight: l.weight, reps: l.reps, distance: l.distance, time: l.time });
+                        
+                        if (!a.imageId && l.imageId) a.imageId = l.imageId;
+                        if (!a.exerciseName && l.exerciseName) a.exerciseName = l.exerciseName;
                     }
                 }
 
@@ -499,22 +502,54 @@
                         const exerciseTypeKey = (l.exerciseType || '').toLowerCase();
                         const isCardioExercise = exerciseTypeKey === 'cardio';
                         const rawSets = Number(l.sets);
-                        const setsCount = Number.isFinite(rawSets) && rawSets > 0 ? rawSets : 3;
+                        const setsCount = Number.isFinite(rawSets) && rawSets > 0 ? rawSets : 1;
                         const dataParts = [`${setsCount} ${setsText}`];
-                        if (isCardioExercise) {
-                            const distanceValue = Number(l.distance);
-                            if (Number.isFinite(distanceValue) && distanceValue > 0) {
-                                const formatted = formatCardioMeasurement(distanceValue);
-                                if (formatted !== null) dataParts.push(`${formatted}${cardioDistanceUnit}`);
-                            }
-                            const timeValue = Number(l.time);
-                            if (Number.isFinite(timeValue) && timeValue > 0) {
-                                const formatted = formatCardioMeasurement(timeValue);
-                                if (formatted !== null) dataParts.push(`${formatted}${cardioTimeUnit}`);
+
+                        if (l.setsData && Array.isArray(l.setsData) && l.setsData.length > 0) {
+                            const first = l.setsData[0];
+                            const allSame = l.setsData.every(s => 
+                                s.reps === first.reps && s.weight === first.weight && 
+                                s.distance === first.distance && s.time === first.time
+                            );
+
+                            if (allSame) {
+                                if (isCardioExercise) {
+                                    const d = formatCardioMeasurement(first.distance);
+                                    const t = formatCardioMeasurement(first.time);
+                                    if (d) dataParts.push(`${d}${cardioDistanceUnit}`);
+                                    if (t) dataParts.push(`${t}${cardioTimeUnit}`);
+                                } else {
+                                    dataParts.push(`${first.weight}${kgSuffix}`);
+                                    dataParts.push(`${first.reps}`);
+                                }
+                            } else {
+                                const setsDisplay = l.setsData.map(s => {
+                                    if (isCardioExercise) {
+                                        const d = formatCardioMeasurement(s.distance);
+                                        const t = formatCardioMeasurement(s.time);
+                                        return `${d}${cardioDistanceUnit}x${t}${cardioTimeUnit}`;
+                                    } else {
+                                        return `${s.weight}${kgSuffix}x${s.reps}`;
+                                    }
+                                }).join(', ');
+                                dataParts.push(`(${setsDisplay})`);
                             }
                         } else {
-                            dataParts.push(`${l.weight}${kgSuffix}`);
-                            dataParts.push(`${l.reps}`);
+                            if (isCardioExercise) {
+                                const distanceValue = Number(l.distance);
+                                if (Number.isFinite(distanceValue) && distanceValue > 0) {
+                                    const formatted = formatCardioMeasurement(distanceValue);
+                                    if (formatted !== null) dataParts.push(`${formatted}${cardioDistanceUnit}`);
+                                }
+                                const timeValue = Number(l.time);
+                                if (Number.isFinite(timeValue) && timeValue > 0) {
+                                    const formatted = formatCardioMeasurement(timeValue);
+                                    if (formatted !== null) dataParts.push(`${formatted}${cardioTimeUnit}`);
+                                }
+                            } else {
+                                dataParts.push(`${l.weight}${kgSuffix}`);
+                                dataParts.push(`${l.reps}`);
+                            }
                         }
                         const dataRow = dataParts.join(' x ');
 
