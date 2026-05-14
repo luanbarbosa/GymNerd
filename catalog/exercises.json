@@ -516,5 +516,26 @@
     "name": "Rowing Machine",
     "namePT": "Máquina de remo",
     "type": "cardio"
+  },
+  {
+    "id": 75,
+    "imageId": 75,
+    "name": "Machine Crunch",
+    "namePT": "Máquina de abdômen",
+    "type": "abs"
+  },
+  {
+    "id": 76,
+    "imageId": 76,
+    "name": "Crunch",
+    "namePT": "Abdominal",
+    "type": "abs"
+  },
+  {
+    "id": 77,
+    "imageId": 77,
+    "name": "Cable Crunch",
+    "namePT": "Abdominal na polia",
+    "type": "abs"
   }
 ]
