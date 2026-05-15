@@ -2060,7 +2060,21 @@
 						? db.calculateProtectedWorkoutStreaks(workoutDates, effectiveDates, dateToYMD(today))
 						: calculateStreaks(workoutDates);
 					const streak = streakStats.current;
-					if (streak <= 0) {
+
+					// Check if today is a frozen day (rest day)
+					const todayYMD = dateToYMD(today);
+					let isTodayFrozen = false;
+					try {
+						if (db.frozen_days) {
+							const frozen = await db.frozen_days.get(todayYMD);
+							if (frozen) isTodayFrozen = true;
+						}
+					} catch (e) { isTodayFrozen = false; }
+
+					if (isTodayFrozen) {
+						iconImg.src = basePath + 'illustrations/flamo-happy-rest.svg';
+						iconImg.alt = 'resting';
+					} else if (streak <= 0) {
 						// No active streak
 						let sadImg;
 						const daysSince = streakStats.daysSince || 0;
@@ -2078,16 +2092,20 @@
 							sadImg = 'flamo-sad-lost-streak.svg';
 						} 
 						// Priority 2: Inactivity brackets
-						else if (daysSince > 20) {
-							sadImg = 'flamo-sad-dead.svg';
+						else if (daysSince >= 18) {
+							sadImg = 'flamo-sad-18-plus.svg';
 						} else if (daysSince >= 15) {
-							sadImg = 'flamo-sad-15-20.svg';
-						} else if (daysSince >= 11) {
-							sadImg = 'flamo-sad-11-15.svg';
+							sadImg = 'flamo-sad-15-17.svg';
+						} else if (daysSince >= 12) {
+							sadImg = 'flamo-sad-12-14.svg';
+						} else if (daysSince >= 9) {
+							sadImg = 'flamo-sad-9-11.svg';
 						} else if (daysSince >= 6) {
-							sadImg = 'flamo-sad-6-10.svg';
+							sadImg = 'flamo-sad-6-8.svg';
+						} else if (daysSince >= 3) {
+							sadImg = 'flamo-sad-3-5.svg';
 						} else {
-							sadImg = 'flamo-sad-1-5.svg';
+							sadImg = 'flamo-sad-1-2.svg';
 						}
 						
 						iconImg.src = basePath + 'illustrations/' + sadImg;
@@ -2101,8 +2119,14 @@
 							streakImg = 'flamo-happy-1-2.svg';
 						} else if (streak <= 5) {
 							streakImg = 'flamo-happy-3-5.svg';
+						} else if (streak <= 8) {
+							streakImg = 'flamo-happy-6-8.svg';
+						} else if (streak <= 11) {
+							streakImg = 'flamo-happy-9-11.svg';
+						} else if (streak <= 14) {
+							streakImg = 'flamo-happy-12-14.svg';
 						} else {
-							streakImg = 'flamo-happy-6-plus.svg';
+							streakImg = 'flamo-happy-15-plus.svg';
 						}
 						iconImg.src = basePath + 'illustrations/' + streakImg;
 						iconImg.alt = 'streak active';
