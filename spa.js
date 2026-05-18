@@ -217,8 +217,9 @@
             try {
                 const pageName = (href.split('/').pop() || 'index.html').split(/[?#]/)[0];
                 if (pageName === 'routines.html') {
-                    try { if (typeof renderTabs === 'function') renderTabs(); } catch(e){}
-                    try { if (typeof renderWorkouts === 'function') renderWorkouts(); } catch(e){}
+                    try { if (typeof renderTabs === 'function') await renderTabs(); } catch(e){}
+                } else if (pageName === 'routinecrud.html') {
+                    try { if (typeof initRoutineCrud === 'function') await initRoutineCrud(); } catch(e){}
                 } else if (pageName === 'home.html') {
                     try { if (typeof window.initLocalModeBanner === 'function') window.initLocalModeBanner(); } catch(e){}
                     try { if (typeof window.refreshHomeData === 'function') await window.refreshHomeData(); } catch(e){}

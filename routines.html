@@ -398,29 +398,11 @@
 
         async function init() {
             try {
-                await ensureDbOpen();
-                const [catalogEx, catalogImgs, customEx, customImgs] = await Promise.all([
-                    db.catalog_exercises.toArray(),
-                    db.catalog_images.toArray(),
-                    db.custom_exercises.toArray(),
-                    db.custom_images.toArray()
-                ]);
-
-                // Merge images from both catalog and custom collections
-                images = {};
-                catalogImgs.forEach(img => images[img.id] = img.data);
-                customImgs.forEach(img => images[img.id] = img.data);
-
-                // Combine exercises into a single list for the search modal
-                allExercises = [
-                    ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
-                    ...customEx.map(ex => ({ ...ex, isCustom: true }))
-                ];
-
-                renderTabs();
+                // renderTabs now handles exercise loading and ensures data is fresh
+                await renderTabs();
                 updateModalResults();
             } catch (err) {
-                console.error("Failed to load exercises:", err);
+                console.error("Failed to load routines page:", err);
             }
         }
 
@@ -667,62 +649,92 @@
             await renderTabs();
         }
         // New tab-based UI: render tabs and selected routine content
+        let _isRenderingTabs = false;
         async function renderTabs() {
-            const workouts = await db.routines.toArray();
-            const tabsContainer = document.getElementById('routines-tabs');
-            const content = document.getElementById('routines-content');
-            const tabsWrapper = document.getElementById('tabsWrapper');
-            const emptyStateRoot = document.getElementById('routines-empty');
-            tabsContainer.innerHTML = '';
-            if (!workouts || workouts.length === 0) {
-                const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_routines_placeholder') : 'Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.';
-                if (tabsWrapper) tabsWrapper.classList.add('hidden');
-                if (content) content.innerHTML = '';
-                if (emptyStateRoot) {
-                    emptyStateRoot.innerHTML = `
-                        <div class="empty-state">
-                            <img src="illustrations/empty-routine.svg" alt="" />
-                            <div>${msg}</div>
-                        </div>`;
-                    emptyStateRoot.classList.remove('hidden');
+            if (_isRenderingTabs) return;
+            _isRenderingTabs = true;
+            try {
+                // Ensure exercises are loaded (prevents stale state after SPA navigation)
+                await ensureDbOpen();
+                const [catalogEx, catalogImgs, customEx, customImgs] = await Promise.all([
+                    db.catalog_exercises.toArray(),
+                    db.catalog_images.toArray(),
+                    db.custom_exercises.toArray(),
+                    db.custom_images.toArray()
+                ]);
+
+                // Merge images from both catalog and custom collections
+                images = {};
+                catalogImgs.forEach(img => images[img.id] = img.data);
+                customImgs.forEach(img => images[img.id] = img.data);
+
+                // Combine exercises into a single list for the search modal
+                allExercises = [
+                    ...catalogEx.map(ex => ({ ...ex, isCustom: false })),
+                    ...customEx.map(ex => ({ ...ex, isCustom: true }))
+                ];
+
+                const workouts = await db.routines.toArray();
+                const tabsContainer = document.getElementById('routines-tabs');
+                const content = document.getElementById('routines-content');
+                const tabsWrapper = document.getElementById('tabsWrapper');
+                const emptyStateRoot = document.getElementById('routines-empty');
+                if (!tabsContainer) return; // safety for partial injections
+                tabsContainer.innerHTML = '';
+                if (!workouts || workouts.length === 0) {
+                    const msg = (window.GN_I18N && GN_I18N.t) ? GN_I18N.t('no_routines_placeholder') : 'Ainda não há rotinas. Clique em <strong>Nova Rotina</strong> para criar uma.';
+                    if (tabsWrapper) tabsWrapper.classList.add('hidden');
+                    if (content) content.innerHTML = '';
+                    if (emptyStateRoot) {
+                        emptyStateRoot.innerHTML = `
+                            <div class="empty-state">
+                                <img src="illustrations/empty-routine.svg" alt="" />
+                                <div>${msg}</div>
+                            </div>`;
+                        emptyStateRoot.classList.remove('hidden');
+                    }
+                    return;
                 }
-                return;
+                if (tabsWrapper) {
+                    tabsWrapper.classList.remove('hidden');
+                }
+                if (emptyStateRoot) {
+                    emptyStateRoot.classList.add('hidden');
+                    emptyStateRoot.innerHTML = '';
+                }
+                workouts.forEach((w, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'tab-btn';
+                    btn.dataset.id = w.id;
+                    const span = document.createElement('span');
+                    span.className = 'tab-label';
+                    span.textContent = w.name || 'Rotina ' + (i + 1);
+                    btn.appendChild(span);
+                    btn.onclick = function() {
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        // ensure the active tab is fully visible when the tab row is scrollable
+                        try { this.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' }); } catch (e) {}
+                        const rid = parseInt(this.dataset.id);
+                        localStorage.setItem('active_routine_id', rid);
+                        renderRoutineContent(rid);
+                    };
+                    tabsContainer.appendChild(btn);
+                });
+                // Activate a tab: prefer id from querystring if present, then localStorage, otherwise first tab
+                const search = (window.__spa_last_href && window.__spa_last_href.includes('?')) ? window.__spa_last_href.split('?')[1] : (window.location.search || '');
+                const params = new URLSearchParams(search);
+                const selectedId = params.get('id') || localStorage.getItem('active_routine_id');
+                const first = tabsContainer.querySelector('.tab-btn');
+                if (selectedId) {
+                    const btn = tabsContainer.querySelector(`[data-id="${selectedId}"]`);
+                    if (btn) btn.click(); else if (first) first.click();
+                } else if (first) first.click();
+            } catch (err) {
+                console.error("Failed to render tabs:", err);
+            } finally {
+                _isRenderingTabs = false;
             }
-            if (tabsWrapper) {
-                tabsWrapper.classList.remove('hidden');
-            }
-            if (emptyStateRoot) {
-                emptyStateRoot.classList.add('hidden');
-                emptyStateRoot.innerHTML = '';
-            }
-            workouts.forEach((w, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'tab-btn';
-                btn.dataset.id = w.id;
-                const span = document.createElement('span');
-                span.className = 'tab-label';
-                span.textContent = w.name || 'Rotina ' + (i + 1);
-                btn.appendChild(span);
-                btn.onclick = function() {
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    // ensure the active tab is fully visible when the tab row is scrollable
-                    try { this.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' }); } catch (e) {}
-                    const rid = parseInt(this.dataset.id);
-                    localStorage.setItem('active_routine_id', rid);
-                    renderRoutineContent(rid);
-                };
-                tabsContainer.appendChild(btn);
-            });
-            // Activate a tab: prefer id from querystring if present, then localStorage, otherwise first tab
-            const search = (window.__spa_last_href && window.__spa_last_href.includes('?')) ? window.__spa_last_href.split('?')[1] : (window.location.search || '');
-            const params = new URLSearchParams(search);
-            const selectedId = params.get('id') || localStorage.getItem('active_routine_id');
-            const first = tabsContainer.querySelector('.tab-btn');
-            if (selectedId) {
-                const btn = tabsContainer.querySelector(`[data-id="${selectedId}"]`);
-                if (btn) btn.click(); else if (first) first.click();
-            } else if (first) first.click();
         }
 
         async function renderRoutineContent(id) {

@@ -473,7 +473,7 @@
             } catch(e){}
         }
 
-        async function init() {
+        async function initRoutineCrud() {
             await ensureDbOpen();
             const [catalogEx, catalogImgs, customEx, customImgs] = await Promise.all([
                 db.catalog_exercises.toArray(),
@@ -1160,7 +1160,7 @@
                     document.title = GN_I18N.t('title_main') + ' | ' + (new URLSearchParams(window.location.search).get('id') ? GN_I18N.t('page_routine_edit') : GN_I18N.t('page_routine_new'));
                 }
             } catch(e){}
-            init();
+            initRoutineCrud();
         }
 
         if (document.readyState === 'loading') {
