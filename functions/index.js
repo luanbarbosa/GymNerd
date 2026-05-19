@@ -1,5 +1,4 @@
 const { onRequest } = require('firebase-functions/v2/https');
-const fetch = require('node-fetch');
 
 // Use Functions 2nd-gen `onRequest`. Provide secrets via environment variables
 // (OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET) or bind Firebase Secrets when deploying.
