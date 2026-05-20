@@ -551,6 +551,7 @@
         }
 
         async function init() {
+            try { initChartPillFilter(); } catch (e) {}
             const logs = await db.history.toArray();
             // If there is no history data, hide the stats sections but keep the top-card/topbar visible
             try {
