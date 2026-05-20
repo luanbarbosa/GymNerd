@@ -1079,49 +1079,66 @@
 			}
 		}
 
+		.home-chart-pill-filter-track {
+			margin: 16px 0 8px;
+			padding: 4px;
+			width: 100%;
+			background: rgba(255, 255, 255, 0.035);
+			border: 1px solid rgba(255, 255, 255, 0.06);
+			border-radius: 999px;
+			box-sizing: border-box;
+			min-width: 0;
+			overflow: hidden;
+			display: none;
+			flex-direction: column;
+		}
+
 		.home-chart-pill-filter {
-			margin: 24px 0 12px;
-			padding-top: 2px;
+			--mask-left: black;
+			--mask-right: black;
+			padding: 0;
 			display: flex;
 			flex-wrap: nowrap;
-			gap: clamp(4px, 1.5vw, 8px);
-			justify-content: center;
+			gap: 2px;
+			justify-content: space-between;
 			align-items: center;
 			width: 100%;
-			min-width: 0;
+			box-sizing: border-box;
+			overflow-x: auto;
+			white-space: nowrap;
+			-webkit-overflow-scrolling: touch;
+			-webkit-mask-image: linear-gradient(to right, var(--mask-left) 0%, black 16px, black calc(100% - 16px), var(--mask-right) 100%);
+			mask-image: linear-gradient(to right, var(--mask-left) 0%, black 16px, black calc(100% - 16px), var(--mask-right) 100%);
 		}
 
 		.home-chart-pill-option {
 			appearance: none;
-			flex: 1 1 0;
+			flex: 1 0 auto;
 			min-width: 0;
-			border: 1px solid rgba(255, 255, 255, 0.08);
-			background: rgba(255, 255, 255, 0.03);
+			border: none;
+			background: transparent;
 			color: var(--text-dim);
 			border-radius: 999px;
-			padding: clamp(6px, 1.8vw, 8px) clamp(8px, 2.6vw, 14px);
-			font-size: clamp(0.62rem, 2.1vw, 0.8rem);
-			font-weight: 700;
+			padding: 8px 16px;
+			font-size: clamp(0.72rem, 2vw, 0.8rem);
+			font-weight: 600;
 			line-height: 1;
 			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
 			text-align: center;
 			cursor: pointer;
-			transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+			transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 		}
 
 		.home-chart-pill-option:hover {
-			background: rgba(255, 255, 255, 0.06);
+			background: rgba(255, 255, 255, 0.05);
 			color: var(--text);
-			transform: translateY(-1px);
 		}
 
 		.home-chart-pill-option.is-active {
-			background: rgba(255, 255, 255, 0.1);
-			border-color: rgba(255, 255, 255, 0.16);
+			background: rgba(255, 255, 255, 0.12);
 			color: #ffffff;
-			box-shadow: none;
+			font-weight: 700;
+			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 		}
 
 		.home-chart-pill-option:focus-visible {
@@ -1646,11 +1663,14 @@
 					<div id="week-dots" class="week-dots" aria-hidden="false"></div>
 				</div>
 
-				<div id="home-chart-pill-filter" class="home-chart-pill-filter" role="tablist" aria-label="Home chart period quick filter" style="display:none;">
-					<button type="button" class="home-chart-pill-option is-active" data-period="all" aria-selected="true" data-i18n="all_time">All</button>
-					<button type="button" class="home-chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
-					<button type="button" class="home-chart-pill-option" data-period="6m" aria-selected="false" data-i18n="last_6_months">6 months</button>
-					<button type="button" class="home-chart-pill-option" data-period="month" aria-selected="false" data-i18n="this_month">This month</button>
+				<div id="home-chart-pill-filter" class="home-chart-pill-filter-track" style="display:none;">
+					<div class="home-chart-pill-filter" role="tablist" aria-label="Home chart period quick filter">
+						<button type="button" class="home-chart-pill-option is-active" data-period="all" aria-selected="true" data-i18n="all_time">All</button>
+						<button type="button" class="home-chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
+						<button type="button" class="home-chart-pill-option" data-period="6m" aria-selected="false" data-i18n="last_6_months">6 months</button>
+						<button type="button" class="home-chart-pill-option" data-period="last-month" aria-selected="false" data-i18n="last_month">Last month</button>
+						<button type="button" class="home-chart-pill-option" data-period="month" aria-selected="false" data-i18n="this_month">This month</button>
+					</div>
 				</div>
 
 				<div id="weight-change-widget" class="nav-card" role="region" aria-live="polite" style="display:none;" aria-label="Biggest weight changes">
@@ -1758,7 +1778,7 @@
 
 		<script>
 			const HOME_CHART_PILL_FILTER_STORAGE_KEY = 'gn_home_chart_pill_filter';
-			const HOME_CHART_PILL_FILTER_VALUES = ['all', 'yoy', '6m', 'month'];
+			const HOME_CHART_PILL_FILTER_VALUES = ['all', 'yoy', '6m', 'last-month', 'month'];
 
 			function normalizeHomeChartPeriod(value) {
 				if (value === 'year') return 'yoy';
@@ -1773,7 +1793,31 @@
 					const isActive = pill.dataset.period === normalized;
 					pill.classList.toggle('is-active', isActive);
 					pill.setAttribute('aria-selected', isActive ? 'true' : 'false');
+					if (isActive) {
+						try {
+							pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+						} catch (e) { }
+					}
 				});
+				try {
+					const filter = document.getElementById('home-chart-pill-filter');
+					if (filter) {
+						const scrollEl = filter.querySelector('.home-chart-pill-filter');
+						if (scrollEl) {
+							const updateFades = () => {
+								const scrollLeft = scrollEl.scrollLeft;
+								const maxScroll = scrollEl.scrollWidth - scrollEl.clientWidth;
+								const atStart = scrollLeft <= 1.5;
+								const atEnd = scrollLeft >= maxScroll - 1.5;
+								scrollEl.style.setProperty('--mask-left', atStart ? 'black' : 'transparent');
+								scrollEl.style.setProperty('--mask-right', atEnd ? 'black' : 'transparent');
+							};
+							updateFades();
+							setTimeout(updateFades, 50);
+							setTimeout(updateFades, 300);
+						}
+					}
+				} catch (e) { }
 				return normalized;
 			}
 
@@ -1790,6 +1834,7 @@
 				today.setHours(0, 0, 0, 0);
 
 				if (period === 'month') return new Date(today.getFullYear(), today.getMonth(), 1);
+				if (period === 'last-month') return new Date(today.getFullYear(), today.getMonth() - 1, 1);
 				if (period === '6m') {
 					const start = new Date(today);
 					start.setMonth(start.getMonth() - 6);
@@ -2303,6 +2348,28 @@
 				const filter = document.getElementById('home-chart-pill-filter');
 				const pills = document.querySelectorAll('.home-chart-pill-option');
 				if (!filter || !pills.length) return;
+
+				const scrollEl = filter.querySelector('.home-chart-pill-filter');
+				if (scrollEl) {
+					const updateFades = () => {
+						const scrollLeft = scrollEl.scrollLeft;
+						const maxScroll = scrollEl.scrollWidth - scrollEl.clientWidth;
+						const atStart = scrollLeft <= 1.5;
+						const atEnd = scrollLeft >= maxScroll - 1.5;
+						scrollEl.style.setProperty('--mask-left', atStart ? 'black' : 'transparent');
+						scrollEl.style.setProperty('--mask-right', atEnd ? 'black' : 'transparent');
+					};
+
+					if (scrollEl.dataset.fadesWired !== 'true') {
+						scrollEl.addEventListener('scroll', updateFades, { passive: true });
+						window.addEventListener('resize', updateFades, { passive: true });
+						scrollEl.dataset.fadesWired = 'true';
+					}
+
+					updateFades();
+					setTimeout(updateFades, 50);
+					setTimeout(updateFades, 300);
+				}
 
 				const savedValue = applyHomeChartPillSelection(getStoredHomeChartPillSelection());
 				try { localStorage.setItem(HOME_CHART_PILL_FILTER_STORAGE_KEY, savedValue); } catch (e) { }
