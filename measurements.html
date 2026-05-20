@@ -51,45 +51,62 @@
         #snackbar.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
 
         /* Filter pill styles matching statistics.html */
-        .chart-pill-filter {
+        .chart-pill-filter-track {
             margin: 12px 0;
+            padding: 4px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 999px;
+            box-sizing: border-box;
+            min-width: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-pill-filter {
+            --mask-left: black;
+            --mask-right: black;
+            padding: 0;
             display: flex;
             flex-wrap: nowrap;
-            gap: clamp(4px, 1.5vw, 8px);
-            justify-content: center;
+            gap: 2px;
+            justify-content: space-between;
             align-items: center;
             width: 100%;
-            min-width: 0;
+            box-sizing: border-box;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            -webkit-mask-image: linear-gradient(to right, var(--mask-left) 0%, black 16px, black calc(100% - 16px), var(--mask-right) 100%);
+            mask-image: linear-gradient(to right, var(--mask-left) 0%, black 16px, black calc(100% - 16px), var(--mask-right) 100%);
         }
         .chart-pill-option {
             appearance: none;
-            flex: 1 1 0;
+            flex: 1 0 auto;
             min-width: 0;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.03);
+            border: none;
+            background: transparent;
             color: var(--text-dim);
             border-radius: 999px;
-            padding: clamp(6px, 1.8vw, 8px) clamp(8px, 2.6vw, 14px);
-            font-size: clamp(0.62rem, 2.1vw, 0.8rem);
+            padding: 8px 16px;
+            font-size: clamp(0.72rem, 2vw, 0.8rem);
             font-weight: 700;
             line-height: 1;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
             text-align: center;
             cursor: pointer;
-            transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .chart-pill-option:hover {
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.05);
             color: var(--text);
-            transform: translateY(-1px);
         }
         .chart-pill-option.is-active {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.12);
             color: #ffffff;
-            box-shadow: none;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
         .chart-pill-option:focus-visible {
             outline: 2px solid rgba(242, 194, 75, 0.75);
@@ -126,11 +143,13 @@
             </div>
         </div>
 
-        <div class="chart-pill-filter" id="weight-chart-filter" role="tablist" aria-label="Weight chart period filter">
-            <button type="button" class="chart-pill-option is-active" data-period="all" aria-selected="true" data-i18n="all_time">All</button>
-            <button type="button" class="chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
-            <button type="button" class="chart-pill-option" data-period="6m" aria-selected="false" data-i18n="last_6_months">6 months</button>
-            <button type="button" class="chart-pill-option" data-period="month" aria-selected="false" data-i18n="this_month">This month</button>
+        <div class="chart-pill-filter-track" id="weight-chart-filter">
+            <div class="chart-pill-filter" role="tablist" aria-label="Weight chart period filter">
+                <button type="button" class="chart-pill-option is-active" data-period="all" aria-selected="true" data-i18n="all_time">All</button>
+                <button type="button" class="chart-pill-option" data-period="yoy" aria-selected="false" data-i18n="year_over_year_short">YoY</button>
+                <button type="button" class="chart-pill-option" data-period="6m" aria-selected="false" data-i18n="last_6_months">6 months</button>
+                <button type="button" class="chart-pill-option" data-period="month" aria-selected="false" data-i18n="this_month">This month</button>
+            </div>
         </div>
 
         <div class="card" style="margin-top:0;">
@@ -487,6 +506,7 @@
 </script>
 
 <script>
+(function() {
 function withAlpha(color, alpha) {
     if (!color) return `rgba(242,194,75,${alpha})`;
     const trimmed = color.trim();
@@ -556,7 +576,28 @@ function applyFilterUI(period) {
         const active = p.dataset.period === period;
         p.classList.toggle('is-active', active);
         p.setAttribute('aria-selected', active ? 'true' : 'false');
+        if (active) {
+            try {
+                p.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } catch (e) { }
+        }
     });
+    try {
+        const scrollEl = document.querySelector('#weight-chart-filter .chart-pill-filter');
+        if (scrollEl) {
+            const updateFades = () => {
+                const scrollLeft = scrollEl.scrollLeft;
+                const maxScroll = scrollEl.scrollWidth - scrollEl.clientWidth;
+                const atStart = scrollLeft <= 1.5;
+                const atEnd = scrollLeft >= maxScroll - 1.5;
+                scrollEl.style.setProperty('--mask-left', atStart ? 'black' : 'transparent');
+                scrollEl.style.setProperty('--mask-right', atEnd ? 'black' : 'transparent');
+            };
+            updateFades();
+            setTimeout(updateFades, 50);
+            setTimeout(updateFades, 300);
+        }
+    } catch (e) {}
 }
 
 function getFilterStartDate(period) {
@@ -588,6 +629,28 @@ function filterByDate(items, period) {
 
 function initFilter() {
     const period = getStoredFilter();
+
+    const scrollEl = document.querySelector('#weight-chart-filter .chart-pill-filter');
+    if (scrollEl) {
+        const updateFades = () => {
+            const scrollLeft = scrollEl.scrollLeft;
+            const maxScroll = scrollEl.scrollWidth - scrollEl.clientWidth;
+            const atStart = scrollLeft <= 1.5;
+            const atEnd = scrollLeft >= maxScroll - 1.5;
+            scrollEl.style.setProperty('--mask-left', atStart ? 'black' : 'transparent');
+            scrollEl.style.setProperty('--mask-right', atEnd ? 'black' : 'transparent');
+        };
+
+        if (scrollEl.dataset.fadesWired !== 'true') {
+            scrollEl.addEventListener('scroll', updateFades, { passive: true });
+            window.addEventListener('resize', updateFades, { passive: true });
+            scrollEl.dataset.fadesWired = 'true';
+        }
+        updateFades();
+        setTimeout(updateFades, 50);
+        setTimeout(updateFades, 300);
+    }
+
     applyFilterUI(period);
     const pills = document.querySelectorAll('#weight-chart-filter .chart-pill-option');
     pills.forEach(p => {
@@ -732,13 +795,24 @@ async function deleteWeight(date) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function(){
+// Expose required functions to window object
+window.renderMeasureWeightChart = renderMeasureWeightChart;
+window.renderWeightHistory = renderWeightHistory;
+window.deleteWeight = deleteWeight;
+
+function initPage() {
     try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(document); } catch(e){}
     initFilter();
     try { renderMeasureWeightChart(); } catch(e){}
     try { if (typeof renderWeightHistory === 'function') renderWeightHistory(); } catch(e){}
-});
+}
 
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPage);
+} else {
+    initPage();
+}
+})();
 </script>
 
 </body>
