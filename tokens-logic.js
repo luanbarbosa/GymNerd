@@ -51,28 +51,8 @@
         return `${TOKEN_EVENT_TYPE_STREAK_MILESTONE}:${dateKey}:${milestone}`;
     }
 
-    function countWorkoutDaysInCurrentProtectedStreak(workoutDateKeys, effectiveDateKeys, targetDateKey) {
-        if (!isValidDateKey(targetDateKey)) return 0;
-
-        const workoutDays = toDayNumberSet(workoutDateKeys);
-        const effectiveDays = toDayNumberSet(effectiveDateKeys);
-        const targetDay = dateKeyToDayNumber(targetDateKey);
-        if (!Number.isFinite(targetDay) || !workoutDays.has(targetDay) || !effectiveDays.has(targetDay)) return 0;
-
-        let cursor = targetDay;
-        while (effectiveDays.has(cursor - 1)) {
-            cursor -= 1;
-        }
-
-        let workoutCount = 0;
-        for (let day = cursor; day <= targetDay; day += 1) {
-            if (workoutDays.has(day)) workoutCount += 1;
-        }
-        return workoutCount;
-    }
-
-    function evaluateTokenMilestone(workoutDateKeys, effectiveDateKeys, dateKey) {
-        const streakLength = countWorkoutDaysInCurrentProtectedStreak(workoutDateKeys, effectiveDateKeys, dateKey);
+    function evaluateTokenMilestone(workoutDateKeys, dateKey) {
+        const streakLength = getStreakLengthEndingAt(workoutDateKeys, dateKey);
         const milestone = getMilestoneForStreakLength(streakLength);
         const wouldAward = milestone > 0 && isMilestoneBoundary(streakLength);
         return { streakLength, milestone, wouldAward };
@@ -95,10 +75,6 @@
             return { ok: true, awarded: 0 };
         }
 
-        const effectiveDates = db.getEffectiveWorkoutDates
-            ? await db.getEffectiveWorkoutDates()
-            : historyDates;
-
         return db.transaction('rw', [db.tokens, db.token_events], async () => {
             const existingEvents = new Set(
                 (await db.token_events.toArray())
@@ -115,7 +91,7 @@
             let awarded = 0;
 
             for (const historyDate of historyDates) {
-                const preview = evaluateTokenMilestone(historyDates, effectiveDates, historyDate);
+                const preview = evaluateTokenMilestone(historyDates, historyDate);
                 if (!preview.wouldAward) continue;
 
                 const eventId = buildMilestoneEventId(historyDate, preview.milestone);
@@ -169,19 +145,14 @@
         }
 
         const historyDates = getSortedUniqueDateKeys((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey));
-        const effectiveDates = db.getEffectiveWorkoutDates
-            ? await db.getEffectiveWorkoutDates()
-            : historyDates;
 
         const historyDateSet = new Set(historyDates);
         if (historyDateSet.has(dateKey)) {
             return { ok: true, wouldAward: false, awarded: 0, streakLength: 0, milestone: 0, reason: 'already_logged' };
         }
 
-        const effectiveDateSet = new Set(getSortedUniqueDateKeys(effectiveDates));
         const preview = evaluateTokenMilestone(
             [...historyDateSet, dateKey],
-            [...effectiveDateSet, dateKey],
             dateKey
         );
         return {
@@ -206,11 +177,8 @@
         }
 
         const historyDates = getSortedUniqueDateKeys((await db.history.toArray()).map(item => item && item.date).filter(isValidDateKey));
-        const effectiveDates = db.getEffectiveWorkoutDates
-            ? await db.getEffectiveWorkoutDates()
-            : historyDates;
 
-        const preview = evaluateTokenMilestone(historyDates, effectiveDates, dateKey);
+        const preview = evaluateTokenMilestone(historyDates, dateKey);
         const { streakLength, milestone, wouldAward } = preview;
         if (!wouldAward) {
             return { ok: true, awarded: 0, streakLength, milestone };
