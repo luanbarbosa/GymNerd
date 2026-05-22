@@ -134,8 +134,17 @@
         .story-title { font-size: 3.5rem; font-weight: 900; margin: 0; color: var(--primary); letter-spacing: -0.04em; line-height: 1; }
         .token-row { display: flex; gap: 40px; margin-top: 20px; }
         .token-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .token-val { font-size: 4rem; font-weight: 900; line-height: 1; }
-        .token-icon { width: 64px; height: 64px; }
+        .token-val { font-size: 4rem; font-weight: 900; line-height: 1; min-width: 1ch; }
+        .token-hero-icon {
+            width: 120px;
+            height: 120px;
+            margin: 20px 0;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+            opacity: 0;
+        }
+        .story-page.active.animating .token-hero-icon {
+            animation: dropIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1.2) forwards;
+        }
         .stat-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.1em; }
 
         /* Calendar Grid */
@@ -161,7 +170,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            opacity: 0; /* Hidden by default */
+            opacity: 0;
         }
 
         /* KEYFRAME ANIMATIONS */
@@ -235,21 +244,21 @@
 
                 <!-- Page 2: Rest Tokens -->
                 <div class="story-page" id="page2">
-                    <div class="story-content-inner" style="gap: 48px;">
-                        <h2 class="story-title" data-i18n="rest_tokens">Rest Tokens</h2>
-                        <div class="token-row">
+                    <div class="story-content-inner" style="gap: 24px;">
+                        <h2 class="story-title" data-i18n="story_status_rest_title">Rest tokens</h2>
+                        
+                        <img src="icons/coin1.svg" class="token-hero-icon" alt="">
+
+                        <div class="token-row" style="margin-top: 0;">
                             <div class="token-item">
-                                <img src="icons/coin1.svg" class="token-icon">
                                 <div class="token-val" id="tokensGained">0</div>
                                 <div class="stat-label" data-i18n="gained">Gained</div>
                             </div>
                             <div class="token-item">
-                                <img src="icons/day-rest.svg" class="token-icon">
                                 <div class="token-val" id="tokensUsed">0</div>
                                 <div class="stat-label" data-i18n="used">Used</div>
                             </div>
                         </div>
-                        <div style="padding: 24px; background: rgba(255,255,255,0.05); border-radius: 20px; color: #94a3b8; font-size: 0.95rem; line-height: 1.4; font-weight: 600;" data-i18n="tokens_help_text"></div>
                     </div>
                 </div>
             </div>
@@ -405,15 +414,14 @@
         pages.forEach(p => {
             p.classList.remove('active');
             p.classList.remove('animating');
-            p.style.display = 'none'; // Explicitly hide
+            p.style.display = 'none';
         });
         
         currentPage = index;
         const page = pages[currentPage];
-        page.style.display = 'flex'; // Force show
+        page.style.display = 'flex';
         page.classList.add('active');
         
-        // RESTART ANIMATIONS: toggle class after a tiny delay
         setTimeout(() => {
             if (document.body.contains(page)) {
                 page.classList.add('animating');
