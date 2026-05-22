@@ -339,6 +339,9 @@
                 last_sync_label: 'Last sync: {t}',
                 syncing_in_background: 'Sending data to Google Drive in the background automatically.',
                 never_synced: 'Never',
+                story_status_done: 'Done',
+                story_status_rest: 'Rest',
+                story_status_missed: 'Missed',
             },
             pt: {
                 new_routine_btn: 'Novo treino',
@@ -678,6 +681,9 @@
                 device: 'Dispositivo',
                 general: 'Geral',
                 progress_title: 'Progresso',
+                story_status_done: 'Treinado',
+                story_status_rest: 'Descanso',
+                story_status_missed: 'Não Treinado',
             }
         },
         getLang: function () {

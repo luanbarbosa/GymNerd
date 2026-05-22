@@ -18,7 +18,6 @@
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <script src="db.js"></script>
     <script src="background-sync.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
     <link rel="stylesheet" href="styles/colors.css">
@@ -63,10 +62,10 @@
             z-index: 10;
         }
         .story-progress-bar {
-            height: 2px;
+            height: 3px;
             flex: 1;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
             overflow: hidden;
         }
         .story-progress-fill {
@@ -89,8 +88,8 @@
             top: 0; left: 0; width: 100%; height: 100%;
             display: none;
             align-items: center;
-            justify-content: center;
-            padding: 60px 20px;
+            justify-content: flex-start;
+            padding: 80px 24px 40px;
             box-sizing: border-box;
             text-align: center;
         }
@@ -101,7 +100,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            gap: 32px;
         }
 
         /* Navigation */
@@ -121,27 +120,94 @@
             z-index: 11;
             color: #fff;
             text-decoration: none;
-            background: rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         /* Content Styles */
-        .story-title { font-size: 2rem; font-weight: 800; margin-bottom: 8px; color: var(--primary); }
-        .story-subtitle { font-size: 1.1rem; color: #94a3b8; margin-bottom: 24px; }
-        .stat-huge { font-size: 5rem; font-weight: 900; line-height: 1; margin: 10px 0; }
-        .stat-label { font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; }
-        
-        .token-row { display: flex; gap: 20px; margin-top: 30px; }
-        .token-item { flex: 1; }
-        .token-val { font-size: 2.5rem; font-weight: 800; }
-        .token-icon { width: 48px; height: 48px; margin-bottom: 10px; }
+        .story-title { font-size: 3.5rem; font-weight: 900; margin: 0; color: var(--primary); letter-spacing: -0.04em; line-height: 1; }
+        .token-row { display: flex; gap: 40px; margin-top: 20px; }
+        .token-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .token-val { font-size: 4rem; font-weight: 900; line-height: 1; }
+        .token-icon { width: 64px; height: 64px; }
+        .stat-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.1em; }
 
-        canvas { max-width: 100%; height: 200px !important; }
+        /* Calendar Grid */
+        .calendar-story-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            width: 100%;
+            max-width: 320px;
+        }
+        .calendar-day-item {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+            padding: 2px;
+        }
+        .calendar-day-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0; /* Hidden by default */
+        }
+
+        /* KEYFRAME ANIMATIONS */
+        @keyframes dropIn {
+            0% { transform: scale(1.6) translateY(-40px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* TRIGGER CLASSES */
+        .story-page.active .story-title {
+            animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .story-page.active.animating .calendar-day-item img {
+            animation: dropIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1.2) forwards;
+        }
+
+        .calendar-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            max-width: 280px;
+            padding: 20px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.05);
+            opacity: 0;
+        }
+        .story-page.active.animating .calendar-summary {
+            animation: fadeInUp 0.6s ease 1s forwards;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .summary-icon { width: 36px; height: 36px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+        .summary-label { flex: 1; font-weight: 800; font-size: 1.1rem; text-align: left; }
+        .summary-count { font-weight: 900; font-size: 1.5rem; color: #fff; }
     </style>
 </head>
 <body>
@@ -162,18 +228,15 @@
                 <div class="story-page" id="page1">
                     <div class="story-content-inner">
                         <h2 class="story-title" data-i18n="workout_frequency">Frequency</h2>
-                        <p class="story-subtitle" id="frequencySubtitle"></p>
-                        <div style="width: 100%; height: 200px;">
-                            <canvas id="frequencyChart"></canvas>
-                        </div>
+                        <div id="calendarContainer" class="calendar-story-grid"></div>
+                        <div id="calendarSummary" class="calendar-summary"></div>
                     </div>
                 </div>
 
                 <!-- Page 2: Rest Tokens -->
                 <div class="story-page" id="page2">
-                    <div class="story-content-inner">
+                    <div class="story-content-inner" style="gap: 48px;">
                         <h2 class="story-title" data-i18n="rest_tokens">Rest Tokens</h2>
-                        <p class="story-subtitle" id="tokensSubtitle"></p>
                         <div class="token-row">
                             <div class="token-item">
                                 <img src="icons/coin1.svg" class="token-icon">
@@ -186,6 +249,7 @@
                                 <div class="stat-label" data-i18n="used">Used</div>
                             </div>
                         </div>
+                        <div style="padding: 24px; background: rgba(255,255,255,0.05); border-radius: 20px; color: #94a3b8; font-size: 0.95rem; line-height: 1.4; font-weight: 600;" data-i18n="tokens_help_text"></div>
                     </div>
                 </div>
             </div>
@@ -199,10 +263,9 @@
     let startTime;
     let isPaused = false;
     let pausedAt = 0;
-    const DURATION = 5000;
+    const DURATION = 6000;
 
     async function initStory() {
-        // Clear potential inherited styles from SPA
         try {
             document.body.style.overflow = 'hidden';
             const container = document.querySelector('.main-content');
@@ -215,34 +278,21 @@
 
         if (window.GN_I18N) GN_I18N.applyTranslations(document);
         
-        const lastMonthDate = new Date();
-        lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
-        const year = lastMonthDate.getFullYear();
-        const month = lastMonthDate.getMonth();
-        
-        const lang = (window.GN_I18N && typeof GN_I18N.safeGetLang === 'function') ? GN_I18N.safeGetLang() : 'en';
-        const monthName = lastMonthDate.toLocaleString(lang, { month: 'long', year: 'numeric' });
-        
-        const freqSub = document.getElementById('frequencySubtitle');
-        const tokSub = document.getElementById('tokensSubtitle');
-        if (freqSub) freqSub.innerText = monthName;
-        if (tokSub) tokSub.innerText = monthName;
+        const now = new Date();
+        const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        const month = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
 
-        const startOfMonth = new Date(year, month, 1);
-        const endOfMonth = new Date(year, month + 1, 0);
-        
-        const startStr = startOfMonth.toISOString().split('T')[0];
-        const endStr = endOfMonth.toISOString().split('T')[0];
+        const startStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
         try {
             if (window.db) {
                 await db.open();
                 const logs = await db.history.where('date').between(startStr, endStr, true, true).toArray();
                 const uniqueDates = [...new Set(logs.map(l => l.date))];
-                
                 const tokenEvents = await db.token_events.where('date').between(startStr, endStr, true, true).toArray();
                 const gained = tokenEvents.reduce((acc, e) => acc + (e.tokensDelta || 0), 0);
-                
                 const frozenDays = await db.frozen_days.where('date').between(startStr, endStr, true, true).toArray();
                 const used = frozenDays.length;
 
@@ -251,7 +301,7 @@
                 if (gEl) gEl.innerText = gained;
                 if (uEl) uEl.innerText = used;
 
-                renderFrequencyChart(uniqueDates, year, month);
+                renderCalendarStory(uniqueDates, year, month, frozenDays.map(f => f.date));
             }
         } catch (e) {
             console.error('Story data load failed', e);
@@ -269,46 +319,78 @@
             });
         }
 
-        // Delay to ensure DOM layout is finished in SPA
         setTimeout(() => showPage(0), 100);
     }
 
-    function renderFrequencyChart(dates, year, month) {
-        const canvas = document.getElementById('frequencyChart');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+    function renderCalendarStory(workoutDates, year, month, frozenDates) {
+        const container = document.getElementById('calendarContainer');
+        const summary = document.getElementById('calendarSummary');
+        if (!container || !summary) return;
         
-        const weeks = [0, 0, 0, 0, 0];
-        dates.forEach(d => {
-            const day = parseInt(d.split('-')[2]);
-            const weekIdx = Math.min(4, Math.floor((day - 1) / 7));
-            weeks[weekIdx]++;
-        });
-
-        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#f2c24b';
-
-        if (window.Chart) {
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['W1', 'W2', 'W3', 'W4', 'W5'],
-                    datasets: [{
-                        data: weeks,
-                        backgroundColor: accentColor,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, display: false },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
+        container.innerHTML = '';
+        summary.innerHTML = '';
+        const workoutSet = new Set(workoutDates);
+        const frozenSet = new Set(frozenDates);
+        
+        let doneCount = 0;
+        let restCount = 0;
+        let missedCount = 0;
+        
+        const lang = (window.GN_I18N && typeof GN_I18N.safeGetLang === 'function') ? GN_I18N.safeGetLang() : 'en';
+        const weekStartsOnMonday = (lang === 'pt');
+        
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const adjustedFirstDayIndex = weekStartsOnMonday ? ((firstDayIndex + 6) % 7) : firstDayIndex;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        for (let i = 0; i < adjustedFirstDayIndex; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'calendar-day-item';
+            empty.style.background = 'transparent';
+            empty.style.border = 'none';
+            container.appendChild(empty);
         }
+        
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const item = document.createElement('div');
+            item.className = 'calendar-day-item';
+            
+            let iconSrc = 'icons/day-missed.svg';
+            if (workoutSet.has(dateStr)) {
+                iconSrc = 'icons/day-done.svg';
+                doneCount++;
+            } else if (frozenSet.has(dateStr)) {
+                iconSrc = 'icons/day-rest.svg';
+                restCount++;
+            } else {
+                missedCount++;
+            }
+            
+            const img = document.createElement('img');
+            img.src = iconSrc;
+            img.style.animationDelay = `${(d-1) * 30}ms`;
+            item.appendChild(img);
+            container.appendChild(item);
+        }
+
+        const summaryItems = [
+            { icon: 'icons/day-done.svg', count: doneCount, label: 'story_status_done' },
+            { icon: 'icons/day-rest.svg', count: restCount, label: 'story_status_rest' },
+            { icon: 'icons/day-missed.svg', count: missedCount, label: 'story_status_missed' }
+        ];
+        
+        summaryItems.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'summary-item';
+            const localizedLabel = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t(item.label) : item.label;
+            row.innerHTML = `
+                <img src="${item.icon}" class="summary-icon">
+                <div class="summary-label">${localizedLabel}</div>
+                <div class="summary-count">${item.count}</div>
+            `;
+            summary.appendChild(row);
+        });
     }
 
     function showPage(index) {
@@ -320,9 +402,23 @@
         
         if (progressInterval) clearInterval(progressInterval);
         
-        pages.forEach(p => p.classList.remove('active'));
+        pages.forEach(p => {
+            p.classList.remove('active');
+            p.classList.remove('animating');
+            p.style.display = 'none'; // Explicitly hide
+        });
+        
         currentPage = index;
-        pages[currentPage].classList.add('active');
+        const page = pages[currentPage];
+        page.style.display = 'flex'; // Force show
+        page.classList.add('active');
+        
+        // RESTART ANIMATIONS: toggle class after a tiny delay
+        setTimeout(() => {
+            if (document.body.contains(page)) {
+                page.classList.add('animating');
+            }
+        }, 10);
 
         const fills = document.querySelectorAll('.story-progress-fill');
         fills.forEach((fill, i) => {
@@ -338,7 +434,6 @@
                 clearInterval(progressInterval);
                 return;
             }
-
             if (isPaused) return;
 
             const elapsed = Date.now() - startTime;
@@ -385,26 +480,25 @@
         if (currentPage > 0) showPage(currentPage - 1);
     }
 
-    // Nav listeners
     const nPrev = document.getElementById('navPrev');
     const nNext = document.getElementById('navNext');
     if (nPrev) nPrev.addEventListener('click', prevPage);
     if (nNext) nNext.addEventListener('click', nextPage);
     
-    // Pause on hold
     const container = document.querySelector('.story-container');
     if (container) {
-        container.addEventListener('mousedown', pause);
+        container.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'navPrev' || e.target.id === 'navNext' || e.target.closest('.story-close')) return;
+            pause();
+        });
         container.addEventListener('mouseup', resume);
         container.addEventListener('mouseleave', resume);
         container.addEventListener('touchstart', (e) => {
+            if (e.target.id === 'navPrev' || e.target.id === 'navNext' || e.target.closest('.story-close')) return;
             pause();
         }, { passive: true });
         container.addEventListener('touchend', resume, { passive: true });
-        container.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            return false;
-        });
+        container.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
     }
     
     const closeBtn = document.getElementById('storyCloseBtn');
