@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#000000">
     <title>GymNerd | Remember</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link href="https://fonts.googleapis.com" rel="stylesheet">
@@ -18,50 +18,405 @@
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <script src="db.js"></script>
     <script src="background-sync.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
     <link rel="stylesheet" href="styles/colors.css">
     <link rel="stylesheet" href="styles/fonts.css">
     <style>
-        :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: var(--shell-background); --card: #1e293b; --text: #f8fafc; }
-        html { background-color: var(--shell-background); }
-        body { font-family: var(--app-font-family); background: var(--shell-background); color: var(--text); max-width:500px;margin:0 auto;padding:0; }
-        .top-card { position: static; background: transparent; color: var(--text-main-color); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; padding: 6px 16px 2px; box-shadow: none; padding-top: calc(6px + constant(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); }
-        .top-card-inner { max-width: 100%; display:flex; align-items:center; gap:12px; padding-bottom: 2px; }
-        body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: constant(safe-area-inset-top); height: env(safe-area-inset-top); background: var(--shell-background); z-index: 1100; pointer-events: none; }
-        .top-card-inner > div { flex-wrap: nowrap; }
-        .top-card-inner .app-title-compact, .top-card-inner h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .top-card .topbar { background: transparent; padding: 6px 0; display:flex; align-items:center; justify-content:space-between; width:100%; }
-        .top-card .back-btn, .top-card .back-btn .material-symbols-outlined { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-        .back-btn { text-decoration: none; font-size: 1.5rem; color: var(--text-main-color); }
-        .page-content { padding: 16px; }
+        :root { 
+            --bg: #000; 
+            --text: #fff; 
+            --primary: var(--accent-color, #f2c24b);
+            --safe-top: constant(safe-area-inset-top);
+            --safe-top: env(safe-area-inset-top);
+        }
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--bg); color: var(--text);
+            font-family: var(--app-font-family, sans-serif);
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        /* Story Container */
+        .story-container {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            z-index: 2000;
+            touch-action: manipulation;
+        }
+
+        /* Progress Bars */
+        .story-progress-container {
+            position: absolute;
+            top: calc(10px + var(--safe-top, 0px));
+            left: 10px;
+            right: 10px;
+            display: flex;
+            gap: 4px;
+            z-index: 10;
+        }
+        .story-progress-bar {
+            height: 2px;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .story-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #fff;
+            transition: width 0.1s linear;
+        }
+        .story-container.paused .story-progress-fill {
+            transition: none !important;
+        }
+
+        /* Pages */
+        .story-pages {
+            flex: 1;
+            position: relative;
+        }
+        .story-page {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .story-page.active { display: flex; }
+        
+        .story-content-inner {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Navigation */
+        .story-nav {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            z-index: 5;
+        }
+        .story-nav-prev { width: 30%; height: 100%; }
+        .story-nav-next { width: 70%; height: 100%; }
+
+        .story-close {
+            position: absolute;
+            top: calc(20px + var(--safe-top, 0px));
+            right: 15px;
+            z-index: 11;
+            color: #fff;
+            text-decoration: none;
+            background: rgba(0,0,0,0.2);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Content Styles */
+        .story-title { font-size: 2rem; font-weight: 800; margin-bottom: 8px; color: var(--primary); }
+        .story-subtitle { font-size: 1.1rem; color: #94a3b8; margin-bottom: 24px; }
+        .stat-huge { font-size: 5rem; font-weight: 900; line-height: 1; margin: 10px 0; }
+        .stat-label { font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; }
+        
+        .token-row { display: flex; gap: 20px; margin-top: 30px; }
+        .token-item { flex: 1; }
+        .token-val { font-size: 2.5rem; font-weight: 800; }
+        .token-icon { width: 48px; height: 48px; margin-bottom: 10px; }
+
+        canvas { max-width: 100%; height: 200px !important; }
     </style>
 </head>
 <body>
-    <div class="top-card">
-        <div class="top-card-inner">
-            <div style="display:flex;align-items:center;width:100%;gap:12px;">
-                <a href="#" class="back-btn" aria-label="Back" onclick="event.preventDefault(); history.back();"><span class="material-symbols-outlined" aria-hidden="true" style="font-variation-settings: 'wght' 300;">arrow_back</span></a>
-                <div style="flex:1;min-width:0;">
-                    <h2 class="app-title-compact" style="margin:12px 0;" data-i18n="page_remember">Remember</h2>
+    <div class="main-content">
+        <div class="story-container">
+            <div class="story-progress-container" id="progressContainer"></div>
+            <a href="#" class="story-close" id="storyCloseBtn">
+                <span class="material-symbols-outlined">close</span>
+            </a>
+
+            <div class="story-nav">
+                <div class="story-nav-prev" id="navPrev"></div>
+                <div class="story-nav-next" id="navNext"></div>
+            </div>
+
+            <div class="story-pages" id="pagesContainer">
+                <!-- Page 1: Frequency -->
+                <div class="story-page" id="page1">
+                    <div class="story-content-inner">
+                        <h2 class="story-title" data-i18n="workout_frequency">Frequency</h2>
+                        <p class="story-subtitle" id="frequencySubtitle"></p>
+                        <div style="width: 100%; height: 200px;">
+                            <canvas id="frequencyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page 2: Rest Tokens -->
+                <div class="story-page" id="page2">
+                    <div class="story-content-inner">
+                        <h2 class="story-title" data-i18n="rest_tokens">Rest Tokens</h2>
+                        <p class="story-subtitle" id="tokensSubtitle"></p>
+                        <div class="token-row">
+                            <div class="token-item">
+                                <img src="icons/coin1.svg" class="token-icon">
+                                <div class="token-val" id="tokensGained">0</div>
+                                <div class="stat-label" data-i18n="gained">Gained</div>
+                            </div>
+                            <div class="token-item">
+                                <img src="icons/day-rest.svg" class="token-icon">
+                                <div class="token-val" id="tokensUsed">0</div>
+                                <div class="stat-label" data-i18n="used">Used</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="page-content">
-        <!-- Blank page content -->
-    </div>
-
 <script>
 (function() {
-    function initPage() {
-        try { if (typeof GN_I18N !== 'undefined' && GN_I18N.applyTranslations) GN_I18N.applyTranslations(document); } catch(e){}
+    let currentPage = 0;
+    let progressInterval;
+    let startTime;
+    let isPaused = false;
+    let pausedAt = 0;
+    const DURATION = 5000;
+
+    async function initStory() {
+        // Clear potential inherited styles from SPA
+        try {
+            document.body.style.overflow = 'hidden';
+            const container = document.querySelector('.main-content');
+            if (container) {
+                container.style.margin = '0';
+                container.style.maxWidth = 'none';
+                container.style.padding = '0';
+            }
+        } catch(e){}
+
+        if (window.GN_I18N) GN_I18N.applyTranslations(document);
+        
+        const lastMonthDate = new Date();
+        lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+        const year = lastMonthDate.getFullYear();
+        const month = lastMonthDate.getMonth();
+        
+        const lang = (window.GN_I18N && typeof GN_I18N.safeGetLang === 'function') ? GN_I18N.safeGetLang() : 'en';
+        const monthName = lastMonthDate.toLocaleString(lang, { month: 'long', year: 'numeric' });
+        
+        const freqSub = document.getElementById('frequencySubtitle');
+        const tokSub = document.getElementById('tokensSubtitle');
+        if (freqSub) freqSub.innerText = monthName;
+        if (tokSub) tokSub.innerText = monthName;
+
+        const startOfMonth = new Date(year, month, 1);
+        const endOfMonth = new Date(year, month + 1, 0);
+        
+        const startStr = startOfMonth.toISOString().split('T')[0];
+        const endStr = endOfMonth.toISOString().split('T')[0];
+
+        try {
+            if (window.db) {
+                await db.open();
+                const logs = await db.history.where('date').between(startStr, endStr, true, true).toArray();
+                const uniqueDates = [...new Set(logs.map(l => l.date))];
+                
+                const tokenEvents = await db.token_events.where('date').between(startStr, endStr, true, true).toArray();
+                const gained = tokenEvents.reduce((acc, e) => acc + (e.tokensDelta || 0), 0);
+                
+                const frozenDays = await db.frozen_days.where('date').between(startStr, endStr, true, true).toArray();
+                const used = frozenDays.length;
+
+                const gEl = document.getElementById('tokensGained');
+                const uEl = document.getElementById('tokensUsed');
+                if (gEl) gEl.innerText = gained;
+                if (uEl) uEl.innerText = used;
+
+                renderFrequencyChart(uniqueDates, year, month);
+            }
+        } catch (e) {
+            console.error('Story data load failed', e);
+        }
+
+        const pages = document.querySelectorAll('.story-page');
+        const progressContainer = document.getElementById('progressContainer');
+        if (progressContainer) {
+            progressContainer.innerHTML = '';
+            pages.forEach(() => {
+                const bar = document.createElement('div');
+                bar.className = 'story-progress-bar';
+                bar.innerHTML = '<div class="story-progress-fill"></div>';
+                progressContainer.appendChild(bar);
+            });
+        }
+
+        // Delay to ensure DOM layout is finished in SPA
+        setTimeout(() => showPage(0), 100);
     }
+
+    function renderFrequencyChart(dates, year, month) {
+        const canvas = document.getElementById('frequencyChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        const weeks = [0, 0, 0, 0, 0];
+        dates.forEach(d => {
+            const day = parseInt(d.split('-')[2]);
+            const weekIdx = Math.min(4, Math.floor((day - 1) / 7));
+            weeks[weekIdx]++;
+        });
+
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#f2c24b';
+
+        if (window.Chart) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['W1', 'W2', 'W3', 'W4', 'W5'],
+                    datasets: [{
+                        data: weeks,
+                        backgroundColor: accentColor,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, display: false },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+    }
+
+    function showPage(index) {
+        const pages = document.querySelectorAll('.story-page');
+        if (!pages.length || index < 0 || index >= pages.length) return;
+        
+        const container = document.querySelector('.story-container');
+        if (container) container.classList.remove('paused');
+        
+        if (progressInterval) clearInterval(progressInterval);
+        
+        pages.forEach(p => p.classList.remove('active'));
+        currentPage = index;
+        pages[currentPage].classList.add('active');
+
+        const fills = document.querySelectorAll('.story-progress-fill');
+        fills.forEach((fill, i) => {
+            if (i < index) fill.style.width = '100%';
+            else fill.style.width = '0%';
+        });
+
+        isPaused = false;
+        pausedAt = 0;
+        startTime = Date.now();
+        progressInterval = setInterval(() => {
+            if (!document.body.contains(pages[0])) {
+                clearInterval(progressInterval);
+                return;
+            }
+
+            if (isPaused) return;
+
+            const elapsed = Date.now() - startTime;
+            const progress = (elapsed / DURATION) * 100;
+            
+            if (progress >= 100) {
+                if (fills[index]) fills[index].style.width = '100%';
+                if (currentPage < pages.length - 1) {
+                    nextPage();
+                } else {
+                    clearInterval(progressInterval);
+                    history.back();
+                }
+            } else {
+                if (fills[index]) fills[index].style.width = progress + '%';
+            }
+        }, 30);
+    }
+
+    function pause() {
+        if (isPaused) return;
+        isPaused = true;
+        pausedAt = Date.now();
+        const container = document.querySelector('.story-container');
+        if (container) container.classList.add('paused');
+    }
+
+    function resume() {
+        if (!isPaused) return;
+        isPaused = false;
+        const container = document.querySelector('.story-container');
+        if (container) container.classList.remove('paused');
+        const pauseDuration = Date.now() - pausedAt;
+        startTime += pauseDuration;
+    }
+
+    function nextPage() {
+        const pages = document.querySelectorAll('.story-page');
+        if (currentPage < pages.length - 1) showPage(currentPage + 1);
+        else history.back();
+    }
+
+    function prevPage() {
+        if (currentPage > 0) showPage(currentPage - 1);
+    }
+
+    // Nav listeners
+    const nPrev = document.getElementById('navPrev');
+    const nNext = document.getElementById('navNext');
+    if (nPrev) nPrev.addEventListener('click', prevPage);
+    if (nNext) nNext.addEventListener('click', nextPage);
+    
+    // Pause on hold
+    const container = document.querySelector('.story-container');
+    if (container) {
+        container.addEventListener('mousedown', pause);
+        container.addEventListener('mouseup', resume);
+        container.addEventListener('mouseleave', resume);
+        container.addEventListener('touchstart', (e) => {
+            pause();
+        }, { passive: true });
+        container.addEventListener('touchend', resume, { passive: true });
+        container.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+    }
+    
+    const closeBtn = document.getElementById('storyCloseBtn');
+    if (closeBtn) closeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        history.back();
+    });
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPage);
+        document.addEventListener('DOMContentLoaded', () => setTimeout(initStory, 100));
     } else {
-        initPage();
+        setTimeout(initStory, 100);
     }
 })();
 </script>

@@ -3155,6 +3155,25 @@
 				const HOME_REFRESH_FLAG = 'home_force_refresh';
 				async function refreshHomeData() {
 					try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { }
+					
+					// Toggle story icon visibility based on last month's activity
+					try {
+						const now = new Date();
+						const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+						const startStr = lastMonth.toISOString().split('T')[0];
+						const endStr = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+
+						const [hCount, tCount, fCount] = await Promise.all([
+							db.history.where('date').between(startStr, endStr, true, true).count(),
+							db.token_events.where('date').between(startStr, endStr, true, true).count(),
+							db.frozen_days.where('date').between(startStr, endStr, true, true).count()
+						]);
+						
+						const hasData = (hCount + tCount + fCount) > 0;
+						const rememberBtn = document.getElementById('topbar-remember');
+						if (rememberBtn) rememberBtn.style.display = hasData ? 'inline-flex' : 'none';
+					} catch (e) { }
+
 					let historyCount = 0;
 					try { historyCount = await db.history.count(); } catch (e) { }
 					updateHomeChartFilterVisibility(historyCount);
