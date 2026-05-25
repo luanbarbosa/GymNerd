@@ -78,6 +78,21 @@
             transition: none !important;
         }
 
+        .story-month-header {
+            position: absolute;
+            top: calc(28px + var(--safe-top, 0px));
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255, 255, 255, 0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+
         /* Pages */
         .story-pages {
             flex: 1;
@@ -148,31 +163,51 @@
         }
         .stat-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.1em; }
 
-        /* Calendar Grid */
-        .calendar-story-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            width: 100%;
-            max-width: 320px;
-        }
-        .calendar-day-item {
-            aspect-ratio: 1;
+        /* Frequency Text Styles */
+        .frequency-text-container {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            overflow: hidden;
-            padding: 2px;
-        }
-        .calendar-day-item img {
+            flex-direction: column;
+            gap: 24px;
             width: 100%;
-            height: 100%;
-            object-fit: contain;
-            opacity: 0;
+            text-align: left;
+            padding: 0 10px;
         }
+        .frequency-text-item {
+            font-size: 1.6rem;
+            font-weight: 800;
+            line-height: 1.2;
+            opacity: 0;
+            transform: translateY(20px);
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .freq-icon {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+        .freq-text-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .story-page.active.animating .frequency-text-item {
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        .freq-count { color: var(--primary); font-size: 2.2rem; }
+        .freq-delta {
+            font-size: 0.85rem;
+            display: block;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 900;
+        }
+        .delta-plus { color: #4ade80; }
+        .delta-minus { color: #f87171; }
+        .delta-neutral { color: #94a3b8; }
 
         /* KEYFRAME ANIMATIONS */
         @keyframes dropIn {
@@ -189,41 +224,13 @@
         .story-page.active .story-title {
             animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
-
-        .story-page.active.animating .calendar-day-item img {
-            animation: dropIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1.2) forwards;
-        }
-
-        .calendar-summary {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            width: 100%;
-            max-width: 280px;
-            padding: 20px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.05);
-            opacity: 0;
-        }
-        .story-page.active.animating .calendar-summary {
-            animation: fadeInUp 0.6s ease 1s forwards;
-        }
-
-        .summary-item {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .summary-icon { width: 36px; height: 36px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
-        .summary-label { flex: 1; font-weight: 800; font-size: 1.1rem; text-align: left; }
-        .summary-count { font-weight: 900; font-size: 1.5rem; color: #fff; }
     </style>
 </head>
 <body>
     <div class="main-content">
         <div class="story-container">
             <div class="story-progress-container" id="progressContainer"></div>
+            <div class="story-month-header" id="storyMonthHeader"></div>
             <a href="#" class="story-close" id="storyCloseBtn">
                 <span class="material-symbols-outlined">close</span>
             </a>
@@ -237,10 +244,9 @@
             <div class="story-pages" id="pagesContainer">
                 <!-- Page 1: Frequency -->
                 <div class="story-page" id="page1">
-                    <div class="story-content-inner">
-                        <h2 class="story-title" data-i18n="workout_frequency">Frequency</h2>
-                        <div id="calendarContainer" class="calendar-story-grid"></div>
-                        <div id="calendarSummary" class="calendar-summary"></div>
+                    <div class="story-content-inner" style="align-items: flex-start; text-align: left;">
+                        <h2 class="story-title" data-i18n="workout_frequency" style="margin-bottom: 20px;">Frequency</h2>
+                        <div id="frequencyTextContainer" class="frequency-text-container"></div>
                     </div>
                 </div>
 
@@ -293,6 +299,13 @@
         const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
         const month = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
 
+        const currentLang = (window.GN_I18N && typeof GN_I18N.safeGetLang === 'function') ? GN_I18N.safeGetLang() : 'en';
+        const displayDate = new Date(year, month, 1);
+        const monthHeader = document.getElementById('storyMonthHeader');
+        if (monthHeader) {
+            monthHeader.innerText = displayDate.toLocaleString(currentLang, { month: 'long', year: 'numeric' });
+        }
+
         const startStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
         const lastDay = new Date(year, month + 1, 0).getDate();
         const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -312,7 +325,22 @@
                 if (gEl) gEl.innerText = gained;
                 if (uEl) uEl.innerText = used;
 
-                renderCalendarStory(uniqueDates, year, month, frozenDays.map(f => f.date));
+                // Previous month counts (2nd month ago) for comparison
+                const prevMonthDate = new Date(year, month - 1, 1);
+                const pYear = prevMonthDate.getFullYear();
+                const pMonth = prevMonthDate.getMonth();
+                const pStart = `${pYear}-${String(pMonth + 1).padStart(2, '0')}-01`;
+                const pEnd = `${pYear}-${String(pMonth + 1).padStart(2, '0')}-${String(new Date(pYear, pMonth + 1, 0).getDate()).padStart(2, '0')}`;
+                
+                const pLogs = await db.history.where('date').between(pStart, pEnd, true, true).toArray();
+                const pDone = [...new Set(pLogs.map(l => l.date))].length;
+                const pFrozen = await db.frozen_days.where('date').between(pStart, pEnd, true, true).count();
+                const pDays = new Date(pYear, pMonth + 1, 0).getDate();
+                const pMissed = pDays - pDone - pFrozen;
+
+                const pMonthName = prevMonthDate.toLocaleString(currentLang, { month: 'long' });
+
+                renderTextFrequencyStory(uniqueDates.length, frozenDays.length, year, month, { done: pDone, rest: pFrozen, missed: pMissed, monthName: pMonthName });
             }
         } catch (e) {
             console.error('Story data load failed', e);
@@ -333,74 +361,50 @@
         setTimeout(() => showPage(0), 100);
     }
 
-    function renderCalendarStory(workoutDates, year, month, frozenDates) {
-        const container = document.getElementById('calendarContainer');
-        const summary = document.getElementById('calendarSummary');
-        if (!container || !summary) return;
+    function renderTextFrequencyStory(doneCount, restCount, year, month, prevCounts) {
+        const container = document.getElementById('frequencyTextContainer');
+        if (!container) return;
         
         container.innerHTML = '';
-        summary.innerHTML = '';
-        const workoutSet = new Set(workoutDates);
-        const frozenSet = new Set(frozenDates);
-        
-        let doneCount = 0;
-        let restCount = 0;
-        let missedCount = 0;
-        
-        const lang = (window.GN_I18N && typeof GN_I18N.safeGetLang === 'function') ? GN_I18N.safeGetLang() : 'en';
-        const weekStartsOnMonday = (lang === 'pt');
-        
-        const firstDayIndex = new Date(year, month, 1).getDay();
-        const adjustedFirstDayIndex = weekStartsOnMonday ? ((firstDayIndex + 6) % 7) : firstDayIndex;
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        
-        for (let i = 0; i < adjustedFirstDayIndex; i++) {
-            const empty = document.createElement('div');
-            empty.className = 'calendar-day-item';
-            empty.style.background = 'transparent';
-            empty.style.border = 'none';
-            container.appendChild(empty);
-        }
-        
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const item = document.createElement('div');
-            item.className = 'calendar-day-item';
-            
-            let iconSrc = 'icons/day-missed.svg';
-            if (workoutSet.has(dateStr)) {
-                iconSrc = 'icons/day-done.svg';
-                doneCount++;
-            } else if (frozenSet.has(dateStr)) {
-                iconSrc = 'icons/day-rest.svg';
-                restCount++;
-            } else {
-                missedCount++;
-            }
-            
-            const img = document.createElement('img');
-            img.src = iconSrc;
-            img.style.animationDelay = `${(d-1) * 30}ms`;
-            item.appendChild(img);
-            container.appendChild(item);
-        }
+        const missedCount = daysInMonth - doneCount - restCount;
 
         const summaryItems = [
-            { icon: 'icons/day-done.svg', count: doneCount, label: 'story_status_done' },
-            { icon: 'icons/day-rest.svg', count: restCount, label: 'story_status_rest' },
-            { icon: 'icons/day-missed.svg', count: missedCount, label: 'story_status_missed' }
+            { count: doneCount, prev: prevCounts?.done || 0, type: 'done', labelKey: 'story_freq_done', icon: 'icons/day-done.svg' },
+            { count: restCount, prev: prevCounts?.rest || 0, type: 'rest', labelKey: 'story_freq_rest', icon: 'icons/day-rest.svg' },
+            { count: missedCount, prev: prevCounts?.missed || 0, type: 'missed', labelKey: 'story_freq_missed', icon: 'icons/day-missed.svg' }
         ];
-        
-        summaryItems.forEach(item => {
-            const row = document.createElement('div');
-            row.className = 'summary-item';
-            const localizedLabel = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t(item.label) : item.label;
-            row.innerHTML = `
-                <img src="${item.icon}" class="summary-icon">
-                <div class="summary-label">${localizedLabel}</div>
-                <div class="summary-count">${item.count}</div>
+
+        summaryItems.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'frequency-text-item';
+            div.style.animationDelay = `${(index + 1) * 0.4}s`;
+            
+            const diff = item.count - item.prev;
+            const sign = diff > 0 ? '+' : '';
+            const deltaVal = diff === 0 ? '0' : `${sign}${diff}`;
+            const fromMonth = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('from') : 'from';
+            
+            let deltaClass = 'delta-neutral';
+            if (diff > 0) {
+                deltaClass = item.type === 'missed' ? 'delta-minus' : (item.type === 'rest' ? 'delta-neutral' : 'delta-plus');
+            } else if (diff < 0) {
+                deltaClass = item.type === 'missed' ? 'delta-plus' : (item.type === 'rest' ? 'delta-neutral' : 'delta-minus');
+            }
+
+            const deltaHtml = diff !== 0 ? `<span class="freq-delta ${deltaClass}">${deltaVal} ${fromMonth} ${prevCounts?.monthName || ''}</span>` : '';
+            
+            let template = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t(item.labelKey) : item.labelKey;
+            const text = template.replace('{n}', `<span class="freq-count">${item.count}</span>`);
+            
+            div.innerHTML = `
+                <img src="${item.icon}" class="freq-icon">
+                <div class="freq-text-content">
+                    <span>${text}</span>
+                    ${deltaHtml}
+                </div>
             `;
-            summary.appendChild(row);
+            container.appendChild(div);
         });
     }
 

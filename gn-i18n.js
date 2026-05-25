@@ -343,6 +343,10 @@
                 story_status_rest: 'Rest',
                 story_status_missed: 'Missed',
                 story_status_rest_title: 'Rest tokens',
+                from: 'from',
+                story_freq_done: '{n} workouts',
+                story_freq_rest: 'Rested {n}x',
+                story_freq_missed: 'Missed {n} days',
             },
             pt: {
                 new_routine_btn: 'Novo treino',
@@ -686,6 +690,10 @@
                 story_status_rest: 'Descanso',
                 story_status_missed: 'Não Treinado',
                 story_status_rest_title: 'Tokens de descanso',
+                from: 'em relação a',
+                story_freq_done: '{n} treinos',
+                story_freq_rest: 'Descansou {n}x',
+                story_freq_missed: 'Perdeu {n} dias',
             }
         },
         getLang: function () {
