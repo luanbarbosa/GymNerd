@@ -110,8 +110,9 @@
             display: flex;
             z-index: 5;
         }
-        .story-nav-prev { width: 30%; height: 100%; }
-        .story-nav-next { width: 70%; height: 100%; }
+        .story-nav-prev { width: 25%; height: 100%; }
+        .story-nav-pause { flex: 1; height: 100%; }
+        .story-nav-next { width: 50%; height: 100%; }
 
         .story-close {
             position: absolute;
@@ -229,6 +230,7 @@
 
             <div class="story-nav">
                 <div class="story-nav-prev" id="navPrev"></div>
+                <div class="story-nav-pause" id="navPause"></div>
                 <div class="story-nav-next" id="navNext"></div>
             </div>
 
@@ -490,22 +492,41 @@
 
     const nPrev = document.getElementById('navPrev');
     const nNext = document.getElementById('navNext');
+    const nPause = document.getElementById('navPause');
+
     if (nPrev) nPrev.addEventListener('click', prevPage);
     if (nNext) nNext.addEventListener('click', nextPage);
+    if (nPause) nPause.addEventListener('click', () => {
+        if (isPaused) resume();
+        else pause();
+    });
     
     const container = document.querySelector('.story-container');
+    let pressTimer;
+    let isLongPress = false;
+
+    const handlePressStart = (e) => {
+        if (e.target.closest('.story-close')) return;
+        isLongPress = false;
+        pressTimer = setTimeout(() => {
+            isLongPress = true;
+            pause();
+        }, 200);
+    };
+
+    const handlePressEnd = () => {
+        clearTimeout(pressTimer);
+        if (isLongPress) {
+            resume();
+        }
+    };
+
     if (container) {
-        container.addEventListener('mousedown', (e) => {
-            if (e.target.id === 'navPrev' || e.target.id === 'navNext' || e.target.closest('.story-close')) return;
-            pause();
-        });
-        container.addEventListener('mouseup', resume);
-        container.addEventListener('mouseleave', resume);
-        container.addEventListener('touchstart', (e) => {
-            if (e.target.id === 'navPrev' || e.target.id === 'navNext' || e.target.closest('.story-close')) return;
-            pause();
-        }, { passive: true });
-        container.addEventListener('touchend', resume, { passive: true });
+        container.addEventListener('mousedown', handlePressStart);
+        container.addEventListener('mouseup', handlePressEnd);
+        container.addEventListener('mouseleave', handlePressEnd);
+        container.addEventListener('touchstart', handlePressStart, { passive: true });
+        container.addEventListener('touchend', handlePressEnd, { passive: true });
         container.addEventListener('contextmenu', (e) => { e.preventDefault(); return false; });
     }
     
