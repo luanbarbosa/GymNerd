@@ -633,9 +633,13 @@
                 const comparedWith = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('from') : 'from';
                 const disclaimerText = `${comparedWith} ${pMonthName}`;
                 document.querySelectorAll('.disclaimer-text').forEach(el => el.innerText = disclaimerText);
+                document.querySelectorAll('#page5 .story-disclaimer')
+                    .forEach(el => el.style.display = 'none');
+                document.querySelectorAll('#page2 .disclaimer-text, #page3 .disclaimer-text, #page4 .disclaimer-text')
+                    .forEach(el => el.innerText = 'Using 1RM calculation');
 
                 renderTextFrequencyStory(uniqueDates.length, frozenDays.length, year, month, { done: pDone, rest: pFrozen, missed: pMissed, monthName: pMonthName });
-                const improvementPages = await renderImprovementsStory(logs, pLogs, currentLang);
+                const improvementPages = await renderImprovementsStory(logs, currentLang);
                 if (!improvementPages || !improvementPages.hasGains) {
                     const gainsPage = document.getElementById('page2');
                     if (gainsPage) gainsPage.remove();
@@ -664,45 +668,86 @@
         setTimeout(() => showPage(0), 100);
     }
 
-    async function renderImprovementsStory(currentLogs, prevLogs, lang) {
+    async function renderImprovementsStory(currentLogs, lang) {
         const gainsContainer = document.getElementById('improvementsContainer');
         const lossesContainer = document.getElementById('lossesContainer');
         if (!gainsContainer || !lossesContainer) return { hasGains: false, hasLosses: false };
         gainsContainer.innerHTML = '';
         lossesContainer.innerHTML = '';
 
-        const calcBest1RM = (logs) => {
-            const bests = {};
-            logs.forEach(log => {
-                const eId = log.exerciseId;
-                if (!eId) return;
-                const r1rm = window.estimate1RM(log.weight, log.reps) || 0;
-                if (!bests[eId] || r1rm > bests[eId]) {
-                    bests[eId] = r1rm;
-                }
-            });
-            return bests;
+        const normalizeExerciseType = (type) => {
+            const raw = (type === undefined || type === null) ? '' : String(type);
+            const trimmed = raw.trim();
+            const label = trimmed || 'Other';
+            return {
+                key: label.toLowerCase(),
+                label
+            };
         };
 
-        const currentBests = calcBest1RM(currentLogs);
-        const prevBests = calcBest1RM(prevLogs);
+        const safeMetricValue = (value, precision = 2) => {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return 0;
+            if (precision >= 0) return Number(num.toFixed(precision));
+            return num;
+        };
 
-        const allStats = [];
-        for (const eId in currentBests) {
-            const current = currentBests[eId];
-            const prev = prevBests[eId] || 0;
-            if (prev > 0) {
-                allStats.push({
-                    exerciseId: eId,
-                    current,
-                    prev,
-                    diff: current - prev
-                });
-            }
-        }
+        const getStrength1RMSeries = (entries) => {
+            if (!Array.isArray(entries)) return [];
+            const byDate = {};
+            entries.forEach(entry => {
+                const d = entry.date;
+                if (!d) return;
+                const weight = Number(entry && entry.weight) || 0;
+                const reps = (entry && entry.reps !== undefined && entry.reps !== null)
+                    ? Number(entry.reps)
+                    : 1;
+                const current1RM = window.estimate1RM(weight, reps);
+                if (!byDate[d] || current1RM > byDate[d]) {
+                    byDate[d] = current1RM;
+                }
+            });
 
-        const gains = allStats.filter(s => s.diff > 0).sort((a, b) => b.diff - a.diff).slice(0, 3);
-        const losses = allStats.filter(s => s.diff < 0).sort((a, b) => a.diff - b.diff).slice(0, 3);
+            return Object.keys(byDate)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map(d => safeMetricValue(byDate[d]));
+        };
+
+        const getProgressData = (values) => {
+            if (!values || values.length < 2) return null;
+            const first = values[0];
+            const last = values[values.length - 1];
+            if (!first || !last) return null;
+            const diff = last - first;
+            const percent = (diff / first) * 100;
+            if (Math.abs(percent) < 0.1 || diff === 0) return null;
+            return { diff, percent, first, last };
+        };
+
+        const getGroupProgressData = (exercisesInType) => {
+            let sumPercent = 0;
+            let sumDelta = 0;
+            let count = 0;
+
+            Object.values(exercisesInType || {}).forEach((entries) => {
+                const series = getStrength1RMSeries(entries)
+                    .map(v => Number(v))
+                    .filter(v => Number.isFinite(v));
+                const progress = getProgressData(series);
+                if (!progress) return;
+                sumPercent += progress.percent;
+                sumDelta += progress.diff;
+                count++;
+            });
+
+            if (count === 0) return null;
+            const avgPercent = sumPercent / count;
+            if (Math.abs(avgPercent) < 0.1) return null;
+            return {
+                percent: avgPercent,
+                diff: sumDelta / count
+            };
+        };
 
         // Fetch exercise details
         const [catEx, custEx, catImg, custImg] = await Promise.all([
@@ -717,14 +762,79 @@
         const catImgMap = new Map(catImg.map(i => [i.id, i.data || i.url]));
         const custImgMap = new Map(custImg.map(i => [i.id, i.data || i.url]));
 
+        const allExercises = [
+            ...catEx.map(ex => ({ ...ex, isCustom: false })),
+            ...custEx.map(ex => ({ ...ex, isCustom: true }))
+        ];
+
+        const exMap = allExercises.reduce((acc, ex) => {
+            acc[`${ex.id}-${!!ex.isCustom}`] = ex;
+            return acc;
+        }, {});
+
+        const groupedByType = {};
+        const exerciseStats = [];
+
+        currentLogs.forEach(log => {
+            if (!log || !log.exerciseId || !log.date) return;
+            const isCustom = log.isCustom !== undefined ? !!log.isCustom : Number(log.exerciseId) > 0;
+            const exKey = `${log.exerciseId}-${isCustom}`;
+            const ex = exMap[exKey];
+            const typeInfo = normalizeExerciseType(ex ? ex.type : 'Other');
+
+            if (!groupedByType[typeInfo.key]) {
+                groupedByType[typeInfo.key] = { label: typeInfo.label, localizedLabel: null, exercises: {} };
+            }
+
+            if (!groupedByType[typeInfo.key].exercises[exKey]) {
+                groupedByType[typeInfo.key].exercises[exKey] = [];
+            }
+            groupedByType[typeInfo.key].exercises[exKey].push(log);
+        });
+
+        Object.keys(groupedByType).forEach(typeKey => {
+            Object.keys(groupedByType[typeKey].exercises).forEach(exKey => {
+                const entries = groupedByType[typeKey].exercises[exKey];
+                const progress = getProgressData(getStrength1RMSeries(entries));
+                if (!progress) return;
+                const ex = exMap[exKey];
+                if (!ex) return;
+                exerciseStats.push({
+                    exerciseKey: exKey,
+                    exercise: ex,
+                    typeKey,
+                    current: progress.last,
+                    prev: progress.first,
+                    percent: progress.percent,
+                    diff: progress.diff
+                });
+            });
+        });
+
+        const typeStats = Object.keys(groupedByType).map(typeKey => {
+            const entry = groupedByType[typeKey];
+            const localizedLabel =
+                (window.GN_I18N && typeof GN_I18N.localizeExerciseType === 'function')
+                    ? (GN_I18N.localizeExerciseType(entry.label) || entry.label)
+                    : entry.label;
+            return {
+                key: typeKey,
+                label: entry.label,
+                localizedLabel,
+                progress: getGroupProgressData(entry.exercises)
+            };
+        }).filter(type => type.progress);
+
+        const gains = exerciseStats.filter(s => s.diff > 0).sort((a, b) => b.diff - a.diff).slice(0, 3);
+        const losses = exerciseStats.filter(s => s.diff < 0).sort((a, b) => a.diff - b.diff).slice(0, 3);
+
         const renderItems = (items, container, isLoss = false) => {
             if (items.length === 0) {
                 return;
             }
 
             items.forEach((imp, index) => {
-                const id = Number(imp.exerciseId);
-                const ex = custMap.get(id) || catMap.get(id) || catMap.get(-id);
+                const ex = imp.exercise;
                 if (!ex) return;
 
                 const imgData = custImgMap.get(ex.imageId) || catImgMap.get(ex.imageId) || 'icons/icon-192.svg';
@@ -751,8 +861,8 @@
         renderItems(gains, gainsContainer, false);
         renderItems(losses, lossesContainer, true);
 
-        await renderTypeStatusStory(allStats, catEx, custEx, lang);
-        renderOutcomeStory(allStats, lang, catEx, custEx);
+        await renderTypeStatusStory(typeStats, lang);
+        renderOutcomeStory(exerciseStats, lang, catEx, custEx);
 
         return {
             hasGains: gains.length > 0,
@@ -793,12 +903,9 @@
         }
 
         // Identify focus areas (declined types)
-        const catMap = new Map(catEx.map(e => [e.id, e]));
-        const custMap = new Map(custEx.map(e => [e.id, e]));
         const typeDiffs = {};
         allExerciseStats.forEach(stat => {
-            const id = Number(stat.exerciseId);
-            const ex = custMap.get(id) || catMap.get(id) || catMap.get(-id);
+            const ex = stat.exercise;
             if (!ex || !ex.type || ex.type === 'cardio') return;
             typeDiffs[ex.type] = (typeDiffs[ex.type] || 0) + stat.diff;
         });
@@ -829,29 +936,18 @@
         `;
     }
 
-    async function renderTypeStatusStory(allExerciseStats, catEx, custEx, lang) {
+    async function renderTypeStatusStory(typeStats, lang) {
         const container = document.getElementById('typeStatusContainer');
         if (!container) return;
         container.innerHTML = '';
 
-        const catMap = new Map(catEx.map(e => [e.id, e]));
-        const custMap = new Map(custEx.map(e => [e.id, e]));
-
-        const typeStats = {}; // { typeKey: { totalDiff: 0, count: 0 } }
-
-        allExerciseStats.forEach(stat => {
-            const id = Number(stat.exerciseId);
-            const ex = custMap.get(id) || catMap.get(id) || catMap.get(-id);
-            if (!ex || !ex.type || ex.type === 'cardio') return;
-
-            if (!typeStats[ex.type]) {
-                typeStats[ex.type] = { totalDiff: 0, count: 0 };
-            }
-            typeStats[ex.type].totalDiff += stat.diff;
-            typeStats[ex.type].count += 1;
-        });
-
-        const types = Object.keys(typeStats).sort();
+        const types = (Array.isArray(typeStats) ? typeStats : [])
+            .filter(type => type && type.progress)
+            .sort((a, b) => {
+                const left = a.localizedLabel || a.label || a.key;
+                const right = b.localizedLabel || b.label || b.key;
+                return left.localeCompare(right);
+            });
 
         if (types.length === 0) {
             const empty = document.createElement('div');
@@ -862,26 +958,25 @@
         }
 
         types.forEach((type, index) => {
-            const stats = typeStats[type];
-            const avgDiff = stats.totalDiff / stats.count;
-            const localizedName = (window.GN_I18N && typeof GN_I18N.getLocalizedTypeLabel === 'function') 
-                ? GN_I18N.getLocalizedTypeLabel(type) 
-                : type;
+            const avgDiff = type.progress.diff;
+            const avgPercent = type.progress.percent;
+            const localizedName = type.localizedLabel || type.label || type.key;
 
             const div = document.createElement('div');
             div.className = 'type-status-item';
             div.style.animationDelay = `${(index + 1) * 0.15}s`;
 
             const fixedDiff = Number(avgDiff.toFixed(1));
+            const fixedPercent = Number(avgPercent.toFixed(1));
             let color = '#94a3b8';
             let icon = 'remove';
             let sign = '';
 
-            if (fixedDiff > 0) {
+            if (fixedPercent > 0) {
                 color = '#4ade80';
                 icon = 'trending_up';
                 sign = '+';
-            } else if (fixedDiff < 0) {
+            } else if (fixedPercent < 0) {
                 color = '#f87171';
                 icon = 'trending_down';
                 sign = '';
@@ -892,7 +987,7 @@
                     <span class="type-status-name">${localizedName}</span>
                 </div>
                 <div class="type-status-trend" style="color: ${color}">
-                    <span>${sign}${fixedDiff.toFixed(1)} KG</span>
+                    <span>${fixedDiff > 0 ? '+' : ''}${fixedDiff.toFixed(1)} KG</span>
                     <span class="material-symbols-outlined trend-icon">${icon}</span>
                 </div>
             `;
