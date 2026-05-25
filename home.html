@@ -519,6 +519,28 @@
 			fill-opacity: 0 !important;
 		}
 
+		#topbar-last-month {
+			position: relative;
+		}
+
+		#topbar-last-month-attention-dot {
+			position: absolute;
+			top: 3px;
+			right: 2px;
+			width: 9px;
+			height: 9px;
+			border-radius: 50%;
+			background: #ef4444;
+			border: 2px solid var(--shell-background);
+			box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.24);
+			display: none;
+			pointer-events: none;
+		}
+
+		#topbar-last-month.has-unread-last-month #topbar-last-month-attention-dot {
+			display: block;
+		}
+
 		.nav-card {
 			background-color: var(--card-background);
 			padding: 24px;
@@ -1583,6 +1605,7 @@
 							aria-hidden="true"
 							style="width:24px;height:24px;display:block;"
 						/>
+						<span id="topbar-last-month-attention-dot" aria-hidden="true"></span>
 					</a>
 					<a id="topbar-measure" href="measurements.html" aria-label="Measure" title="Measure"
 						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;margin-right:8px;">
@@ -3158,25 +3181,71 @@
 		<script>
 			(function () {
 				const HOME_REFRESH_FLAG = 'home_force_refresh';
+				const LAST_MONTH_ACTION_READ_AT_KEY = 'last_month_action_read_at';
+
+				function getCurrentMonthStart() {
+					const now = new Date();
+					return new Date(now.getFullYear(), now.getMonth(), 1);
+				}
+
+				function getLastMonthActionReadAt() {
+					try {
+						const raw = localStorage.getItem(LAST_MONTH_ACTION_READ_AT_KEY);
+						if (!raw) return null;
+						const date = new Date(raw);
+						if (Number.isNaN(date.getTime())) return null;
+						return date;
+					} catch (e) {
+						return null;
+					}
+				}
+
+				function markLastMonthActionRead() {
+					try { localStorage.setItem(LAST_MONTH_ACTION_READ_AT_KEY, new Date().toISOString()); } catch (e) { }
+					updateLastMonthActionAttention(false);
+				}
+
+				function updateLastMonthActionAttention(hasLastMonthData) {
+					const lastMonthBtn = document.getElementById('topbar-last-month');
+					if (!lastMonthBtn) return;
+					const shouldEvaluate = (typeof hasLastMonthData === 'boolean')
+						? hasLastMonthData
+						: lastMonthBtn.style.display !== 'none';
+					if (!shouldEvaluate) {
+						lastMonthBtn.classList.remove('has-unread-last-month');
+						lastMonthBtn.setAttribute('aria-label', 'Last month');
+						return;
+					}
+					const readAt = getLastMonthActionReadAt();
+					const isUnread = !readAt || readAt < getCurrentMonthStart();
+					lastMonthBtn.classList.toggle('has-unread-last-month', isUnread);
+					lastMonthBtn.setAttribute('aria-label', isUnread ? 'Last month, new' : 'Last month');
+				}
+
+				function initLastMonthActionAttention() {
+					const lastMonthBtn = document.getElementById('topbar-last-month');
+					if (!lastMonthBtn) return;
+					lastMonthBtn.addEventListener('click', markLastMonthActionRead);
+					updateLastMonthActionAttention();
+				}
+
+				initLastMonthActionAttention();
+
 				async function refreshHomeData() {
 					try { if (typeof ensureDbOpen === 'function') await ensureDbOpen(); } catch (e) { }
 					
-					// Toggle story icon visibility based on last month's activity
+					// Toggle story icon visibility based on last month's workout history.
 					try {
 						const now = new Date();
 						const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 						const startStr = lastMonth.toISOString().split('T')[0];
 						const endStr = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
 
-						const [hCount, tCount, fCount] = await Promise.all([
-							db.history.where('date').between(startStr, endStr, true, true).count(),
-							db.token_events.where('date').between(startStr, endStr, true, true).count(),
-							db.frozen_days.where('date').between(startStr, endStr, true, true).count()
-						]);
-						
-						const hasData = (hCount + tCount + fCount) > 0;
+						const hCount = await db.history.where('date').between(startStr, endStr, true, true).count();
+						const hasData = hCount > 0;
 						const lastMonthBtn = document.getElementById('topbar-last-month');
 						if (lastMonthBtn) lastMonthBtn.style.display = hasData ? 'inline-flex' : 'none';
+						updateLastMonthActionAttention(hasData);
 					} catch (e) { }
 
 					let historyCount = 0;

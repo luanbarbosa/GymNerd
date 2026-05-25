@@ -635,7 +635,15 @@
                 document.querySelectorAll('.disclaimer-text').forEach(el => el.innerText = disclaimerText);
 
                 renderTextFrequencyStory(uniqueDates.length, frozenDays.length, year, month, { done: pDone, rest: pFrozen, missed: pMissed, monthName: pMonthName });
-                await renderImprovementsStory(logs, pLogs, currentLang);
+                const improvementPages = await renderImprovementsStory(logs, pLogs, currentLang);
+                if (!improvementPages || !improvementPages.hasGains) {
+                    const gainsPage = document.getElementById('page2');
+                    if (gainsPage) gainsPage.remove();
+                }
+                if (!improvementPages || !improvementPages.hasLosses) {
+                    const lossesPage = document.getElementById('page3');
+                    if (lossesPage) lossesPage.remove();
+                }
             }
         } catch (e) {
             console.error('Story data load failed', e);
@@ -659,7 +667,7 @@
     async function renderImprovementsStory(currentLogs, prevLogs, lang) {
         const gainsContainer = document.getElementById('improvementsContainer');
         const lossesContainer = document.getElementById('lossesContainer');
-        if (!gainsContainer || !lossesContainer) return;
+        if (!gainsContainer || !lossesContainer) return { hasGains: false, hasLosses: false };
         gainsContainer.innerHTML = '';
         lossesContainer.innerHTML = '';
 
@@ -711,11 +719,6 @@
 
         const renderItems = (items, container, isLoss = false) => {
             if (items.length === 0) {
-                const empty = document.createElement('div');
-                empty.className = 'improvement-item';
-                empty.style.fontSize = '1.2rem';
-                empty.innerText = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('no_records_yet') : 'Keep it up!';
-                container.appendChild(empty);
                 return;
             }
 
@@ -750,6 +753,11 @@
 
         await renderTypeStatusStory(allStats, catEx, custEx, lang);
         renderOutcomeStory(allStats, lang, catEx, custEx);
+
+        return {
+            hasGains: gains.length > 0,
+            hasLosses: losses.length > 0
+        };
     }
 
     function renderOutcomeStory(allExerciseStats, lang, catEx, custEx) {
