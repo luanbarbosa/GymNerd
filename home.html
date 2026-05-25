@@ -1574,7 +1574,7 @@
 						style="font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24; font-size: 24px; color: var(--text-main-color); margin-left: 8px; vertical-align: middle; opacity: 1; display: inline-flex; align-items: center; justify-content: center; padding: 6px;">cloud_done</span>
 				</div>
 				<div id="topbar-actions" style="display:flex; align-items:center;">
-					<a id="topbar-remember" href="remember.html" aria-label="Remember" title="Remember"
+					<a id="topbar-last-month" href="stories.html" aria-label="Last month" title="Last month"
 						style="display:inline-flex;align-items:center;justify-content:center;padding:6px;color:var(--text-main-color);text-decoration:none;margin-right:14px;">
 							<span class="material-symbols-outlined" aria-hidden="true"
 								style="font-variation-settings: 'wght' 200; font-size:24px; line-height:1;">browse_activity</span>
@@ -3170,8 +3170,8 @@
 						]);
 						
 						const hasData = (hCount + tCount + fCount) > 0;
-						const rememberBtn = document.getElementById('topbar-remember');
-						if (rememberBtn) rememberBtn.style.display = hasData ? 'inline-flex' : 'none';
+						const lastMonthBtn = document.getElementById('topbar-last-month');
+						if (lastMonthBtn) lastMonthBtn.style.display = hasData ? 'inline-flex' : 'none';
 					} catch (e) { }
 
 					let historyCount = 0;

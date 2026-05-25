@@ -115,7 +115,7 @@
 
             // execute all scripts from the fetched document (head and body)
             const scripts = Array.from(doc.querySelectorAll('script'));
-            const allowInlineRepeat = (href && href.endsWith('measurements.html')) || (href && href.endsWith('/measurements')) || (href && href.endsWith('remember.html')) || (href && href.endsWith('/remember'));
+            const allowInlineRepeat = (href && href.endsWith('measurements.html')) || (href && href.endsWith('/measurements')) || (href && href.endsWith('stories.html')) || (href && href.endsWith('/stories'));
             for (const s of scripts) {
                 if (s.src) {
                     let resolved = null;
@@ -262,7 +262,7 @@
                 const nav = document.getElementById('bottom-nav') || document.getElementById('gn-bottom-nav');
                 if (nav) {
                     // Hide nav on the login/index shell pages; show for app pages
-                        if (key === 'index.html' || key === '' || key === 'login.html' || key === 'settings.html' || key === 'measurements.html' || key === 'remember.html') {
+                        if (key === 'index.html' || key === '' || key === 'login.html' || key === 'settings.html' || key === 'measurements.html' || key === 'stories.html') {
                         nav.style.display = 'none';
                         try { nav.setAttribute('aria-hidden', 'true'); } catch(e){}
                     } else {
@@ -363,7 +363,7 @@
             const url = new URL(href, location.href);
             if (url.origin !== location.origin) return;
             const name = url.pathname.split('/').pop() || 'index.html';
-            const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','settings','measurements.html','measurements','remember.html','remember'];
+            const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','settings','measurements.html','measurements','stories.html','stories'];
             if (spaTargets.includes(name)) {
                 const basePath = ((location.pathname || '/').replace(/\/[^\/]*$/, '/') || '/');
                 e.preventDefault();
@@ -383,8 +383,8 @@
                         const pushUrl = basePath + 'measurements.html';
                         history.pushState({ spa:true, url: url.pathname }, document.title || '', pushUrl);
                     }
-                    if (name === 'remember.html' || name === 'remember') {
-                        const pushUrl = basePath + 'remember.html';
+                    if (name === 'stories.html' || name === 'stories') {
+                        const pushUrl = basePath + 'stories.html';
                         history.pushState({ spa:true, url: url.pathname }, document.title || '', pushUrl);
                     }
                 } catch (e) {
@@ -435,7 +435,7 @@
                 if (!hash) return;
                 let candidate = hash;
                 if (!candidate.endsWith('.html')) candidate = candidate + '.html';
-                const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','measurements.html','login.html','remember.html'];
+                const spaTargets = ['index.html','home.html','routines.html','routinecrud.html','history.html','historycrud.html','statistics.html','settings.html','measurements.html','login.html','stories.html'];
                 if (spaTargets.includes(candidate)) {
                     // Do not navigate away — inject the page into the current
                     // index shell so the visible URL remains unchanged.
@@ -460,7 +460,7 @@
             const startParam = params.get('start') || null;
             const hashParam = (location.hash && location.hash.length > 1) ? location.hash.slice(1) : null;
             const startHint = startParam || hashParam;
-            const allowedNames = ['home','home.html','routines','routines.html','history','history.html','statistics','statistics.html','settings','settings.html','measurements','measurements.html','login','login.html','remember','remember.html'];
+            const allowedNames = ['home','home.html','routines','routines.html','history','history.html','statistics','statistics.html','settings','settings.html','measurements','measurements.html','login','login.html','stories','stories.html'];
 
             // If a clean path (e.g. /home or /home.html) was requested and the
             // shell was served, inject that page without changing the URL.
