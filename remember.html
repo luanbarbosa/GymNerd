@@ -11,7 +11,7 @@
     <title>GymNerd | Remember</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link href="https://fonts.googleapis.com" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=browse_activity,trending_up,trending_down,remove" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=browse_activity,trending_up,trending_down,remove,info" rel="stylesheet">
     <script src="gn-i18n.js"></script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
@@ -118,7 +118,6 @@
             align-items: center;
             gap: 32px;
             max-height: 100%;
-            overflow: hidden;
         }
 
         /* Navigation */
@@ -329,7 +328,148 @@
         }
         .trend-icon { font-size: 24px; }
 
+        /* Outcome Styles */
+        .outcome-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            max-width: 320px;
+            width: 100%;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        .outcome-bg-glow {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.4;
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+        .outcome-illustration {
+            width: 200px;
+            height: 200px;
+            filter: drop-shadow(0 12px 32px rgba(0,0,0,0.6));
+            opacity: 0;
+            transform: scale(0.8);
+            z-index: 2;
+        }
+        .story-page.active.animating .outcome-illustration {
+            animation: bounceIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1.2) forwards, bob 3s ease-in-out infinite 0.8s;
+        }
+        .outcome-message {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1.2;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(30px) rotate(-1deg);
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+        .story-page.active.animating .outcome-message {
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.3s;
+        }
+        
+        /* Focus Area Styles */
+        .focus-area-container {
+            width: 100%;
+            margin-top: auto;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .story-page.active.animating .focus-area-container {
+            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.6s;
+        }
+        .focus-title {
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255,255,255,0.4);
+        }
+        .focus-types {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+        .focus-type-tag {
+            padding: 6px 14px;
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-radius: 100px;
+            color: #f87171;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* Disclaimer Style */
+        .story-disclaimer {
+            position: absolute;
+            bottom: calc(20px + var(--safe-top, 0px));
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .disclaimer-icon { font-size: 14px !important; }
+
+        /* Happy Sparkles */
+        .sparkle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0;
+            z-index: 1;
+        }
+        .story-page.active.animating .sparkle {
+            animation: sparkleAnim 1.5s ease-out forwards;
+        }
+
         /* KEYFRAME ANIMATIONS */
+        @keyframes pulseGlow {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.5; }
+        }
+        @keyframes bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes sparkleAnim {
+            0% { transform: translate(0, 0) scale(0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(1.5); opacity: 0; }
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         @keyframes fadeInLeft {
             0% { transform: translateX(-20px); opacity: 0; }
             100% { transform: translateX(0); opacity: 1; }
@@ -373,6 +513,10 @@
                         <h2 class="story-title" data-i18n="workout_frequency" style="margin-bottom: 20px;">Frequency</h2>
                         <div id="frequencyTextContainer" class="frequency-text-container"></div>
                     </div>
+                    <div class="story-disclaimer">
+                        <span class="material-symbols-outlined disclaimer-icon">info</span>
+                        <span class="disclaimer-text"></span>
+                    </div>
                 </div>
 
                 <!-- Page 2: Top 3 gains -->
@@ -380,6 +524,10 @@
                     <div class="story-content-inner" style="align-items: flex-start; text-align: left;">
                         <h2 class="story-title" data-i18n="story_top_gains">Top 3 gains</h2>
                         <div id="improvementsContainer" class="improvements-container"></div>
+                    </div>
+                    <div class="story-disclaimer">
+                        <span class="material-symbols-outlined disclaimer-icon">info</span>
+                        <span class="disclaimer-text"></span>
                     </div>
                 </div>
 
@@ -389,6 +537,10 @@
                         <h2 class="story-title" data-i18n="story_top_losses">Top 3 losses</h2>
                         <div id="lossesContainer" class="improvements-container"></div>
                     </div>
+                    <div class="story-disclaimer">
+                        <span class="material-symbols-outlined disclaimer-icon">info</span>
+                        <span class="disclaimer-text"></span>
+                    </div>
                 </div>
 
                 <!-- Page 4: Type Status -->
@@ -396,6 +548,21 @@
                     <div class="story-content-inner" style="align-items: flex-start; text-align: left;">
                         <h2 class="story-title" data-i18n="story_type_status">Type status</h2>
                         <div id="typeStatusContainer" class="type-status-container"></div>
+                    </div>
+                    <div class="story-disclaimer">
+                        <span class="material-symbols-outlined disclaimer-icon">info</span>
+                        <span class="disclaimer-text"></span>
+                    </div>
+                </div>
+
+                <!-- Page 5: Monthly Outcome -->
+                <div class="story-page" id="page5">
+                    <div class="story-content-inner" style="justify-content: center; height: 100%;">
+                        <div id="outcomeContainer" class="outcome-container"></div>
+                    </div>
+                    <div class="story-disclaimer">
+                        <span class="material-symbols-outlined disclaimer-icon">info</span>
+                        <span class="disclaimer-text"></span>
                     </div>
                 </div>
             </div>
@@ -460,6 +627,11 @@
                 const pMissed = pDays - pDone - pFrozen;
 
                 const pMonthName = prevMonthDate.toLocaleString(currentLang, { month: 'long' });
+
+                // Set disclaimers
+                const comparedWith = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('from') : 'from';
+                const disclaimerText = `${comparedWith} ${pMonthName}`;
+                document.querySelectorAll('.disclaimer-text').forEach(el => el.innerText = disclaimerText);
 
                 renderTextFrequencyStory(uniqueDates.length, frozenDays.length, year, month, { done: pDone, rest: pFrozen, missed: pMissed, monthName: pMonthName });
                 await renderImprovementsStory(logs, pLogs, currentLang);
@@ -576,6 +748,76 @@
         renderItems(losses, lossesContainer, true);
 
         await renderTypeStatusStory(allStats, catEx, custEx, lang);
+        renderOutcomeStory(allStats, lang, catEx, custEx);
+    }
+
+    function renderOutcomeStory(allExerciseStats, lang, catEx, custEx) {
+        const container = document.getElementById('outcomeContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const totalDiff = allExerciseStats.reduce((acc, s) => acc + s.diff, 0);
+        const isHappy = totalDiff > 0;
+        const illustration = isHappy ? 'illustrations/happy-flame.svg' : 'illustrations/sad-flame.svg';
+        const glowColor = isHappy ? 'var(--primary)' : '#4d94ff';
+        
+        // Get next month name
+        const now = new Date();
+        const nextMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        let nextMonthName = nextMonthDate.toLocaleString(lang, { month: 'long' });
+        if (lang === 'pt') {
+            nextMonthName = nextMonthName.charAt(0).toUpperCase() + nextMonthName.slice(1);
+        }
+
+        const key = isHappy ? 'story_outcome_happy' : 'story_outcome_sad';
+        let message = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t(key) : key;
+        message = message.replace('{m}', nextMonthName);
+
+        let sparklesHtml = '';
+        if (isHappy) {
+            for (let i = 0; i < 12; i++) {
+                const tx = (Math.random() - 0.5) * 400;
+                const ty = (Math.random() - 0.5) * 400;
+                const delay = Math.random() * 0.5;
+                sparklesHtml += `<div class="sparkle" style="--tx: ${tx}px; --ty: ${ty}px; animation-delay: ${delay}s; left: 50%; top: 50%;"></div>`;
+            }
+        }
+
+        // Identify focus areas (declined types)
+        const catMap = new Map(catEx.map(e => [e.id, e]));
+        const custMap = new Map(custEx.map(e => [e.id, e]));
+        const typeDiffs = {};
+        allExerciseStats.forEach(stat => {
+            const id = Number(stat.exerciseId);
+            const ex = custMap.get(id) || catMap.get(id) || catMap.get(-id);
+            if (!ex || !ex.type || ex.type === 'cardio') return;
+            typeDiffs[ex.type] = (typeDiffs[ex.type] || 0) + stat.diff;
+        });
+
+        const focusTypes = Object.keys(typeDiffs)
+            .filter(type => typeDiffs[type] < 0)
+            .map(type => (window.GN_I18N && typeof GN_I18N.getLocalizedTypeLabel === 'function') ? GN_I18N.getLocalizedTypeLabel(type) : type);
+
+        let focusHtml = '';
+        if (focusTypes.length > 0) {
+            const focusTitle = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('story_focus_title') : 'Focus for next month';
+            focusHtml = `
+                <div class="focus-area-container">
+                    <span class="focus-title">${focusTitle}</span>
+                    <div class="focus-types">
+                        ${focusTypes.map(t => `<span class="focus-type-tag">${t}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="outcome-bg-glow" style="background: ${glowColor}"></div>
+            ${sparklesHtml}
+            <img src="${illustration}" class="outcome-illustration" alt="">
+            <div class="outcome-message">${message}</div>
+            ${focusHtml}
+        `;
     }
 
     async function renderTypeStatusStory(allExerciseStats, catEx, custEx, lang) {

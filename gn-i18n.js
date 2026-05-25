@@ -343,17 +343,19 @@
                 story_status_rest: 'Rest',
                 story_status_missed: 'Missed',
                 story_status_rest_title: 'Rest tokens',
-                from: 'from',
+                from: 'compared to',
                 story_freq_done: '{n} workouts',
                 story_freq_rest: 'Rested {n}x',
                 story_freq_missed: 'Missed {n} days',
                 story_top_gains: 'Top 3 gains',
                 story_top_losses: 'Top 3 losses',
                 story_type_status: 'Type status',
+                story_outcome_happy: 'Amazing progress! Let\'s keep the momentum in {m}!',
+                story_outcome_sad: 'This month was not great, but you can do it in {m}!',
+                story_focus_title: 'You could focus on',
                 },
                 pt: {
-                new_routine_btn: 'Novo treino',
-                no_routines_placeholder: 'Ainda não há treinos. Clique em <strong>Novo Treino</strong> para criar um.',
+                new_routine_btn: 'Novo treino',                no_routines_placeholder: 'Ainda não há treinos. Clique em <strong>Novo Treino</strong> para criar um.',
                 routine_not_found: 'Treino não encontrado.',
                 page_routine_new: 'Novo Treino',
                 page_routine_edit: 'Editar Treino',
@@ -693,17 +695,19 @@
                 story_status_rest: 'Descanso',
                 story_status_missed: 'Não Treinado',
                 story_status_rest_title: 'Tokens de descanso',
-                from: 'em relação a',
+                from: 'Comparado com',
                 story_freq_done: '{n} treinos',
                 story_freq_rest: 'Descansou {n}x',
                 story_freq_missed: 'Perdeu {n} dias',
                 story_top_gains: 'Top 3 ganhos',
                 story_top_losses: 'Top 3 quedas',
                 story_type_status: 'Status por tipo',
+                story_outcome_happy: 'Progresso incrível! Vamos manter o ritmo em {m}!',
+                story_outcome_sad: 'Este mês não foi tão bom, mas você consegue em {m}!',
+                story_focus_title: 'Você poderia focar em',
                 }
                 },
-                getLang: function () {
-            try {
+                getLang: function () {            try {
                 // URL override (useful for testing): ?lang=en or ?lang=pt
                 try {
                     const params = new URLSearchParams(window.location.search);
