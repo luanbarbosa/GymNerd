@@ -823,7 +823,7 @@
                 localizedLabel,
                 progress: getGroupProgressData(entry.exercises)
             };
-        }).filter(type => type.progress);
+        });
 
         const gains = exerciseStats.filter(s => s.diff > 0).sort((a, b) => b.diff - a.diff).slice(0, 3);
         const losses = exerciseStats.filter(s => s.diff < 0).sort((a, b) => a.diff - b.diff).slice(0, 3);
@@ -862,7 +862,7 @@
         renderItems(losses, lossesContainer, true);
 
         await renderTypeStatusStory(typeStats, lang);
-        renderOutcomeStory(exerciseStats, lang, catEx, custEx);
+        renderOutcomeStory(typeStats, lang);
 
         return {
             hasGains: gains.length > 0,
@@ -870,17 +870,11 @@
         };
     }
 
-    function renderOutcomeStory(allExerciseStats, lang, catEx, custEx) {
+    function renderOutcomeStory(typeStats, lang) {
         const container = document.getElementById('outcomeContainer');
         if (!container) return;
         container.innerHTML = '';
 
-        const totalDiff = allExerciseStats.reduce((acc, s) => acc + s.diff, 0);
-        const isHappy = totalDiff > 0;
-        const illustration = isHappy ? 'illustrations/happy-flame.svg' : 'illustrations/sad-flame.svg';
-        const glowColor = isHappy ? 'var(--primary)' : '#4d94ff';
-        
-        // Get next month name
         const now = new Date();
         const nextMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
         let nextMonthName = nextMonthDate.toLocaleString(lang, { month: 'long' });
@@ -888,9 +882,41 @@
             nextMonthName = nextMonthName.charAt(0).toUpperCase() + nextMonthName.slice(1);
         }
 
-        const key = isHappy ? 'story_outcome_happy' : 'story_outcome_sad';
-        let message = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t(key) : key;
-        message = message.replace('{m}', nextMonthName);
+        const types = Array.isArray(typeStats) ? typeStats : [];
+        const progressed = types.filter(type => type && type.progress && type.progress.percent > 0);
+        const declined = types.filter(type => type && type.progress && type.progress.percent < 0);
+        const steady = types.filter(type => !type || !type.progress || type.progress.percent === 0);
+
+        const getOutcomeText = (key, fallback) => {
+            const template = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t(key) || fallback) : fallback;
+            return String(template).replace('{m}', nextMonthName);
+        };
+
+        let illustration = 'illustrations/flamo-happy-1-2.svg';
+        let message = getOutcomeText('story_outcome_some_growth', `Good job! You had good progress. On ${nextMonthName} lets try to progress on all exercise types.`);
+
+        if (types.length > 0 && progressed.length === types.length) {
+            illustration = 'illustrations/flamo-happy-15-plus.svg';
+            message = getOutcomeText('story_outcome_all_growth', 'You did amazing! You are growing on all exercise type. Keep up the good work!');
+        } else if (types.length > 0 && declined.length === types.length) {
+            illustration = 'illustrations/flamo-sad-6-8.svg';
+            message = getOutcomeText('story_outcome_all_loss', `Oh boy... this was a bad month. But you can do it in ${nextMonthName}!`);
+        } else if (declined.length > 0 && progressed.length > 0) {
+            illustration = 'illustrations/happy-flame.svg';
+            message = getOutcomeText('story_outcome_mixed_loss', `Ok job... You loss some progress. On ${nextMonthName} lets try to progress on all of them`);
+        } else if (declined.length > 0) {
+            illustration = 'illustrations/happy-flame.svg';
+            message = getOutcomeText('story_outcome_mixed_loss', `Ok job... You loss some progress. On ${nextMonthName} lets try to progress on all of them`);
+        } else if (progressed.length > 0 && steady.length > 0) {
+            illustration = 'illustrations/flamo-happy-1-2.svg';
+            message = getOutcomeText('story_outcome_some_growth', `Good job! You had good progress. On ${nextMonthName} lets try to progress on all exercise types.`);
+        } else if (progressed.length === 0 && declined.length > 0) {
+            illustration = 'illustrations/flamo-sad-6-8.svg';
+            message = getOutcomeText('story_outcome_all_loss', `Oh boy... this was a bad month. But you can do it in ${nextMonthName}!`);
+        }
+
+        const isHappy = declined.length === 0 && progressed.length > 0;
+        const glowColor = isHappy ? 'var(--primary)' : '#4d94ff';
 
         let sparklesHtml = '';
         if (isHappy) {
@@ -902,37 +928,11 @@
             }
         }
 
-        // Identify focus areas (declined types)
-        const typeDiffs = {};
-        allExerciseStats.forEach(stat => {
-            const ex = stat.exercise;
-            if (!ex || !ex.type || ex.type === 'cardio') return;
-            typeDiffs[ex.type] = (typeDiffs[ex.type] || 0) + stat.diff;
-        });
-
-        const focusTypes = Object.keys(typeDiffs)
-            .filter(type => typeDiffs[type] < 0)
-            .map(type => (window.GN_I18N && typeof GN_I18N.getLocalizedTypeLabel === 'function') ? GN_I18N.getLocalizedTypeLabel(type) : type);
-
-        let focusHtml = '';
-        if (focusTypes.length > 0) {
-            const focusTitle = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('story_focus_title') : 'Focus for next month';
-            focusHtml = `
-                <div class="focus-area-container">
-                    <span class="focus-title">${focusTitle}</span>
-                    <div class="focus-types">
-                        ${focusTypes.map(t => `<span class="focus-type-tag">${t}</span>`).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
         container.innerHTML = `
             <div class="outcome-bg-glow" style="background: ${glowColor}"></div>
             ${sparklesHtml}
             <img src="${illustration}" class="outcome-illustration" alt="">
             <div class="outcome-message">${message}</div>
-            ${focusHtml}
         `;
     }
 
@@ -942,7 +942,7 @@
         container.innerHTML = '';
 
         const types = (Array.isArray(typeStats) ? typeStats : [])
-            .filter(type => type && type.progress)
+            .filter(Boolean)
             .sort((a, b) => {
                 const left = a.localizedLabel || a.label || a.key;
                 const right = b.localizedLabel || b.label || b.key;
@@ -958,28 +958,28 @@
         }
 
         types.forEach((type, index) => {
-            const avgDiff = type.progress.diff;
-            const avgPercent = type.progress.percent;
             const localizedName = type.localizedLabel || type.label || type.key;
 
             const div = document.createElement('div');
             div.className = 'type-status-item';
             div.style.animationDelay = `${(index + 1) * 0.15}s`;
 
-            const fixedDiff = Number(avgDiff.toFixed(1));
-            const fixedPercent = Number(avgPercent.toFixed(1));
             let color = '#94a3b8';
             let icon = 'remove';
-            let sign = '';
+            let trendText = '';
 
-            if (fixedPercent > 0) {
-                color = '#4ade80';
-                icon = 'trending_up';
-                sign = '+';
-            } else if (fixedPercent < 0) {
-                color = '#f87171';
-                icon = 'trending_down';
-                sign = '';
+            if (type.progress) {
+                const fixedDiff = Number(type.progress.diff.toFixed(1));
+                const fixedPercent = Number(type.progress.percent.toFixed(1));
+                trendText = `${fixedDiff > 0 ? '+' : ''}${fixedDiff.toFixed(1)} KG`;
+
+                if (fixedPercent > 0) {
+                    color = '#4ade80';
+                    icon = 'trending_up';
+                } else if (fixedPercent < 0) {
+                    color = '#f87171';
+                    icon = 'trending_down';
+                }
             }
 
             div.innerHTML = `
@@ -987,7 +987,7 @@
                     <span class="type-status-name">${localizedName}</span>
                 </div>
                 <div class="type-status-trend" style="color: ${color}">
-                    <span>${fixedDiff > 0 ? '+' : ''}${fixedDiff.toFixed(1)} KG</span>
+                    ${trendText ? `<span>${trendText}</span>` : ''}
                     <span class="material-symbols-outlined trend-icon">${icon}</span>
                 </div>
             `;
