@@ -190,11 +190,12 @@
         .freq-count, .improvement-val { color: var(--primary); font-size: 2.2rem; }
         .freq-delta, .improvement-delta {
             font-size: 0.85rem;
-            display: block;
-            margin-top: 4px;
+            display: inline-block;
+            margin-left: 8px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             font-weight: 900;
+            vertical-align: baseline;
         }
         .delta-plus { color: #4ade80; }
         .delta-minus { color: #f87171; }
@@ -922,7 +923,7 @@
                 deltaClass = item.type === 'missed' ? 'delta-plus' : (item.type === 'rest' ? 'delta-neutral' : 'delta-minus');
             }
 
-            const deltaHtml = diff !== 0 ? `<span class="freq-delta ${deltaClass}">${deltaVal} ${fromMonth} ${prevCounts?.monthName || ''}</span>` : '';
+            const deltaHtml = diff !== 0 ? `<span class="freq-delta ${deltaClass}">(${deltaVal})</span>` : '';
             
             let template = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t(item.labelKey) : item.labelKey;
             const text = template.replace('{n}', `<span class="freq-count">${item.count}</span>`);
@@ -930,8 +931,10 @@
             div.innerHTML = `
                 <img src="${item.icon}" class="freq-icon">
                 <div class="freq-text-content">
-                    <span>${text}</span>
-                    ${deltaHtml}
+                    <div style="display: flex; align-items: baseline;">
+                        <span>${text}</span>
+                        ${deltaHtml}
+                    </div>
                 </div>
             `;
             container.appendChild(div);
