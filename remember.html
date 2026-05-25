@@ -17,6 +17,7 @@
     <script src="drive-storage.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <script src="db.js"></script>
+    <script src="stat_calculator.js"></script>
     <script src="background-sync.js"></script>
     <link rel="stylesheet" href="styles/app-titles.css">
     <link rel="stylesheet" href="styles/mode-support.css">
@@ -116,6 +117,8 @@
             flex-direction: column;
             align-items: center;
             gap: 32px;
+            max-height: 100%;
+            overflow: hidden;
         }
 
         /* Navigation */
@@ -148,23 +151,10 @@
 
         /* Content Styles */
         .story-title { font-size: 3.5rem; font-weight: 900; margin: 0; color: var(--primary); letter-spacing: -0.04em; line-height: 1; }
-        .token-row { display: flex; gap: 40px; margin-top: 20px; }
-        .token-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .token-val { font-size: 4rem; font-weight: 900; line-height: 1; min-width: 1ch; }
-        .token-hero-icon {
-            width: 120px;
-            height: 120px;
-            margin: 20px 0;
-            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
-            opacity: 0;
-        }
-        .story-page.active.animating .token-hero-icon {
-            animation: dropIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1.2) forwards;
-        }
         .stat-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.1em; }
 
         /* Frequency Text Styles */
-        .frequency-text-container {
+        .frequency-text-container, .improvements-container {
             display: flex;
             flex-direction: column;
             gap: 24px;
@@ -172,7 +162,7 @@
             text-align: left;
             padding: 0 10px;
         }
-        .frequency-text-item {
+        .frequency-text-item, .improvement-item {
             font-size: 1.6rem;
             font-weight: 800;
             line-height: 1.2;
@@ -188,16 +178,18 @@
             flex-shrink: 0;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
         }
-        .freq-text-content {
+        .freq-text-content, .improvement-text-content {
             flex: 1;
             display: flex;
             flex-direction: column;
+            justify-content: center;
         }
-        .story-page.active.animating .frequency-text-item {
+        .story-page.active.animating .frequency-text-item,
+        .story-page.active.animating .improvement-item {
             animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
-        .freq-count { color: var(--primary); font-size: 2.2rem; }
-        .freq-delta {
+        .freq-count, .improvement-val { color: var(--primary); font-size: 2.2rem; }
+        .freq-delta, .improvement-delta {
             font-size: 0.85rem;
             display: block;
             margin-top: 4px;
@@ -209,7 +201,89 @@
         .delta-minus { color: #f87171; }
         .delta-neutral { color: #94a3b8; }
 
+        /* Improvements - Dynamic Layout */
+        .improvements-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            padding: 20px 0;
+        }
+        .improvement-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateX(-20px);
+            box-sizing: border-box;
+        }
+
+        .story-page.active.animating .improvement-item:nth-child(1) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s; }
+        .story-page.active.animating .improvement-item:nth-child(2) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.4s; }
+        .story-page.active.animating .improvement-item:nth-child(3) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.6s; }
+
+        .improvement-rank {
+            font-size: 3rem;
+            font-weight: 900;
+            -webkit-text-stroke: 1px rgba(255,255,255,0.3);
+            color: transparent;
+            line-height: 1;
+            width: 40px;
+            flex-shrink: 0;
+            pointer-events: none;
+        }
+
+        .improvement-icon-wrapper {
+            width: 120px;
+            height: 80px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: none;
+        }
+        .improvement-icon {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .improvement-text-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+        }
+        .improvement-val {
+            font-size: 2rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #4ade80;
+            letter-spacing: -0.04em;
+            white-space: nowrap;
+        }
+
         /* KEYFRAME ANIMATIONS */
+        @keyframes fadeInLeft {
+            0% { transform: translateX(-20px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
         @keyframes dropIn {
             0% { transform: scale(1.6) translateY(-40px); opacity: 0; }
             100% { transform: scale(1) translateY(0); opacity: 1; }
@@ -250,23 +324,11 @@
                     </div>
                 </div>
 
-                <!-- Page 2: Rest Tokens -->
+                <!-- Page 2: Top 3 gains -->
                 <div class="story-page" id="page2">
-                    <div class="story-content-inner" style="gap: 24px;">
-                        <h2 class="story-title" data-i18n="story_status_rest_title">Rest tokens</h2>
-                        
-                        <img src="icons/coin1.svg" class="token-hero-icon" alt="">
-
-                        <div class="token-row" style="margin-top: 0;">
-                            <div class="token-item">
-                                <div class="token-val" id="tokensGained">0</div>
-                                <div class="stat-label" data-i18n="gained">Gained</div>
-                            </div>
-                            <div class="token-item">
-                                <div class="token-val" id="tokensUsed">0</div>
-                                <div class="stat-label" data-i18n="used">Used</div>
-                            </div>
-                        </div>
+                    <div class="story-content-inner" style="align-items: flex-start; text-align: left;">
+                        <h2 class="story-title" data-i18n="story_top_gains">Top 3 gains</h2>
+                        <div id="improvementsContainer" class="improvements-container"></div>
                     </div>
                 </div>
             </div>
@@ -315,15 +377,7 @@
                 await db.open();
                 const logs = await db.history.where('date').between(startStr, endStr, true, true).toArray();
                 const uniqueDates = [...new Set(logs.map(l => l.date))];
-                const tokenEvents = await db.token_events.where('date').between(startStr, endStr, true, true).toArray();
-                const gained = tokenEvents.reduce((acc, e) => acc + (e.tokensDelta || 0), 0);
                 const frozenDays = await db.frozen_days.where('date').between(startStr, endStr, true, true).toArray();
-                const used = frozenDays.length;
-
-                const gEl = document.getElementById('tokensGained');
-                const uEl = document.getElementById('tokensUsed');
-                if (gEl) gEl.innerText = gained;
-                if (uEl) uEl.innerText = used;
 
                 // Previous month counts (2nd month ago) for comparison
                 const prevMonthDate = new Date(year, month - 1, 1);
@@ -341,6 +395,7 @@
                 const pMonthName = prevMonthDate.toLocaleString(currentLang, { month: 'long' });
 
                 renderTextFrequencyStory(uniqueDates.length, frozenDays.length, year, month, { done: pDone, rest: pFrozen, missed: pMissed, monthName: pMonthName });
+                await renderImprovementsStory(logs, pLogs, currentLang);
             }
         } catch (e) {
             console.error('Story data load failed', e);
@@ -359,6 +414,104 @@
         }
 
         setTimeout(() => showPage(0), 100);
+    }
+
+    async function renderImprovementsStory(currentLogs, prevLogs, lang) {
+        const container = document.getElementById('improvementsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const calcBest1RM = (logs) => {
+            const bests = {};
+            logs.forEach(log => {
+                const eId = log.exerciseId;
+                if (!eId) return;
+                const r1rm = window.estimate1RM(log.weight, log.reps) || 0;
+                if (!bests[eId] || r1rm > bests[eId]) {
+                    bests[eId] = r1rm;
+                }
+            });
+            return bests;
+        };
+
+        const currentBests = calcBest1RM(currentLogs);
+        const prevBests = calcBest1RM(prevLogs);
+
+        const improvements = [];
+        for (const eId in currentBests) {
+            const current = currentBests[eId];
+            const prev = prevBests[eId] || 0;
+            if (current > prev) {
+                improvements.push({
+                    exerciseId: eId,
+                    current,
+                    prev,
+                    diff: current - prev
+                });
+            }
+        }
+
+        // Sort by diff descending
+        improvements.sort((a, b) => b.diff - a.diff);
+        const topImprovements = improvements.slice(0, 3);
+
+        if (topImprovements.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'improvement-item';
+            empty.style.fontSize = '1.2rem';
+            empty.innerText = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('no_records_yet') : 'Keep it up!';
+            container.appendChild(empty);
+            return;
+        }
+
+        // Fetch exercise details
+        const [catEx, custEx, catImg, custImg] = await Promise.all([
+            db.catalog_exercises.toArray(),
+            db.custom_exercises.toArray(),
+            db.catalog_images.toArray(),
+            db.custom_images.toArray()
+        ]);
+
+        const catMap = new Map(catEx.map(e => [e.id, e]));
+        const custMap = new Map(custEx.map(e => [e.id, e]));
+        const catImgMap = new Map(catImg.map(i => [i.id, i.data || i.url]));
+        const custImgMap = new Map(custImg.map(i => [i.id, i.data || i.url]));
+
+        const typeColors = {
+            chest: '#ff4d4d',
+            back: '#4d94ff',
+            legs: '#4ade80',
+            arms: '#f2c24b',
+            shoulder: '#a78bfa',
+            abs: '#fb7185',
+            cardio: '#2dd4bf',
+            other: '#94a3b8'
+        };
+
+        topImprovements.forEach((imp, index) => {
+            const id = Number(imp.exerciseId);
+            const ex = custMap.get(id) || catMap.get(id) || catMap.get(-id);
+            if (!ex) return;
+
+            const name = lang === 'pt' ? (ex.namePT || ex.name) : ex.name;
+            const imgData = custImgMap.get(ex.imageId) || catImgMap.get(ex.imageId) || 'icons/icon-192.svg';
+
+            const div = document.createElement('div');
+            div.className = 'improvement-item';
+            
+            const diffVal = imp.diff.toFixed(1);
+
+            div.innerHTML = `
+                <div class="improvement-rank">${index + 1}</div>
+                <div class="improvement-icon-wrapper">
+                    <img src="${imgData}" class="improvement-icon">
+                </div>
+                <div class="improvement-text-content">
+                    <span class="improvement-val">+${diffVal} KG</span>
+                </div>
+            `;
+            container.appendChild(div);
+        });
     }
 
     function renderTextFrequencyStory(doneCount, restCount, year, month, prevCounts) {

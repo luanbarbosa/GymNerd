@@ -347,6 +347,7 @@
                 story_freq_done: '{n} workouts',
                 story_freq_rest: 'Rested {n}x',
                 story_freq_missed: 'Missed {n} days',
+                story_top_gains: 'Top 3 gains',
             },
             pt: {
                 new_routine_btn: 'Novo treino',
@@ -694,6 +695,7 @@
                 story_freq_done: '{n} treinos',
                 story_freq_rest: 'Descansou {n}x',
                 story_freq_missed: 'Perdeu {n} dias',
+                story_top_gains: 'Top 3 ganhos',
             }
         },
         getLang: function () {
