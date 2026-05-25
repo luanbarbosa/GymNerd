@@ -229,6 +229,11 @@
         .story-page.active.animating .improvement-item:nth-child(1) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s; }
         .story-page.active.animating .improvement-item:nth-child(2) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.4s; }
         .story-page.active.animating .improvement-item:nth-child(3) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.6s; }
+        
+        /* Specific animations for losses container on page 3 */
+        #page3.active.animating .improvement-item:nth-child(1) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s; }
+        #page3.active.animating .improvement-item:nth-child(2) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.4s; }
+        #page3.active.animating .improvement-item:nth-child(3) { animation: fadeInLeft 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.6s; }
 
         .improvement-rank {
             font-size: 3rem;
@@ -331,6 +336,14 @@
                         <div id="improvementsContainer" class="improvements-container"></div>
                     </div>
                 </div>
+
+                <!-- Page 3: Top 3 losses -->
+                <div class="story-page" id="page3">
+                    <div class="story-content-inner" style="align-items: flex-start; text-align: left;">
+                        <h2 class="story-title" data-i18n="story_top_losses">Top 3 losses</h2>
+                        <div id="lossesContainer" class="improvements-container"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -417,9 +430,11 @@
     }
 
     async function renderImprovementsStory(currentLogs, prevLogs, lang) {
-        const container = document.getElementById('improvementsContainer');
-        if (!container) return;
-        container.innerHTML = '';
+        const gainsContainer = document.getElementById('improvementsContainer');
+        const lossesContainer = document.getElementById('lossesContainer');
+        if (!gainsContainer || !lossesContainer) return;
+        gainsContainer.innerHTML = '';
+        lossesContainer.innerHTML = '';
 
         const calcBest1RM = (logs) => {
             const bests = {};
@@ -437,12 +452,12 @@
         const currentBests = calcBest1RM(currentLogs);
         const prevBests = calcBest1RM(prevLogs);
 
-        const improvements = [];
+        const allStats = [];
         for (const eId in currentBests) {
             const current = currentBests[eId];
             const prev = prevBests[eId] || 0;
-            if (current > prev) {
-                improvements.push({
+            if (prev > 0) {
+                allStats.push({
                     exerciseId: eId,
                     current,
                     prev,
@@ -451,18 +466,8 @@
             }
         }
 
-        // Sort by diff descending
-        improvements.sort((a, b) => b.diff - a.diff);
-        const topImprovements = improvements.slice(0, 3);
-
-        if (topImprovements.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'improvement-item';
-            empty.style.fontSize = '1.2rem';
-            empty.innerText = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('no_records_yet') : 'Keep it up!';
-            container.appendChild(empty);
-            return;
-        }
+        const gains = allStats.filter(s => s.diff > 0).sort((a, b) => b.diff - a.diff).slice(0, 3);
+        const losses = allStats.filter(s => s.diff < 0).sort((a, b) => a.diff - b.diff).slice(0, 3);
 
         // Fetch exercise details
         const [catEx, custEx, catImg, custImg] = await Promise.all([
@@ -477,41 +482,44 @@
         const catImgMap = new Map(catImg.map(i => [i.id, i.data || i.url]));
         const custImgMap = new Map(custImg.map(i => [i.id, i.data || i.url]));
 
-        const typeColors = {
-            chest: '#ff4d4d',
-            back: '#4d94ff',
-            legs: '#4ade80',
-            arms: '#f2c24b',
-            shoulder: '#a78bfa',
-            abs: '#fb7185',
-            cardio: '#2dd4bf',
-            other: '#94a3b8'
+        const renderItems = (items, container, isLoss = false) => {
+            if (items.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'improvement-item';
+                empty.style.fontSize = '1.2rem';
+                empty.innerText = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('no_records_yet') : 'Keep it up!';
+                container.appendChild(empty);
+                return;
+            }
+
+            items.forEach((imp, index) => {
+                const id = Number(imp.exerciseId);
+                const ex = custMap.get(id) || catMap.get(id) || catMap.get(-id);
+                if (!ex) return;
+
+                const imgData = custImgMap.get(ex.imageId) || catImgMap.get(ex.imageId) || 'icons/icon-192.svg';
+                const div = document.createElement('div');
+                div.className = 'improvement-item';
+                
+                const diffVal = Math.abs(imp.diff).toFixed(1);
+                const color = isLoss ? '#f87171' : '#4ade80';
+                const sign = isLoss ? '-' : '+';
+
+                div.innerHTML = `
+                    <div class="improvement-rank">${index + 1}</div>
+                    <div class="improvement-icon-wrapper">
+                        <img src="${imgData}" class="improvement-icon">
+                    </div>
+                    <div class="improvement-text-content">
+                        <span class="improvement-val" style="color: ${color}">${sign}${diffVal} KG</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
         };
 
-        topImprovements.forEach((imp, index) => {
-            const id = Number(imp.exerciseId);
-            const ex = custMap.get(id) || catMap.get(id) || catMap.get(-id);
-            if (!ex) return;
-
-            const name = lang === 'pt' ? (ex.namePT || ex.name) : ex.name;
-            const imgData = custImgMap.get(ex.imageId) || catImgMap.get(ex.imageId) || 'icons/icon-192.svg';
-
-            const div = document.createElement('div');
-            div.className = 'improvement-item';
-            
-            const diffVal = imp.diff.toFixed(1);
-
-            div.innerHTML = `
-                <div class="improvement-rank">${index + 1}</div>
-                <div class="improvement-icon-wrapper">
-                    <img src="${imgData}" class="improvement-icon">
-                </div>
-                <div class="improvement-text-content">
-                    <span class="improvement-val">+${diffVal} KG</span>
-                </div>
-            `;
-            container.appendChild(div);
-        });
+        renderItems(gains, gainsContainer, false);
+        renderItems(losses, lossesContainer, true);
     }
 
     function renderTextFrequencyStory(doneCount, restCount, year, month, prevCounts) {
