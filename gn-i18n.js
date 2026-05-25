@@ -347,10 +347,11 @@
                 story_freq_done: '{n} workouts',
                 story_freq_rest: 'Rested {n}x',
                 story_freq_missed: 'Missed {n} days',
-                story_top_gains: 'Top gains',
-                story_top_losses: 'Top losses',
-            },
-            pt: {
+                story_top_gains: 'Top 3 gains',
+                story_top_losses: 'Top 3 losses',
+                story_type_status: 'Type status',
+                },
+                pt: {
                 new_routine_btn: 'Novo treino',
                 no_routines_placeholder: 'Ainda não há treinos. Clique em <strong>Novo Treino</strong> para criar um.',
                 routine_not_found: 'Treino não encontrado.',
@@ -696,11 +697,12 @@
                 story_freq_done: '{n} treinos',
                 story_freq_rest: 'Descansou {n}x',
                 story_freq_missed: 'Perdeu {n} dias',
-                story_top_gains: 'Top ganhos',
-                story_top_losses: 'Top quedas',
-            }
-        },
-        getLang: function () {
+                story_top_gains: 'Top 3 ganhos',
+                story_top_losses: 'Top 3 quedas',
+                story_type_status: 'Status por tipo',
+                }
+                },
+                getLang: function () {
             try {
                 // URL override (useful for testing): ?lang=en or ?lang=pt
                 try {

@@ -11,7 +11,7 @@
     <title>GymNerd | Remember</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link href="https://fonts.googleapis.com" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=browse_activity" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=browse_activity,trending_up,trending_down,remove" rel="stylesheet">
     <script src="gn-i18n.js"></script>
     <script src="auth.js"></script>
     <script src="drive-storage.js"></script>
@@ -283,6 +283,52 @@
             white-space: nowrap;
         }
 
+        /* Type Status Styles */
+        .type-status-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 0;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+        .type-status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .story-page.active.animating .type-status-item {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .type-status-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .type-status-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255,255,255,0.8);
+        }
+        .type-status-trend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.2rem;
+            font-weight: 900;
+        }
+        .trend-icon { font-size: 24px; }
+
         /* KEYFRAME ANIMATIONS */
         @keyframes fadeInLeft {
             0% { transform: translateX(-20px); opacity: 0; }
@@ -342,6 +388,14 @@
                     <div class="story-content-inner" style="align-items: flex-start; text-align: left;">
                         <h2 class="story-title" data-i18n="story_top_losses">Top 3 losses</h2>
                         <div id="lossesContainer" class="improvements-container"></div>
+                    </div>
+                </div>
+
+                <!-- Page 4: Type Status -->
+                <div class="story-page" id="page4">
+                    <div class="story-content-inner" style="align-items: flex-start; text-align: left;">
+                        <h2 class="story-title" data-i18n="story_type_status">Type status</h2>
+                        <div id="typeStatusContainer" class="type-status-container"></div>
                     </div>
                 </div>
             </div>
@@ -520,6 +574,79 @@
 
         renderItems(gains, gainsContainer, false);
         renderItems(losses, lossesContainer, true);
+
+        await renderTypeStatusStory(allStats, catEx, custEx, lang);
+    }
+
+    async function renderTypeStatusStory(allExerciseStats, catEx, custEx, lang) {
+        const container = document.getElementById('typeStatusContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const catMap = new Map(catEx.map(e => [e.id, e]));
+        const custMap = new Map(custEx.map(e => [e.id, e]));
+
+        const typeStats = {}; // { typeKey: { totalDiff: 0, count: 0 } }
+
+        allExerciseStats.forEach(stat => {
+            const id = Number(stat.exerciseId);
+            const ex = custMap.get(id) || catMap.get(id) || catMap.get(-id);
+            if (!ex || !ex.type || ex.type === 'cardio') return;
+
+            if (!typeStats[ex.type]) {
+                typeStats[ex.type] = { totalDiff: 0, count: 0 };
+            }
+            typeStats[ex.type].totalDiff += stat.diff;
+            typeStats[ex.type].count += 1;
+        });
+
+        const types = Object.keys(typeStats).sort();
+
+        if (types.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'type-status-item';
+            empty.innerText = (window.GN_I18N && typeof GN_I18N.t === 'function') ? GN_I18N.t('no_exercise_data_found') : 'No data';
+            container.appendChild(empty);
+            return;
+        }
+
+        types.forEach((type, index) => {
+            const stats = typeStats[type];
+            const avgDiff = stats.totalDiff / stats.count;
+            const localizedName = (window.GN_I18N && typeof GN_I18N.getLocalizedTypeLabel === 'function') 
+                ? GN_I18N.getLocalizedTypeLabel(type) 
+                : type;
+
+            const div = document.createElement('div');
+            div.className = 'type-status-item';
+            div.style.animationDelay = `${(index + 1) * 0.15}s`;
+
+            const fixedDiff = Number(avgDiff.toFixed(1));
+            let color = '#94a3b8';
+            let icon = 'remove';
+            let sign = '';
+
+            if (fixedDiff > 0) {
+                color = '#4ade80';
+                icon = 'trending_up';
+                sign = '+';
+            } else if (fixedDiff < 0) {
+                color = '#f87171';
+                icon = 'trending_down';
+                sign = '';
+            }
+
+            div.innerHTML = `
+                <div class="type-status-info">
+                    <span class="type-status-name">${localizedName}</span>
+                </div>
+                <div class="type-status-trend" style="color: ${color}">
+                    <span>${sign}${fixedDiff.toFixed(1)} KG</span>
+                    <span class="material-symbols-outlined trend-icon">${icon}</span>
+                </div>
+            `;
+            container.appendChild(div);
+        });
     }
 
     function renderTextFrequencyStory(doneCount, restCount, year, month, prevCounts) {
