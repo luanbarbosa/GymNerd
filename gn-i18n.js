@@ -338,9 +338,25 @@
                 last_sync_label: 'Last sync: {t}',
                 syncing_in_background: 'Sending data to Google Drive in the background automatically.',
                 never_synced: 'Never',
-            },
-            pt: {
-                new_routine_btn: 'Novo treino',
+                story_status_done: 'Done',
+                story_status_rest: 'Rest',
+                story_status_missed: 'Missed',
+                story_status_rest_title: 'Rest tokens',
+                from: 'compared to',
+                story_freq_done: '{n} workouts',
+                story_freq_rest: 'Rested {n}x',
+                story_freq_missed: 'Missed {n} days',
+                story_top_gains: 'Top gains',
+                story_top_losses: 'Top losses',
+                story_type_status: 'Type status',
+                story_outcome_all_growth: 'You did amazing!\nYou are growing on all exercise type. Keep up the good work!',
+                story_outcome_some_growth: 'Good job! You had good progress.\nOn {m}, lets try to progress even more.',
+                story_outcome_mixed_loss: 'Ok job... You loss some progress.\nOn {m}, lets try to progress on all of them',
+                story_outcome_all_loss: 'Oh boy... this was a bad month.\nBut you can do it in {m}!',
+                story_focus_title: 'You could focus on',
+                },
+                pt: {
+                new_routine_btn: 'Novo treino',                
                 no_routines_placeholder: 'Ainda não há treinos. Clique em <strong>Novo Treino</strong> para criar um.',
                 routine_not_found: 'Treino não encontrado.',
                 page_routine_new: 'Novo Treino',
@@ -676,10 +692,25 @@
                 device: 'Dispositivo',
                 general: 'Geral',
                 progress_title: 'Progresso',
-            }
-        },
-        getLang: function () {
-            try {
+                story_status_done: 'Treinado',
+                story_status_rest: 'Descanso',
+                story_status_missed: 'Não Treinado',
+                story_status_rest_title: 'Tokens de descanso',
+                from: 'Comparado com',
+                story_freq_done: '{n} treinos',
+                story_freq_rest: 'Descansou {n}x',
+                story_freq_missed: 'Perdeu {n} dias',
+                story_top_gains: 'Top ganhos',
+                story_top_losses: 'Top quedas',
+                story_type_status: 'Status por tipo',
+                story_outcome_all_growth: 'Você mandou muito bem!\nEstá evoluindo em todos os tipos de exercício. Continue assim!',
+                story_outcome_some_growth: 'Bom trabalho! Você teve um bom progresso.\nEm {m}, vamos tentar evoluir ainda mais.',
+                story_outcome_mixed_loss: 'Você foi ok...\nO progresso foi misto.\nEm {m}, vamos tentar evoluir em todos eles.',
+                story_outcome_all_loss: 'Eita... este foi um mês ruim.\nMas você consegue melhorar em {m}!',
+                story_focus_title: 'Você poderia focar em',
+                }
+                },
+                getLang: function () {            try {
                 // URL override (useful for testing): ?lang=en or ?lang=pt
                 try {
                     const params = new URLSearchParams(window.location.search);

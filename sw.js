@@ -1,4 +1,4 @@
-const CACHE = 'gymnerd-v1';
+const CACHE = 'gymnerd-v2';
 const ASSETS = [
   './',
   './home.html',
@@ -10,6 +10,7 @@ const ASSETS = [
   './drive-storage.js',
   './background-sync.js',
   './gn-i18n.js',
+  './icons/last-month.svg',
   './icons/icon-192.svg',
   './icons/icon-512.svg'
 ];

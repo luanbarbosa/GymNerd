@@ -521,16 +521,25 @@
             return null;
         }
 
+        function getChartBoxFilterEnd(period) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (period === 'last-month') return new Date(today.getFullYear(), today.getMonth(), 0);
+            return null;
+        }
+
         function filterLogsForChartBoxes(logs, period = getStoredChartPillSelection()) {
             const normalized = CHART_PILL_FILTER_VALUES.includes(period) ? period : 'all';
             const start = getChartBoxFilterStart(normalized);
+            const end = getChartBoxFilterEnd(normalized);
             if (!start) return Array.isArray(logs) ? logs : [];
 
             return (Array.isArray(logs) ? logs : []).filter((log) => {
                 if (!log || !log.date) return false;
                 const logDate = new Date(`${log.date}T00:00:00`);
                 if (Number.isNaN(logDate.getTime())) return false;
-                return logDate >= start;
+                return logDate >= start && (!end || logDate <= end);
             });
         }
 
