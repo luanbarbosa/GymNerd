@@ -873,7 +873,7 @@
                         <div class="routine-change-title" data-i18n="routine_changed_notice_title"></div>
                         <p class="routine-change-copy" data-i18n="routine_changed_notice_subtext"></p>
                         <label class="routine-change-checkbox" for="saveRoutineCheckbox">
-                            <input type="checkbox" id="saveRoutineCheckbox">
+                            <input type="checkbox" id="saveRoutineCheckbox" checked>
                             <span data-i18n="routine_changed_notice_checkbox"></span>
                         </label>
                     </div>
@@ -2147,7 +2147,7 @@
             routineModified = !!state.routineModified;
             const saveOpt = document.getElementById('saveRoutineOpt');
             if (saveOpt) saveOpt.style.display = routineModified ? 'flex' : 'none';
-            const saveCb = document.getElementById('saveRoutineCheckbox'); if (saveCb) saveCb.checked = false;
+            const saveCb = document.getElementById('saveRoutineCheckbox'); if (saveCb) saveCb.checked = true;
                 // Try to keep screen awake if user enabled the setting: prefer Wake Lock API, otherwise start silent audio (iOS fallback)
                 (async () => {
                     try {
@@ -2877,7 +2877,7 @@
                             }
                         }
                         if (saveOpt) saveOpt.style.display = shouldShow ? 'flex' : 'none';
-                        if (cb) cb.checked = false;
+                        if (cb) cb.checked = true;
                     } catch (e) { console.warn('save option detection failed', e); }
                     updateFinishedIllustration();
                 }
@@ -2949,7 +2949,7 @@
                 routineModified = true;
                 const saveOpt = document.getElementById('saveRoutineOpt');
                 if (saveOpt) saveOpt.style.display = 'flex';
-                const cb = document.getElementById('saveRoutineCheckbox'); if (cb) cb.checked = false;
+                const cb = document.getElementById('saveRoutineCheckbox'); if (cb) cb.checked = true;
             }
             saveSessionState();
         }
