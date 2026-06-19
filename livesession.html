@@ -1721,7 +1721,7 @@
                 const items = Array.isArray(workout.exerciseIds) ? workout.exerciseIds : [];
                 items.forEach((it, idx) => {
                     const exId = typeof it === 'object' ? it.id : it;
-                    const isCustom = typeof it === 'object' ? !!it.isCustom : false;
+                    const isCustom = typeof it === 'object' ? (it.isCustom === true || it.isCustom === 'true') : false;
                     const ex = _setupExerciseMap.get(_exKey(exId, isCustom));
                     if (!ex) return;
 
@@ -1859,6 +1859,7 @@
                 currentIdx,
                 viewingIdx,
                 currentWorkoutId,
+                routineModified,
                 // Add this line to capture the duration if the session is over
                 sessionElapsedMs: finalWorkoutDuration !== null ? finalWorkoutDuration * 1000 : (Date.now() - sessionStartMs)
             };
@@ -2071,7 +2072,6 @@
                 viewingIdx = previousLength;
             }
 
-            currentWorkoutId = null;
             closeAddExerciseDialog();
             _syncExercisePickerAvailability();
             await renderSet();
@@ -2204,7 +2204,7 @@
             container.innerHTML = "";
             for (const item of workout.exerciseIds) {
                 const id = typeof item === 'object' ? item.id : item;
-                const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
                 const ex = allExercises.find(e => e.id === id && !!e.isCustom === isCustom);
                 if (!ex) continue;
 
@@ -2513,7 +2513,7 @@
                         for (let i = 0; i < original.length; i++) {
                             const item = original[i];
                             const itemId = typeof item === 'object' ? item.id : item;
-                            const itemIsCustom = typeof item === 'object' ? !!item.isCustom : false;
+                            const itemIsCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
                             if (!used[i] && itemId === id && itemIsCustom === isCustom) { matchIndex = i; break; }
                         }
                         let newItem;
@@ -2855,18 +2855,22 @@
                     try {
                         const saveOpt = document.getElementById('saveRoutineOpt');
                         const cb = document.getElementById('saveRoutineCheckbox');
-                        let shouldShow = !!routineModified;
+                        let shouldShow = !!routineModified && !!currentWorkoutId;
                         if (!shouldShow && currentWorkoutId) {
                             // detect differences between sessionSets and stored workout's sets
                             const workout = await db.routines.get(currentWorkoutId);
                             if (workout && Array.isArray(workout.exerciseIds)) {
                                 const map = {};
                                 workout.exerciseIds.forEach(it => {
-                                    const id = (typeof it === 'object') ? it.id : it;
-                                    if (typeof it === 'object' && Array.isArray(it.sets)) map[id] = it.sets;
+                                    const id = (typeof it === 'object' ? it.id : it);
+                                    const isCustom = typeof it === 'object' ? (it.isCustom === true || it.isCustom === 'true') : false;
+                                    if (typeof it === 'object' && Array.isArray(it.sets)) {
+                                        map[`${isCustom ? 'c' : 's'}:${id}`] = it.sets;
+                                    }
                                 });
                                 for (const s of sessionSets) {
-                                    const sets = map[s.exId];
+                                    const key = `${s.isCustom ? 'c' : 's'}:${s.exId}`;
+                                    const sets = map[key];
                                     if (!sets) continue;
                                     const w = sets[s.setNum - 1];
                                     if (!w) continue;
@@ -2877,7 +2881,7 @@
                             }
                         }
                         if (saveOpt) saveOpt.style.display = shouldShow ? 'flex' : 'none';
-                        if (cb) cb.checked = true;
+                        if (cb) cb.checked = shouldShow;
                     } catch (e) { console.warn('save option detection failed', e); }
                     updateFinishedIllustration();
                 }
@@ -3154,16 +3158,20 @@
                     if (workout) {
                         workout.exerciseIds = workout.exerciseIds.map(item => {
                             const exId = typeof item === 'object' ? item.id : item;
-                            const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                            const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
                             const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
                             if (sessionExSets.length > 0) {
                                 const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
                                 const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                                return {
+                                const updated = {
                                     id: exId,
                                     isCustom,
                                     sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
                                 };
+                                if (typeof item === 'object' && item.restSeconds !== undefined) {
+                                    updated.restSeconds = item.restSeconds;
+                                }
+                                return updated;
                             }
                             return item;
                         });
@@ -3237,16 +3245,20 @@
 
                 workout.exerciseIds = workout.exerciseIds.map(item => {
                     const exId = typeof item === 'object' ? item.id : item;
-                    const isCustom = typeof item === 'object' ? !!item.isCustom : false;
+                    const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
                     const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
                     if (sessionExSets.length > 0) {
                         const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
                         const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                        return {
+                        const updated = {
                             id: exId,
                             isCustom,
                             sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
                         };
+                        if (typeof item === 'object' && item.restSeconds !== undefined) {
+                            updated.restSeconds = item.restSeconds;
+                        }
+                        return updated;
                     }
                     return item;
                 });
