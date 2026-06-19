@@ -1882,16 +1882,25 @@
 				return null;
 			}
 
+			function getHomeChartFilterEnd(period) {
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
+
+				if (period === 'last-month') return new Date(today.getFullYear(), today.getMonth(), 0);
+				return null;
+			}
+
 			function filterHomeEntriesByPeriod(items, period) {
 				const normalized = normalizeHomeChartPeriod(period);
 				const start = getHomeChartFilterStart(normalized);
+				const end = getHomeChartFilterEnd(normalized);
 				if (!start) return Array.isArray(items) ? items : [];
 
 				return (Array.isArray(items) ? items : []).filter((it) => {
 					if (!it || !it.date) return false;
 					const itemDate = new Date(`${it.date}T00:00:00`);
 					if (Number.isNaN(itemDate.getTime())) return false;
-					return itemDate >= start;
+					return itemDate >= start && (!end || itemDate <= end);
 				});
 			}
 
@@ -2693,6 +2702,25 @@
 				return weight;
 			}
 
+			// Statistics uses one point per workout date: the best estimated 1RM
+			// recorded for that exercise on that date. Keep the home comparison on
+			// the same series so multiple sets/sessions cannot change its endpoints.
+			function getHomeStrength1RMSeries(entries) {
+				const byDate = {};
+				for (const entry of (Array.isArray(entries) ? entries : [])) {
+					if (!entry || !entry.date) continue;
+					const value = Number(getHomeWeightPerRep(entry));
+					if (!Number.isFinite(value)) continue;
+					if (byDate[entry.date] === undefined || value > byDate[entry.date]) {
+						byDate[entry.date] = value;
+					}
+				}
+
+				return Object.keys(byDate)
+					.sort((a, b) => new Date(`${a}T00:00:00`) - new Date(`${b}T00:00:00`))
+					.map((date) => Number(Number(byDate[date]).toFixed(2)));
+			}
+
 			function getHomeWeightChangeMeta(values, unit = 'kg') {
 				const numericValues = (Array.isArray(values) ? values : []).map((value) => Number(value)).filter((value) => Number.isFinite(value));
 				if (numericValues.length < 2) return null;
@@ -2817,8 +2845,7 @@
 					// Calculate individual exercise progress and aggregate by type
 					const typeProgress = {}; // type -> { sumPercent: number, count: number, dates: Set }
 					for (const [key, exEntries] of Object.entries(groupedByEx)) {
-						const sorted = exEntries.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-						const values = sorted.map(getHomeWeightPerRep);
+						const values = getHomeStrength1RMSeries(exEntries);
 						if (values.length < 2) continue;
 
 						const first = values[0];
@@ -2871,10 +2898,6 @@
 
 					if (!candidates.length) {
 						widget.style.display = 'none';
-						const broader = getPreviousHomeChartPeriod(range);
-						if (broader) {
-							await renderTypeChangeWidget(broader, sourceItems);
-						}
 						return;
 					}
 
@@ -2887,10 +2910,6 @@
 
 					if (!topPositive && !topNegative) {
 						widget.style.display = 'none';
-						const broader = getPreviousHomeChartPeriod(range);
-						if (broader) {
-							await renderTypeChangeWidget(broader, sourceItems);
-						}
 						return;
 					}
 
@@ -2965,8 +2984,7 @@
 
 					const candidates = [];
 					for (const [key, exerciseEntries] of Object.entries(grouped)) {
-						const sorted = exerciseEntries.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-						const values = sorted.map(getHomeWeightPerRep);
+						const values = getHomeStrength1RMSeries(exerciseEntries);
 						const change = getHomeWeightChangeMeta(values, (window.GN_I18N && GN_I18N.t) ? (GN_I18N.t('history_fmt_kg_suffix') || 'kg') : 'kg');
 						if (!change) continue;
 						const ex = exMap[key];
@@ -2984,13 +3002,6 @@
 
 					if (!candidates.length) {
 						if (card) card.style.display = 'none';
-						// try broader range before hiding parent
-						const broader = getPreviousHomeChartPeriod(range);
-						if (broader) {
-							await renderWeightChangeWidget(broader, sourceItems);
-						} else {
-							// at 'all' and no candidates — parent visibility will be handled by renderHomeInsightWidgets
-						}
 						return;
 					}
 
@@ -3003,10 +3014,6 @@
 
 					if (!topPositive && !topNegative) {
 						if (card) card.style.display = 'none';
-						const broader = getPreviousHomeChartPeriod(range);
-						if (broader) {
-							await renderWeightChangeWidget(broader, sourceItems);
-						}
 						return;
 					}
 

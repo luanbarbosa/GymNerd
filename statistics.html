@@ -1007,12 +1007,19 @@
                 entries.forEach(entry => {
                     const d = entry.date;
                     if (!d) return;
-                    const weight = Number(entry && entry.weight) || 0;
-                    const reps = (entry && entry.reps !== undefined && entry.reps !== null)
-                        ? Number(entry.reps)
-                        : 1;
-                    const current1RM = window.estimate1RM(weight, reps);
-                    if (!byDate[d] || current1RM > byDate[d]) {
+                    let current1RM = 0;
+                    if (Array.isArray(entry.sets) && entry.sets.length > 0) {
+                        current1RM = window.getBest1RM
+                            ? window.getBest1RM(entry.sets)
+                            : Math.max(...entry.sets.map(set => window.estimate1RM(Number(set.weight) || 0, Number(set.reps) || 0)), 0);
+                    } else {
+                        const weight = Number(entry && entry.weight) || 0;
+                        const reps = (entry && entry.reps !== undefined && entry.reps !== null)
+                            ? Number(entry.reps)
+                            : 1;
+                        current1RM = window.estimate1RM(weight, reps);
+                    }
+                    if (byDate[d] === undefined || current1RM > byDate[d]) {
                         byDate[d] = current1RM;
                     }
                 });
