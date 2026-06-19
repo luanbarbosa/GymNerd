@@ -745,7 +745,7 @@
                     <h3 id="currentExName" class="current-ex-title" aria-live="polite"></h3>
                     <div id="setsContainer"></div>
                     <!-- Player controls moved to fixed bottom bar -->
-                    <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession()" data-i18n="finish_routine"></button>
+                    <button id="finishBtn" class="finish-btn" style="display:none; width:100%; padding:12px; border-radius:8px" onclick="finishSession(event)" data-i18n="finish_routine"></button>
                 </div>
             </div>
             <div id="playerBottomSpacer" class="player-bottom-spacer" aria-hidden="true"></div>
@@ -877,7 +877,7 @@
                             <span data-i18n="routine_changed_notice_checkbox"></span>
                         </label>
                     </div>
-                    <button id="finishRoutineBtn" class="finish-btn" style="min-width:140px; width:100%;" onclick="finishSession()" data-i18n="finish_routine"></button>
+                    <button id="finishRoutineBtn" class="finish-btn" style="min-width:140px; width:100%;" onclick="finishSession(event)" data-i18n="finish_routine"></button>
                 </div>
         </div>
 
@@ -1564,6 +1564,8 @@
                             reward.className = 'finished-message-subtext token-reward-preview';
                             reward.textContent = rewardText;
                             msgEl.appendChild(reward);
+                            // Preview the pending reward. The database award remains
+                            // gated by the explicit Finish Workout button click.
                             startTokenRain();
                         } else {
                             stopTokenRain();
@@ -3130,10 +3132,15 @@
             }
         }
 
-        async function finishSession() {
+        async function finishSession(finishEvent) {
             try {
                 if (_finishingSession) return; // avoid re-entrancy
                 _finishingSession = true;
+                const finishButton = finishEvent && finishEvent.type === 'click'
+                    ? finishEvent.currentTarget
+                    : null;
+                const shouldAwardToken = !!finishButton
+                    && (finishButton.id === 'finishRoutineBtn' || finishButton.id === 'finishBtn');
                 // disable finish buttons to prevent double-clicks
                 const finishBtnMain = document.getElementById('finishRoutineBtn');
                 const finishBtnInline = document.getElementById('finishBtn');
@@ -3210,7 +3217,7 @@
                 // Log analytics event
                 if (window.logEvent) window.logEvent('workout', { status: 'done' });
 
-                if (logs.length > 0 && tokenRewardPreview && tokenRewardPreview.wouldAward && window.GNTokensLogic && typeof GNTokensLogic.maybeAwardTokenMilestone === 'function') {
+                if (shouldAwardToken && logs.length > 0 && tokenRewardPreview && tokenRewardPreview.wouldAward && window.GNTokensLogic && typeof GNTokensLogic.maybeAwardTokenMilestone === 'function') {
                     try {
                         await GNTokensLogic.maybeAwardTokenMilestone(db, todayStr);
                     } catch (e) {
