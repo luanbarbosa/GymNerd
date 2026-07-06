@@ -597,28 +597,8 @@
                             console.info('[AutoRestore] weights write complete', { newCount });
                         }
 
-                        if (db.tokens) {
-                            const normalizedTokens = (typeof db.normalizeTokensRecords === 'function')
-                                ? db.normalizeTokensRecords(data.tokens)
-                                : (Array.isArray(data.tokens) ? data.tokens : []);
-                            await db.tokens.clear();
-                            await db.tokens.bulkPut(normalizedTokens);
-                        }
-
-                        if (db.frozen_days) {
-                            const normalizedFrozenDays = (typeof db.normalizeFrozenDayRecords === 'function')
-                                ? db.normalizeFrozenDayRecords(data.frozen_days)
-                                : (Array.isArray(data.frozen_days) ? data.frozen_days : []);
-                            await db.frozen_days.clear();
-                            await db.frozen_days.bulkPut(normalizedFrozenDays);
-                        }
-
-                        if (db.token_events) {
-                            const normalizedTokenEvents = (typeof db.normalizeTokenEventRecords === 'function')
-                                ? db.normalizeTokenEventRecords(data.token_events)
-                                : (Array.isArray(data.token_events) ? data.token_events : []);
-                            await db.token_events.clear();
-                            await db.token_events.bulkPut(normalizedTokenEvents);
+                        if (typeof db.restoreTokenTablesFromDrive === 'function') {
+                            await db.restoreTokenTablesFromDrive(data, { logPrefix: '[AutoRestore]' });
                         }
                     });
                 } catch (e) {
@@ -629,7 +609,7 @@
             }
 
             if (data.lastSync) try { localStorage.setItem('last_sync_time', data.lastSync.time || data.lastSync); } catch(e){}
-            try { localStorage.setItem('has_local_changes', 'false'); } catch(e){}
+            try { localStorage.setItem('has_local_changes', window.__gn_restored_tokens_need_sync ? 'true' : 'false'); } catch(e){}
             try { localStorage.removeItem('needs_initial_download'); } catch(e){}
 
             console.info('[AutoRestore] completed — reloading');

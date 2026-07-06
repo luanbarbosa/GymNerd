@@ -234,6 +234,68 @@ function normalizeTokenEventRecords(records) {
         });
 }
 
+function getRestoredTokenBalance(tokens, frozenDays, tokenEvents) {
+    const wallet = Array.isArray(tokens)
+        ? tokens.find(record => record && Number(record.id) === TOKENS_WALLET_ID) || tokens[0]
+        : null;
+    const walletBalance = wallet && Number.isFinite(Number(wallet.balance))
+        ? Math.max(0, Number(wallet.balance))
+        : 0;
+
+    const earnedFromEvents = Array.isArray(tokenEvents)
+        ? tokenEvents.reduce((sum, event) => sum + (Number.isFinite(Number(event && event.tokensDelta)) ? Number(event.tokensDelta) : 0), 0)
+        : 0;
+    const spentFromFrozenDays = Array.isArray(frozenDays) ? frozenDays.length : 0;
+    const ledgerBalance = Math.max(0, earnedFromEvents - spentFromFrozenDays);
+
+    return Math.max(walletBalance, ledgerBalance);
+}
+
+async function restoreTokenTablesFromDrive(data, options = {}) {
+    if (!db.tokens && !db.frozen_days && !db.token_events) return { repaired: false, balance: 0 };
+
+    const normalizedFrozenDays = normalizeFrozenDayRecords(data && data.frozen_days);
+    const normalizedTokenEvents = normalizeTokenEventRecords(data && data.token_events);
+    const normalizedTokens = normalizeTokensRecords(data && data.tokens);
+    const restoredBalance = getRestoredTokenBalance(normalizedTokens, normalizedFrozenDays, normalizedTokenEvents);
+    const walletIndex = normalizedTokens.findIndex(record => record && Number(record.id) === TOKENS_WALLET_ID);
+    const wallet = walletIndex >= 0 ? normalizedTokens[walletIndex] : createDefaultTokensRecord();
+    const currentBalance = Math.max(0, Number(wallet.balance) || 0);
+    const repaired = restoredBalance > currentBalance;
+
+    if (repaired) {
+        const now = new Date().toISOString();
+        const repairedWallet = {
+            ...wallet,
+            id: TOKENS_WALLET_ID,
+            balance: restoredBalance,
+            createdAt: wallet.createdAt || now,
+            updatedAt: now
+        };
+        if (walletIndex >= 0) normalizedTokens[walletIndex] = repairedWallet;
+        else normalizedTokens.unshift(repairedWallet);
+        if (options.logPrefix) console.warn(`${options.logPrefix} repaired token wallet from restored ledger`, { walletBalance: currentBalance, restoredBalance });
+        try { window.__gn_restored_tokens_need_sync = true; } catch (e) {}
+    }
+
+    if (db.tokens) {
+        await db.tokens.clear();
+        await db.tokens.bulkPut(normalizedTokens);
+    }
+
+    if (db.frozen_days) {
+        await db.frozen_days.clear();
+        await db.frozen_days.bulkPut(normalizedFrozenDays);
+    }
+
+    if (db.token_events) {
+        await db.token_events.clear();
+        await db.token_events.bulkPut(normalizedTokenEvents);
+    }
+
+    return { repaired, balance: restoredBalance };
+}
+
 db.version(14).stores({
     catalog_exercises: '++id, name, namePT, type, imageId',
     catalog_images: '++id',
@@ -360,6 +422,7 @@ db.createFrozenDayRecord = createFrozenDayRecord;
 db.normalizeFrozenDayRecords = normalizeFrozenDayRecords;
 db.createTokenEventRecord = createTokenEventRecord;
 db.normalizeTokenEventRecords = normalizeTokenEventRecords;
+db.restoreTokenTablesFromDrive = restoreTokenTablesFromDrive;
 
 // Migration: remove exercises with invalid/undefined types or missing required fields
 async function cleanInvalidExerciseTypes() {
