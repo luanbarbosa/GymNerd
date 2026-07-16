@@ -138,6 +138,7 @@
 
                 <div class="scale-display">
                     <div id="weight-value" aria-live="polite">75.0 kg</div>
+                    <input id="measure-date-input" class="measure-date-input" type="date" aria-label="Measurement date">
                     <button id="save-weight" class="save-btn" data-i18n="measure_save_weight">Save</button>
                 </div>
             </div>
@@ -173,8 +174,11 @@
 
 <style>
     /* Scale styles */
-    .scale-wrapper { margin-top: 28px; position: relative; padding-bottom: 18px; }
-    .scale-display { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; margin-top:18px; }
+    .measure-date-input { width:132px; box-sizing:border-box; padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.035); color:var(--text-dim); font:inherit; font-size:0.82rem; font-weight:700; text-align:center; cursor:pointer; color-scheme:dark; align-self:center; }
+    .measure-date-input::-webkit-calendar-picker-indicator { filter: invert(1) brightness(2); cursor:pointer; }
+    .measure-date-input:focus-visible { outline:2px solid rgba(242,194,75,0.75); outline-offset:2px; }
+    .scale-wrapper { margin-top: 28px; position: relative; padding-bottom: 4px; }
+    .scale-display { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin-top:18px; }
     #weight-value {
         font-size:40px;
         font-weight:900;
@@ -196,6 +200,7 @@
         margin-bottom: 12px;
     }
     .save-btn { background:var(--accent-color); color:var(--text-on-accent-color); border:none; padding:12px 16px; border-radius:10px; cursor:pointer; font-weight:700; width:100%; box-sizing:border-box; box-shadow: none; }
+    .scale-display .save-btn { margin-top: 10px; }
     .measure-change-badge {
         display: inline-flex;
         align-items: center;
@@ -284,8 +289,23 @@
     const container = document.getElementById('scale-container');
     const weightDisplay = document.getElementById('weight-value');
     const saveBtn = document.getElementById('save-weight');
+    const dateInput = document.getElementById('measure-date-input');
 
     if (!container || !weightDisplay) return;
+
+    function getLocalDateString(date = new Date()) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    if (dateInput) {
+        dateInput.value = getLocalDateString();
+        const pickerLabel = (window.GN_I18N && GN_I18N.safeT) ? GN_I18N.safeT('measure_select_date') : 'Select measurement date';
+        dateInput.setAttribute('aria-label', pickerLabel);
+        dateInput.setAttribute('title', pickerLabel);
+    }
 
     function showSnackbar(msg) {
         try {
@@ -481,8 +501,7 @@
             console.log('[measure] saving weight', value);
             if (typeof ensureDbOpen === 'function') await ensureDbOpen();
                 if (window.db && window.db.weights) {
-                const date = new Date();
-                const dateStr = date.toISOString().slice(0,10);
+                const dateStr = (dateInput && dateInput.value) ? dateInput.value : getLocalDateString();
                 console.log('[measure] putting to db.weights', dateStr, value);
                 await db.weights.put({ date: dateStr, weight: Number(value.toFixed(1)) });
                 console.log('[measure] db.weights.put complete');
