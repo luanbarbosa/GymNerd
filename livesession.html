@@ -115,6 +115,10 @@
         #routineUpdateExercisesDialog .dialog-body {
             flex: 0 1 auto;
         }
+        #routineUpdateExercisesDialog .dialog-title {
+            font-size: 1.12rem;
+            font-weight: 900;
+        }
         .routine-update-row {
             display: flex;
             flex-direction: column;
@@ -139,10 +143,10 @@
             gap: 0;
         }
         .routine-update-name {
-            color: var(--text);
-            font-size: 1rem;
-            font-weight: 800;
-            line-height: 1.15;
+            color: rgba(255,255,255,0.88);
+            font-size: 0.92rem;
+            font-weight: 650;
+            line-height: 1.2;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -164,11 +168,12 @@
             background: rgba(255,255,255,0.06);
             color: rgba(255,255,255,0.78);
             font-size: 0.78rem;
-            font-weight: 700;
+            font-weight: 500;
             line-height: 1.15;
         }
         .routine-update-set-label {
             color: rgba(255,255,255,0.58);
+            font-weight: 600;
             white-space: nowrap;
         }
         .routine-update-value {
@@ -180,16 +185,16 @@
         }
         .routine-update-chip strong {
             color: var(--accent-color);
-            font-weight: 850;
+            font-weight: 650;
+        }
+        .routine-update-chip.unchanged .routine-update-value,
+        .routine-update-chip.unchanged strong.routine-update-value {
+            color: rgba(255,255,255,0.68);
+            font-weight: 500;
         }
         .routine-update-arrow {
             color: rgba(255,255,255,0.35);
-            font-weight: 800;
-        }
-        .routine-update-muted {
-            color: rgba(255,255,255,0.48);
-            font-size: 0.72rem;
-            font-weight: 700;
+            font-weight: 600;
         }
         .routine-update-checkbox {
             width: 24px;
@@ -3385,15 +3390,6 @@
             return `${reps}x${weight}kg`;
         }
 
-        function isSameSetValue(a, b, isCardio) {
-            const left = a || {};
-            const right = b || {};
-            if (isCardio) {
-                return (left.distance || 0) === (right.distance || 0) && (left.time || 0) === (right.time || 0);
-            }
-            return (left.reps || 0) === (right.reps || 0) && (left.weight || 0) === (right.weight || 0);
-        }
-
         function escapeHtml(value) {
             return String(value ?? '')
                 .replace(/&/g, '&amp;')
@@ -3405,35 +3401,25 @@
 
         function buildRoutineUpdateChangeSummary(originalSets, newSets, isCardio, lang) {
             const maxLength = Math.max(originalSets.length, newSets.length);
-            let unchangedCount = 0;
             const chips = [];
             const setLabel = lang === 'pt' ? 'Set' : 'Set';
-            const unchangedLabel = lang === 'pt' ? 'sem alteracao' : 'unchanged';
             const addedLabel = lang === 'pt' ? 'adicionado' : 'added';
             const removedLabel = lang === 'pt' ? 'removido' : 'removed';
 
             for (let i = 0; i < maxLength; i++) {
                 const originalSet = originalSets[i];
                 const newSet = newSets[i];
-                if (originalSet && newSet && isSameSetValue(originalSet, newSet, isCardio)) {
-                    unchangedCount += 1;
-                    continue;
-                }
-
                 const oldText = originalSet ? formatSetValue(originalSet, isCardio) : addedLabel;
                 const newText = newSet ? formatSetValue(newSet, isCardio) : removedLabel;
+                const isUnchanged = originalSet && newSet && oldText === newText;
                 chips.push(`
-                    <span class="routine-update-chip">
+                    <span class="routine-update-chip${isUnchanged ? ' unchanged' : ''}">
                         <span class="routine-update-set-label">${setLabel} ${i + 1}</span>
                         <span class="routine-update-value">${escapeHtml(oldText)}</span>
-                        <span class="routine-update-arrow">&rarr;</span>
+                        <span class="routine-update-arrow">${isUnchanged ? '&minus;' : '&rarr;'}</span>
                         <strong class="routine-update-value">${escapeHtml(newText)}</strong>
                     </span>
                 `);
-            }
-
-            if (unchangedCount > 0) {
-                chips.push(`<span class="routine-update-muted">${unchangedCount} ${unchangedLabel}</span>`);
             }
 
             return chips.join('');
