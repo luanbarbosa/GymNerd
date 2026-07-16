@@ -60,6 +60,10 @@
         .player-menu-item:active { background: rgba(255,255,255,0.06); }
         .player-menu-item-danger { color: #fca5a5; }
         .player-menu-item-danger:active { background: rgba(239,68,68,0.12); }
+        .player-routine-toggle { width: calc(100% - 28px); margin: 8px auto 0; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; background: rgba(255,255,255,0.04); color: var(--text); display: none; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.78rem; line-height: 1.25; font-weight: 700; cursor: pointer; box-sizing: border-box; }
+        .player-routine-toggle:active { background: rgba(255,255,255,0.07); }
+        .player-routine-toggle span { min-width: 0; text-align: left; white-space: normal; }
+        .player-routine-toggle input { flex: 0 0 auto; width: 18px; height: 18px; }
         .dialog-overlay {
             position: fixed;
             inset: 0;
@@ -100,6 +104,104 @@
             flex: 1 1 auto;
             overflow: auto;
             padding: 14px 16px 16px;
+        }
+        #routineUpdateExercisesDialog {
+            align-items: center;
+        }
+        #routineUpdateExercisesDialog .dialog-sheet {
+            height: auto;
+            max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        }
+        #routineUpdateExercisesDialog .dialog-body {
+            flex: 0 1 auto;
+        }
+        #routineUpdateExercisesDialog .dialog-title {
+            font-size: 1.12rem;
+            font-weight: 900;
+        }
+        .routine-update-row {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 18px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.035);
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+        .routine-update-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 30px;
+            gap: 12px;
+            align-items: center;
+        }
+        .routine-update-content {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .routine-update-name {
+            color: rgba(255,255,255,0.88);
+            font-size: 0.92rem;
+            font-weight: 650;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .routine-update-changes {
+            display: grid;
+            gap: 6px;
+        }
+        .routine-update-chip {
+            display: grid;
+            grid-template-columns: 52px minmax(72px, 1fr) 18px minmax(88px, 1fr);
+            align-items: center;
+            column-gap: 8px;
+            min-width: 0;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.78);
+            font-size: 0.78rem;
+            font-weight: 500;
+            line-height: 1.15;
+        }
+        .routine-update-set-label {
+            color: rgba(255,255,255,0.58);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .routine-update-value {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+        .routine-update-chip strong {
+            color: var(--accent-color);
+            font-weight: 650;
+        }
+        .routine-update-chip.unchanged .routine-update-value,
+        .routine-update-chip.unchanged strong.routine-update-value {
+            color: rgba(255,255,255,0.68);
+            font-weight: 500;
+        }
+        .routine-update-arrow {
+            color: rgba(255,255,255,0.35);
+            font-weight: 600;
+        }
+        .routine-update-checkbox {
+            width: 24px;
+            height: 24px;
+            justify-self: end;
+            align-self: center;
+            accent-color: var(--accent-color);
         }
         .dialog-actions {
             display: flex;
@@ -742,6 +844,10 @@
             <div class="card player-card">
                 <img id="playerImg" src="" class="player-img" onclick="showImagePreview(this.src)" style="cursor:pointer" aria-label="Preview image">
                 <div class="player-card-body">
+                    <label id="playerRoutineUpdateWrap" class="player-routine-toggle" style="display:none;">
+                        <span data-i18n="edited_exercise_update_routine_hint">You edited this exercise - Update the routine at the end</span>
+                        <input type="checkbox" id="playerRoutineUpdateToggle" checked onchange="handlePlayerRoutineToggleChange(event)">
+                    </label>
                     <h3 id="currentExName" class="current-ex-title" aria-live="polite"></h3>
                     <div id="setsContainer"></div>
                     <!-- Player controls moved to fixed bottom bar -->
@@ -770,17 +876,31 @@
             </div>
         </aside>
 
-        <div id="addExerciseDialog" class="dialog-overlay" aria-hidden="true" onclick="handleAddExerciseDialogBackdrop(event)">
-            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="addExerciseDialogTitle" onclick="event.stopPropagation()">
+        <div id="addSessionExercisesDialog" class="dialog-overlay" aria-hidden="true" onclick="handleAddSessionExercisesDialogBackdrop(event)">
+            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="addSessionExercisesDialogTitle" onclick="event.stopPropagation()">
                 <div class="dialog-header">
-                    <h3 id="addExerciseDialogTitle" class="dialog-title" data-i18n="add_exercise_modal_title">Add exercise</h3>
+                    <h3 id="addSessionExercisesDialogTitle" class="dialog-title" data-i18n="add_exercise_modal_title">Add exercise</h3>
                 </div>
                 <div class="dialog-body">
-                    <div id="addExercisePickerHost"></div>
+                    <div id="addSessionExercisesPickerHost"></div>
                 </div>
                 <div class="dialog-actions">
-                    <button id="addExerciseConfirmBtn" class="dialog-btn dialog-btn-primary" type="button" onclick="confirmAddExercises()" disabled data-i18n="add_selected">Add selected</button>
-                    <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeAddExerciseDialog()" data-i18n="cancel">Cancel</button>
+                    <button id="addSessionExercisesConfirmBtn" class="dialog-btn dialog-btn-primary" type="button" onclick="confirmAddSessionExercises()" disabled data-i18n="add_selected">Add selected</button>
+                    <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeAddSessionExercisesDialog()" data-i18n="cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="routineUpdateExercisesDialog" class="dialog-overlay" aria-hidden="true" onclick="handleRoutineUpdateExercisesDialogBackdrop(event)">
+            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="routineUpdateExercisesDialogTitle" onclick="event.stopPropagation()">
+                <div class="dialog-header">
+                    <h3 id="routineUpdateExercisesDialogTitle" class="dialog-title" data-i18n="pick_exercises_to_update">Select which exercises to update</h3>
+                </div>
+                <div class="dialog-body" style="padding-top: 4px;">
+                    <div id="routineUpdateExercisesList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+                <div class="dialog-actions">
+                    <button class="dialog-btn dialog-btn-primary" type="button" onclick="closeRoutineUpdateExercisesDialog()" data-i18n="done_btn">Done</button>
                 </div>
             </div>
         </div>
@@ -872,10 +992,15 @@
                     <div id="saveRoutineOpt">
                         <div class="routine-change-title" data-i18n="routine_changed_notice_title"></div>
                         <p class="routine-change-copy" data-i18n="routine_changed_notice_subtext"></p>
-                        <label class="routine-change-checkbox" for="saveRoutineCheckbox">
-                            <input type="checkbox" id="saveRoutineCheckbox" checked>
-                            <span data-i18n="routine_changed_notice_checkbox"></span>
-                        </label>
+                        <div style="display:flex; gap:8px; align-items:center; width:100%;">
+                            <label class="routine-change-checkbox" for="saveRoutineCheckbox" style="flex:1; min-width:0;">
+                                <input type="checkbox" id="saveRoutineCheckbox" checked onchange="handleMainSaveCheckboxChange(this.checked)">
+                                <span data-i18n="routine_changed_notice_checkbox"></span>
+                            </label>
+                            <button id="routineUpdateExercisesBtn" class="reorder-btn" style="flex:0 0 auto; height:48px; width:48px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:12px; background:rgba(255,255,255,0.08); border:none; cursor:pointer;" title="Pick Exercises" type="button" onclick="openRoutineUpdateExercisesDialog(event)">
+                                <span class="material-symbols-outlined" style="font-size:22px; color:#fff;">tune</span>
+                            </button>
+                        </div>
                     </div>
                     <button id="finishRoutineBtn" class="finish-btn" style="min-width:140px; width:100%;" onclick="finishSession(event)" data-i18n="finish_routine"></button>
                 </div>
@@ -919,6 +1044,9 @@
         let sessionStartMs = null; // timestamp (ms) when session started
         let routineModified = false;
         let _finishingSession = false;
+        let exercisesToSave = {};
+        let exerciseSaveOverrides = {};
+        let editedExercisesForSave = [];
 
         // Setup-view data cache (workout picker)
         let _setupWorkouts = [];
@@ -1043,6 +1171,9 @@
             currentWorkoutId = null;
             sessionStartMs = null;
             routineModified = false;
+            exercisesToSave = {};
+            exerciseSaveOverrides = {};
+            editedExercisesForSave = [];
             lastActiveTimerSignature = null;
             timerStartMs = null;
             timerMode = 'countup';
@@ -1862,6 +1993,8 @@
                 viewingIdx,
                 currentWorkoutId,
                 routineModified,
+                exercisesToSave,
+                exerciseSaveOverrides,
                 // Add this line to capture the duration if the session is over
                 sessionElapsedMs: finalWorkoutDuration !== null ? finalWorkoutDuration * 1000 : (Date.now() - sessionStartMs)
             };
@@ -1910,7 +2043,7 @@
                 event.stopPropagation();
             }
             closePlayerMenu();
-            openAddExerciseDialog();
+            openAddSessionExercisesDialog();
         }
 
         function handleGiveUpSessionMenuClick(event) {
@@ -1928,11 +2061,66 @@
             confirmGiveUpSession();
         }
 
+        function getExerciseSaveKeyFromSet(set) {
+            if (!set || !Number.isFinite(Number(set.exId))) return '';
+            return `${set.isCustom ? 'c' : 's'}:${Number(set.exId)}`;
+        }
+
+        function syncSaveRoutineSelectionUi() {
+            const anySelected = Object.values(exercisesToSave).some(val => val === true);
+            const mainCb = document.getElementById('saveRoutineCheckbox');
+            if (mainCb) mainCb.checked = anySelected;
+
+            document.querySelectorAll('.pick-ex-checkbox[data-key]').forEach(cb => {
+                const key = cb.dataset.key;
+                cb.checked = exercisesToSave[key] !== false;
+            });
+
+            const routineToggle = document.getElementById('playerRoutineUpdateToggle');
+            const routineWrap = document.getElementById('playerRoutineUpdateWrap');
+            const viewingSet = sessionSets[viewingIdx];
+            const viewingKey = getExerciseSaveKeyFromSet(viewingSet);
+            if (routineToggle && viewingKey && routineWrap && routineWrap.style.display !== 'none') {
+                routineToggle.checked = exercisesToSave[viewingKey] !== false;
+            }
+        }
+
+        function updatePlayerRoutineToggle() {
+            const wrap = document.getElementById('playerRoutineUpdateWrap');
+            const toggle = document.getElementById('playerRoutineUpdateToggle');
+            if (!wrap || !toggle) return;
+            wrap.style.display = 'none';
+
+            const viewingSet = sessionSets[viewingIdx];
+            const key = getExerciseSaveKeyFromSet(viewingSet);
+            if (!key || !currentWorkoutId) return;
+
+            const occurrenceSets = sessionSets.filter(s => s.occurrenceId === viewingSet.occurrenceId);
+            const occurrenceComplete = occurrenceSets.length > 0 && occurrenceSets.every(s => s.completed);
+            const hasEditedData = editedExercisesForSave.some(group => getExerciseSaveKeyFromSet(group) === key);
+            if (!occurrenceComplete || !hasEditedData) return;
+
+            toggle.dataset.key = key;
+            toggle.checked = exercisesToSave[key] !== false;
+            wrap.style.display = 'flex';
+        }
+
+        function handlePlayerRoutineToggleChange(event) {
+            if (event) event.stopPropagation();
+            const toggle = document.getElementById('playerRoutineUpdateToggle');
+            if (!toggle) return;
+            const key = toggle.dataset.key || getExerciseSaveKeyFromSet(sessionSets[viewingIdx]);
+            if (!key) return;
+            toggle.dataset.key = key;
+            toggleRoutineUpdateExerciseSave(key, toggle.checked);
+        }
+
         function wirePlayerMenu() {
             const btn = document.getElementById('playerMenuBtn');
             const addExerciseBtn = document.getElementById('playerMenuAddExercise');
             const suggestBtn = document.getElementById('playerMenuSuggestExercise');
             const giveUpSessionBtn = document.getElementById('playerMenuGiveUpSession');
+            const updateRoutineToggle = document.getElementById('playerRoutineUpdateToggle');
             if (btn && !btn.dataset.wired) {
                 const onMenuTrigger = (event) => {
                     togglePlayerMenu(event);
@@ -1965,10 +2153,14 @@
                 giveUpSessionBtn.addEventListener('click', onGiveUpSession);
                 giveUpSessionBtn.dataset.wired = 'true';
             }
+            if (updateRoutineToggle && !updateRoutineToggle.dataset.wired) {
+                updateRoutineToggle.addEventListener('click', (event) => event.stopPropagation());
+                updateRoutineToggle.dataset.wired = 'true';
+            }
         }
 
         function updateAddExerciseDialogState() {
-            const confirmBtn = document.getElementById('addExerciseConfirmBtn');
+            const confirmBtn = document.getElementById('addSessionExercisesConfirmBtn');
             if (!confirmBtn) return;
             const selected = document.querySelectorAll('#exercisePicker input.exercise-select:checked').length;
             confirmBtn.disabled = selected === 0;
@@ -1987,8 +2179,8 @@
             updateAddExerciseDialogState();
         }
 
-        function mountExercisePickerIntoAddDialog() {
-            const host = document.getElementById('addExercisePickerHost');
+        function mountExercisePickerIntoAddSessionExercisesDialog() {
+            const host = document.getElementById('addSessionExercisesPickerHost');
             const container = document.querySelector('#setupView .exercisePickerContainer');
             if (!host || !container) return;
             if (!addExercisePickerPlaceholder) {
@@ -2001,8 +2193,8 @@
             setSetupStartBarVisible(false);
         }
 
-        function restoreExercisePickerFromAddDialog() {
-            const host = document.getElementById('addExercisePickerHost');
+        function restoreExercisePickerFromAddSessionExercisesDialog() {
+            const host = document.getElementById('addSessionExercisesPickerHost');
             const container = host ? host.querySelector('.exercisePickerContainer') : null;
             if (container && addExercisePickerPlaceholder && addExercisePickerPlaceholder.parentNode) {
                 addExercisePickerPlaceholder.parentNode.insertBefore(container, addExercisePickerPlaceholder);
@@ -2012,36 +2204,36 @@
             setSetupStartBarVisible(hasWorkouts);
         }
 
-        function openAddExerciseDialog() {
-            const dialog = document.getElementById('addExerciseDialog');
+        function openAddSessionExercisesDialog() {
+            const dialog = document.getElementById('addSessionExercisesDialog');
             if (!dialog) return;
             dialog.classList.add('open');
             dialog.setAttribute('aria-hidden', 'false');
             try {
-                mountExercisePickerIntoAddDialog();
+                mountExercisePickerIntoAddSessionExercisesDialog();
                 _syncExercisePickerAvailability();
                 clearExercisePickerSelection();
             } catch (e) {
-                console.warn('openAddExerciseDialog failed to mount picker', e);
+                console.warn('openAddSessionExercisesDialog failed to mount picker', e);
             }
         }
 
-        function closeAddExerciseDialog() {
-            const dialog = document.getElementById('addExerciseDialog');
+        function closeAddSessionExercisesDialog() {
+            const dialog = document.getElementById('addSessionExercisesDialog');
             if (!dialog) return;
             dialog.classList.remove('open');
             dialog.setAttribute('aria-hidden', 'true');
             try {
-                restoreExercisePickerFromAddDialog();
+                restoreExercisePickerFromAddSessionExercisesDialog();
                 clearExercisePickerSelection();
             } catch (e) {
-                console.warn('closeAddExerciseDialog failed to restore picker', e);
+                console.warn('closeAddSessionExercisesDialog failed to restore picker', e);
             }
         }
 
-        function handleAddExerciseDialogBackdrop(event) {
-            if (event && event.target && event.target.id === 'addExerciseDialog') {
-                closeAddExerciseDialog();
+        function handleAddSessionExercisesDialogBackdrop(event) {
+            if (event && event.target && event.target.id === 'addSessionExercisesDialog') {
+                closeAddSessionExercisesDialog();
             }
         }
 
@@ -2057,7 +2249,7 @@
             }
         }
 
-        async function confirmAddExercises() {
+        async function confirmAddSessionExercises() {
             const selectedExerciseCbs = Array.from(document.querySelectorAll('#exercisePicker input.exercise-select:checked'));
             if (selectedExerciseCbs.length === 0) return;
 
@@ -2074,7 +2266,7 @@
                 viewingIdx = previousLength;
             }
 
-            closeAddExerciseDialog();
+            closeAddSessionExercisesDialog();
             _syncExercisePickerAvailability();
             await renderSet();
         }
@@ -2127,6 +2319,8 @@
             currentIdx = Math.min(Math.max(requestedCurrentIdx, 0), maxIdx);
             viewingIdx = Math.min(Math.max(requestedViewingIdx, 0), maxIdx);
             currentWorkoutId = state.currentWorkoutId;
+            exercisesToSave = (state.exercisesToSave && typeof state.exercisesToSave === 'object') ? state.exercisesToSave : {};
+            exerciseSaveOverrides = (state.exerciseSaveOverrides && typeof state.exerciseSaveOverrides === 'object') ? state.exerciseSaveOverrides : { ...exercisesToSave };
             lastActiveTimerSignature = null;
 
             try {
@@ -2577,6 +2771,9 @@
             const bb = document.getElementById('bottomBar'); if (bb) bb.style.display = 'flex';
             // reset routineModified state and hide the save option until user edits values
             routineModified = false;
+            exercisesToSave = {};
+            exerciseSaveOverrides = {};
+            editedExercisesForSave = [];
             const saveOpt = document.getElementById('saveRoutineOpt'); if (saveOpt) saveOpt.style.display = 'none';
             // Try to keep screen awake if user enabled the setting: prefer Wake Lock API, otherwise start silent audio
             (async () => {
@@ -2884,6 +3081,9 @@
                         }
                         if (saveOpt) saveOpt.style.display = shouldShow ? 'flex' : 'none';
                         if (cb) cb.checked = shouldShow;
+                        if (shouldShow) {
+                            await initExercisesToSave();
+                        }
                     } catch (e) { console.warn('save option detection failed', e); }
                     updateFinishedIllustration();
                 }
@@ -2905,6 +3105,11 @@
 
             const isActiveEx = currentIdx >= start && currentIdx <= end;
             const allSetsDone = sessionSets.slice(start, end + 1).every(s => s.completed || s.skipped);
+            if (routineModified && currentWorkoutId && editedExercisesForSave.length === 0) {
+                try { await initExercisesToSave(); } catch (e) { console.warn('init exercises to save during render failed', e); }
+            } else {
+                updatePlayerRoutineToggle();
+            }
 
             // Toggle inline player-controls (if present)
             const pc = document.querySelector('.player-controls-icons'); if (pc) pc.classList.toggle('hidden', !isActiveEx);
@@ -2956,6 +3161,11 @@
                 const saveOpt = document.getElementById('saveRoutineOpt');
                 if (saveOpt) saveOpt.style.display = 'flex';
                 const cb = document.getElementById('saveRoutineCheckbox'); if (cb) cb.checked = true;
+                initExercisesToSave().then(() => {
+                    updatePlayerRoutineToggle();
+                    syncSaveRoutineSelectionUi();
+                    saveSessionState();
+                }).catch(e => console.warn('refresh exercises to save failed', e));
             }
             saveSessionState();
         }
@@ -3132,6 +3342,248 @@
             }
         }
 
+        function isExerciseEdited(sessionExSets, templateItem) {
+            if (!templateItem) return true;
+            const templateSets = (templateItem && typeof templateItem === 'object' && Array.isArray(templateItem.sets)) ? templateItem.sets : null;
+            if (!templateSets) {
+                const isCardio = isCardioExerciseType(sessionExSets[0]?.exerciseType);
+                for (const s of sessionExSets) {
+                    if (isCardio) {
+                        if ((s.distance || 0) !== 0 || (s.time || 0) !== 0) return true;
+                    } else {
+                        if ((s.reps || 0) !== 0 || (s.weight || 0) !== 0) return true;
+                    }
+                }
+                return false;
+            }
+            if (sessionExSets.length !== templateSets.length) return true;
+            const isCardio = isCardioExerciseType(sessionExSets[0]?.exerciseType);
+            for (let i = 0; i < sessionExSets.length; i++) {
+                const s = sessionExSets[i];
+                const t = templateSets[i];
+                if (!t) return true;
+                if (isCardio) {
+                    if ((s.distance || 0) !== (t.distance || 0) || (s.time || 0) !== (t.time || 0)) return true;
+                } else {
+                    if ((s.reps || 0) !== (t.reps || 0) || (s.weight || 0) !== (t.weight || 0)) return true;
+                }
+            }
+            return false;
+        }
+
+        function formatSetsData(sets, isCardio) {
+            if (!Array.isArray(sets) || sets.length === 0) return '—';
+            return sets.map(s => {
+                return formatSetValue(s, isCardio);
+            }).join(', ');
+        }
+
+        function formatSetValue(set, isCardio) {
+            const s = set || {};
+            if (isCardio) {
+                const dist = s.distance !== undefined ? s.distance : 0;
+                const time = s.time !== undefined ? s.time : 0;
+                return `${dist}km / ${time}m`;
+            }
+            const reps = s.reps !== undefined ? s.reps : 0;
+            const weight = s.weight !== undefined ? s.weight : 0;
+            return `${reps}x${weight}kg`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function buildRoutineUpdateChangeSummary(originalSets, newSets, isCardio, lang) {
+            const maxLength = Math.max(originalSets.length, newSets.length);
+            const chips = [];
+            const setLabel = lang === 'pt' ? 'Set' : 'Set';
+            const addedLabel = lang === 'pt' ? 'adicionado' : 'added';
+            const removedLabel = lang === 'pt' ? 'removido' : 'removed';
+
+            for (let i = 0; i < maxLength; i++) {
+                const originalSet = originalSets[i];
+                const newSet = newSets[i];
+                const oldText = originalSet ? formatSetValue(originalSet, isCardio) : addedLabel;
+                const newText = newSet ? formatSetValue(newSet, isCardio) : removedLabel;
+                const isUnchanged = originalSet && newSet && oldText === newText;
+                chips.push(`
+                    <span class="routine-update-chip${isUnchanged ? ' unchanged' : ''}">
+                        <span class="routine-update-set-label">${setLabel} ${i + 1}</span>
+                        <span class="routine-update-value">${escapeHtml(oldText)}</span>
+                        <span class="routine-update-arrow">${isUnchanged ? '&minus;' : '&rarr;'}</span>
+                        <strong class="routine-update-value">${escapeHtml(newText)}</strong>
+                    </span>
+                `);
+            }
+
+            return chips.join('');
+        }
+
+        function getOriginalSetsArray(templateItem, isCardio) {
+            if (!templateItem) return [];
+            if (typeof templateItem === 'object' && Array.isArray(templateItem.sets)) {
+                return templateItem.sets;
+            }
+            const count = (templateItem && typeof templateItem === 'object' && templateItem.sets !== undefined && templateItem.sets !== null)
+                ? Math.max(1, Math.round(Number(templateItem.sets) || 3))
+                : 3;
+            const reps = (templateItem && typeof templateItem === 'object') ? (Number(templateItem.reps) || 0) : 0;
+            const weight = (templateItem && typeof templateItem === 'object') ? (Number(templateItem.weight) || 0) : 0;
+            const distance = (templateItem && typeof templateItem === 'object') ? (Number(templateItem.distance) || 0) : 0;
+            const time = (templateItem && typeof templateItem === 'object') ? (Number(templateItem.time) || 0) : 0;
+            
+            const arr = [];
+            for (let i = 0; i < count; i++) {
+                if (isCardio) {
+                    arr.push({ distance, time });
+                } else {
+                    arr.push({ reps, weight });
+                }
+            }
+            return arr;
+        }
+
+        async function initExercisesToSave() {
+            const previousSelections = { ...exercisesToSave, ...exerciseSaveOverrides };
+            exercisesToSave = {};
+            editedExercisesForSave = [];
+            if (!currentWorkoutId) return;
+            try {
+                const workout = await db.routines.get(currentWorkoutId);
+                if (!workout || !Array.isArray(workout.exerciseIds)) return;
+
+                const sessionGroups = {};
+                sessionSets.forEach(s => {
+                    const key = `${s.isCustom ? 'c' : 's'}:${s.exId}`;
+                    if (!sessionGroups[key]) {
+                        sessionGroups[key] = {
+                            exId: s.exId,
+                            isCustom: s.isCustom,
+                            name: s.name,
+                            namePT: s.namePT,
+                            exerciseType: s.exerciseType,
+                            imageId: s.imageId,
+                            sets: []
+                        };
+                    }
+                    sessionGroups[key].sets.push(s);
+                });
+
+                const workoutMap = {};
+                workout.exerciseIds.forEach(it => {
+                    const id = (typeof it === 'object' ? it.id : it);
+                    const isCustom = typeof it === 'object' ? (it.isCustom === true || it.isCustom === 'true') : false;
+                    workoutMap[`${isCustom ? 'c' : 's'}:${id}`] = it;
+                });
+
+                for (const key in sessionGroups) {
+                    const group = sessionGroups[key];
+                    const templateItem = workoutMap[key];
+                    const edited = isExerciseEdited(group.sets, templateItem);
+                    if (edited) {
+                        let imgSrc = defaultImage;
+                        if (group.imageId) {
+                            const imgTable = group.isCustom ? db.custom_images : db.catalog_images;
+                            const imgRecord = await imgTable.get(group.imageId);
+                            if (imgRecord && imgRecord.data) imgSrc = imgRecord.data;
+                        }
+                        group.imgSrc = imgSrc;
+                        group.templateItem = templateItem;
+
+                        exercisesToSave[key] = Object.prototype.hasOwnProperty.call(exerciseSaveOverrides, key)
+                            ? exerciseSaveOverrides[key]
+                            : (Object.prototype.hasOwnProperty.call(previousSelections, key) ? previousSelections[key] : true);
+                        editedExercisesForSave.push(group);
+                    }
+                }
+
+                const pickBtn = document.getElementById('routineUpdateExercisesBtn');
+                if (pickBtn) {
+                    pickBtn.style.display = editedExercisesForSave.length > 0 ? 'inline-flex' : 'none';
+                }
+                syncSaveRoutineSelectionUi();
+                updatePlayerRoutineToggle();
+            } catch (e) {
+                console.error('initExercisesToSave failed', e);
+            }
+        }
+
+        function openRoutineUpdateExercisesDialog(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const dialog = document.getElementById('routineUpdateExercisesDialog');
+            if (!dialog) return;
+
+            const listContainer = document.getElementById('routineUpdateExercisesList');
+            if (listContainer) {
+                listContainer.innerHTML = '';
+                const lang = (GN_I18N && GN_I18N.safeGetLang) ? GN_I18N.safeGetLang() : 'en';
+                
+                editedExercisesForSave.forEach(group => {
+                    const key = `${group.isCustom ? 'c' : 's'}:${group.exId}`;
+                    const displayName = (lang === 'pt' && group.namePT) ? group.namePT : group.name;
+                    const checked = (exercisesToSave[key] !== false);
+                    const isCardio = isCardioExerciseType(group.exerciseType);
+                    
+                    const originalSets = getOriginalSetsArray(group.templateItem, isCardio);
+                    const changesHtml = buildRoutineUpdateChangeSummary(originalSets, group.sets, isCardio, lang);
+
+                    const row = document.createElement('div');
+                    row.className = 'routine-update-row';
+                    row.innerHTML = `
+                        <div class="routine-update-header">
+                            <span class="routine-update-name">${escapeHtml(displayName)}</span>
+                            <input type="checkbox" class="pick-ex-checkbox routine-update-checkbox" data-key="${escapeHtml(key)}" ${checked ? 'checked' : ''} onchange="toggleRoutineUpdateExerciseSave('${escapeHtml(key)}', this.checked)">
+                        </div>
+                        <div class="routine-update-content">
+                            <div class="routine-update-changes">${changesHtml}</div>
+                        </div>
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+
+            dialog.classList.add('open');
+            dialog.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeRoutineUpdateExercisesDialog() {
+            const dialog = document.getElementById('routineUpdateExercisesDialog');
+            if (!dialog) return;
+            dialog.classList.remove('open');
+            dialog.setAttribute('aria-hidden', 'true');
+        }
+
+        function handleRoutineUpdateExercisesDialogBackdrop(event) {
+            if (event && event.target && event.target.id === 'routineUpdateExercisesDialog') {
+                closeRoutineUpdateExercisesDialog();
+            }
+        }
+
+        function toggleRoutineUpdateExerciseSave(key, checked) {
+            exercisesToSave[key] = checked;
+            exerciseSaveOverrides[key] = checked;
+            syncSaveRoutineSelectionUi();
+            saveSessionState();
+        }
+
+        function handleMainSaveCheckboxChange(checked) {
+            for (const key in exercisesToSave) {
+                exercisesToSave[key] = checked;
+                exerciseSaveOverrides[key] = checked;
+            }
+            syncSaveRoutineSelectionUi();
+            saveSessionState();
+        }
+
         async function finishSession(finishEvent) {
             try {
                 if (_finishingSession) return; // avoid re-entrancy
@@ -3166,19 +3618,23 @@
                         workout.exerciseIds = workout.exerciseIds.map(item => {
                             const exId = typeof item === 'object' ? item.id : item;
                             const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
-                            const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                            if (sessionExSets.length > 0) {
-                                const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
-                                const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                                const updated = {
-                                    id: exId,
-                                    isCustom,
-                                    sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
-                                };
-                                if (typeof item === 'object' && item.restSeconds !== undefined) {
-                                    updated.restSeconds = item.restSeconds;
+                            const key = `${isCustom ? 'c' : 's'}:${exId}`;
+                            const shouldSaveThisEx = (exercisesToSave[key] !== false);
+                            if (shouldSaveThisEx) {
+                                const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
+                                if (sessionExSets.length > 0) {
+                                    const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
+                                    const isCardioExercise = isCardioExerciseType(exerciseType || '');
+                                    const updated = {
+                                        id: exId,
+                                        isCustom,
+                                        sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
+                                    };
+                                    if (typeof item === 'object' && item.restSeconds !== undefined) {
+                                        updated.restSeconds = item.restSeconds;
+                                    }
+                                    return updated;
                                 }
-                                return updated;
                             }
                             return item;
                         });
@@ -3253,19 +3709,23 @@
                 workout.exerciseIds = workout.exerciseIds.map(item => {
                     const exId = typeof item === 'object' ? item.id : item;
                     const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
-                    const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                    if (sessionExSets.length > 0) {
-                        const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
-                        const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                        const updated = {
-                            id: exId,
-                            isCustom,
-                            sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
-                        };
-                        if (typeof item === 'object' && item.restSeconds !== undefined) {
-                            updated.restSeconds = item.restSeconds;
+                    const key = `${isCustom ? 'c' : 's'}:${exId}`;
+                    const shouldSaveThisEx = (exercisesToSave[key] !== false);
+                    if (shouldSaveThisEx) {
+                        const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
+                        if (sessionExSets.length > 0) {
+                            const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
+                            const isCardioExercise = isCardioExerciseType(exerciseType || '');
+                            const updated = {
+                                id: exId,
+                                isCustom,
+                                sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
+                            };
+                            if (typeof item === 'object' && item.restSeconds !== undefined) {
+                                updated.restSeconds = item.restSeconds;
+                            }
+                            return updated;
                         }
-                        return updated;
                     }
                     return item;
                 });
