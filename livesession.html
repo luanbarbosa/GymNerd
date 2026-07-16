@@ -105,6 +105,99 @@
             overflow: auto;
             padding: 14px 16px 16px;
         }
+        #routineUpdateExercisesDialog {
+            align-items: center;
+        }
+        #routineUpdateExercisesDialog .dialog-sheet {
+            height: auto;
+            max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        }
+        #routineUpdateExercisesDialog .dialog-body {
+            flex: 0 1 auto;
+        }
+        .routine-update-row {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 18px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.035);
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+        .routine-update-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 30px;
+            gap: 12px;
+            align-items: center;
+        }
+        .routine-update-content {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .routine-update-name {
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.15;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .routine-update-changes {
+            display: grid;
+            gap: 6px;
+        }
+        .routine-update-chip {
+            display: grid;
+            grid-template-columns: 52px minmax(72px, 1fr) 18px minmax(88px, 1fr);
+            align-items: center;
+            column-gap: 8px;
+            min-width: 0;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.78);
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1.15;
+        }
+        .routine-update-set-label {
+            color: rgba(255,255,255,0.58);
+            white-space: nowrap;
+        }
+        .routine-update-value {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+        .routine-update-chip strong {
+            color: var(--accent-color);
+            font-weight: 850;
+        }
+        .routine-update-arrow {
+            color: rgba(255,255,255,0.35);
+            font-weight: 800;
+        }
+        .routine-update-muted {
+            color: rgba(255,255,255,0.48);
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .routine-update-checkbox {
+            width: 24px;
+            height: 24px;
+            justify-self: end;
+            align-self: center;
+            accent-color: var(--accent-color);
+        }
         .dialog-actions {
             display: flex;
             flex-direction: column;
@@ -778,31 +871,31 @@
             </div>
         </aside>
 
-        <div id="addExerciseDialog" class="dialog-overlay" aria-hidden="true" onclick="handleAddExerciseDialogBackdrop(event)">
-            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="addExerciseDialogTitle" onclick="event.stopPropagation()">
+        <div id="addSessionExercisesDialog" class="dialog-overlay" aria-hidden="true" onclick="handleAddSessionExercisesDialogBackdrop(event)">
+            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="addSessionExercisesDialogTitle" onclick="event.stopPropagation()">
                 <div class="dialog-header">
-                    <h3 id="addExerciseDialogTitle" class="dialog-title" data-i18n="add_exercise_modal_title">Add exercise</h3>
+                    <h3 id="addSessionExercisesDialogTitle" class="dialog-title" data-i18n="add_exercise_modal_title">Add exercise</h3>
                 </div>
                 <div class="dialog-body">
-                    <div id="addExercisePickerHost"></div>
+                    <div id="addSessionExercisesPickerHost"></div>
                 </div>
                 <div class="dialog-actions">
-                    <button id="addExerciseConfirmBtn" class="dialog-btn dialog-btn-primary" type="button" onclick="confirmAddExercises()" disabled data-i18n="add_selected">Add selected</button>
-                    <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeAddExerciseDialog()" data-i18n="cancel">Cancel</button>
+                    <button id="addSessionExercisesConfirmBtn" class="dialog-btn dialog-btn-primary" type="button" onclick="confirmAddSessionExercises()" disabled data-i18n="add_selected">Add selected</button>
+                    <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeAddSessionExercisesDialog()" data-i18n="cancel">Cancel</button>
                 </div>
             </div>
         </div>
 
-        <div id="pickExercisesDialog" class="dialog-overlay" aria-hidden="true" onclick="handlePickExercisesDialogBackdrop(event)">
-            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="pickExercisesDialogTitle" onclick="event.stopPropagation()">
+        <div id="routineUpdateExercisesDialog" class="dialog-overlay" aria-hidden="true" onclick="handleRoutineUpdateExercisesDialogBackdrop(event)">
+            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="routineUpdateExercisesDialogTitle" onclick="event.stopPropagation()">
                 <div class="dialog-header">
-                    <h3 id="pickExercisesDialogTitle" class="dialog-title" data-i18n="pick_exercises_to_update">Select which exercises to update</h3>
+                    <h3 id="routineUpdateExercisesDialogTitle" class="dialog-title" data-i18n="pick_exercises_to_update">Select which exercises to update</h3>
                 </div>
                 <div class="dialog-body" style="padding-top: 4px;">
-                    <div id="pickExercisesList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    <div id="routineUpdateExercisesList" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
                 <div class="dialog-actions">
-                    <button class="dialog-btn dialog-btn-primary" type="button" onclick="closePickExercisesDialog()" data-i18n="done_btn">Done</button>
+                    <button class="dialog-btn dialog-btn-primary" type="button" onclick="closeRoutineUpdateExercisesDialog()" data-i18n="done_btn">Done</button>
                 </div>
             </div>
         </div>
@@ -899,7 +992,7 @@
                                 <input type="checkbox" id="saveRoutineCheckbox" checked onchange="handleMainSaveCheckboxChange(this.checked)">
                                 <span data-i18n="routine_changed_notice_checkbox"></span>
                             </label>
-                            <button id="saveRoutinePickBtn" class="reorder-btn" style="flex:0 0 auto; height:48px; width:48px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:12px; background:rgba(255,255,255,0.08); border:none; cursor:pointer;" title="Pick Exercises" type="button" onclick="openPickExercisesDialog(event)">
+                            <button id="routineUpdateExercisesBtn" class="reorder-btn" style="flex:0 0 auto; height:48px; width:48px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:12px; background:rgba(255,255,255,0.08); border:none; cursor:pointer;" title="Pick Exercises" type="button" onclick="openRoutineUpdateExercisesDialog(event)">
                                 <span class="material-symbols-outlined" style="font-size:22px; color:#fff;">tune</span>
                             </button>
                         </div>
@@ -1945,7 +2038,7 @@
                 event.stopPropagation();
             }
             closePlayerMenu();
-            openAddExerciseDialog();
+            openAddSessionExercisesDialog();
         }
 
         function handleGiveUpSessionMenuClick(event) {
@@ -2014,7 +2107,7 @@
             const key = toggle.dataset.key || getExerciseSaveKeyFromSet(sessionSets[viewingIdx]);
             if (!key) return;
             toggle.dataset.key = key;
-            toggleExerciseSave(key, toggle.checked);
+            toggleRoutineUpdateExerciseSave(key, toggle.checked);
         }
 
         function wirePlayerMenu() {
@@ -2062,7 +2155,7 @@
         }
 
         function updateAddExerciseDialogState() {
-            const confirmBtn = document.getElementById('addExerciseConfirmBtn');
+            const confirmBtn = document.getElementById('addSessionExercisesConfirmBtn');
             if (!confirmBtn) return;
             const selected = document.querySelectorAll('#exercisePicker input.exercise-select:checked').length;
             confirmBtn.disabled = selected === 0;
@@ -2081,8 +2174,8 @@
             updateAddExerciseDialogState();
         }
 
-        function mountExercisePickerIntoAddDialog() {
-            const host = document.getElementById('addExercisePickerHost');
+        function mountExercisePickerIntoAddSessionExercisesDialog() {
+            const host = document.getElementById('addSessionExercisesPickerHost');
             const container = document.querySelector('#setupView .exercisePickerContainer');
             if (!host || !container) return;
             if (!addExercisePickerPlaceholder) {
@@ -2095,8 +2188,8 @@
             setSetupStartBarVisible(false);
         }
 
-        function restoreExercisePickerFromAddDialog() {
-            const host = document.getElementById('addExercisePickerHost');
+        function restoreExercisePickerFromAddSessionExercisesDialog() {
+            const host = document.getElementById('addSessionExercisesPickerHost');
             const container = host ? host.querySelector('.exercisePickerContainer') : null;
             if (container && addExercisePickerPlaceholder && addExercisePickerPlaceholder.parentNode) {
                 addExercisePickerPlaceholder.parentNode.insertBefore(container, addExercisePickerPlaceholder);
@@ -2106,36 +2199,36 @@
             setSetupStartBarVisible(hasWorkouts);
         }
 
-        function openAddExerciseDialog() {
-            const dialog = document.getElementById('addExerciseDialog');
+        function openAddSessionExercisesDialog() {
+            const dialog = document.getElementById('addSessionExercisesDialog');
             if (!dialog) return;
             dialog.classList.add('open');
             dialog.setAttribute('aria-hidden', 'false');
             try {
-                mountExercisePickerIntoAddDialog();
+                mountExercisePickerIntoAddSessionExercisesDialog();
                 _syncExercisePickerAvailability();
                 clearExercisePickerSelection();
             } catch (e) {
-                console.warn('openAddExerciseDialog failed to mount picker', e);
+                console.warn('openAddSessionExercisesDialog failed to mount picker', e);
             }
         }
 
-        function closeAddExerciseDialog() {
-            const dialog = document.getElementById('addExerciseDialog');
+        function closeAddSessionExercisesDialog() {
+            const dialog = document.getElementById('addSessionExercisesDialog');
             if (!dialog) return;
             dialog.classList.remove('open');
             dialog.setAttribute('aria-hidden', 'true');
             try {
-                restoreExercisePickerFromAddDialog();
+                restoreExercisePickerFromAddSessionExercisesDialog();
                 clearExercisePickerSelection();
             } catch (e) {
-                console.warn('closeAddExerciseDialog failed to restore picker', e);
+                console.warn('closeAddSessionExercisesDialog failed to restore picker', e);
             }
         }
 
-        function handleAddExerciseDialogBackdrop(event) {
-            if (event && event.target && event.target.id === 'addExerciseDialog') {
-                closeAddExerciseDialog();
+        function handleAddSessionExercisesDialogBackdrop(event) {
+            if (event && event.target && event.target.id === 'addSessionExercisesDialog') {
+                closeAddSessionExercisesDialog();
             }
         }
 
@@ -2151,7 +2244,7 @@
             }
         }
 
-        async function confirmAddExercises() {
+        async function confirmAddSessionExercises() {
             const selectedExerciseCbs = Array.from(document.querySelectorAll('#exercisePicker input.exercise-select:checked'));
             if (selectedExerciseCbs.length === 0) return;
 
@@ -2168,7 +2261,7 @@
                 viewingIdx = previousLength;
             }
 
-            closeAddExerciseDialog();
+            closeAddSessionExercisesDialog();
             _syncExercisePickerAvailability();
             await renderSet();
         }
@@ -3276,16 +3369,74 @@
         function formatSetsData(sets, isCardio) {
             if (!Array.isArray(sets) || sets.length === 0) return '—';
             return sets.map(s => {
-                if (isCardio) {
-                    const dist = s.distance !== undefined ? s.distance : 0;
-                    const time = s.time !== undefined ? s.time : 0;
-                    return `${dist}km / ${time}m`;
-                } else {
-                    const reps = s.reps !== undefined ? s.reps : 0;
-                    const weight = s.weight !== undefined ? s.weight : 0;
-                    return `${reps}x${weight}kg`;
-                }
+                return formatSetValue(s, isCardio);
             }).join(', ');
+        }
+
+        function formatSetValue(set, isCardio) {
+            const s = set || {};
+            if (isCardio) {
+                const dist = s.distance !== undefined ? s.distance : 0;
+                const time = s.time !== undefined ? s.time : 0;
+                return `${dist}km / ${time}m`;
+            }
+            const reps = s.reps !== undefined ? s.reps : 0;
+            const weight = s.weight !== undefined ? s.weight : 0;
+            return `${reps}x${weight}kg`;
+        }
+
+        function isSameSetValue(a, b, isCardio) {
+            const left = a || {};
+            const right = b || {};
+            if (isCardio) {
+                return (left.distance || 0) === (right.distance || 0) && (left.time || 0) === (right.time || 0);
+            }
+            return (left.reps || 0) === (right.reps || 0) && (left.weight || 0) === (right.weight || 0);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function buildRoutineUpdateChangeSummary(originalSets, newSets, isCardio, lang) {
+            const maxLength = Math.max(originalSets.length, newSets.length);
+            let unchangedCount = 0;
+            const chips = [];
+            const setLabel = lang === 'pt' ? 'Set' : 'Set';
+            const unchangedLabel = lang === 'pt' ? 'sem alteracao' : 'unchanged';
+            const addedLabel = lang === 'pt' ? 'adicionado' : 'added';
+            const removedLabel = lang === 'pt' ? 'removido' : 'removed';
+
+            for (let i = 0; i < maxLength; i++) {
+                const originalSet = originalSets[i];
+                const newSet = newSets[i];
+                if (originalSet && newSet && isSameSetValue(originalSet, newSet, isCardio)) {
+                    unchangedCount += 1;
+                    continue;
+                }
+
+                const oldText = originalSet ? formatSetValue(originalSet, isCardio) : addedLabel;
+                const newText = newSet ? formatSetValue(newSet, isCardio) : removedLabel;
+                chips.push(`
+                    <span class="routine-update-chip">
+                        <span class="routine-update-set-label">${setLabel} ${i + 1}</span>
+                        <span class="routine-update-value">${escapeHtml(oldText)}</span>
+                        <span class="routine-update-arrow">&rarr;</span>
+                        <strong class="routine-update-value">${escapeHtml(newText)}</strong>
+                    </span>
+                `);
+            }
+
+            if (unchangedCount > 0) {
+                chips.push(`<span class="routine-update-muted">${unchangedCount} ${unchangedLabel}</span>`);
+            }
+
+            return chips.join('');
         }
 
         function getOriginalSetsArray(templateItem, isCardio) {
@@ -3366,7 +3517,7 @@
                     }
                 }
 
-                const pickBtn = document.getElementById('saveRoutinePickBtn');
+                const pickBtn = document.getElementById('routineUpdateExercisesBtn');
                 if (pickBtn) {
                     pickBtn.style.display = editedExercisesForSave.length > 0 ? 'inline-flex' : 'none';
                 }
@@ -3377,15 +3528,15 @@
             }
         }
 
-        function openPickExercisesDialog(event) {
+        function openRoutineUpdateExercisesDialog(event) {
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
-            const dialog = document.getElementById('pickExercisesDialog');
+            const dialog = document.getElementById('routineUpdateExercisesDialog');
             if (!dialog) return;
 
-            const listContainer = document.getElementById('pickExercisesList');
+            const listContainer = document.getElementById('routineUpdateExercisesList');
             if (listContainer) {
                 listContainer.innerHTML = '';
                 const lang = (GN_I18N && GN_I18N.safeGetLang) ? GN_I18N.safeGetLang() : 'en';
@@ -3397,27 +3548,18 @@
                     const isCardio = isCardioExerciseType(group.exerciseType);
                     
                     const originalSets = getOriginalSetsArray(group.templateItem, isCardio);
-                    const originalText = formatSetsData(originalSets, isCardio);
-                    const newText = formatSetsData(group.sets, isCardio);
+                    const changesHtml = buildRoutineUpdateChangeSummary(originalSets, group.sets, isCardio, lang);
 
                     const row = document.createElement('div');
-                    row.style.cssText = 'display:flex; align-items:center; gap:12px; padding:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; width:100%; box-sizing:border-box;';
+                    row.className = 'routine-update-row';
                     row.innerHTML = `
-                        <img src="${group.imgSrc}" class="ex-thumb" style="width:48px; height:48px; border-radius:8px; object-fit:contain; background:#fff; flex-shrink:0;">
-                        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
-                            <span style="font-weight:800; color:var(--text); font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayName}</span>
-                            <div style="font-size:0.75rem; color:var(--text-dim); display:flex; flex-direction:column; gap:2px;">
-                                <div style="display:flex; align-items:center; gap:4px;">
-                                    <span style="font-weight:600; text-transform:uppercase; font-size:0.65rem; background:rgba(255,255,255,0.05); padding:1px 4px; border-radius:4px;">Orig</span>
-                                    <span style="font-family:monospace; color:rgba(255,255,255,0.65);">${originalText}</span>
-                                </div>
-                                <div style="display:flex; align-items:center; gap:4px;">
-                                    <span style="font-weight:600; text-transform:uppercase; font-size:0.65rem; background:rgba(255,100,100,0.15); color:#fda4af; padding:1px 4px; border-radius:4px;">${lang === 'pt' ? 'Novo' : 'New'}</span>
-                                    <span style="font-family:monospace; color:var(--accent-color); font-weight:700;">${newText}</span>
-                                </div>
-                            </div>
+                        <div class="routine-update-header">
+                            <span class="routine-update-name">${escapeHtml(displayName)}</span>
+                            <input type="checkbox" class="pick-ex-checkbox routine-update-checkbox" data-key="${escapeHtml(key)}" ${checked ? 'checked' : ''} onchange="toggleRoutineUpdateExerciseSave('${escapeHtml(key)}', this.checked)">
                         </div>
-                        <input type="checkbox" class="pick-ex-checkbox" data-key="${key}" ${checked ? 'checked' : ''} onchange="toggleExerciseSave('${key}', this.checked)" style="flex-shrink:0; width:22px; height:22px;">
+                        <div class="routine-update-content">
+                            <div class="routine-update-changes">${changesHtml}</div>
+                        </div>
                     `;
                     listContainer.appendChild(row);
                 });
@@ -3427,20 +3569,20 @@
             dialog.setAttribute('aria-hidden', 'false');
         }
 
-        function closePickExercisesDialog() {
-            const dialog = document.getElementById('pickExercisesDialog');
+        function closeRoutineUpdateExercisesDialog() {
+            const dialog = document.getElementById('routineUpdateExercisesDialog');
             if (!dialog) return;
             dialog.classList.remove('open');
             dialog.setAttribute('aria-hidden', 'true');
         }
 
-        function handlePickExercisesDialogBackdrop(event) {
-            if (event && event.target && event.target.id === 'pickExercisesDialog') {
-                closePickExercisesDialog();
+        function handleRoutineUpdateExercisesDialogBackdrop(event) {
+            if (event && event.target && event.target.id === 'routineUpdateExercisesDialog') {
+                closeRoutineUpdateExercisesDialog();
             }
         }
 
-        function toggleExerciseSave(key, checked) {
+        function toggleRoutineUpdateExerciseSave(key, checked) {
             exercisesToSave[key] = checked;
             exerciseSaveOverrides[key] = checked;
             syncSaveRoutineSelectionUi();
