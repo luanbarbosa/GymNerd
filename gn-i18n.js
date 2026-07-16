@@ -307,6 +307,8 @@
                 routine_changed_notice_title: 'Your routine changed today!',
                 routine_changed_notice_subtext: 'Do you want to update the routine or just save it to history (default)?',
                 routine_changed_notice_checkbox: 'Update routine data',
+                player_menu_update_routine: 'Update routine',
+                edited_exercise_update_routine_hint: 'You edited this exercise - Update the routine at the end',
                 save_changes_to_routine: 'Save changes to routine',
                 save_changes_to_routines: 'Save changes to routines',
                 routine_saved: 'Routine saved',
@@ -328,8 +330,9 @@
                 discard_confirm: 'Discard unfinished routine?',
                 skip_exercise_confirm: 'Skip the rest of this exercise?',
                 new_streak_record: '🎉 NEW STREAK RECORD: {n} DAYS!',
-                debug_error_prefix: 'DEBUG ERROR: '
-                ,
+                debug_error_prefix: 'DEBUG ERROR: ',
+                pick_exercises_to_update: 'Select which exercises to update',
+                done_btn: 'Done',
                 drag_to_reorder: 'Drag to reorder',
                 /* Device settings */
                 keep_device_awake: 'Keep device awake on workouts',
@@ -666,6 +669,8 @@
                 routine_changed_notice_title: 'Sua rotina mudou hoje!',
                 routine_changed_notice_subtext: 'Deseja atualizar o treino ou apenas salvar no histórico (padrão)?',
                 routine_changed_notice_checkbox: 'Atualizar dados do treino',
+                player_menu_update_routine: 'Atualizar treino',
+                edited_exercise_update_routine_hint: 'Você editou este exercício - Atualizar o treino no fim',
                 save_changes_to_routine: 'Salvar alterações no treino',
                 save_changes_to_routines: 'Salvar alterações nos treinos',
                 routine_saved: 'Treino salvo',
@@ -687,8 +692,9 @@
                 discard_confirm: 'Descartar treino incompleto?',
                 skip_exercise_confirm: 'Pular o resto deste exercício?',
                 new_streak_record: '🎉 NOVO RECORDE DE SEQUÊNCIA: {n} DIAS!',
-                debug_error_prefix: 'ERRO DE DEBUG: '
-                ,
+                debug_error_prefix: 'ERRO DE DEBUG: ',
+                pick_exercises_to_update: 'Escolha os exercícios para atualizar',
+                done_btn: 'Pronto',
                 drag_to_reorder: 'Arraste para reordenar',
                 /* Device settings */
                 keep_device_awake: 'Manter dispositivo acordado durante treinos',
