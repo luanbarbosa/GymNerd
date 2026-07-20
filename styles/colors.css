@@ -6,3 +6,39 @@
     --accent-color: rgb(242,194,75);
     --text-on-accent-color: rgb(0,0,0);
 }
+
+input[type="checkbox"] {
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.05);
+    cursor: pointer;
+    position: relative;
+    flex: 0 0 24px;
+    box-sizing: border-box;
+}
+
+input[type="checkbox"]:checked {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    width: 7px;
+    height: 12px;
+    border: solid var(--text-on-accent-color);
+    border-width: 0 3px 3px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+    transform-origin: center;
+}
+
+input[type="checkbox"]:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
