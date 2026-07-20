@@ -1116,6 +1116,7 @@
                 const workoutEx = workout.exerciseIds[exIndex];
                 const exerciseType = (ex.type) ? ex.type : '';
                 const isCardio = isCardioExerciseType(exerciseType);
+                const routineTemplateItem = cloneRoutineTemplateItem(workoutEx);
                 const workoutExSets = (workoutEx && Array.isArray(workoutEx.sets)) ? workoutEx.sets : null;
                 const fallbackSetsCount = Math.max(1, Math.round(normalizeNumericValue(workoutEx && typeof workoutEx === 'object' ? workoutEx.sets : null, 3)));
                 const totalSets = workoutExSets ? workoutExSets.length : fallbackSetsCount;
@@ -1145,6 +1146,9 @@
                         time: timeValue,
                         exerciseType,
                         restSeconds: restSecondsValue,
+                        sourceRoutineId: workoutId,
+                        sourceExerciseIndex: exIndex,
+                        routineTemplateItem,
                         completed: false,
                         skipped: false
                     };
@@ -2259,6 +2263,7 @@
 
             const previousLength = sessionSets.length;
             sessionSets = sessionSets.concat(builtSets);
+            routineModified = true;
             if (previousLength === 0) {
                 currentIdx = 0;
                 viewingIdx = 0;
@@ -2268,6 +2273,11 @@
 
             closeAddSessionExercisesDialog();
             _syncExercisePickerAvailability();
+            const saveOpt = document.getElementById('saveRoutineOpt');
+            if (saveOpt) saveOpt.style.display = currentWorkoutId ? 'flex' : 'none';
+            const saveCb = document.getElementById('saveRoutineCheckbox');
+            if (saveCb) saveCb.checked = !!currentWorkoutId;
+            try { await initExercisesToSave(); } catch (e) { console.warn('refresh exercises to save after adding exercises failed', e); }
             await renderSet();
         }
 
@@ -3449,6 +3459,62 @@
             return arr;
         }
 
+        function cloneRoutineTemplateItem(item) {
+            if (!item || typeof item !== 'object') return item || null;
+            const copy = { ...item };
+            if (Array.isArray(item.sets)) {
+                copy.sets = item.sets.map(set => ({ ...set }));
+            }
+            return copy;
+        }
+
+        function buildRoutineItemFromSessionSets(exId, isCustom, sessionExSets, baseItem) {
+            const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
+            const isCardioExercise = isCardioExerciseType(exerciseType || '');
+            const updated = {
+                id: exId,
+                isCustom,
+                sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
+            };
+            if (baseItem && typeof baseItem === 'object' && baseItem.restSeconds !== undefined) {
+                updated.restSeconds = baseItem.restSeconds;
+            } else if (sessionExSets[0] && Number.isFinite(Number(sessionExSets[0].restSeconds))) {
+                updated.restSeconds = Math.max(0, Math.round(Number(sessionExSets[0].restSeconds)));
+            }
+            return updated;
+        }
+
+        function applyRoutineUpdatesToWorkout(workout) {
+            if (!workout || !Array.isArray(workout.exerciseIds)) return workout;
+
+            const existingKeys = new Set();
+            workout.exerciseIds = workout.exerciseIds.map(item => {
+                const exId = typeof item === 'object' ? item.id : item;
+                const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
+                const key = `${isCustom ? 'c' : 's'}:${exId}`;
+                existingKeys.add(key);
+                const shouldSaveThisEx = (exercisesToSave[key] !== false);
+                if (shouldSaveThisEx) {
+                    const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
+                    if (sessionExSets.length > 0) {
+                        return buildRoutineItemFromSessionSets(exId, isCustom, sessionExSets, item);
+                    }
+                }
+                return item;
+            });
+
+            editedExercisesForSave.forEach(group => {
+                const key = `${group.isCustom ? 'c' : 's'}:${group.exId}`;
+                if (existingKeys.has(key) || exercisesToSave[key] === false) return;
+                const sessionExSets = sessionSets.filter(s => s.exId === group.exId && s.isCustom === group.isCustom);
+                if (sessionExSets.length === 0) return;
+                workout.exerciseIds.push(buildRoutineItemFromSessionSets(group.exId, group.isCustom, sessionExSets, group.templateItem));
+                existingKeys.add(key);
+            });
+
+            return workout;
+        }
+
         async function initExercisesToSave() {
             const previousSelections = { ...exercisesToSave, ...exerciseSaveOverrides };
             exercisesToSave = {};
@@ -3469,8 +3535,11 @@
                             namePT: s.namePT,
                             exerciseType: s.exerciseType,
                             imageId: s.imageId,
+                            routineTemplateItem: cloneRoutineTemplateItem(s.routineTemplateItem),
                             sets: []
                         };
+                    } else if (!sessionGroups[key].routineTemplateItem && s.routineTemplateItem) {
+                        sessionGroups[key].routineTemplateItem = cloneRoutineTemplateItem(s.routineTemplateItem);
                     }
                     sessionGroups[key].sets.push(s);
                 });
@@ -3484,8 +3553,9 @@
 
                 for (const key in sessionGroups) {
                     const group = sessionGroups[key];
-                    const templateItem = workoutMap[key];
-                    const edited = isExerciseEdited(group.sets, templateItem);
+                    const existsInCurrentRoutine = Object.prototype.hasOwnProperty.call(workoutMap, key);
+                    const templateItem = workoutMap[key] || group.routineTemplateItem;
+                    const edited = existsInCurrentRoutine ? isExerciseEdited(group.sets, templateItem) : true;
                     if (edited) {
                         let imgSrc = defaultImage;
                         if (group.imageId) {
@@ -3613,31 +3683,12 @@
                 // Update the workout template with the values used in this session only if user opted in
                 const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
                 if (shouldSaveRoutine && currentWorkoutId) {
+                    if (editedExercisesForSave.length === 0) {
+                        await initExercisesToSave();
+                    }
                     const workout = await db.routines.get(currentWorkoutId);
                     if (workout) {
-                        workout.exerciseIds = workout.exerciseIds.map(item => {
-                            const exId = typeof item === 'object' ? item.id : item;
-                            const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
-                            const key = `${isCustom ? 'c' : 's'}:${exId}`;
-                            const shouldSaveThisEx = (exercisesToSave[key] !== false);
-                            if (shouldSaveThisEx) {
-                                const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                                if (sessionExSets.length > 0) {
-                                    const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
-                                    const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                                    const updated = {
-                                        id: exId,
-                                        isCustom,
-                                        sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
-                                    };
-                                    if (typeof item === 'object' && item.restSeconds !== undefined) {
-                                        updated.restSeconds = item.restSeconds;
-                                    }
-                                    return updated;
-                                }
-                            }
-                            return item;
-                        });
+                        applyRoutineUpdatesToWorkout(workout);
                         await db.routines.put(workout);
                     }
                 }
@@ -3706,29 +3757,10 @@
                 const workout = await db.routines.get(currentWorkoutId);
                 if (!workout) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
 
-                workout.exerciseIds = workout.exerciseIds.map(item => {
-                    const exId = typeof item === 'object' ? item.id : item;
-                    const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
-                    const key = `${isCustom ? 'c' : 's'}:${exId}`;
-                    const shouldSaveThisEx = (exercisesToSave[key] !== false);
-                    if (shouldSaveThisEx) {
-                        const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                        if (sessionExSets.length > 0) {
-                            const exerciseType = sessionExSets[0] ? sessionExSets[0].exerciseType : '';
-                            const isCardioExercise = isCardioExerciseType(exerciseType || '');
-                            const updated = {
-                                id: exId,
-                                isCustom,
-                                sets: sessionExSets.map(s => isCardioExercise ? { distance: s.distance, time: s.time } : { reps: s.reps, weight: s.weight })
-                            };
-                            if (typeof item === 'object' && item.restSeconds !== undefined) {
-                                updated.restSeconds = item.restSeconds;
-                            }
-                            return updated;
-                        }
-                    }
-                    return item;
-                });
+                if (editedExercisesForSave.length === 0) {
+                    await initExercisesToSave();
+                }
+                applyRoutineUpdatesToWorkout(workout);
                 await db.routines.put(workout);
                 localStorage.setItem('has_local_changes', 'true');
                 alert(GN_I18N.t('routine_saved') || 'Routine saved');
