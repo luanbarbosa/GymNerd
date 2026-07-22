@@ -2117,7 +2117,20 @@
 
         function getExerciseSaveKeyFromSet(set) {
             if (!set || !Number.isFinite(Number(set.exId))) return '';
-            return `${set.isCustom ? 'c' : 's'}:${Number(set.exId)}`;
+            const routineId = getRoutineIdForSet(set);
+            if (!routineId) return '';
+            return `${routineId}:${set.isCustom ? 'c' : 's'}:${Number(set.exId)}`;
+        }
+
+        function getRoutineIdForSet(set) {
+            const sourceRoutineId = Number(set && set.sourceRoutineId);
+            if (Number.isFinite(sourceRoutineId) && sourceRoutineId > 0) return sourceRoutineId;
+            const workoutId = Number(currentWorkoutId);
+            return (Number.isFinite(workoutId) && workoutId > 0) ? workoutId : null;
+        }
+
+        function hasRoutineUpdateTarget() {
+            return sessionSets.some(set => !!getRoutineIdForSet(set));
         }
 
         function syncSaveRoutineSelectionUi() {
@@ -2147,7 +2160,7 @@
 
             const viewingSet = sessionSets[viewingIdx];
             const key = getExerciseSaveKeyFromSet(viewingSet);
-            if (!key || !currentWorkoutId) return;
+            if (!key) return;
 
             const occurrenceSets = sessionSets.filter(s => s.occurrenceId === viewingSet.occurrenceId);
             const occurrenceComplete = occurrenceSets.length > 0 && occurrenceSets.every(s => s.completed);
@@ -2324,9 +2337,9 @@
             closeAddSessionExercisesDialog();
             _syncExercisePickerAvailability();
             const saveOpt = document.getElementById('saveRoutineOpt');
-            if (saveOpt) saveOpt.style.display = currentWorkoutId ? 'flex' : 'none';
+            if (saveOpt) saveOpt.style.display = hasRoutineUpdateTarget() ? 'flex' : 'none';
             const saveCb = document.getElementById('saveRoutineCheckbox');
-            if (saveCb) saveCb.checked = !!currentWorkoutId;
+            if (saveCb) saveCb.checked = hasRoutineUpdateTarget();
             try { await initExercisesToSave(); } catch (e) { console.warn('refresh exercises to save after adding exercises failed', e); }
             await renderSet();
         }
@@ -3114,36 +3127,13 @@
                     try {
                         const saveOpt = document.getElementById('saveRoutineOpt');
                         const cb = document.getElementById('saveRoutineCheckbox');
-                        let shouldShow = !!routineModified && !!currentWorkoutId;
-                        if (!shouldShow && currentWorkoutId) {
-                            // detect differences between sessionSets and stored workout's sets
-                            const workout = await db.routines.get(currentWorkoutId);
-                            if (workout && Array.isArray(workout.exerciseIds)) {
-                                const map = {};
-                                workout.exerciseIds.forEach(it => {
-                                    const id = (typeof it === 'object' ? it.id : it);
-                                    const isCustom = typeof it === 'object' ? (it.isCustom === true || it.isCustom === 'true') : false;
-                                    if (typeof it === 'object' && Array.isArray(it.sets)) {
-                                        map[`${isCustom ? 'c' : 's'}:${id}`] = it.sets;
-                                    }
-                                });
-                                for (const s of sessionSets) {
-                                    const key = `${s.isCustom ? 'c' : 's'}:${s.exId}`;
-                                    const sets = map[key];
-                                    if (!sets) continue;
-                                    const w = sets[s.setNum - 1];
-                                    if (!w) continue;
-                                    const wr = (w.reps || 0);
-                                    const ww = (w.weight || 0);
-                                    if ((s.reps || 0) !== wr || (s.weight || 0) !== ww) { shouldShow = true; break; }
-                                }
-                            }
+                        let shouldShow = false;
+                        if (hasRoutineUpdateTarget()) {
+                            await initExercisesToSave();
+                            shouldShow = editedExercisesForSave.length > 0;
                         }
                         if (saveOpt) saveOpt.style.display = shouldShow ? 'flex' : 'none';
                         if (cb) cb.checked = shouldShow;
-                        if (shouldShow) {
-                            await initExercisesToSave();
-                        }
                     } catch (e) { console.warn('save option detection failed', e); }
                     updateFinishedIllustration();
                 }
@@ -3165,7 +3155,7 @@
 
             const isActiveEx = currentIdx >= start && currentIdx <= end;
             const allSetsDone = sessionSets.slice(start, end + 1).every(s => s.completed || s.skipped);
-            if (routineModified && currentWorkoutId && editedExercisesForSave.length === 0) {
+            if (routineModified && hasRoutineUpdateTarget() && editedExercisesForSave.length === 0) {
                 try { await initExercisesToSave(); } catch (e) { console.warn('init exercises to save during render failed', e); }
             } else {
                 updatePlayerRoutineToggle();
@@ -3551,48 +3541,76 @@
         function applyRoutineUpdatesToWorkout(workout) {
             if (!workout || !Array.isArray(workout.exerciseIds)) return workout;
 
+            const workoutId = Number(workout.id);
+            const groupsForWorkout = editedExercisesForSave.filter(group => Number(group.sourceRoutineId) === workoutId);
             const existingKeys = new Set();
-            workout.exerciseIds = workout.exerciseIds.map(item => {
+            workout.exerciseIds = workout.exerciseIds.map((item, index) => {
                 const exId = typeof item === 'object' ? item.id : item;
                 const isCustom = typeof item === 'object' ? (item.isCustom === true || item.isCustom === 'true') : false;
-                const key = `${isCustom ? 'c' : 's'}:${exId}`;
-                existingKeys.add(key);
-                const shouldSaveThisEx = (exercisesToSave[key] !== false);
-                if (shouldSaveThisEx) {
-                    const sessionExSets = sessionSets.filter(s => s.exId === exId && s.isCustom === isCustom);
-                    if (sessionExSets.length > 0) {
-                        return buildRoutineItemFromSessionSets(exId, isCustom, sessionExSets, item);
-                    }
+                const exerciseKey = `${isCustom ? 'c' : 's'}:${exId}`;
+                existingKeys.add(exerciseKey);
+                const group = groupsForWorkout.find(g => {
+                    if (Number(g.exId) !== Number(exId) || !!g.isCustom !== isCustom) return false;
+                    return Number.isFinite(Number(g.sourceExerciseIndex)) ? Number(g.sourceExerciseIndex) === index : true;
+                });
+                if (group && exercisesToSave[group.saveKey] !== false) {
+                    return buildRoutineItemFromSessionSets(exId, isCustom, group.sets, item);
                 }
                 return item;
             });
 
-            editedExercisesForSave.forEach(group => {
-                const key = `${group.isCustom ? 'c' : 's'}:${group.exId}`;
-                if (existingKeys.has(key) || exercisesToSave[key] === false) return;
-                const sessionExSets = sessionSets.filter(s => s.exId === group.exId && s.isCustom === group.isCustom);
-                if (sessionExSets.length === 0) return;
-                workout.exerciseIds.push(buildRoutineItemFromSessionSets(group.exId, group.isCustom, sessionExSets, group.templateItem));
-                existingKeys.add(key);
+            groupsForWorkout.forEach(group => {
+                const exerciseKey = `${group.isCustom ? 'c' : 's'}:${group.exId}`;
+                if (existingKeys.has(exerciseKey) || exercisesToSave[group.saveKey] === false) return;
+                if (!Array.isArray(group.sets) || group.sets.length === 0) return;
+                workout.exerciseIds.push(buildRoutineItemFromSessionSets(group.exId, group.isCustom, group.sets, group.templateItem));
+                existingKeys.add(exerciseKey);
             });
 
             return workout;
+        }
+
+        async function saveRoutineUpdatesForTargets() {
+            if (!hasRoutineUpdateTarget()) return false;
+            if (editedExercisesForSave.length === 0) {
+                await initExercisesToSave();
+            }
+            const routineIds = Array.from(new Set(editedExercisesForSave.map(group => Number(group.sourceRoutineId)).filter(id => Number.isFinite(id) && id > 0)));
+            if (routineIds.length === 0) return false;
+
+            for (const routineId of routineIds) {
+                const workout = await db.routines.get(routineId);
+                if (!workout) continue;
+                applyRoutineUpdatesToWorkout(workout);
+                await db.routines.put(workout);
+            }
+            return true;
         }
 
         async function initExercisesToSave() {
             const previousSelections = { ...exercisesToSave, ...exerciseSaveOverrides };
             exercisesToSave = {};
             editedExercisesForSave = [];
-            if (!currentWorkoutId) return;
+            if (!hasRoutineUpdateTarget()) return;
             try {
-                const workout = await db.routines.get(currentWorkoutId);
-                if (!workout || !Array.isArray(workout.exerciseIds)) return;
+                const routineIds = Array.from(new Set(sessionSets.map(getRoutineIdForSet).filter(Boolean)));
+                const workouts = await Promise.all(routineIds.map(id => db.routines.get(id)));
+                const workoutsById = new Map();
+                workouts.forEach(workout => {
+                    if (workout && Array.isArray(workout.exerciseIds)) workoutsById.set(Number(workout.id), workout);
+                });
+                if (workoutsById.size === 0) return;
 
                 const sessionGroups = {};
                 sessionSets.forEach(s => {
-                    const key = `${s.isCustom ? 'c' : 's'}:${s.exId}`;
+                    const routineId = getRoutineIdForSet(s);
+                    const key = getExerciseSaveKeyFromSet(s);
+                    if (!routineId || !key) return;
                     if (!sessionGroups[key]) {
                         sessionGroups[key] = {
+                            saveKey: key,
+                            sourceRoutineId: routineId,
+                            sourceExerciseIndex: Number.isFinite(Number(s.sourceExerciseIndex)) ? Number(s.sourceExerciseIndex) : null,
                             exId: s.exId,
                             isCustom: s.isCustom,
                             name: s.name,
@@ -3608,18 +3626,23 @@
                     sessionGroups[key].sets.push(s);
                 });
 
-                const workoutMap = {};
-                workout.exerciseIds.forEach(it => {
-                    const id = (typeof it === 'object' ? it.id : it);
-                    const isCustom = typeof it === 'object' ? (it.isCustom === true || it.isCustom === 'true') : false;
-                    workoutMap[`${isCustom ? 'c' : 's'}:${id}`] = it;
-                });
-
                 for (const key in sessionGroups) {
                     const group = sessionGroups[key];
-                    const existsInCurrentRoutine = Object.prototype.hasOwnProperty.call(workoutMap, key);
-                    const templateItem = workoutMap[key] || group.routineTemplateItem;
-                    const edited = existsInCurrentRoutine ? isExerciseEdited(group.sets, templateItem) : true;
+                    const workout = workoutsById.get(Number(group.sourceRoutineId));
+                    if (!workout || !Array.isArray(workout.exerciseIds)) continue;
+                    const indexedItem = Number.isFinite(Number(group.sourceExerciseIndex))
+                        ? workout.exerciseIds[Number(group.sourceExerciseIndex)]
+                        : null;
+                    const indexedMatches = indexedItem && typeof indexedItem === 'object'
+                        && Number(indexedItem.id) === Number(group.exId)
+                        && ((indexedItem.isCustom === true || indexedItem.isCustom === 'true') === !!group.isCustom);
+                    const fallbackItem = workout.exerciseIds.find(it => {
+                        const id = typeof it === 'object' ? it.id : it;
+                        const isCustom = typeof it === 'object' ? (it.isCustom === true || it.isCustom === 'true') : false;
+                        return Number(id) === Number(group.exId) && isCustom === !!group.isCustom;
+                    });
+                    const templateItem = (indexedMatches ? indexedItem : fallbackItem) || group.routineTemplateItem;
+                    const edited = templateItem ? isExerciseEdited(group.sets, templateItem) : true;
                     if (edited) {
                         let imgSrc = defaultImage;
                         if (group.imageId) {
@@ -3640,6 +3663,10 @@
                 const pickBtn = document.getElementById('routineUpdateExercisesBtn');
                 if (pickBtn) {
                     pickBtn.style.display = editedExercisesForSave.length > 0 ? 'inline-flex' : 'none';
+                }
+                const saveOpt = document.getElementById('saveRoutineOpt');
+                if (saveOpt && routineModified) {
+                    saveOpt.style.display = editedExercisesForSave.length > 0 ? 'flex' : 'none';
                 }
                 syncSaveRoutineSelectionUi();
                 updatePlayerRoutineToggle();
@@ -3747,15 +3774,8 @@
 
                 // Update the workout template with the values used in this session only if user opted in
                 const shouldSaveRoutine = (function(){ const cb = document.getElementById('saveRoutineCheckbox'); return cb ? cb.checked : false; })();
-                if (shouldSaveRoutine && currentWorkoutId) {
-                    if (editedExercisesForSave.length === 0) {
-                        await initExercisesToSave();
-                    }
-                    const workout = await db.routines.get(currentWorkoutId);
-                    if (workout) {
-                        applyRoutineUpdatesToWorkout(workout);
-                        await db.routines.put(workout);
-                    }
+                if (shouldSaveRoutine) {
+                    await saveRoutineUpdatesForTargets();
                 }
 
                 const sessionId = now.getTime();
@@ -3818,15 +3838,9 @@
         async function saveRoutineChanges() {
             try {
                 await ensureDbOpen();
-                if (!currentWorkoutId) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
-                const workout = await db.routines.get(currentWorkoutId);
-                if (!workout) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
-
-                if (editedExercisesForSave.length === 0) {
-                    await initExercisesToSave();
-                }
-                applyRoutineUpdatesToWorkout(workout);
-                await db.routines.put(workout);
+                if (!hasRoutineUpdateTarget()) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
+                const saved = await saveRoutineUpdatesForTargets();
+                if (!saved) return alert(GN_I18N.t('no_workout_selected') || 'No workout selected');
                 localStorage.setItem('has_local_changes', 'true');
                 alert(GN_I18N.t('routine_saved') || 'Routine saved');
             } catch (err) {
