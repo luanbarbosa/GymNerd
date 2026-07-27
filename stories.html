@@ -147,6 +147,24 @@
             align-items: center;
             justify-content: center;
         }
+        .story-ok-btn {
+            position: absolute;
+            left: 24px;
+            right: 24px;
+            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+            z-index: 12;
+            border: 0;
+            border-radius: 14px;
+            padding: 16px 20px;
+            background: var(--accent-color);
+            color: var(--text-on-accent-color);
+            font: inherit;
+            font-size: 1rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+        }
 
         /* Content Styles */
         .story-title { font-size: 3.5rem; font-weight: 900; margin: 0; color: var(--primary); letter-spacing: -0.04em; line-height: 1; }
@@ -368,6 +386,7 @@
             font-weight: 700;
             line-height: 1.2;
             text-align: center;
+            white-space: pre-line;
             opacity: 0;
             transform: translateY(30px) rotate(-1deg);
             background: linear-gradient(to bottom, #fff, #94a3b8);
@@ -561,6 +580,7 @@
                     <div class="story-content-inner" style="justify-content: center; height: 100%;">
                         <div id="outcomeContainer" class="outcome-container"></div>
                     </div>
+                    <button type="button" class="story-ok-btn" id="storyOkBtn">OK</button>
                     <div class="story-disclaimer">
                         <span class="material-symbols-outlined disclaimer-icon">info</span>
                         <span class="disclaimer-text"></span>
@@ -638,8 +658,19 @@
                 document.querySelectorAll('#page2 .disclaimer-text, #page3 .disclaimer-text, #page4 .disclaimer-text')
                     .forEach(el => el.innerText = 'Using 1RM calculation');
 
+                const frequencyStats = {
+                    done: uniqueDates.length,
+                    rest: frozenDays.length,
+                    missed: Math.max(0, lastDay - uniqueDates.length - frozenDays.length),
+                    prevDone: pDone,
+                    prevRest: pFrozen,
+                    prevMissed: pMissed,
+                    diff: uniqueDates.length - pDone,
+                    monthName: pMonthName
+                };
+
                 renderTextFrequencyStory(uniqueDates.length, frozenDays.length, year, month, { done: pDone, rest: pFrozen, missed: pMissed, monthName: pMonthName });
-                const improvementPages = await renderImprovementsStory(logs, currentLang);
+                const improvementPages = await renderImprovementsStory(logs, currentLang, frequencyStats);
                 if (!improvementPages || !improvementPages.hasGains) {
                     const gainsPage = document.getElementById('page2');
                     if (gainsPage) gainsPage.remove();
@@ -668,7 +699,7 @@
         setTimeout(() => showPage(0), 100);
     }
 
-    async function renderImprovementsStory(currentLogs, lang) {
+    async function renderImprovementsStory(currentLogs, lang, frequencyStats) {
         const gainsContainer = document.getElementById('improvementsContainer');
         const lossesContainer = document.getElementById('lossesContainer');
         if (!gainsContainer || !lossesContainer) return { hasGains: false, hasLosses: false };
@@ -862,7 +893,7 @@
         renderItems(losses, lossesContainer, true);
 
         await renderTypeStatusStory(typeStats, lang);
-        renderOutcomeStory(typeStats, lang);
+        renderOutcomeStory(typeStats, lang, frequencyStats);
 
         return {
             hasGains: gains.length > 0,
@@ -870,7 +901,7 @@
         };
     }
 
-    function renderOutcomeStory(typeStats, lang) {
+    function renderOutcomeStory(typeStats, lang, frequencyStats) {
         const container = document.getElementById('outcomeContainer');
         if (!container) return;
         container.innerHTML = '';
@@ -893,36 +924,48 @@
         const progressed = types.filter(type => type && type.progress && type.progress.percent > 0);
         const declined = types.filter(type => type && type.progress && type.progress.percent < 0);
         const steady = types.filter(type => !type || !type.progress || type.progress.percent === 0);
+        const workoutsDone = Number(frequencyStats && frequencyStats.done) || 0;
+        const previousWorkoutsDone = Number(frequencyStats && frequencyStats.prevDone) || 0;
+        const workoutDiff = workoutsDone - previousWorkoutsDone;
+        const hasFrequencyComparison = previousWorkoutsDone > 0 || workoutsDone > 0;
+        const frequencyDeclined = hasFrequencyComparison && workoutDiff < 0;
 
         const getOutcomeText = (key, fallback) => {
             const template = (window.GN_I18N && typeof GN_I18N.t === 'function') ? (GN_I18N.t(key) || fallback) : fallback;
             return String(template).replace('{m}', nextMonthName);
         };
 
-        let illustration = 'illustrations/flamo-happy-1-2.svg';
-        let message = getOutcomeText('story_outcome_some_growth', `Good job! You had good progress. On ${nextMonthName} lets try to progress on all exercise types.`);
+        const allTypesImproved = types.length > 0 && progressed.length === types.length;
+        const mostTypesDeclined = types.length > 0 && declined.length > (types.length / 2);
+        const hasTypeDecline = declined.length > 0;
+        let outcomeMood = 'mixed';
 
-        if (types.length > 0 && progressed.length === types.length) {
-            illustration = 'illustrations/flamo-happy-15-plus.svg';
-            message = getOutcomeText('story_outcome_all_growth', 'You did amazing! You are growing on all exercise type. Keep up the good work!');
-        } else if (types.length > 0 && declined.length === types.length) {
-            illustration = 'illustrations/flamo-sad-6-8.svg';
-            message = getOutcomeText('story_outcome_all_loss', `Oh boy... this was a bad month. But you can do it in ${nextMonthName}!`);
-        } else if (declined.length > 0 && progressed.length > 0) {
-            illustration = 'illustrations/happy-flame.svg';
-            message = getOutcomeText('story_outcome_mixed_loss', `Ok job... You loss some progress. On ${nextMonthName} lets try to progress on all of them`);
-        } else if (declined.length > 0) {
-            illustration = 'illustrations/happy-flame.svg';
-            message = getOutcomeText('story_outcome_mixed_loss', `Ok job... You loss some progress. On ${nextMonthName} lets try to progress on all of them`);
-        } else if (progressed.length > 0 && steady.length > 0) {
-            illustration = 'illustrations/flamo-happy-1-2.svg';
-            message = getOutcomeText('story_outcome_some_growth', `Good job! You had good progress. On ${nextMonthName} lets try to progress on all exercise types.`);
-        } else if (progressed.length === 0 && declined.length > 0) {
-            illustration = 'illustrations/flamo-sad-6-8.svg';
-            message = getOutcomeText('story_outcome_all_loss', `Oh boy... this was a bad month. But you can do it in ${nextMonthName}!`);
+        if (allTypesImproved && !frequencyDeclined) {
+            outcomeMood = 'positive';
+        } else if (frequencyDeclined || mostTypesDeclined) {
+            outcomeMood = 'negative';
         }
 
-        const isHappy = declined.length === 0 && progressed.length > 0;
+        let illustration = 'illustrations/flamo-happy-rest.svg';
+        let message = getOutcomeText('story_outcome_mixed_loss', 'Mixed progress.');
+
+        if (outcomeMood === 'positive') {
+            illustration = 'illustrations/flamo-happy-15-plus.svg';
+            message = getOutcomeText('story_outcome_all_growth', 'You did amazing!');
+        } else if (outcomeMood === 'negative') {
+            illustration = 'illustrations/flamo-sad-6-8.svg';
+            if (frequencyDeclined && hasTypeDecline) {
+                message = getOutcomeText('story_outcome_negative_frequency_and_types', 'Frequency is down. Some exercise types dropped.');
+            } else if (frequencyDeclined) {
+                message = getOutcomeText('story_outcome_negative_frequency', 'Frequency is down.');
+            } else {
+                message = getOutcomeText('story_outcome_negative_types', 'Most exercise types dropped.');
+            }
+        } else if (hasTypeDecline) {
+            message = getOutcomeText('story_outcome_mixed_loss', 'Mixed progress.');
+        }
+
+        const isHappy = outcomeMood === 'positive';
         const glowColor = isHappy ? 'var(--primary)' : '#4d94ff';
 
         let sparklesHtml = '';
@@ -939,7 +982,7 @@
             ? (GN_I18N.t('story_focus_title') || 'You could focus on')
             : 'You could focus on';
         const focusTypes = declined
-            .slice()
+            .concat(steady)
             .sort((a, b) => {
                 const left = a && a.progress ? a.progress.percent : 0;
                 const right = b && b.progress ? b.progress.percent : 0;
@@ -1092,6 +1135,9 @@
         
         currentPage = index;
         const page = pages[currentPage];
+        const isLastPage = currentPage === pages.length - 1;
+        const closeBtn = document.getElementById('storyCloseBtn');
+        if (closeBtn) closeBtn.style.display = isLastPage ? 'none' : 'flex';
         page.style.display = 'flex';
         page.classList.add('active');
         
@@ -1126,7 +1172,6 @@
                     nextPage();
                 } else {
                     clearInterval(progressInterval);
-                    history.back();
                 }
             } else {
                 if (fills[index]) fills[index].style.width = progress + '%';
@@ -1153,8 +1198,13 @@
 
     function nextPage() {
         const pages = document.querySelectorAll('.story-page');
-        if (currentPage < pages.length - 1) showPage(currentPage + 1);
-        else history.back();
+        if (currentPage < pages.length - 1) {
+            showPage(currentPage + 1);
+            return;
+        }
+
+        if (progressInterval) clearInterval(progressInterval);
+        leaveStory();
     }
 
     function prevPage() {
@@ -1177,7 +1227,7 @@
     let isLongPress = false;
 
     const handlePressStart = (e) => {
-        if (e.target.closest('.story-close')) return;
+        if (e.target.closest('.story-close') || e.target.closest('.story-ok-btn')) return;
         isLongPress = false;
         pressTimer = setTimeout(() => {
             isLongPress = true;
@@ -1202,9 +1252,38 @@
     }
     
     const closeBtn = document.getElementById('storyCloseBtn');
+    const leaveStory = () => {
+        try {
+            history.back();
+        } catch (e) {
+            const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+            location.replace(basePath + 'index.html?start=home');
+            return;
+        }
+
+        setTimeout(() => {
+            if (!document.querySelector('.story-container')) return;
+
+            const pageName = (window.location.pathname || '').split('/').pop();
+            if (pageName === 'stories.html' || pageName === 'stories') {
+                const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                location.replace(basePath + 'index.html?start=home');
+                return;
+            }
+
+            location.reload();
+        }, 180);
+    };
+
     if (closeBtn) closeBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        history.back();
+        leaveStory();
+    });
+
+    const okBtn = document.getElementById('storyOkBtn');
+    if (okBtn) okBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        leaveStory();
     });
 
     if (document.readyState === 'loading') {
