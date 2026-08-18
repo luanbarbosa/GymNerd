@@ -537,5 +537,12 @@
     "name": "Cable Crunch",
     "namePT": "Abdominal na polia",
     "type": "abs"
+  },
+  {
+    "id": 78,
+    "imageId": 78,
+    "name": "Lower back extension",
+    "namePT": "Extensão de tronco",
+    "type": "back"
   }
 ]
