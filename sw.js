@@ -1,4 +1,4 @@
-const CACHE = 'gymnerd-v2';
+const CACHE = 'gymnerd-v3';
 const ASSETS = [
   './',
   './home.html',
@@ -45,7 +45,8 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   const acceptHeader = event.request.headers.get('Accept') || '';
-  const isHtmlRequest = acceptHeader.includes('text/html');
+  const reqPath = new URL(event.request.url).pathname;
+  const isHtmlRequest = acceptHeader.includes('text/html') || reqPath.endsWith('.html');
 
   // Network-first for navigation / HTML requests so users get fresh pages quickly.
   if (isHtmlRequest) {

@@ -117,6 +117,24 @@
             .file-control { display:flex; gap:8px; align-items:center; justify-content:flex-start; }
             .file-name { display:block; max-width: 100%; overflow-wrap: anywhere; font-size:0.92rem; color:#7b8794; }
         }
+
+        /* Migrate to new app dialog */
+        .dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.68); display: none; align-items: center; justify-content: center; z-index: 1600; padding: 12px; padding-top: calc(12px + constant(safe-area-inset-top)); padding-top: calc(12px + env(safe-area-inset-top)); padding-bottom: calc(12px + constant(safe-area-inset-bottom)); padding-bottom: calc(12px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+        .dialog-overlay.open { display: flex; }
+        .dialog-sheet { width: min(100%, 500px); max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display: flex; flex-direction: column; background: var(--shell-background); border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; box-shadow: 0 24px 48px rgba(0,0,0,0.4); }
+        .dialog-header { display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 18px 18px 14px; }
+        .dialog-title { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text); }
+        .dialog-body { flex: 1 1 auto; overflow: auto; padding: 0 18px 18px; }
+        .migrate-step { display:flex; gap:12px; align-items:flex-start; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .migrate-step:last-child { border-bottom: none; }
+        .migrate-step-num { flex: 0 0 auto; width:26px; height:26px; border-radius:50%; background: var(--accent-color); color: var(--text-on-accent-color); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; }
+        .migrate-step-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+        .migrate-step-text { color: var(--text); font-size:0.92rem; line-height:1.35; }
+        .migrate-step-btn { align-self:flex-start; background: rgba(255,255,255,0.06); color: var(--text); border:1px solid rgba(255,255,255,0.1); padding:8px 12px; border-radius:8px; font-weight:700; font-size:0.85rem; cursor:pointer; display:inline-block; text-decoration:none; }
+        .migrate-done-note { padding: 14px 0 0; color: var(--text); font-weight:700; text-align:center; }
+        .dialog-actions { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .dialog-btn { width: 100%; min-width: 0; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; padding: 14px 16px; }
+        .dialog-btn-secondary { background: rgba(255,255,255,0.08); color: var(--text); }
     </style>
 </head>
 <body>
@@ -214,6 +232,53 @@
             </div>
         </div>
 
+        <h3 class="section-title">For Alpha testers only</h3>
+        <div class="card">
+            <div class="danger-row">
+                <button onclick="migrateDataToNewApp()" class="sync-btn" data-i18n="migrate_to_new_app"></button>
+            </div>
+        </div>
+
+        </div>
+    </div>
+
+    <div id="migrateDialog" class="dialog-overlay" aria-hidden="true" onclick="handleMigrateDialogBackdrop(event)">
+        <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="migrateDialogTitle" onclick="event.stopPropagation()">
+            <div class="dialog-header">
+                <h3 id="migrateDialogTitle" class="dialog-title" data-i18n="migrate_modal_title">Migrate to the new app</h3>
+            </div>
+            <div class="dialog-body">
+                <div class="migrate-step">
+                    <div class="migrate-step-num">1</div>
+                    <div class="migrate-step-body">
+                        <div class="migrate-step-text" data-i18n="migrate_step1">Install the Firebase App Distribution app (invite sent to your email)</div>
+                    </div>
+                </div>
+                <div class="migrate-step">
+                    <div class="migrate-step-num">2</div>
+                    <div class="migrate-step-body">
+                        <div class="migrate-step-text" data-i18n="migrate_step2">Download and install the new GymNerd App</div>
+                    </div>
+                </div>
+                <div class="migrate-step">
+                    <div class="migrate-step-num">3</div>
+                    <div class="migrate-step-body">
+                        <div class="migrate-step-text" data-i18n="migrate_step3">Download your data (ZIP)</div>
+                        <button class="migrate-step-btn" type="button" onclick="exportData()" data-i18n="migrate_download_backup">Download backup file</button>
+                    </div>
+                </div>
+                <div class="migrate-step">
+                    <div class="migrate-step-num">4</div>
+                    <div class="migrate-step-body">
+                        <div class="migrate-step-text" data-i18n="migrate_step4">Navigate to the migration screen</div>
+                        <a class="migrate-step-btn" href="gymnerd://migration" data-i18n="migrate_navigate_btn">Navigate to migration screen</a>
+                    </div>
+                </div>
+                <div class="migrate-done-note" data-i18n="migrate_done_note">After that, you're done! :)</div>
+            </div>
+            <div class="dialog-actions">
+                <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeMigrateDialog()" data-i18n="done_btn">Done</button>
+            </div>
         </div>
     </div>
 
@@ -703,6 +768,25 @@
                 const failMsg = (typeof GN_I18N !== 'undefined') ? (GN_I18N.t('delete_history_failed') || 'Failed to delete history.') : 'Failed to delete history.';
                 alert(failMsg);
             }
+        }
+
+        // Migrate to new app dialog
+        function migrateDataToNewApp() {
+            const dialog = document.getElementById('migrateDialog');
+            if (!dialog) return;
+            dialog.classList.add('open');
+            dialog.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeMigrateDialog() {
+            const dialog = document.getElementById('migrateDialog');
+            if (!dialog) return;
+            dialog.classList.remove('open');
+            dialog.setAttribute('aria-hidden', 'true');
+        }
+
+        function handleMigrateDialogBackdrop(ev) {
+            if (ev.target === ev.currentTarget) closeMigrateDialog();
         }
 
         // File input UI: show selected filename in the UI
