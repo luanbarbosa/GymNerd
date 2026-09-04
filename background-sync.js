@@ -32,13 +32,12 @@ const BackgroundSync = {
         icon.style.opacity = '1';
         icon.style.cursor = 'pointer';
         
-        // Reset special styles
-        icon.style.fontVariationSettings = "'wght' 300";
+        // Reset special styles (keep FILL 1 — these icons only exist in the filled local svg set)
+        icon.style.fontVariationSettings = "'wght' 300, 'FILL' 1";
 
         if (hasPermissionError) {
             icon.textContent = 'cloud_alert';
             icon.style.color = '#ef4444'; // Red
-            icon.style.fontVariationSettings = "'wght' 300, 'FILL' 1";
         } else if (inProgress || hasChanges) {
             icon.textContent = 'cloud_upload';
             icon.style.color = 'var(--accent-color)';

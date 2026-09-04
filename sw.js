@@ -1,4 +1,4 @@
-const CACHE = 'gymnerd-v3';
+const CACHE = 'gymnerd-v4';
 const ASSETS = [
   './',
   './home.html',

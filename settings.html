@@ -11,8 +11,6 @@
     <title>GymNerd | Settings</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="favicon.svg">
-    <link href="https://fonts.googleapis.com" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0" rel="stylesheet">
     <script>
         window.EXCHANGE_TOKEN_URL = '';
         // Simple cookie reader for settings page
@@ -33,6 +31,9 @@
     <link rel="stylesheet" href="styles/colors.css">
     <link rel="stylesheet" href="styles/fonts.css">
     <link rel="stylesheet" href="styles/profile-card.css">
+    <link rel="stylesheet" href="styles/material-symbols.css">
+    <script src="icons/material-symbols-data.js"></script>
+    <script src="icons/material-symbols.js"></script>
     <style>
         :root { --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%); --bg: var(--shell-background); --card: #1e293b; --text: #f8fafc; --text-dim: #94a3b8; --success: #10b981; --danger: #ef4444; }
         html { background-color: var(--shell-background); }
@@ -264,7 +265,10 @@
                     <div class="migrate-step-num">3</div>
                     <div class="migrate-step-body">
                         <div class="migrate-step-text" data-i18n="migrate_step3">Download your data (ZIP)</div>
-                        <button class="migrate-step-btn" type="button" onclick="exportData()" data-i18n="migrate_download_backup">Download backup file</button>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <button id="migrate-download-btn" class="migrate-step-btn" type="button" onclick="migrateDownloadBackup()" data-i18n="migrate_download_backup">Download backup file</button>
+                            <span id="migrate-download-check" class="material-symbols-outlined" aria-hidden="true" style="display:none;color:var(--success);">check_circle</span>
+                        </div>
                     </div>
                 </div>
                 <div class="migrate-step">
@@ -776,6 +780,12 @@
             if (!dialog) return;
             dialog.classList.add('open');
             dialog.setAttribute('aria-hidden', 'false');
+        }
+
+        async function migrateDownloadBackup() {
+            await exportData();
+            const check = document.getElementById('migrate-download-check');
+            if (check) check.style.display = 'inline-flex';
         }
 
         function closeMigrateDialog() {
