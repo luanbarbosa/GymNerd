@@ -240,49 +240,49 @@
             </div>
         </div>
 
-        </div>
-    </div>
-
-    <div id="migrateDialog" class="dialog-overlay" aria-hidden="true" onclick="handleMigrateDialogBackdrop(event)">
-        <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="migrateDialogTitle" onclick="event.stopPropagation()">
-            <div class="dialog-header">
-                <h3 id="migrateDialogTitle" class="dialog-title" data-i18n="migrate_modal_title">Migrate to the new app</h3>
-            </div>
-            <div class="dialog-body">
-                <div class="migrate-step">
-                    <div class="migrate-step-num">1</div>
-                    <div class="migrate-step-body">
-                        <div class="migrate-step-text" data-i18n="migrate_step1">Install the Firebase App Distribution app (invite sent to your email)</div>
-                    </div>
+        <div id="migrateDialog" class="dialog-overlay" aria-hidden="true" onclick="handleMigrateDialogBackdrop(event)">
+            <div class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="migrateDialogTitle" onclick="event.stopPropagation()">
+                <div class="dialog-header">
+                    <h3 id="migrateDialogTitle" class="dialog-title" data-i18n="migrate_modal_title">Migrate to the new app</h3>
                 </div>
-                <div class="migrate-step">
-                    <div class="migrate-step-num">2</div>
-                    <div class="migrate-step-body">
-                        <div class="migrate-step-text" data-i18n="migrate_step2">Download and install the new GymNerd App</div>
-                    </div>
-                </div>
-                <div class="migrate-step">
-                    <div class="migrate-step-num">3</div>
-                    <div class="migrate-step-body">
-                        <div class="migrate-step-text" data-i18n="migrate_step3">Download your data (ZIP)</div>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <button id="migrate-download-btn" class="migrate-step-btn" type="button" onclick="migrateDownloadBackup()" data-i18n="migrate_download_backup">Download backup file</button>
-                            <span id="migrate-download-check" class="material-symbols-outlined" aria-hidden="true" style="display:none;color:var(--success);">check_circle</span>
+                <div class="dialog-body">
+                    <div class="migrate-step">
+                        <div class="migrate-step-num">1</div>
+                        <div class="migrate-step-body">
+                            <div class="migrate-step-text" data-i18n="migrate_step1">Install the Firebase App Distribution app (invite sent to your email)</div>
                         </div>
                     </div>
-                </div>
-                <div class="migrate-step">
-                    <div class="migrate-step-num">4</div>
-                    <div class="migrate-step-body">
-                        <div class="migrate-step-text" data-i18n="migrate_step4">Navigate to the migration screen</div>
-                        <a class="migrate-step-btn" href="gymnerd://migration" data-i18n="migrate_navigate_btn">Navigate to migration screen</a>
+                    <div class="migrate-step">
+                        <div class="migrate-step-num">2</div>
+                        <div class="migrate-step-body">
+                            <div class="migrate-step-text" data-i18n="migrate_step2">Download and install the new GymNerd App</div>
+                        </div>
                     </div>
+                    <div class="migrate-step">
+                        <div class="migrate-step-num">3</div>
+                        <div class="migrate-step-body">
+                            <div class="migrate-step-text" data-i18n="migrate_step3">Download your data (ZIP)</div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <button id="migrate-download-btn" class="migrate-step-btn" type="button" onclick="migrateDownloadBackup()" data-i18n="migrate_download_backup">Download backup file</button>
+                                <span id="migrate-download-check" class="material-symbols-outlined" aria-hidden="true" style="display:none;color:var(--success);">check_circle</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="migrate-step">
+                        <div class="migrate-step-num">4</div>
+                        <div class="migrate-step-body">
+                            <div class="migrate-step-text" data-i18n="migrate_step4">Navigate to the migration screen</div>
+                            <a class="migrate-step-btn" href="gymnerd://migration" data-i18n="migrate_navigate_btn">Navigate to migration screen</a>
+                        </div>
+                    </div>
+                    <div class="migrate-done-note" data-i18n="migrate_done_note">After that, you're done! :)</div>
                 </div>
-                <div class="migrate-done-note" data-i18n="migrate_done_note">After that, you're done! :)</div>
+                <div class="dialog-actions">
+                    <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeMigrateDialog()" data-i18n="done_btn">Done</button>
+                </div>
             </div>
-            <div class="dialog-actions">
-                <button class="dialog-btn dialog-btn-secondary" type="button" onclick="closeMigrateDialog()" data-i18n="done_btn">Done</button>
-            </div>
+        </div>
+
         </div>
     </div>
 
@@ -798,6 +798,13 @@
         function handleMigrateDialogBackdrop(ev) {
             if (ev.target === ev.currentTarget) closeMigrateDialog();
         }
+
+        // Allow deep-linking straight to the migration dialog, e.g. settings.html?migrate=1
+        try {
+            if (new URLSearchParams(window.location.search).get('migrate') === '1') {
+                migrateDataToNewApp();
+            }
+        } catch (e) {}
 
         // File input UI: show selected filename in the UI
         (function(){
