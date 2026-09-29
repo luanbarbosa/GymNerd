@@ -110,6 +110,9 @@
                 exercise_saved_local: 'Exercise saved to your local collection!',
                 failed_to_save_exercise_prefix: 'Failed to save exercise: ',
 
+                android_deprecation_title: 'We are deprecating this site',
+                android_deprecation_text: 'You should move to the app. This site will soon be deactivated.',
+
                 demo_mode: 'Local Mode',
                 demo_mode_warning: 'The data will be stored locally. The responsibility of backup will be yours.',
 
@@ -445,6 +448,9 @@
                 migrate_done_note: 'Depois disso, pronto! :)',
                 logout: 'Logout',
                 login: 'Entrar',
+
+                android_deprecation_title: 'Estamos descontinuando este site',
+                android_deprecation_text: 'Você deve migrar para o app. Este site será desativado em breve.',
 
                 demo_mode: 'Modo local',
                 demo_mode_warning: 'Os dados serão armazenados localmente. A responsabilidade de backup será sua.',

@@ -36,6 +36,78 @@
             padding: 36px 16px;
         }
 
+        /* Android deprecation banner */
+        #android-deprecation-root {
+            display: block;
+            width: 100%;
+            max-width: 420px;
+            box-sizing: border-box;
+            padding-bottom: 16px;
+        }
+
+        .android-deprecation-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            box-sizing: border-box;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            background: #b91c1c;
+            border: 1px solid #ef4444;
+            color: #ffffff;
+        }
+
+        .android-deprecation-banner__icon {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            margin-top: 1px;
+        }
+
+        .android-deprecation-banner__body {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .android-deprecation-banner__title {
+            font-weight: 800;
+            font-size: 1rem;
+            line-height: 1.25;
+        }
+
+        .android-deprecation-banner__text {
+            font-size: 0.85rem;
+            line-height: 1.35;
+            opacity: 0.95;
+        }
+
+        .android-deprecation-banner__downloads {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .android-deprecation-banner__download {
+            display: inline-block;
+        }
+
+        .android-deprecation-banner__download img {
+        	display: block;
+        	width: auto;
+        	height: 40px;
+        }
+
+        /* Google's badge PNG has built-in transparent padding; scale up and crop it so the visible art is 40px tall like the App Store badge */
+        .android-deprecation-banner__download img.is-google-play {
+        	height: 60px;
+        	margin: -10px;
+        }
+
         .hero {
             display:flex;
             flex-direction:column;
@@ -232,6 +304,27 @@
     </script>
     <!-- language selector removed -->
     <div class="wrap">
+        <div id="android-deprecation-root">
+            <div id="android-deprecation-banner" class="android-deprecation-banner" role="alert">
+                <svg class="android-deprecation-banner__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="7" x2="12" y2="13" />
+                    <line x1="12" y1="16.5" x2="12" y2="16.6" />
+                </svg>
+                <div class="android-deprecation-banner__body">
+                    <div class="android-deprecation-banner__title" data-i18n="android_deprecation_title">We are deprecating this site</div>
+                    <div class="android-deprecation-banner__text" data-i18n="android_deprecation_text">You should move to the app. This site will soon be deactivated.</div>
+                    <div class="android-deprecation-banner__downloads">
+                        <a class="android-deprecation-banner__download" href="https://play.google.com/store/apps/details?id=com.gymnerd.app" target="_blank" rel="noopener">
+                            <img class="is-google-play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" />
+                        </a>
+                        <a class="android-deprecation-banner__download" href="TEMP" target="_blank" rel="noopener">
+                            <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="hero">
             <img src="favicon.svg" alt="App icon" class="brand" />
             <div class="app-title" data-i18n="title_main"></div>
