@@ -647,6 +647,65 @@
 			background: transparent;
 		}
 
+		/* Android deprecation banner */
+		#android-deprecation-root {
+			display: none;
+			width: 100%;
+			box-sizing: border-box;
+			padding: 0 20px 16px;
+		}
+
+		.android-deprecation-banner {
+			display: flex;
+			align-items: flex-start;
+			gap: 12px;
+			box-sizing: border-box;
+			width: 100%;
+			padding: 14px;
+			border-radius: 12px;
+			background: #b91c1c;
+			border: 1px solid #ef4444;
+			color: #ffffff;
+		}
+
+		.android-deprecation-banner__icon {
+			flex-shrink: 0;
+			width: 28px;
+			height: 28px;
+			margin-top: 1px;
+		}
+
+		.android-deprecation-banner__body {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			min-width: 0;
+		}
+
+		.android-deprecation-banner__title {
+			font-weight: 800;
+			font-size: 1rem;
+			line-height: 1.25;
+		}
+
+		.android-deprecation-banner__text {
+			font-size: 0.85rem;
+			line-height: 1.35;
+			opacity: 0.95;
+		}
+
+		.android-deprecation-banner__download {
+			display: inline-block;
+			align-self: flex-start;
+			margin-top: 8px;
+		}
+
+		.android-deprecation-banner__download img {
+			display: block;
+			height: 44px;
+			width: auto;
+		}
+
 		/* Local mode banner */
 		#demo-banner {
 			display: none;
@@ -1626,6 +1685,32 @@
 					</div>
 				</div>
 		</div>
+		<div id="android-deprecation-root">
+			<div id="android-deprecation-banner" class="android-deprecation-banner" role="alert">
+				<svg class="android-deprecation-banner__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="10" />
+					<line x1="12" y1="7" x2="12" y2="13" />
+					<line x1="12" y1="16.5" x2="12" y2="16.6" />
+				</svg>
+				<div class="android-deprecation-banner__body">
+					<div class="android-deprecation-banner__title" data-i18n="android_deprecation_title">We are deprecating this site</div>
+					<div class="android-deprecation-banner__text" data-i18n="android_deprecation_text">You should move to the Android app. This site will soon be deactivated.</div>
+					<a class="android-deprecation-banner__download" href="https://play.google.com/store/apps/details?id=com.gymnerd.app" target="_blank" rel="noopener">
+						<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" />
+					</a>
+				</div>
+			</div>
+		</div>
+		<script>
+			// Show deprecation banner on Android devices only.
+			(function () {
+				try {
+					if (/Android/i.test(navigator.userAgent || '')) {
+						document.getElementById('android-deprecation-root').style.display = 'block';
+					}
+				} catch (e) { }
+			})();
+		</script>
 		<div id="home-demo-root">
 			<div id="demo-banner" role="status" aria-live="polite" style="display:none;">
 				<button type="button" class="demo-banner__dismiss" aria-label="Dismiss local mode notice">
