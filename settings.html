@@ -303,7 +303,9 @@
                     : await db.tokens.toArray())
                 : (typeof db.normalizeTokensRecords === 'function' ? db.normalizeTokensRecords([]) : []);
             const data = {
-                // exclude catalog_... tables from local exports (catalog is app-provided)
+                // catalog tables are included so the ZIP can be used outside the app
+                catalog_exercises: db.catalog_exercises ? await db.catalog_exercises.toArray() : [],
+                catalog_images: db.catalog_images ? await db.catalog_images.toArray() : [],
                 custom_exercises: await db.custom_exercises.toArray(),
                 custom_images: await db.custom_images.toArray(),
                 routines: await db.routines.toArray(),
